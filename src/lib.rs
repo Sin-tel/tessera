@@ -20,9 +20,6 @@ static A: AllocDisabler = AllocDisabler;
 mod defs;
 use defs::*;
 
-mod message;
-use message::*;
-
 mod render;
 use render::*;
 
@@ -190,8 +187,8 @@ fn audio_run() -> Result<Userdata, anyhow::Error> {
 	let mut config2: cpal::StreamConfig = config.clone().into();
 	config2.channels = 2; // only allow stereo output
 
-	config2.buffer_size = cpal::BufferSize::Fixed(buf_size);
-	// config2.buffer_size = cpal::BufferSize::Default; // wasapi
+	// config2.buffer_size = cpal::BufferSize::Fixed(buf_size);
+	config2.buffer_size = cpal::BufferSize::Default; // wasapi
 
 	// Build streams.
 	println!("{:?}", config);
@@ -219,18 +216,18 @@ where
 	let rb = RingBuffer::<bool>::new(8);
 	let (prod_stream, cons_stream) = rb.split();
 
-	let buf_size: usize = match config.buffer_size {
-		cpal::BufferSize::Fixed(framecount) => framecount.try_into().unwrap(),
-		cpal::BufferSize::Default => panic!("Don't know buffer size!"),
-	};
+	// let buf_size: usize = match config.buffer_size {
+	// 	cpal::BufferSize::Fixed(framecount) => framecount.try_into().unwrap(),
+	// 	cpal::BufferSize::Default => panic!("Don't know buffer size!"),
+	// };
 	// let buf_size = 448; // wasapi
 
 	let sample_rate = config.sample_rate.0 as f32;
 
-	let m_render = Arc::new(Mutex::new(Render::new(sample_rate, buf_size, cons)));
+	let m_render = Arc::new(Mutex::new(Render::new(sample_rate, cons)));
 	let m_render_clone = Arc::clone(&m_render);
 
-	let audio_closure = build_closure::<T>(cons_stream, m_render_clone, buf_size);
+	let audio_closure = build_closure::<T>(cons_stream, m_render_clone);
 
 	let stream = device
 		.build_output_stream(config, audio_closure, err_fn)
@@ -247,7 +244,6 @@ where
 fn build_closure<T>(
 	mut cons_stream: Consumer<bool>,
 	m_render: Arc<Mutex<Render>>,
-	buf_size: usize,
 ) -> impl FnMut(&mut [T], &cpal::OutputCallbackInfo)
 where
 	T: cpal::Sample,
@@ -257,18 +253,17 @@ where
 
 	let mut paused = false;
 
-	let mut audiobuf: Vec<StereoSample> = vec![StereoSample { l: 0.0, r: 0.0 }; buf_size];
+	let mut audiobuf: Vec<StereoSample> = vec![StereoSample { l: 0.0, r: 0.0 }; MAX_BUF_SIZE];
 
 	move |buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
 		assert_no_alloc(|| {
-			// dbg!(buffer.len());
-			assert!(buf_size * 2 == buffer.len());
+			let buf_size = buffer.len() / 2;
+			dbg!(buf_size);
+			assert!(buf_size <= MAX_BUF_SIZE);
 
-			let time = std::time::Instant::now();
+			// let time = std::time::Instant::now();
 
-			let opt_render = m_render.try_lock();
-
-			match opt_render {
+			match m_render.try_lock() {
 				Ok(mut render) if !paused => {
 					if !start {
 						start = true;
@@ -286,7 +281,7 @@ where
 					);
 					render.parse_messages();
 					// write to output buffer
-					render.process(&mut audiobuf);
+					render.process(&mut audiobuf[..buf_size]);
 
 					for (outsample, gensample) in buffer.chunks_exact_mut(2).zip(audiobuf.iter()) {
 						outsample[0] = cpal::Sample::from::<f32>(&gensample.l);
@@ -311,7 +306,7 @@ where
 			}
 
 			// dbg!(buf_size)
-			let t = time.elapsed();
+			// let t = time.elapsed();
 			// println!("Cpu load {:.2}%", 100.0*t.as_secs_f64() / buf_time);
 			// println!("{:?}", t);
 			// dbg!(t);

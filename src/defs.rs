@@ -1,4 +1,5 @@
 pub const TWO_PI: f32 = 2f32 * std::f32::consts::PI;
+pub const MAX_BUF_SIZE: usize = 1024;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -15,4 +16,16 @@ pub struct C_AudioBuffer {
 	pub cap: usize,
 }
 
-// pub type AudioBuffer = Vec<StereoSample>;
+// Message struct to pass to audio thread
+// Should not contain any boxed values (for now)
+#[derive(Debug)]
+pub enum Message {
+	CV(usize, CV),
+	Add,
+}
+
+#[derive(Debug)]
+pub struct CV {
+	pub freq: f32,
+	pub vol: f32,
+}

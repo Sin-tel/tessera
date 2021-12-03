@@ -45,7 +45,7 @@ line_endings = "LF" # also "CR", "CRLF", "Native"
 ############################# Codegen Options ##################################
 
 style = "both"
-sort_by = "Name" # default for `fn.sort_by` and `const.sort_by`
+sort_by = "None" # default "Name"
 usize_is_size_t = true
 
 

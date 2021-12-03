@@ -7,7 +7,7 @@
 [+] luajit host w love2d
 [-] Midi input
 [+] Lockfree messaging system
-[ ] Dynamic buffer size
+[+] Dynamic buffer size
 [ ] Simple settings text file
 [ ] Simple metering
 [x] Single instrument

@@ -1,4 +1,4 @@
-release = true
+release = false
 
 audiolib = require("audiolib")
 
