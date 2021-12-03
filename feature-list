@@ -1,0 +1,27 @@
+ - proof of concept
+ + implemented partially
+ x implemented completely
+
+
+[x] ASIO support
+[+] luajit host w love2d
+[-] Midi input
+[+] Lockfree messaging system
+[ ] Simple settings text file
+[ ] Simple metering
+[x] Single instrument
+[+] Mixing channels
+[ ] Monophonic instruments list
+[ ] Send parameters
+[ ] Get parameter list
+[ ] Port over a bunch of protoplug devices
+[x] Render to wav
+[ ] Save project
+[ ] Grouping mono instruments (e.g. string quartet)
+[ ] Polyphonic instruments (plucked, piano, etc)
+[ ] Simple audio flow (parallel), maybe upgrade to DAG later
+[ ] Spatial mixing (binaural panning, auto reverb, space design, mic placement)
+[ ] Automation
+[ ] Vst hosting (pianoteq)
+[ ] FFT convolver
+
