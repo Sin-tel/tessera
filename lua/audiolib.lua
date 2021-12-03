@@ -6,10 +6,9 @@ local cstring = require("cstring")
 
 require("header")
 
-local lib_path = "../../target/debug"
+local lib_path = "../target/debug"
 if release then
-
-	lib_path = "../../target/release"
+	lib_path = "../target/release"
 end
 
 print(lib_path)

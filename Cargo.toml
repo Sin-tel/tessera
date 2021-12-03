@@ -15,3 +15,14 @@ hound = "3.4"
 assert_no_alloc = {version = "1.1.2", features = ["warn_debug"]}
 rand = "0.8.4"
 # itertools = "0.8"
+
+
+
+# enabling this flag will increase performance by a lot
+# RUSTFLAGS="-C target-cpu=native" cargo build --release
+
+[profile.release]
+# these dont seem to help much
+# lto = "thin"
+# codegen-units = 1
+# panic = "abort"
