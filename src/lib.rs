@@ -5,7 +5,8 @@
 
 use rand::prelude::*;
 
-use std::ffi::c_void;
+use std::ffi::{c_void, CStr};
+use std::os::raw::c_char;
 use std::sync::{Arc, Mutex};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -27,7 +28,7 @@ mod instrument;
 
 // big struct that lua side holds ptr to
 // dead_code is allowed because compiler doesn't know lua holds it
-#[allow(dead_code)]
+// #[allow(dead_code)]
 pub struct Userdata {
 	stream: cpal::Stream,
 	prod: Producer<Message>,
@@ -36,8 +37,13 @@ pub struct Userdata {
 }
 
 #[no_mangle]
-pub extern "C" fn stream_new() -> *mut c_void {
-	Box::into_raw(Box::new(audio_run().unwrap())) as *mut c_void
+pub extern "C" fn stream_new(host_ptr: *const c_char, device_ptr: *const c_char) -> *mut c_void {
+	let host_name = unsafe { CStr::from_ptr(host_ptr).to_str().unwrap() };
+	dbg!(host_name);
+	let device_name = unsafe { CStr::from_ptr(device_ptr).to_str().unwrap() };
+	dbg!(device_name);
+
+	Box::into_raw(Box::new(audio_run(host_name, device_name).unwrap())) as *mut c_void
 }
 
 #[no_mangle]
@@ -154,41 +160,82 @@ fn send_paused(d: &mut Userdata, paused: bool) {
 	}
 }
 
-fn audio_run() -> Result<Userdata, anyhow::Error> {
-	let output_device = "default";
-	let buf_size = 64;
+fn audio_run(host_name: &str, output_device_name: &str) -> Result<Userdata, anyhow::Error> {
+	let available_hosts = cpal::available_hosts();
+	println!("Available hosts:\n  {:?}", available_hosts);
 
-	// force ASIO for now
-	let host;
-	#[cfg(target_os = "windows")]
-	{
-		host = cpal::host_from_id(cpal::HostId::Asio).expect("failed to initialise ASIO host");
+	let mut host = None;
+	if host_name == "default" {
+		host = Some(cpal::default_host());
+	} else {
+		for host_id in available_hosts {
+			if host_id
+				.name()
+				.to_lowercase()
+				.contains(&host_name.to_lowercase())
+			{
+				host = Some(cpal::host_from_id(host_id)?);
+				break;
+			}
+		}
+	}
+	let host = match host {
+		Some(h) => h,
+		None => {
+			println!("Couldn't find {}. Using default instead", host_name);
+			cpal::default_host()
+		}
 	};
 
-	// let host = cpal::default_host(); // wasapi
+	println!("Using host: {}", host.id().name());
 
-	dbg!(host.id());
-
-	let output_device = if output_device == "default" {
-		host.default_output_device()
-	} else {
-		host.output_devices()?
-			.find(|x| x.name().map(|y| y == output_device).unwrap_or(false))
-	}
-	.expect("failed to find output device");
-
-	for d in host.devices()? {
+	println!("Avaliable output devices:");
+	for d in host.output_devices()? {
 		println!("{}", d.name()?);
 	}
 
+	let mut output_device = None;
+
+	if output_device_name == "default" {
+		output_device = host.default_output_device();
+	} else {
+		for device in host.output_devices().expect("No output devices found.") {
+			match device.name() {
+				Ok(name) => {
+					if name
+						.to_lowercase()
+						.contains(&output_device_name.to_lowercase())
+					{
+						output_device = Some(device);
+					}
+				}
+				_ => (),
+			}
+		}
+	}
+
+	let output_device = match output_device {
+		Some(d) => d,
+		None => {
+			println!(
+				"Couldn't find {}. Using default instead",
+				output_device_name
+			);
+			host.default_output_device()
+				.expect("No default output device found.")
+		}
+	};
+
 	println!("Using output device: \"{}\"", output_device.name()?);
+
+	println!("=============");
 
 	let config = output_device.default_output_config()?;
 	let mut config2: cpal::StreamConfig = config.clone().into();
 	config2.channels = 2; // only allow stereo output
 
-	// config2.buffer_size = cpal::BufferSize::Fixed(buf_size);
-	config2.buffer_size = cpal::BufferSize::Default; // wasapi
+	// config2.buffer_size = cpal::BufferSize::Fixed(128);
+	// config2.buffer_size = cpal::BufferSize::Default; // wasapi
 
 	// Build streams.
 	println!("{:?}", config);
@@ -215,12 +262,6 @@ where
 
 	let rb = RingBuffer::<bool>::new(8);
 	let (prod_stream, cons_stream) = rb.split();
-
-	// let buf_size: usize = match config.buffer_size {
-	// 	cpal::BufferSize::Fixed(framecount) => framecount.try_into().unwrap(),
-	// 	cpal::BufferSize::Default => panic!("Don't know buffer size!"),
-	// };
-	// let buf_size = 448; // wasapi
 
 	let sample_rate = config.sample_rate.0 as f32;
 
@@ -258,7 +299,7 @@ where
 	move |buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
 		assert_no_alloc(|| {
 			let buf_size = buffer.len() / 2;
-			dbg!(buf_size);
+
 			assert!(buf_size <= MAX_BUF_SIZE);
 
 			// let time = std::time::Instant::now();

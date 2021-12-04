@@ -29,6 +29,8 @@ impl Render {
 	}
 
 	pub fn process(&mut self, buffer: &mut [StereoSample]) {
+		let buf_slice = &mut self.buffer2[..buffer.len()];
+
 		// zero buffer
 		for sample in buffer.iter_mut() {
 			sample.l = 0.0;
@@ -37,9 +39,8 @@ impl Render {
 
 		// process all channels
 		for ch in self.channels.iter_mut() {
-			ch.process(&mut self.buffer2[..buffer.len()]);
-			// assert!(buffer.len() == self.buffer2.len());
-			for (outsample, insample) in buffer.iter_mut().zip(self.buffer2.iter()) {
+			ch.process(buf_slice);
+			for (outsample, insample) in buffer.iter_mut().zip(buf_slice.iter()) {
 				outsample.l += insample.l;
 				outsample.r += insample.r;
 			}

@@ -1,6 +1,6 @@
 # Justidaw
 
-Experimental DAW with a focus on microtonal compisition, expressiveness and physical modelling.
+Experimental DAW with a focus on microtonal composition, expressiveness and physical modelling.
 
 GUI parts are written in lua with [LÖVE](https://love2d.org/), the audio engine is in Rust.
 

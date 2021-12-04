@@ -20,9 +20,14 @@ local audiolib = {}
 
 audiolib.paused = true
 
-function audiolib.load()
+stream_handle__ = nil
+
+function audiolib.load(host, device)
 	if stream_handle == nil then
-		stream_handle = ffi.gc(lib.stream_new(), lib.stream_free)
+		host = host or "default"
+		device = device or "default"
+		stream_handle = ffi.gc(lib.stream_new(cstring(host), cstring(device)), lib.stream_free)
+		-- stream_handle__ = lib.stream_new()
 
 		audiolib.paused = false
 	else

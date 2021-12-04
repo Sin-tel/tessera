@@ -12,8 +12,8 @@ impl Sine {
 		Sine {
 			accum: 0.0f32,
 			freq: 440.0f32 / sample_rate,
-			vol: 0.0f32,
-			vol_: 0.0f32,
+			vol: 0.1f32,
+			vol_: 0.1f32,
 		}
 	}
 }

@@ -14,7 +14,11 @@ love.window.setMode( width, height, {vsync = false} )
 blocks = {}
 
 function love.load()
-	audiolib.load()
+	-- put host and output device names here
+	-- it will match substrings
+	-- audiolib.load("asio", "asio4all")
+	audiolib.load("wasapi") 
+
 end
 
 numch = 1
