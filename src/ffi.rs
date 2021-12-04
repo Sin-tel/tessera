@@ -5,7 +5,7 @@ use rand::prelude::*;
 
 use std::sync::{Arc, Mutex};
 
-use ringbuf::Producer;
+use ringbuf::{Consumer, Producer};
 
 use crate::audio::*;
 use crate::defs::*;
@@ -16,8 +16,9 @@ use crate::render::*;
 // #[allow(dead_code)]
 pub struct Userdata {
 	pub stream: cpal::Stream,
-	pub prod: Producer<Message>,
-	pub prod_stream: Producer<bool>,
+	pub audio_tx: Producer<AudioMessage>,
+	pub stream_tx: Producer<bool>,
+	pub lua_rx: Consumer<LuaMessage>,
 	pub m_render: Arc<Mutex<Render>>,
 }
 
@@ -44,7 +45,7 @@ pub extern "C" fn stream_free(stream_ptr: *mut c_void) {
 pub extern "C" fn send_CV(stream_ptr: *mut c_void, ch: usize, freq: f32, vol: f32) {
 	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
 
-	send_message(d, Message::CV(ch, CV { freq, vol }));
+	send_message(d, AudioMessage::CV(ch, CV { freq, vol }));
 }
 
 #[no_mangle]
@@ -65,7 +66,7 @@ pub extern "C" fn pause(stream_ptr: *mut c_void) {
 pub extern "C" fn add(stream_ptr: *mut c_void) {
 	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
 
-	send_message(d, Message::Add);
+	send_message(d, AudioMessage::Add);
 }
 
 #[inline]
@@ -129,18 +130,34 @@ pub extern "C" fn block_free(block: C_AudioBuffer) {
 	// println!("Cleaned up block!");
 }
 
-fn send_message(d: &mut Userdata, m: Message) {
-	if !d.prod.is_full() {
-		d.prod.push(m).unwrap();
+fn send_message(d: &mut Userdata, m: AudioMessage) {
+	if !d.audio_tx.is_full() {
+		d.audio_tx.push(m).unwrap();
 	} else {
 		println!("Queue full. Dropped message!")
 	}
 }
 
 fn send_paused(d: &mut Userdata, paused: bool) {
-	if !d.prod_stream.is_full() {
-		d.prod_stream.push(paused).unwrap();
+	if !d.stream_tx.is_full() {
+		d.stream_tx.push(paused).unwrap();
 	} else {
 		println!("Stream queue full. Dropped message!")
+	}
+}
+
+#[no_mangle]
+pub extern "C" fn rx_is_empty(stream_ptr: *mut c_void) -> bool {
+	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
+
+	d.lua_rx.is_empty()
+}
+
+#[no_mangle]
+pub extern "C" fn rx_pop(stream_ptr: *mut c_void) -> f32 {
+	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
+
+	match d.lua_rx.pop().unwrap() {
+		LuaMessage::Test(v) => v,
 	}
 }

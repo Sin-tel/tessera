@@ -1,27 +1,28 @@
 use crate::instrument::*;
+use crate::math::*;
 
 pub struct Sine {
 	accum: f32,
 	freq: f32,
 	vol: f32,
 	vol_: f32,
+	sample_rate: f32,
 }
 
-impl Sine {
-	pub fn new(sample_rate: f32) -> Sine {
+impl Instrument for Sine {
+	fn new(sample_rate: f32) -> Sine {
 		Sine {
 			accum: 0.0f32,
 			freq: 440.0f32 / sample_rate,
 			vol: 0.1f32,
 			vol_: 0.1f32,
+			sample_rate,
 		}
 	}
-}
 
-impl Instrument for Sine {
-	fn cv(&mut self, freq: f32, vol: f32) {
+	fn cv(&mut self, pitch: f32, vol: f32) {
 		self.vol_ = vol;
-		self.freq = freq;
+		self.freq = pitch_to_f(pitch, self.sample_rate);
 	}
 
 	fn process(&mut self, buffer: &mut [StereoSample]) {
@@ -37,4 +38,6 @@ impl Instrument for Sine {
 			sample.r = out;
 		}
 	}
+
+	fn set_param(&mut self, index: usize, val: f32) {}
 }

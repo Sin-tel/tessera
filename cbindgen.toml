@@ -60,6 +60,8 @@ include = []
 exclude = []
 # prefix = "CAPI_"
 item_types = ["enums", "structs", "opaque", "functions"]
+# item_types = []
+
 renaming_overrides_prefixing = false
 
 
@@ -121,7 +123,7 @@ bitflags = false
 
 [parse]
 parse_deps = false
-# include = []
+include = []
 exclude = []
 clean = false
 extra_bindings = []

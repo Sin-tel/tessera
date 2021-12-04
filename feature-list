@@ -4,9 +4,9 @@
 
 (roughly in order of importance)
 [x] ASIO support
-[+] luajit host w love2d
+[x] luajit host w love2d
 [-] Midi input
-[+] Lockfree messaging system
+[x] Lockfree messaging system
 [x] Dynamic buffer size
 [ ] Simple settings text file
 [ ] Simple metering
@@ -14,14 +14,14 @@
 [+] Mixing channels
 [ ] Monophonic instruments list
 [ ] Send parameters
-[ ] Get instrument parameter list
 [ ] Port over a bunch of protoplug devices
+[ ] Instrument parameter list
 [x] Render to wav
 [ ] Save project
 [ ] Grouping mono instruments (e.g. string quartet)
 [ ] Polyphonic instruments (plucked, piano, etc)
 [ ] Simple audio flow (parallel), maybe upgrade to DAG later
-[ ] Spatial mixing (binaural panning, auto reverb, space design, mic placement)
+[ ] Spatial mixing (binaural panning, auto reverb)
 [ ] Automation
 [x] Support WASAPI
 [ ] Support macOS

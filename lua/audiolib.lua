@@ -20,14 +20,11 @@ local audiolib = {}
 
 audiolib.paused = true
 
-stream_handle__ = nil
-
 function audiolib.load(host, device)
 	if stream_handle == nil then
 		host = host or "default"
 		device = device or "default"
 		stream_handle = ffi.gc(lib.stream_new(cstring(host), cstring(device)), lib.stream_free)
-		-- stream_handle__ = lib.stream_new()
 
 		audiolib.paused = false
 	else
@@ -79,6 +76,17 @@ function audiolib.render_block()
 		end
 	else
 		print("pause stream before rendering!!")
+	end
+end
+
+function audiolib.parse_messages()
+	if stream_handle then
+		while not lib.rx_is_empty(stream_handle) do
+			p = lib.rx_pop(stream_handle)
+
+			print(p)
+			
+		end
 	end
 end
 

@@ -15,9 +15,9 @@ blocks = {}
 
 function love.load()
 	-- put host and output device names here
-	-- it will match substrings
-	-- audiolib.load("asio", "asio4all")
-	audiolib.load("wasapi") 
+	-- case insensitive, matches substrings
+	audiolib.load("asio", "asio4all")
+	-- audiolib.load("wasapi") 
 
 end
 
@@ -29,24 +29,17 @@ function love.update(dt)
 	-- print(1/dt)
 
 	if not audiolib.paused then
-		local index = math.random(numch) -1
+		local index = 0
 		-- print(index, numch)
-		audiolib.send_CV(index, {mouseX/44100 + love.math.randomNormal(0.001), 0.5*(1 - mouseY /height) / math.sqrt(numch)});
+		audiolib.send_CV(index, {20 + math.floor(mouseX/20), 0.5*(1 - mouseY /height) / math.sqrt(numch)});
 	end
 	-- collectgarbage()
+
+	audiolib.parse_messages()
 end
 
 function love.draw()
-	-- local x = 0
-	-- for i in ipairs(blocks) do
-	-- 	local block = blocks[i]
-	
-	-- 	samples = block.ptr
-	-- 	for j = 0, tonumber(block.len)-1 do
-	-- 		love.graphics.points(x,300+100*samples[j].l)
-	-- 		x = x +1
-	-- 	end
-	-- end
+
 end
 
 function love.keypressed( key, isrepeat )
@@ -65,11 +58,11 @@ function love.keypressed( key, isrepeat )
 	elseif key == 'r' then
 		render_wav()
 	elseif key == 'a' then
-		for i = 1, 20 do
+		-- for i = 1, 20 do
 			numch = (numch or 1) + 1 
 			print("numch: " .. numch)
 			audiolib.add()
-		end
+		-- end
 	end
 
 end

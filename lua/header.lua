@@ -21,6 +21,10 @@ void play(void *stream_ptr);
 
 struct C_AudioBuffer render_block(void *stream_ptr);
 
+bool rx_is_empty(void *stream_ptr);
+
+float rx_pop(void *stream_ptr);
+
 void send_CV(void *stream_ptr, size_t ch, float freq, float vol);
 
 void stream_free(void *stream_ptr);

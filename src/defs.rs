@@ -19,13 +19,19 @@ pub struct C_AudioBuffer {
 // Message struct to pass to audio thread
 // Should not contain any boxed values (for now)
 #[derive(Debug)]
-pub enum Message {
+pub enum AudioMessage {
 	CV(usize, CV),
 	Add,
+	SetParam(usize, usize, f32),
 }
 
 #[derive(Debug)]
 pub struct CV {
 	pub freq: f32,
 	pub vol: f32,
+}
+
+#[derive(Debug)]
+pub enum LuaMessage {
+	Test(f32),
 }
