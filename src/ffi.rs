@@ -25,9 +25,9 @@ pub struct Userdata {
 #[no_mangle]
 pub extern "C" fn stream_new(host_ptr: *const c_char, device_ptr: *const c_char) -> *mut c_void {
 	let host_name = unsafe { CStr::from_ptr(host_ptr).to_str().unwrap() };
-	dbg!(host_name);
+	// dbg!(host_name);
 	let device_name = unsafe { CStr::from_ptr(device_ptr).to_str().unwrap() };
-	dbg!(device_name);
+	// dbg!(device_name);
 
 	Box::into_raw(Box::new(audio_run(host_name, device_name).unwrap())) as *mut c_void
 }

@@ -14,8 +14,6 @@ use crate::ffi::*;
 use crate::render::*;
 
 pub fn audio_run(host_name: &str, output_device_name: &str) -> Result<Userdata, anyhow::Error> {
-	println!("=============");
-
 	let output_device = find_output_device(host_name, output_device_name)?;
 
 	let config = output_device.default_output_config()?;
