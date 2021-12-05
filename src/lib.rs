@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod audio;
 mod defs;
 mod ffi;

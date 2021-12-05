@@ -42,10 +42,17 @@ pub extern "C" fn stream_free(stream_ptr: *mut c_void) {
 }
 
 #[no_mangle]
-pub extern "C" fn send_CV(stream_ptr: *mut c_void, ch: usize, freq: f32, vol: f32) {
+pub extern "C" fn send_CV(stream_ptr: *mut c_void, ch: usize, pitch: f32, vel: f32) {
 	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
 
-	send_message(d, AudioMessage::CV(ch, CV { freq, vol }));
+	send_message(d, AudioMessage::CV(ch, CV { pitch, vel }));
+}
+
+#[no_mangle]
+pub extern "C" fn send_noteOn(stream_ptr: *mut c_void, ch: usize, pitch: f32, vel: f32) {
+	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
+
+	send_message(d, AudioMessage::NoteOn(ch, CV { pitch, vel }));
 }
 
 #[no_mangle]

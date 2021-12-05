@@ -25,7 +25,9 @@ bool rx_is_empty(void *stream_ptr);
 
 float rx_pop(void *stream_ptr);
 
-void send_CV(void *stream_ptr, size_t ch, float freq, float vol);
+void send_CV(void *stream_ptr, size_t ch, float pitch, float vel);
+
+void send_noteOn(void *stream_ptr, size_t ch, float pitch, float vel);
 
 void stream_free(void *stream_ptr);
 

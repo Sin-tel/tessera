@@ -92,6 +92,8 @@ where
 
 			assert!(buf_size <= MAX_BUF_SIZE);
 
+			let mut buf_slice = &mut audiobuf[..buf_size];
+
 			// let time = std::time::Instant::now();
 
 			match m_render.try_lock() {
@@ -112,9 +114,9 @@ where
 					);
 					render.parse_messages();
 					// write to output buffer
-					render.process(&mut audiobuf[..buf_size]);
+					render.process(&mut buf_slice);
 
-					for (outsample, gensample) in buffer.chunks_exact_mut(2).zip(audiobuf.iter()) {
+					for (outsample, gensample) in buffer.chunks_exact_mut(2).zip(buf_slice.iter()) {
 						outsample[0] = cpal::Sample::from::<f32>(&gensample.l);
 						outsample[1] = cpal::Sample::from::<f32>(&gensample.r);
 					}
@@ -138,7 +140,10 @@ where
 
 			// dbg!(buf_size)
 			// let t = time.elapsed();
-			// println!("Cpu load {:.2}%", 100.0*t.as_secs_f64() / buf_time);
+			// println!(
+			// 	"Cpu load {:.2}%",
+			// 	100.0 * t.as_secs_f64() / ((buf_size as f64) / 44100.0)
+			// );
 			// println!("{:?}", t);
 			// dbg!(t);
 		});
@@ -221,7 +226,7 @@ fn err_fn(err: cpal::StreamError) {
 }
 
 #[inline]
-fn fix_denorms() {
+pub fn fix_denorms() {
 	unsafe {
 		use std::arch::x86_64::*;
 

@@ -1,46 +1,61 @@
 use crate::instrument::*;
 use crate::math::*;
 
+#[derive(Debug, Default)]
 pub struct Sine {
 	accum: f32,
-	freq: f32,
-	freq_: f32,
-	vol: f32,
-	vol_: f32,
+	freq: Smoothed,
+	vel: SmoothedEnv,
 	sample_rate: f32,
+	prev: f32,
 }
 
 impl Instrument for Sine {
 	fn new(sample_rate: f32) -> Sine {
 		Sine {
-			accum: 0.0f32,
-			freq: 440.0f32 / sample_rate,
-			freq_: 440.0f32 / sample_rate,
-			vol: 0.1f32,
-			vol_: 0.1f32,
+			freq: Smoothed::new(0.0, 50.0 / sample_rate),
+			vel: SmoothedEnv::new(0.0, 200.0 / sample_rate, 20.0 / sample_rate),
 			sample_rate,
+			..Default::default()
 		}
 	}
 
-	fn cv(&mut self, pitch: f32, vol: f32) {
-		self.vol_ = vol;
-		self.freq_ = pitch_to_f(pitch, self.sample_rate);
+	fn cv(&mut self, pitch: f32, vel: f32) {
+		if vel != 0.0 {
+			// note off
+			self.freq.set(pitch_to_f(pitch, self.sample_rate));
+		}
+		self.vel.set(vel);
 	}
 
 	fn process(&mut self, buffer: &mut [StereoSample]) {
 		for sample in buffer.iter_mut() {
-			self.vol += (self.vol_ - self.vol) * 0.001;
-			self.freq += (self.freq_ - self.freq) * 0.001;
-			self.accum += self.freq;
+			self.vel.update();
+			self.freq.update();
+			self.accum += self.freq.value;
 			self.accum = self.accum.fract();
-			let mut out = (self.accum * TWO_PI).sin();
+			let mut out = (self.accum * TWO_PI + 0.5 * self.prev).sin();
+			out *= self.vel.value;
 
-			// let mut out = accum;
-			out *= self.vol;
+			self.prev = out;
+
+			// self.accum += 440.0 / self.sample_rate;
+			// let mut out = (self.accum * TWO_PI + 0.5 * self.prev).sin() * 0.1;
+
 			sample.l = out;
 			sample.r = out;
 		}
 	}
 
-	fn set_param(&mut self, index: usize, val: f32) {}
+	fn note_on(&mut self, pitch: f32, vel: f32) {
+		self.freq.set_hard(pitch_to_f(pitch, self.sample_rate));
+		if self.vel.value < 0.0001 {
+			self.vel.set_hard(vel);
+			self.accum = 0.0;
+		} else {
+			self.vel.set(vel);
+		}
+	}
+
+	fn set_param(&mut self, _: usize, _: f32) {}
 }

@@ -74,7 +74,11 @@ impl Render {
 			match m {
 				// todo send to correct channel
 				AudioMessage::CV(ch_index, cv) => match self.channels.get_mut(ch_index) {
-					Some(ch) => ch.cv(cv.freq, cv.vol),
+					Some(ch) => ch.cv(cv.pitch, cv.vel),
+					None => println!("Channel index out of bounds!"),
+				},
+				AudioMessage::NoteOn(ch_index, cv) => match self.channels.get_mut(ch_index) {
+					Some(ch) => ch.note_on(cv.pitch, cv.vel),
 					None => println!("Channel index out of bounds!"),
 				},
 				AudioMessage::SetParam(ch_index, index, val) => {

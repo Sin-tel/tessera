@@ -21,14 +21,15 @@ pub struct C_AudioBuffer {
 #[derive(Debug)]
 pub enum AudioMessage {
 	CV(usize, CV),
+	NoteOn(usize, CV),
 	Add,
 	SetParam(usize, usize, f32),
 }
 
 #[derive(Debug)]
 pub struct CV {
-	pub freq: f32,
-	pub vol: f32,
+	pub pitch: f32,
+	pub vel: f32,
 }
 
 #[derive(Debug)]
