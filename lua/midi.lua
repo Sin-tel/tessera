@@ -18,9 +18,11 @@ local function device(handle, mpe,n)
 	}
 end
 
-function midi.load(port_n)
+function midi.load(name)
 	local device_handle = rtmidi.createIn()
 	rtmidi.printPorts(device_handle)
+
+	port_n = rtmidi.findPort(device_handle, name)
 
 	rtmidi.openPort(device_handle, port_n)
 

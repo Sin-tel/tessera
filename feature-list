@@ -5,7 +5,7 @@
 (roughly in order of importance)
 [x] ASIO support
 [x] luajit host w love2d
-[+] Midi input
+[x] Midi input
 [x] Lockfree messaging system
 [x] Dynamic buffer size
 [ ] Simple settings text file

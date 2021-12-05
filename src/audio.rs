@@ -184,7 +184,7 @@ fn find_output_device(
 
 	println!("Avaliable output devices:");
 	for d in host.output_devices()? {
-		println!("{}", d.name()?);
+		println!(" - \"{}\"", d.name()?);
 	}
 
 	let mut output_device = None;

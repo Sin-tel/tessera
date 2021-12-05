@@ -1,3 +1,5 @@
+-- require("main")
+
 function love.run()
 
 	if love.load then love.load(love.arg.parseGameArguments(arg), arg) end
@@ -8,6 +10,9 @@ function love.run()
 	local dt = 0
 
 	local accum = 0
+
+	local time = love.timer.getTime( )
+
  
 	-- Main loop time.
 	return function()
@@ -24,33 +29,47 @@ function love.run()
 				love.handlers[name](a,b,c,d,e,f)
 			end
 		end
- 
-		-- Update dt, as we'll be passing it to update
-		if love.timer then dt = love.timer.step() end
 
-		accum = accum + dt
- 
-		-- Call update and draw
-		if love.update then love.update(dt) end 
+		-- do one step to ignore the time spent drawing previous frame
+		if love.timer then love.timer.step() end
+
+		accum = 0
+ 		
+ 		while true do
+			if love.timer then dt = love.timer.step() end
+
+			accum = accum + dt
+	 		
+	 		local time2 = love.timer.getTime( )
+	 		-- print(1/(time2 - time))
+	 		
+
+	 		if love.update then love.update(time2 - time) end 
+
+	 		time = time2
+
+	 		if accum >= 1/60 then
+	 			break
+	 		end
+
+	 		if love.timer then love.timer.sleep(0.001) end
+	 	end
 
 		if accum >= 1/60 then
- 			accum = 0
+			-- Call update and draw
+			
+
+
+ 			
 			if love.graphics and love.graphics.isActive() then
 				love.graphics.origin()
 				love.graphics.clear(love.graphics.getBackgroundColor())
 	 
 				if love.draw then love.draw() end
-	 
+
+				-- print("present")
 				love.graphics.present()
 			end
-			-- draw call might take a bit, so dont sleep after
-			-- idea: do update and draw interleaved
-		else
-			-- love::sleep((unsigned int)(seconds*1000));
-			-- so 0.001 is the smallest value
-
-			if love.timer then love.timer.sleep(0.001) end
-			-- if love.timer then love.timer.sleep(0) end
 		end
  
 		

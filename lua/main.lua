@@ -1,3 +1,4 @@
+require("run")
 release = false
 
 local audiolib = require("audiolib")
@@ -10,7 +11,7 @@ io.stdout:setvbuf("no")
 width = 720 --1280
 height = 720
 
-love.window.setMode( width, height, {vsync = false} )
+love.window.setMode( width, height, {vsync = true} )
 
 blocks = {}
 
@@ -18,12 +19,13 @@ function love.load()
 	-- put host and output device names here
 	-- case insensitive, matches substrings
 	print("========AUDIO========")
-	-- audiolib.load("asio", "asio4all")
-	audiolib.load("wasapi") 
+	audiolib.load("asio", "asio4all")
+	-- audiolib.load("wasapi") 
 
 	print("========MIDI========")
-	midi_in = midi.load(2)
+	midi_in = midi.load("seaboard")
 	
+	love.window.setVSync(true)
 end
 
 numch = 1
@@ -31,12 +33,11 @@ numch = 1
 pitch = 0
 vel = 0
 
-function love.update(dt)
+function love.update(dt) 
+
 	audiolib.parse_messages()
 
 	local update = midi.update(midi_in)
-	-- print(update)
-
 
 	if update then
 		local noteOn = false
@@ -55,43 +56,25 @@ function love.update(dt)
 			vel = math.max(v.vel, vel)
 			w = w + v.vel
 		end
-		print(vel)
+
 		if w > 0 then
 			pitch = pitch / w
 		end
 
-		local vel_shaped = vel * vel;
+		local vel_shaped = vel^(1.5);
 		if noteOn then
 			audiolib.send_noteOn(0, {pitch, vel_shaped});
 		else
 			audiolib.send_CV(0, {pitch, vel_shaped});
 		end
-		
-
-		
 	end
-	
-
-	
-
-
-	
 end
+
 
 function love.draw()
 	mouseX, mouseY = love.mouse.getPosition()
 
 	midi.draw(midi_in)
-	-- print(mouseY/44100)
-	-- print(1/dt)
-	-- love.graphics.ellipse("fill", (note+offset)*10, 200, vel*20)
-
-	-- if not audiolib.paused then
-	-- 	local index = 0
-	-- 	-- print(index, numch)
-	-- 	audiolib.send_CV(index, {note + offset, vel});
-	-- end
-	-- collectgarbage()
 end
 
 function love.keypressed( key, isrepeat )

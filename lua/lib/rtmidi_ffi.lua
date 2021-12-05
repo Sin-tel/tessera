@@ -263,6 +263,21 @@ function M.printPorts(device)
 	end
 end
 
+function M.findPort(device, name)
+    local nPorts = lib.rtmidi_get_port_count(device)
+
+    for i=0, nPorts-1 do
+        local portName = ffi.string(lib.rtmidi_get_port_name(device, i))
+        print(string.lower(portName), string.lower(name))
+        if string.match(string.lower(portName), string.lower(name)) then
+            return i
+        end
+    end
+
+    print(name .. " not found!")
+    return 0
+end
+
 function M.openPort(device, p)
 	local portName = lib.rtmidi_get_port_name(device, p)
 	print("opening port: "..ffi.string(portName) )
