@@ -1,8 +1,9 @@
 require("run")
 release = false
 
+local settings_handler = require("settings_handler")
 local audiolib = require("audiolib")
-local wav = require("./lib/wav_save")
+local wav = require("lib/wav_save")
 local midi = require("midi")
 
 
@@ -16,14 +17,16 @@ love.window.setMode( width, height, {vsync = true} )
 blocks = {}
 
 function love.load()
-	-- put host and output device names here
-	-- case insensitive, matches substrings
+	settings = settings_handler.load()
+
 	print("========AUDIO========")
-	audiolib.load("asio", "asio4all")
+	audiolib.load(settings.audio.default_host, settings.audio.default_device)
+	-- audiolib.load("asio", "asio4all")
 	-- audiolib.load("wasapi") 
 
 	print("========MIDI========")
-	midi_in = midi.load("seaboard")
+	midi_in = midi.load(settings.midi.default_input)
+	-- midi_in = midi.load("seaboard")
 	
 	love.window.setVSync(true)
 end
@@ -103,6 +106,8 @@ function love.keypressed( key, isrepeat )
 end
 
 function love.quit()
+	settings_handler.save(settings)
+	
 	audiolib.quit()
 end
 

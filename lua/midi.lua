@@ -22,7 +22,16 @@ function midi.load(name)
 	local device_handle = rtmidi.createIn()
 	rtmidi.printPorts(device_handle)
 
-	port_n = rtmidi.findPort(device_handle, name)
+
+	local port_n = false
+	if name ~= "default" then
+		port_n = rtmidi.findPort(device_handle, name)
+	end
+
+	if port_n == false then
+		print("Opening default midi port (0)")
+		port_n = 0
+	end
 
 	rtmidi.openPort(device_handle, port_n)
 

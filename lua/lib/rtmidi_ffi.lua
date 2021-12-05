@@ -274,8 +274,8 @@ function M.findPort(device, name)
         end
     end
 
-    print(name .. " not found!")
-    return 0
+    print("Midi port \"" .. name .. "\" not found!")
+    return false
 end
 
 function M.openPort(device, p)

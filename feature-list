@@ -8,7 +8,7 @@
 [x] Midi input
 [x] Lockfree messaging system
 [x] Dynamic buffer size
-[ ] Simple settings text file
+[x] Simple settings text file
 [ ] Simple metering
 [x] Single instrument
 [+] Mixing channels
@@ -17,6 +17,7 @@
 [ ] Port over a bunch of protoplug devices
 [ ] Instrument parameter list
 [x] Render to wav
+[ ] Poll settings
 [ ] Save project
 [ ] Grouping mono instruments (e.g. string quartet)
 [ ] Polyphonic instruments (plucked, piano, etc)
