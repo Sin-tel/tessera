@@ -8,6 +8,7 @@ pub struct Sine {
 	vel: SmoothedEnv,
 	sample_rate: f32,
 	prev: f32,
+	pub feedback: f32,
 }
 
 impl Instrument for Sine {
@@ -21,10 +22,9 @@ impl Instrument for Sine {
 	}
 
 	fn cv(&mut self, pitch: f32, vel: f32) {
-		if vel != 0.0 {
-			// note off
-			self.freq.set(pitch_to_f(pitch, self.sample_rate));
-		}
+		// if vel != 0.0 { // note off
+		self.freq.set(pitch_to_f(pitch, self.sample_rate));
+		// }
 		self.vel.set(vel);
 	}
 
@@ -34,14 +34,14 @@ impl Instrument for Sine {
 			self.freq.update();
 			self.accum += self.freq.value;
 			self.accum = self.accum.fract();
-			let mut out = (self.accum * TWO_PI + 0.5 * self.prev).sin();
+			let mut out = (self.accum * TWO_PI + self.feedback * self.prev).sin();
 			out *= self.vel.value;
 
 			self.prev = out;
 
 			// self.accum += 440.0 / self.sample_rate;
 			// let mut out = (self.accum * TWO_PI + 0.5 * self.prev).sin() * 0.1;
-
+			// out *= 0.2;
 			sample.l = out;
 			sample.r = out;
 		}
@@ -56,6 +56,4 @@ impl Instrument for Sine {
 			self.vel.set(vel);
 		}
 	}
-
-	fn set_param(&mut self, _: usize, _: f32) {}
 }

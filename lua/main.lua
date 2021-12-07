@@ -6,79 +6,85 @@ local audiolib = require("audiolib")
 local wav = require("lib/wav_save")
 local midi = require("midi")
 
+require("mouse")
+require("workspace")
 
 io.stdout:setvbuf("no")
 
-width = 720 --1280
-height = 720
+width, height = love.graphics.getDimensions( )
 
-love.window.setMode( width, height, {vsync = true} )
 
 blocks = {}
 
 function love.load()
+	math.randomseed(os.time())
+	love.math.setRandomSeed(os.time())
 	settings = settings_handler.load()
+	Workspace:load()
+	Workspace.view:split(0.5, true)
+	Workspace.view.children[1]:split(0.6, false)
+	Workspace.view.children[2]:split(0.5, false)
+	Workspace.view.children[2].children[1]:split(0.5, true)
 
-	print("========AUDIO========")
+	Workspace.view.children[1].children[2]:split(0.4, true)
+	Workspace.view.children[1].children[2].children[1]:split(0.4, false)
+
 	audiolib.load(settings.audio.default_host, settings.audio.default_device)
-	-- audiolib.load("asio", "asio4all")
 	-- audiolib.load("wasapi") 
 
-	print("========MIDI========")
 	midi_in = midi.load(settings.midi.default_input)
-	-- midi_in = midi.load("seaboard")
 	
-	love.window.setVSync(true)
+	audiolib.add()
+	audiolib.add()
+	audiolib.add()
+
+	-- audiolib.send_noteOn(0, {49   , 0.2});
+	-- audiolib.send_noteOn(1, {49+4 , 0.2});
+	-- audiolib.send_noteOn(2, {49+7 , 0.2});
+	-- audiolib.send_noteOn(3, {49+14, 0.2});
 end
 
-numch = 1
-
-pitch = 0
-vel = 0
 
 function love.update(dt) 
-
+	-- print(1/dt)
 	audiolib.parse_messages()
 
-	local update = midi.update(midi_in)
-
-	if update then
-		local noteOn = false
-		local pitch = 0
-		local pitch_ = 0
-		local vel = 0
-		local w = 0
-		for i,v in ipairs(midi_in.voices) do
-			if v.noteOn then
-				noteOn = true;
-				v.noteOn = false;
-			end
-
-			pitch = pitch + (v.note + v.offset)*v.vel
-
-			vel = math.max(v.vel, vel)
-			w = w + v.vel
-		end
-
-		if w > 0 then
-			pitch = pitch / w
-		end
-
-		local vel_shaped = vel^(1.5);
-		if noteOn then
-			audiolib.send_noteOn(0, {pitch, vel_shaped});
-		else
-			audiolib.send_CV(0, {pitch, vel_shaped});
-		end
-	end
+	midi.update(midi_in, handle_midi)
 end
 
 
 function love.draw()
-	mouseX, mouseY = love.mouse.getPosition()
+	----update--------
 
+	Mouse:update()
+	Workspace:update()
+
+	----draw----------
+	Workspace:draw()
+
+	love.graphics.setColor(1.0, 1.0, 1.0)
 	midi.draw(midi_in)
+
+	love.graphics.setColor(1.0, 0.0, 0.0)
+	for i,v in ipairs(tracks) do
+		if v.isPlaying then
+			love.graphics.ellipse("fill", (v.note)*10, 500, 10)
+		end
+	end
 end
+
+function love.mousepressed(x, y, button)
+	Mouse:pressed(x, y, button)
+	-- local v = Workspace.view:get(x,y)
+	-- v.color = {math.random(), math.random(), math.random()}
+end
+
+function love.mousereleased(x, y, button)
+	Mouse:released(x, y, button)
+end
+-- function love.textinput(t)
+--     print(t)
+-- end
 
 function love.keypressed( key, isrepeat )
 	if key == 'escape' then
@@ -105,6 +111,15 @@ function love.keypressed( key, isrepeat )
 
 end
 
+function love.resize(w, h)
+	width = w
+	height = h
+
+	-- canvas = love.graphics.newCanvas(width, height)
+
+	Workspace:resize(width,height)
+end
+
 function love.quit()
 	settings_handler.save(settings)
 	
@@ -112,6 +127,8 @@ function love.quit()
 end
 
 function render_wav()
+	love.mouse.setCursor( cursor_wait )
+
 	audiolib.pause()
 
 	-- sleep for a bit to make sure the audio thread is done
@@ -129,4 +146,6 @@ function render_wav()
 	end
 	wav.close()
 	audiolib.play()
+
+	love.mouse.setCursor( cursor_default )
 end

@@ -5,4 +5,5 @@ mod defs;
 mod ffi;
 mod instrument;
 mod math;
+mod param;
 mod render;

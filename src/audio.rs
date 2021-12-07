@@ -84,11 +84,13 @@ where
 
 	let mut paused = false;
 
-	let mut audiobuf: Vec<StereoSample> = vec![StereoSample { l: 0.0, r: 0.0 }; MAX_BUF_SIZE];
+	let mut audiobuf = [StereoSample { l: 0.0, r: 0.0 }; MAX_BUF_SIZE];
 
 	move |buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
 		assert_no_alloc(|| {
 			let buf_size = buffer.len() / 2;
+
+			// dbg!(buf_size);
 
 			assert!(buf_size <= MAX_BUF_SIZE);
 
@@ -116,13 +118,14 @@ where
 					// write to output buffer
 					render.process(&mut buf_slice);
 
+					// dunno if this assert helps
+					assert!(buffer.len() == buf_slice.len() * 2);
 					for (outsample, gensample) in buffer.chunks_exact_mut(2).zip(buf_slice.iter()) {
 						outsample[0] = cpal::Sample::from::<f32>(&gensample.l);
 						outsample[1] = cpal::Sample::from::<f32>(&gensample.r);
 					}
 				}
 				_ => {
-					paused = true;
 					stream_rx.pop_each(
 						|m| {
 							paused = m;
@@ -145,7 +148,6 @@ where
 			// 	100.0 * t.as_secs_f64() / ((buf_size as f64) / 44100.0)
 			// );
 			// println!("{:?}", t);
-			// dbg!(t);
 		});
 	}
 }

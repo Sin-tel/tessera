@@ -9,19 +9,19 @@
 [x] Lockfree messaging system
 [x] Dynamic buffer size
 [x] Simple settings text file
-[ ] Simple metering
 [x] Single instrument
 [+] Mixing channels
+[ ] Simple metering
 [ ] Monophonic instruments list
 [ ] Send parameters
 [ ] Port over a bunch of protoplug devices
-[ ] Instrument parameter list
 [x] Render to wav
-[ ] Poll settings
+[ ] Poll audio/midi settings
 [ ] Save project
+[ ] Simple audio flow (parallel), maybe upgrade to DAG later
+[ ] Autogenerate params
 [ ] Grouping mono instruments (e.g. string quartet)
 [ ] Polyphonic instruments (plucked, piano, etc)
-[ ] Simple audio flow (parallel), maybe upgrade to DAG later
 [ ] Spatial mixing (binaural panning, auto reverb)
 [ ] Automation
 [x] Support WASAPI

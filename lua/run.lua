@@ -55,21 +55,15 @@ function love.run()
 	 		if love.timer then love.timer.sleep(0.001) end
 	 	end
 
-		if accum >= 1/60 then
-			-- Call update and draw
-			
+		-- Call draw
+		if love.graphics and love.graphics.isActive() then
+			love.graphics.origin()
+			love.graphics.clear(love.graphics.getBackgroundColor())
+ 
+			if love.draw then love.draw() end
 
-
- 			
-			if love.graphics and love.graphics.isActive() then
-				love.graphics.origin()
-				love.graphics.clear(love.graphics.getBackgroundColor())
-	 
-				if love.draw then love.draw() end
-
-				-- print("present")
-				love.graphics.present()
-			end
+			-- print("present")
+			love.graphics.present()
 		end
  
 		

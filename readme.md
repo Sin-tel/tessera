@@ -1,10 +1,12 @@
 # Justidaw
 
+***Warning: this is in a very early stage of development.***
+
 Experimental DAW with a focus on microtonal composition, expressiveness and physical modelling.
 
 GUI parts are written in lua with [LÖVE](https://love2d.org/), the audio engine is in Rust.
 
-***This is in a very early stage of development.***
+
 
 ## How to build
 * Make sure you have installed [Rust](https://www.rust-lang.org/tools/install) and [cbindgen](https://github.com/eqrion/cbindgen).

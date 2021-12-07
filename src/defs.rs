@@ -23,7 +23,7 @@ pub enum AudioMessage {
 	CV(usize, CV),
 	NoteOn(usize, CV),
 	Add,
-	SetParam(usize, usize, f32),
+	SetParam(usize, usize, usize, f32),
 }
 
 #[derive(Debug)]

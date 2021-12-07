@@ -29,6 +29,8 @@ void send_CV(void *stream_ptr, size_t ch, float pitch, float vel);
 
 void send_noteOn(void *stream_ptr, size_t ch, float pitch, float vel);
 
+void send_param(void *stream_ptr, size_t ch_index, size_t device_index, size_t index, float value);
+
 void stream_free(void *stream_ptr);
 
 void *stream_new(const char *host_ptr, const char *device_ptr);

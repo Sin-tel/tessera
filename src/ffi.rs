@@ -1,8 +1,6 @@
 use std::ffi::{c_void, CStr};
 use std::os::raw::c_char;
 
-use rand::prelude::*;
-
 use std::sync::{Arc, Mutex};
 
 use ringbuf::{Consumer, Producer};
@@ -12,8 +10,6 @@ use crate::defs::*;
 use crate::render::*;
 
 // big struct that lua side holds ptr to
-// dead_code is allowed because compiler doesn't know lua holds it
-// #[allow(dead_code)]
 pub struct Userdata {
 	pub stream: cpal::Stream,
 	pub audio_tx: Producer<AudioMessage>,
@@ -56,6 +52,22 @@ pub extern "C" fn send_noteOn(stream_ptr: *mut c_void, ch: usize, pitch: f32, ve
 }
 
 #[no_mangle]
+pub extern "C" fn send_param(
+	stream_ptr: *mut c_void,
+	ch_index: usize,
+	device_index: usize,
+	index: usize,
+	value: f32,
+) {
+	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
+
+	send_message(
+		d,
+		AudioMessage::SetParam(ch_index, device_index, index, value),
+	);
+}
+
+#[no_mangle]
 pub extern "C" fn play(stream_ptr: *mut c_void) {
 	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
 
@@ -77,14 +89,15 @@ pub extern "C" fn add(stream_ptr: *mut c_void) {
 }
 
 #[inline]
-fn dither(rng: &mut ThreadRng) -> f64 {
+fn dither() -> f64 {
 	// Don't know if this is the correct scaling for dithering, but it sounds good
-	(rng.gen::<f64>() - rng.gen::<f64>()) / (2.0 * (i16::MAX as f64))
+	(fastrand::f64() - fastrand::f64()) / (2.0 * (i16::MAX as f64))
 }
 
 #[inline]
-fn convert_sample_wav(rng: &mut ThreadRng, x: f32) -> f64 {
-	let z = (x as f64) + dither(rng);
+fn convert_sample_wav(x: f32) -> f64 {
+	let z = ((x as f64) + dither()).clamp(-1.0, 1.0);
+
 	if z >= 0.0 {
 		z * (i16::MAX as f64)
 	} else {
@@ -99,8 +112,6 @@ pub extern "C" fn render_block(stream_ptr: *mut c_void) -> C_AudioBuffer {
 	// should never fail!
 	let mut render = d.m_render.lock().expect("Failed to get lock.");
 
-	let mut rng = thread_rng();
-
 	let len = 64;
 
 	// normal audio buffer
@@ -114,8 +125,8 @@ pub extern "C" fn render_block(stream_ptr: *mut c_void) -> C_AudioBuffer {
 
 	// interlace and convert to i16 as f64 (lua wants doubles anyway)
 	for (outsample, gensample) in caudiobuf.chunks_exact_mut(2).zip(audiobuf.iter()) {
-		outsample[0] = convert_sample_wav(&mut rng, gensample.l);
-		outsample[1] = convert_sample_wav(&mut rng, gensample.r);
+		outsample[0] = convert_sample_wav(gensample.l);
+		outsample[1] = convert_sample_wav(gensample.r);
 	}
 
 	// TODO: replace this by into_raw_parts() when it is in stable
