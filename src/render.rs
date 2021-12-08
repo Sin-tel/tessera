@@ -8,8 +8,8 @@ use crate::instrument::*;
 pub struct Render {
 	audio_rx: Consumer<AudioMessage>,
 	lua_tx: Producer<LuaMessage>,
-	instruments: Vec<Box<dyn InstrumentP + Send>>,
-	effects: Vec<Vec<Box<dyn EffectP + Send>>>,
+	instruments: Vec<Box<dyn Instrument + Send>>,
+	effects: Vec<Vec<Box<dyn Effect + Send>>>,
 	// buffer2: Vec<StereoSample>,
 	buffer2: [StereoSample; MAX_BUF_SIZE],
 	sample_rate: f32,

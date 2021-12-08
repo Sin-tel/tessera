@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::sync::{Arc, Mutex};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -13,7 +14,7 @@ use crate::defs::*;
 use crate::ffi::*;
 use crate::render::*;
 
-pub fn audio_run(host_name: &str, output_device_name: &str) -> Result<Userdata, anyhow::Error> {
+pub fn audio_run(host_name: &str, output_device_name: &str) -> Result<Userdata, Box<dyn Error>> {
 	let output_device = find_output_device(host_name, output_device_name)?;
 
 	let config = output_device.default_output_config()?;
@@ -43,14 +44,11 @@ pub fn build_stream<T: 'static>(device: &cpal::Device, config: &cpal::StreamConf
 where
 	T: cpal::Sample,
 {
-	let rb = RingBuffer::<AudioMessage>::new(256);
-	let (audio_tx, audio_rx) = rb.split();
+	let (audio_tx, audio_rx) = RingBuffer::<AudioMessage>::new(256).split();
 
-	let rb = RingBuffer::<bool>::new(8);
-	let (stream_tx, stream_rx) = rb.split();
+	let (stream_tx, stream_rx) = RingBuffer::<bool>::new(8).split();
 
-	let rb = RingBuffer::<LuaMessage>::new(256);
-	let (lua_tx, lua_rx) = rb.split();
+	let (lua_tx, lua_rx) = RingBuffer::<LuaMessage>::new(256).split();
 
 	let sample_rate = config.sample_rate.0 as f32;
 
@@ -155,7 +153,7 @@ where
 fn find_output_device(
 	host_name: &str,
 	output_device_name: &str,
-) -> Result<cpal::Device, anyhow::Error> {
+) -> Result<cpal::Device, Box<dyn Error>> {
 	let available_hosts = cpal::available_hosts();
 	println!("Available hosts:\n  {:?}", available_hosts);
 

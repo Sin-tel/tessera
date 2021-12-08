@@ -1,5 +1,4 @@
 // can autogen this
-
 use crate::instrument::sine::*;
 
 pub trait Param {
