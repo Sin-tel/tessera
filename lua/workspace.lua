@@ -103,12 +103,25 @@ function Box:draw()
 
 		love.graphics.setColor(Theme.background)
 		love.graphics.rectangle("fill", self.x, self.y, self.w, self.h)
+
+		-- love.graphics.setColor(White)
+		-- love.graphics.ellipse("fill", Mouse.x , Mouse.y , 10)
+		-- love.graphics.ellipse("fill", Mouse.x +self.x, Mouse.y + self.y, 10)
+
+		
 		love.graphics.setColor(Theme.header)
 		love.graphics.rectangle("fill", self.x, self.y, self.w, HEADER)
-		-- love.graphics.setColor(1.0,1.0,1.0)
-		love.graphics.ellipse("fill", Mouse.x +self.x, Mouse.y + self.y, 10)
-		love.graphics.setStencilTest()
 
+
+		local fh = love.graphics.getFont():getHeight()
+		local fo = 0.5*(HEADER - fh)
+		love.graphics.setColor(Theme.header_text)
+		love.graphics.print("The quick brown fox jumps over the lazy dog.", math.floor(self.x + fo), math.floor(self.y + fo))
+		love.graphics.print(string.format("%0.4f", 123456.55555555) .. " Ab+ G#-  Cx Dv E^ Fdd E", math.floor(self.x + fo + 500), math.floor(self.y + fo))
+
+
+
+		love.graphics.setStencilTest()
 		love.graphics.setColor(Theme.borders)
 		love.graphics.rectangle("line", 
 			self.x + BORDER_SIZE, self.y + BORDER_SIZE, 

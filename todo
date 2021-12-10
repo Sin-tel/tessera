@@ -10,7 +10,7 @@ Lua
 [+] GUI Windowing 
 [ ] Sliders
 [ ] Mouse edit state
-[ ] Color theme file
+[+] Color theme file
 [-] Send parameters
 [ ] Static piano roll setup
 [ ] Loop
@@ -21,6 +21,7 @@ Lua
 [ ] Fuzzy search command palette
 [ ] Autogenerate params
 [ ] Basic piano roll editing
+[ ] Undo
 [ ] Implement decorators (static or dynamic?)
 [ ] Implement envelopes
 [ ] Envelope types

@@ -10,6 +10,7 @@ require("mouse")
 require("views")
 require("workspace")
 Theme = require("theme")
+White = {1.0,1.0,1.0}
 
 io.stdout:setvbuf("no")
 
@@ -22,6 +23,13 @@ function love.load()
 	math.randomseed(os.time())
 	love.math.setRandomSeed(os.time())
 	settings = settings_handler.load()
+
+	-- font_main = love.graphics.newFont(12)
+	font_main = love.graphics.newFont("res/dejavu_normal.fnt", "res/dejavu_normal.png")
+	font_notes = love.graphics.newFont("res/dejavu_normal.fnt", "res/dejavu_normal.png")
+
+	love.graphics.setFont(font_main)
+
 	Workspace:load()
 	Workspace.box:split(0.7, true)
 	Workspace.box.children[2]:split(0.3, false)
