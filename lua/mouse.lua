@@ -43,6 +43,10 @@ function Mouse:update()
 			self.drag = true
 		end
 	end
+	if self.drag then
+		self.dx = self.ix - self.x
+		self.dy = self.iy - self.y
+	end
 
 	-- set cursor
 	Workspace:hover(self.x, self.y)
