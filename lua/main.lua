@@ -34,9 +34,9 @@ function love.load()
 
 	midi_in = midi.load(settings.midi.default_input)
 	
-	audiolib.add()
-	audiolib.add()
-	audiolib.add()
+	-- audiolib.add()
+	-- audiolib.add()
+	-- audiolib.add()
 
 	-- audiolib.send_noteOn(0, {49   , 0.2});
 	-- audiolib.send_noteOn(1, {49+4 , 0.2});
@@ -103,9 +103,11 @@ function love.keypressed( key, isrepeat )
 		render_wav()
 	elseif key == 'a' then
 		-- for i = 1, 20 do
-			numch = (numch or 1) + 1 
+			numch = (numch or 0) 
 			print("numch: " .. numch)
 			audiolib.add()
+			audiolib.send_noteOn(numch, {32 + numch*5  , 0.1/(numch+1)});
+			numch = numch + 1
 		-- end
 	end
 

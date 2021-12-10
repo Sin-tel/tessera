@@ -21,11 +21,12 @@ pub struct Userdata {
 #[no_mangle]
 pub extern "C" fn stream_new(host_ptr: *const c_char, device_ptr: *const c_char) -> *mut c_void {
 	let host_name = unsafe { CStr::from_ptr(host_ptr).to_str().unwrap() };
-	// dbg!(host_name);
 	let device_name = unsafe { CStr::from_ptr(device_ptr).to_str().unwrap() };
-	// dbg!(device_name);
 
-	Box::into_raw(Box::new(audio_run(host_name, device_name).unwrap())) as *mut c_void
+	match audio_run(host_name, device_name) {
+		Ok(ud) => Box::into_raw(Box::new(ud)) as *mut c_void,
+		Err(_) => std::ptr::null_mut() as *mut c_void,
+	}
 }
 
 #[no_mangle]
@@ -85,7 +86,10 @@ pub extern "C" fn pause(stream_ptr: *mut c_void) {
 pub extern "C" fn add(stream_ptr: *mut c_void) {
 	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
 
-	send_message(d, AudioMessage::Add);
+	// send_message(d, AudioMessage::Add);
+	let mut render = d.m_render.lock().expect("Failed to get lock.");
+
+	render.add();
 }
 
 #[inline]

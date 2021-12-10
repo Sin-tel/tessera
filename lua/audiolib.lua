@@ -24,9 +24,24 @@ function audiolib.load(host, device)
 	if stream_handle == nil then
 		host = host or "default"
 		device = device or "default"
-		stream_handle = ffi.gc(lib.stream_new(cstring(host), cstring(device)), lib.stream_free)
 
-		audiolib.paused = false
+		stream_handle = lib.stream_new(cstring(host), cstring(device))
+		
+		-- check for null ptr
+		if(stream_handle == nil) then 
+			print( "Stream setup failed!")
+			stream_handle = nil -- actually set it to nil instead of Cdata<NULL>
+			return
+		else
+			stream_handle = ffi.gc(stream_handle, lib.stream_free)
+			audiolib.paused = false
+		end
+
+		
+
+		
+
+		
 	else
 		print("Stream already running!")
 	end

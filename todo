@@ -3,23 +3,45 @@
  x implemented completely
 
 (roughly in order of importance)
-[x] ASIO support
+
+Lua
 [x] luajit host w love2d
+[x] Simple settings text file
+[+] GUI Windowing 
+[ ] Sliders
+[ ] Mouse edit state
+[ ] Color theme file
+[-] Send parameters
+[ ] Static piano roll setup
+[ ] Loop
+[ ] Actions + Tools
+[ ] Monophonic instruments list
+[ ] Layer/outliner view
+[ ] Save project
+[ ] Fuzzy search command palette
+[ ] Autogenerate params
+[ ] Basic piano roll editing
+[ ] Implement decorators (static or dynamic?)
+[ ] Implement envelopes
+[ ] Envelope types
+[ ] Harmonic coordinate logic
+[ ] Root translation
+[ ] Temperament projection mapping (precalculate LLL)
+[ ] Add font
+[ ] Render proper accidentals
+
+Rust
+[x] ASIO support
 [x] Midi input
 [x] Lockfree messaging system
 [x] Dynamic buffer size
-[x] Simple settings text file
 [x] Single instrument
-[+] Mixing channels
-[ ] Simple metering
-[ ] Monophonic instruments list
-[ ] Send parameters
-[ ] Port over a bunch of protoplug devices
 [x] Render to wav
+[+] Mixing channels
+[ ] Simple metering (cpu, dB meters, audio engine state)
 [ ] Poll audio/midi settings
-[ ] Save project
+[ ] Port over a bunch of protoplug devices
 [ ] Simple audio flow (parallel), maybe upgrade to DAG later
-[ ] Autogenerate params
 [ ] Grouping mono instruments (e.g. string quartet)
 [ ] Polyphonic instruments (plucked, piano, etc)
 [ ] Spatial mixing (binaural panning, auto reverb)

@@ -22,7 +22,7 @@ pub struct C_AudioBuffer {
 pub enum AudioMessage {
 	CV(usize, CV),
 	NoteOn(usize, CV),
-	Add,
+	// Add,
 	SetParam(usize, usize, usize, f32),
 }
 

@@ -1,4 +1,3 @@
-use assert_no_alloc::*;
 use ringbuf::{Consumer, Producer};
 
 use crate::defs::*;
@@ -41,11 +40,11 @@ impl Render {
 	}
 
 	pub fn add(&mut self) {
-		permit_alloc(|| {
-			let new = Sine::new(self.sample_rate);
-			self.instruments.push(Box::new(new));
-			self.effects.push(Vec::new());
-		});
+		// permit_alloc(|| {
+		let new = Sine::new(self.sample_rate);
+		self.instruments.push(Box::new(new));
+		self.effects.push(Vec::new());
+		// });
 
 		// arbitrary test value
 		self.send(LuaMessage::Test(42.0));
@@ -105,7 +104,8 @@ impl Render {
 					}
 				}
 
-				AudioMessage::Add => self.add(),
+				// _ => eprintln!("Didnt handle message!"),
+				// AudioMessage::Add => self.add(),
 			}
 		}
 	}

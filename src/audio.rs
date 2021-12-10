@@ -36,6 +36,8 @@ pub fn audio_run(host_name: &str, output_device_name: &str) -> Result<Userdata, 
 
 	userdata.stream.play()?;
 
+	// Err("Something wrong".into())
+
 	println!("Stream set up succesfully!");
 	Ok(userdata)
 }
@@ -101,7 +103,7 @@ where
 					if !start {
 						start = true;
 						fix_denorms();
-						render.add();
+						// render.add();
 					}
 
 					// parse all messages
