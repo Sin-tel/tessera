@@ -7,7 +7,7 @@ message parsing
 
 local ffi = require("ffi")
 
-local lib = ffi.load("./lib/RtMidi")
+local lib = ffi.load( love.filesystem.getSource( ) .. "/lib/RtMidi")
 
 ffi.cdef([[
 

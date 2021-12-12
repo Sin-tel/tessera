@@ -7,9 +7,11 @@ end
 
 local M = {}
 
+M.path = love.filesystem.getSource( )
+
 function M.load()
    local setup = nil
-   if file_exists("settings/setup.lua") then
+   if file_exists(M.path .."/settings/setup.lua") then
       setup = require("settings/setup")
    else
       setup = {}
@@ -27,7 +29,7 @@ function M.load()
 end
 
 function M.save(setup)
-   writefile("settings/setup", setup, "setup")
+   writefile(M.path .."/settings/setup", setup, "setup")
 end
 
 
