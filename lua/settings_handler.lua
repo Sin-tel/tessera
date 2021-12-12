@@ -23,7 +23,7 @@ function M.load()
    end
 
 
-   return settings
+   return setup
 end
 
 function M.save(setup)

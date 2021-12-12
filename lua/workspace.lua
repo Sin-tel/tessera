@@ -30,13 +30,15 @@ function Workspace:update()
 		self.dragDiv:set_split(Mouse.x,Mouse.y)
 	else
 		-- update
-		self.box:update()
-
+		self.box:forAll(function(b)
+			if b.view then b.view:update() end
+		end)
 	end
 	local div = self.dragDiv
 	if not Mouse.isDown then
 		div = div or self.box:getDivider()
 		self.box:forAll(function(b) b.focus = false end)
+		self.focus = nil
 	end
 	if div then
 		if div.vertical then
@@ -49,6 +51,7 @@ function Workspace:update()
 			b = self.box:get()
 			if b then
 				b.focus = true
+				self.focus = b.view
 			end
 		end
 	end
@@ -63,14 +66,16 @@ function Workspace:mousepressed()
 		end
 	end
 
-	if not div then
-		self.box:mousepressed()
+	if (not div) and self.focus then
+		self.focus:mousepressed()
 	end
 end
 
 function Workspace:mousereleased()
 	self.dragDiv = nil
-	self.box:mousereleased()
+	if self.focus then
+		self.focus:mousereleased()
+	end
 end
 
 Box = {}
@@ -90,33 +95,6 @@ end
 
 function Box:stencil()
 	love.graphics.rectangle("fill", self.x + BORDER_SIZE, self.y + BORDER_SIZE, self.w-(2*BORDER_SIZE), self.h-(2*BORDER_SIZE), BORDER_RADIUS)
-end
-
-function Box:update()
-	if self.children then
-		self.children[1]:update()
-		self.children[2]:update()
-	else
-		self.view:update()
-	end
-end
-
-function Box:mousepressed()
-	if self.children then
-		self.children[1]:mousepressed()
-		self.children[2]:mousepressed()
-	elseif self.focus then
-		self.view:mousepressed()
-	end
-end
-
-function Box:mousereleased()
-	if self.children then
-		self.children[1]:mousereleased()
-		self.children[2]:mousereleased()
-	elseif self.focus then
-		self.view:mousereleased()
-	end
 end
 
 function Box:forAll(f)

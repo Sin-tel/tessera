@@ -60,7 +60,7 @@ function ParameterView:mousepressed()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
-	if self.select then
+	if self.select and Mouse.button == 1 then
 		self.select:dragStart()
 
 		love.mouse.setRelativeMode( true )

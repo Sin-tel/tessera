@@ -87,6 +87,8 @@ pub extern "C" fn add(stream_ptr: *mut c_void) {
 	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
 
 	// send_message(d, AudioMessage::Add);
+
+	// Should never fail
 	let mut render = d.m_render.lock().expect("Failed to get lock.");
 
 	render.add();

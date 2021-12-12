@@ -117,13 +117,16 @@ end
 
 function love.mousepressed(x, y, button)
 	Mouse:pressed(x, y, button)
-	-- local v = Workspace.view:get(x,y)
-	-- v.color = {math.random(), math.random(), math.random()}
 end
 
 function love.mousereleased(x, y, button)
 	Mouse:released(x, y, button)
 end
+
+function love.wheelmoved( x, y )
+	print(x,y)
+end
+
 -- function love.textinput(t)
 --     print(t)
 -- end

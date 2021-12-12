@@ -7,12 +7,14 @@ local cstring = require("cstring")
 
 require("header")
 
-local lib_path = "../target/debug"
+
+-- should fix this
+local lib_path = love.filesystem.getSource( ) .. "/../target/debug"
 if release then
 	lib_path = "../target/release"
 end
 
-print(lib_path)
+-- print(lib_path)
 
 local lib = ffi.load(lib_path .. "/audiolib.dll")
 local stream_handle = nil
