@@ -78,6 +78,12 @@ function Workspace:mousereleased()
 	end
 end
 
+function Workspace:wheelmoved(y)
+	if self.focus then
+		self.focus:wheelmoved(y)
+	end
+end
+
 Box = {}
 
 function Box:new(x,y,w,h)

@@ -51,7 +51,7 @@ function love.load()
 
 	Workspace:load()
 	Workspace.box:split(0.7, true)
-	Workspace.box.children[2]:split(0.3, false)
+	Workspace.box.children[2]:split(0.7, false)
 
 	Workspace.box.children[1]:setView(DefaultView:new())
 	Workspace.box.children[2].children[2]:setView(PannerView:new())
@@ -124,7 +124,7 @@ function love.mousereleased(x, y, button)
 end
 
 function love.wheelmoved( x, y )
-	print(x,y)
+	Workspace:wheelmoved(y)
 end
 
 -- function love.textinput(t)

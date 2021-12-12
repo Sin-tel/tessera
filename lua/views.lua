@@ -25,23 +25,30 @@ function View:draw() end
 
 function View:drawFull()
 	local w, h = self.box.w, self.box.h
+
+	
+	
+	
+	love.graphics.push()
+		love.graphics.translate(BORDER_SIZE, HEADER + BORDER_SIZE)
+		self:draw()
+	love.graphics.pop()
+
 	love.graphics.setColor(Theme.header)
 	if self.box.focus then
 		love.graphics.setColor(Theme.header_focus)
 	end
 	love.graphics.rectangle("fill", 0, 0, w, HEADER)
-	
+
 	love.graphics.setFont(font_main)
 	love.graphics.setColor(Theme.ui_text)
 	drawText(self.name, 0, 0, w, HEADER, "left")
-	love.graphics.push()
-		love.graphics.translate(BORDER_SIZE, HEADER + BORDER_SIZE)
-		self:draw()
-	love.graphics.pop()
 end
 function View:mousepressed() end
 function View:mousereleased() end
 function View:update() end
+function View:wheelmoved() end
+
 
 function View:getDimensions()
 	return self.box.w - 2*BORDER_SIZE, self.box.h - HEADER - 2*BORDER_SIZE
