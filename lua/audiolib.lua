@@ -1,5 +1,6 @@
 -- wrapper around rust ffi
 -- respects GC bindings so theres no memory leaks
+-- should also handle nullpointers gracefully
 
 local ffi = require("ffi")
 local cstring = require("cstring")

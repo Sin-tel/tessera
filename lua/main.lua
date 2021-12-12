@@ -6,7 +6,13 @@ local audiolib = require("audiolib")
 local wav = require("lib/wav_save")
 local midi = require("midi")
 
+if not release then
+	lurker = require("lib/lurker")
+end
+
+require("util")
 require("mouse")
+require("ui")
 require("views")
 require("workspace")
 Theme = require("theme")
@@ -23,23 +29,37 @@ function love.load()
 	math.randomseed(os.time())
 	love.math.setRandomSeed(os.time())
 	settings = settings_handler.load()
+	Mouse:load()
 
 	-- font_main = love.graphics.newFont(12)
 	font_main = love.graphics.newFont("res/dejavu_normal.fnt", "res/dejavu_normal.png")
-	font_notes = love.graphics.newFont("res/dejavu_normal.fnt", "res/dejavu_normal.png")
+	font_notes = love.graphics.newImageFont("res/font_notes.png",
+		" ABCDEFGHIJKLMNOPQRSTUVWXYZ"..
+		"0123456789.+-/"..
+		"qwerty".. --flats/sharps  b#
+		"asdfgh" .. -- pluses minuses  +-
+		"zxcvbn" .. -- septimals L7
+		"iopjkl" .. -- quarternotes / undecimals  dt
+		"{[()]}" .. -- ups/downs  v^
+		"!@#$&*"    -- arrows   ??
+		,-1)
 
 	love.graphics.setFont(font_main)
 
 	Workspace:load()
 	Workspace.box:split(0.7, true)
 	Workspace.box.children[2]:split(0.3, false)
-	-- Workspace.box.children[2]:split(0.5, false)
-	-- Workspace.box.children[2].children[1]:split(0.5, true)
 
-	-- Workspace.box.children[1].children[2]:split(0.4, true)
-	-- Workspace.box.children[1].children[2].children[1]:split(0.4, false)
+	Workspace.box.children[1]:setView(DefaultView:new())
+	Workspace.box.children[2].children[2]:setView(PannerView:new())
+	Workspace.box.children[2].children[1]:setView(TestView:new())
 
-	audiolib.load(settings.audio.default_host, settings.audio.default_device)
+
+	-- Workspace.box.children[1].view = PannerView
+	-- Workspace.box.children[2].children[2].view = PannerView
+	-- Workspace.box.children[2].children[1].view = PannerView
+
+	-- audiolib.load(settings.audio.default_host, settings.audio.default_device)
 	-- audiolib.load("wasapi") 
 
 	-- midi_in = midi.load(settings.midi.default_input)
@@ -52,8 +72,6 @@ function love.load()
 	-- audiolib.send_noteOn(1, {49+4 , 0.2});
 	-- audiolib.send_noteOn(2, {49+7 , 0.2});
 	-- audiolib.send_noteOn(3, {49+14, 0.2});
-
-	DefaultView:test() 
 end
 
 
@@ -67,11 +85,17 @@ end
 
 function love.draw()
 	----update--------
+	if not release then
+		lurker.update()
+	end
 
 	Mouse:update()
 	Workspace:update()
 
+
+	Mouse:updateCursor()
 	----draw----------
+	love.graphics.clear()
 	love.graphics.setColor(Theme.borders)
 	love.graphics.rectangle("fill", 0,0, width, height)
 

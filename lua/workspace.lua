@@ -11,15 +11,6 @@ function Workspace:load()
 	self.w = width
 	self.h = height
 	self.box = Box:new(0, RIBBON, width, height - RIBBON)
-
-	cursor_default = love.mouse.getSystemCursor("arrow")
-	cursor_v = love.mouse.getSystemCursor("sizewe")
-	cursor_h = love.mouse.getSystemCursor("sizens")
-	cursor_size = love.mouse.getSystemCursor("sizeall")
-	cursor_hand = love.mouse.getSystemCursor("hand")
-	cursor_cross = love.mouse.getSystemCursor("crosshair")
-	cursor_wait = love.mouse.getSystemCursor("wait")
-	cursor_ibeam = love.mouse.getSystemCursor("ibeam")
 end
 
 function Workspace:resize(w,h) 
@@ -35,40 +26,51 @@ function Workspace:draw()
 end
 
 function Workspace:update()
-	if Mouse.drag and self.dragDiv then
-		-- print("aaaaa")
+	if self.dragDiv and Mouse.drag then
 		self.dragDiv:set_split(Mouse.x,Mouse.y)
-		-- self.dragDiv.r = self.dragDiv.r + 0.01
+	else
+		-- update
+		self.box:update()
 
-
-		-- self.dragDiv:resize()
+	end
+	local div = self.dragDiv
+	if not Mouse.isDown then
+		div = div or self.box:getDivider()
+		self.box:forAll(function(b) b.focus = false end)
+	end
+	if div then
+		if div.vertical then
+			Mouse.cursor = cursor_v
+		else
+			Mouse.cursor = cursor_h
+		end
+	else
+		if not Mouse.isDown then
+			b = self.box:get()
+			if b then
+				b.focus = true
+			end
+		end
 	end
 end
 
 function Workspace:mousepressed()
-	local div = self.box:get_divider(Mouse.x, Mouse.y)
-	if div then
-		self.dragDiv = div
+	local div = false
+	if Mouse.button == 1 then
+		div = self.box:getDivider(Mouse.x, Mouse.y)
+		if div then
+			self.dragDiv = div
+		end
+	end
+
+	if not div then
+		self.box:mousepressed()
 	end
 end
 
 function Workspace:mousereleased()
-
 	self.dragDiv = nil
-end
-
-function Workspace:hover()
-	-- cursor should only be set once!
-	local div = self.dragDiv or self.box:get_divider()
-	if div then
-		if div.vertical then
-			love.mouse.setCursor( cursor_v )
-		else
-			love.mouse.setCursor( cursor_h )
-		end
-	else
-		love.mouse.setCursor( cursor_default )
-	end
+	self.box:mousereleased()
 end
 
 Box = {}
@@ -83,13 +85,46 @@ function Box:new(x,y,w,h)
 	new.w = w or width
 	new.h = h or height
 
-	-- new.color = {math.random(), math.random(), math.random()}
-	
 	return new	
 end
 
 function Box:stencil()
 	love.graphics.rectangle("fill", self.x + BORDER_SIZE, self.y + BORDER_SIZE, self.w-(2*BORDER_SIZE), self.h-(2*BORDER_SIZE), BORDER_RADIUS)
+end
+
+function Box:update()
+	if self.children then
+		self.children[1]:update()
+		self.children[2]:update()
+	else
+		self.view:update()
+	end
+end
+
+function Box:mousepressed()
+	if self.children then
+		self.children[1]:mousepressed()
+		self.children[2]:mousepressed()
+	elseif self.focus then
+		self.view:mousepressed()
+	end
+end
+
+function Box:mousereleased()
+	if self.children then
+		self.children[1]:mousereleased()
+		self.children[2]:mousereleased()
+	elseif self.focus then
+		self.view:mousereleased()
+	end
+end
+
+function Box:forAll(f)
+	f(self)
+	if self.children then
+		self.children[1]:forAll(f)
+		self.children[2]:forAll(f)
+	end
 end
 
 function Box:draw()
@@ -98,28 +133,16 @@ function Box:draw()
 			v:draw()
 		end
 	else
-		love.graphics.stencil( function() self:stencil() end, "replace", 1 )
-		love.graphics.setStencilTest("greater", 0)
+		love.graphics.stencil( function() self:stencil() end, "replace", 2, true )
+		love.graphics.setStencilTest("greater", 1)
 
 		love.graphics.setColor(Theme.background)
 		love.graphics.rectangle("fill", self.x, self.y, self.w, self.h)
 
-		-- love.graphics.setColor(White)
-		-- love.graphics.ellipse("fill", Mouse.x , Mouse.y , 10)
-		-- love.graphics.ellipse("fill", Mouse.x +self.x, Mouse.y + self.y, 10)
-
-		
-		love.graphics.setColor(Theme.header)
-		love.graphics.rectangle("fill", self.x, self.y, self.w, HEADER)
-
-
-		local fh = love.graphics.getFont():getHeight()
-		local fo = 0.5*(HEADER - fh)
-		love.graphics.setColor(Theme.header_text)
-		love.graphics.print("The quick brown fox jumps over the lazy dog.", math.floor(self.x + fo), math.floor(self.y + fo))
-		love.graphics.print(string.format("%0.4f", 123456.55555555) .. " Ab+ G#-  Cx Dv E^ Fdd E", math.floor(self.x + fo + 500), math.floor(self.y + fo))
-
-
+		love.graphics.push()
+			love.graphics.translate(self.x, self.y)
+			self.view:drawFull()
+		love.graphics.pop()
 
 		love.graphics.setStencilTest()
 		love.graphics.setColor(Theme.borders)
@@ -131,7 +154,7 @@ function Box:draw()
 	
 end
 
-function Box:get_divider()
+function Box:getDivider()
 	local mx = Mouse.x - self.x
 	local my = Mouse.y - self.y
 	if mx < 0 or my < 0 or mx > self.w or my > self.h then
@@ -142,18 +165,18 @@ function Box:get_divider()
 			if math.abs(self.r - mx) < RESIZE_W then
 				return self
 			else
-				local d1 = self.children[1]:get_divider()
+				local d1 = self.children[1]:getDivider()
 				if d1 then return d1 end
-				local d2 = self.children[2]:get_divider() 
+				local d2 = self.children[2]:getDivider() 
 				if d2 then return d2 end
 			end
 		else
 			if math.abs(self.r - my) < RESIZE_W then
 				return self
 			else
-				local d1 = self.children[1]:get_divider() 
+				local d1 = self.children[1]:getDivider() 
 				if d1 then return d1 end
-				local d2 = self.children[2]:get_divider()
+				local d2 = self.children[2]:getDivider()
 				if d2 then return d2 end
 			end
 		end
@@ -161,20 +184,22 @@ function Box:get_divider()
 	return false
 end
 
-function Box:get(mx, my)
+function Box:get()
+	local mx = Mouse.x - self.x
+	local my = Mouse.y - self.y
 	if mx < 0 or my < 0 or mx > self.w or my > self.h then
 		return false
 	end
 	if self.children then
 		if self.vertical then
-			local d1 = self.children[1]:get(mx, my)
+			local d1 = self.children[1]:get()
 			if d1 then return d1 end
-			local d2 = self.children[2]:get(mx - self.r, my) 
+			local d2 = self.children[2]:get()
 			if d2 then return d2 end
 		else
-			local d1 = self.children[1]:get(mx, my) 
+			local d1 = self.children[1]:get()
 			if d1 then return d1 end
-			local d2 = self.children[2]:get(mx, my - self.r) 
+			local d2 = self.children[2]:get()
 			if d2 then return d2 end
 		end
 	end
@@ -320,4 +345,9 @@ function Box:resize(x,y,w,h)
 
 		self:set_split(self.x + self.r, self.y + self.r)
 	end
+end
+
+function Box:setView(view)
+	self.view = view
+	view.box = self
 end
