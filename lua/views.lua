@@ -67,7 +67,7 @@ function View:new()
 	new.y = {}
 	for i = 1,5 do
 		table.insert(new.sliders,  Slider:new("more sliders!"))
-		table.insert(new.y,  UI_GRID*i)
+		table.insert(new.y,  i)
 	end
 	new.sliders[1].name = "a slider"
 	new.sliders[2].name = "another slider"
@@ -88,7 +88,7 @@ function TestView:update()
 		local mx, my = self:getMouse()
 
 		if self.action == "slider" then
-			Mouse.cursor = nil
+			-- Mouse.cursor = nil
 			if Mouse.drag then
 				self.select:drag(w)
 			end
@@ -114,9 +114,13 @@ function TestView:update()
 end
 
 function TestView:mousepressed()
+	local w, h = self:getDimensions()
+	local mx, my = self:getMouse()
 
 	if self.select then
 		self.select:dragStart()
+
+		love.mouse.setRelativeMode( true )
 		self.action = "slider"
 	end
 end
@@ -128,8 +132,10 @@ function TestView:mousereleased()
 	if self.action == "slider" then
 		local s = self.select:getPosition(w)
 
-		love.mouse.setPosition(self.box.x + s, self.box.y + self.y[self.select_i] + HEADER + 0.5*UI_GRID)
-
+		love.mouse.setRelativeMode(false)
+		if Mouse.drag then
+			love.mouse.setPosition(self.box.x + s, self.box.y + self.y[self.select_i]*UI_GRID + HEADER + 0.5*UI_GRID)
+		end
 	end
 	self.action = nil
 end
@@ -142,8 +148,21 @@ function TestView:draw()
 	drawText("> Properties", 0, 0, w, UI_GRID, "left")
 
 
+	love.graphics.setColor(Theme.header)
+	love.graphics.line(0, UI_GRID, w, UI_GRID)
+	love.graphics.line(0, UI_GRID*2, w, UI_GRID*2)
+	love.graphics.line(0, UI_GRID*3, w, UI_GRID*3)
+
 	for i,v in ipairs(self.sliders) do
-		v:draw(self.y[i], w, v == self.select)
+		local mode = false
+		if  v == self.select then
+			if self.action == "slider" then
+				mode = "press"
+			else
+				mode = "hover"
+			end
+		end
+		v:draw(self.y[i]*UI_GRID, w, mode)
 	end
 end
 

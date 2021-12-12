@@ -45,6 +45,8 @@ function Mouse:pressed(x, y, button)
 	if not self.button then -- ignore buttons while other is pressed
 		self.ix = x
 		self.iy = y
+		self.dx = 0
+		self.dy = 0
 		self.drag = false
 		self.button = button
 
@@ -73,18 +75,22 @@ function Mouse:released(x, y, button)
 	end
 end
 
-function Mouse:update()
+function Mouse:update(x, y)
 	self.x, self.y = love.mouse.getPosition()
+	self.x = x or self.x
+	self.y = y or self.y
 
 	if self.button then
 		if math.sqrt((self.x - self.ix)^2 + (self.y - self.iy)^2) > DRAG_DIST then
 			self.drag = true
 		end
 	end
-	if self.drag then
-		self.dx = self.x - self.ix
-		self.dy = self.y - self.iy
-	end
+
+	-- print(self.dx, self.dy)
+	-- if self.drag then
+		-- self.dx = self.x - self.ix
+		-- self.dy = self.y - self.iy
+	-- end
 
 	self.cursor = cursor_default
 end
@@ -96,4 +102,15 @@ function Mouse:updateCursor()
 	else
 		love.mouse.setVisible(false)
 	end
+end
+
+function love.mousemoved( x, y, dx, dy, istouch )
+	if love.keyboard.isDown("lshift") then
+		Mouse.dx = Mouse.dx + 0.1*dx
+		Mouse.dy = Mouse.dy + 0.1*dy
+	else
+		Mouse.dx = Mouse.dx + dx
+		Mouse.dy = Mouse.dy + dy
+	end
+		
 end

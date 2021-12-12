@@ -9,10 +9,14 @@ Lua
 [x] Simple settings text file
 [x] GUI Windowing 
 [x] Sliders
-[+] Color theme file
+[x] Color theme file
+[ ] Panner view
+[ ] Scrolling
+[ ] Test pad view
+[ ] Parameter view
 [-] Send parameters
+[ ] Type value in slider
 [ ] Layer/outliner view
-[ ] Test pad
 [ ] Static piano roll setup
 [ ] Loop
 [ ] Tools
@@ -21,7 +25,7 @@ Lua
 [ ] Autogenerate params
 [ ] Basic piano roll editing
 [ ] Undo
-[ ] Implement decorators (static or dynamic?)
+[ ] Implement decorators
 [ ] Implement envelopes
 [ ] Envelope types
 [ ] Harmonic coordinate logic
@@ -39,6 +43,7 @@ Rust
 [x] Single instrument
 [x] Render to wav
 [+] Mixing channels
+[ ] volume / panning
 [ ] Simple metering (cpu, dB meters, audio engine state)
 [ ] Poll audio/midi settings
 [ ] Port over a bunch of protoplug devices

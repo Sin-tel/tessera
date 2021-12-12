@@ -1,10 +1,10 @@
 Slider = {}
 
 UI_GRID = 28
-SLIDER_HEIGHT = 19
+SLIDER_HEIGHT = 18
 SLIDER_RADIUS = 6
 SLIDER_TEXT_PAD = 150
-SLIDER_OFFSET = 4
+SLIDER_OFFSET = 8
 
 function Slider:new(name)
 	local new = {}
@@ -31,7 +31,7 @@ function Slider:getPad(w)
 	return pad
 end
 
-function Slider:draw(y, w, hover)
+function Slider:draw(y, w, mode)
 
 	local pad = Slider:getPad(w)
 	local xs = pad
@@ -41,8 +41,10 @@ function Slider:draw(y, w, hover)
 	love.graphics.stencil( function() self:stencil(xs, ys, ws, SLIDER_HEIGHT) end, "increment", 1 , true )
 	love.graphics.setStencilTest("greater", 2)
 
-	if hover then
+	if mode == "hover" then
 		love.graphics.setColor(Theme.slider_hover)
+	elseif mode == "press" then
+		love.graphics.setColor(Theme.slider_press)
 	else
 		love.graphics.setColor(Theme.slider_bg)
 	end
@@ -65,16 +67,12 @@ function Slider:dragStart()
 end
 
 function Slider:drag(w)
-	-- local pad = self:getPad(w)
-	-- local ws = (w-pad)-SLIDER_OFFSET
-	-- local scale = 1/ws
-	scale = 0.002
+	local pad = self:getPad(w)
+	local ws = (w-pad)-SLIDER_OFFSET
+	local scale = 0.7/ws
+	-- scale = 0.002
 
-	if love.keyboard.isDown("lshift") then
-		self.v = clamp(self.pv + 0.1*scale*Mouse.dx, 0, 1)
-	else
-		self.v = clamp(self.pv + scale*Mouse.dx, 0, 1)		
-	end
+	self.v = clamp(self.pv + scale*Mouse.dx, 0, 1)		
 end
 
 function Slider:getPosition(w)
