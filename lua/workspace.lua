@@ -28,12 +28,12 @@ end
 function Workspace:update()
 	if self.dragDiv and Mouse.drag then
 		self.dragDiv:set_split(Mouse.x,Mouse.y)
-	else
-		-- update
-		self.box:forAll(function(b)
-			if b.view then b.view:update() end
-		end)
 	end
+	-- update
+	self.box:forAll(function(b)
+		if b.view then b.view:update() end
+	end)
+	
 	local div = self.dragDiv
 	if not Mouse.isDown then
 		div = div or self.box:getDivider()

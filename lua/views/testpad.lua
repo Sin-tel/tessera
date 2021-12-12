@@ -1,0 +1,1 @@
+TestPadView =  View:derive("TestPad")

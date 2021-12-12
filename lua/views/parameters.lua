@@ -25,14 +25,14 @@ end
 function Group:draw(y,w,selected)
 	y0 = UI_GRID*y
 
-	local str = self.name
-	if self.collapse then
-		str = "> " .. str		
-	else
-		str = "V " .. str
-	end
+	local s = 32
 	love.graphics.setColor(Theme.ui_text)
-	drawText(str, 0, y0, w, UI_GRID, "left")
+	if self.collapse then
+		drawText(">", 0, y0, s, UI_GRID, "left")
+	else
+		drawText("V", 0, y0, s, UI_GRID, "left")
+	end
+	drawText("    " .. self.name, 0, y0, w - s, UI_GRID, "left")
 
 	if not self.collapse then
 
@@ -84,11 +84,13 @@ function ParameterView:update()
 	local mx, my = self:getMouse()
 
 	self.scroll = self.scroll + (self.scroll_ - self.scroll)*0.5
+	self.scroll = clamp(self.scroll, 0, self:getMaxScroll())
+	self.scroll_ = clamp(self.scroll_, 0, self:getMaxScroll())
+
+
 	if math.abs(self.scroll - self.scroll_) < 2 then
 		self.scroll = self.scroll_
 	end
-
-	self.scroll = clamp(self.scroll, 0, self:getMaxScroll())
 	
 
 	if self.box.focus then
@@ -171,21 +173,12 @@ function ParameterView:draw()
 		group:draw(y,w,self.select)
 		y = y + group:getLength()
 	end
-
-
-
-	-- love.graphics.setColor(Theme.header)
-	-- love.graphics.line(0, UI_GRID, w, UI_GRID)
-	-- love.graphics.line(0, UI_GRID*2, w, UI_GRID*2)
-	-- love.graphics.line(0, UI_GRID*3, w, UI_GRID*3)
-
-
 end
 
 function ParameterView:wheelmoved(y)
 	self.scroll_ = math.floor(self.scroll - y*1.5*UI_GRID)
 
-	self.scroll_ = clamp(self.scroll_, 0, self:getMaxScroll())
+	
 end
 
 function ParameterView:getMaxScroll()
