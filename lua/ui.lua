@@ -6,13 +6,12 @@ SLIDER_RADIUS = 6
 SLIDER_TEXT_PAD = 150
 SLIDER_OFFSET = 8
 
-function Slider:new(name)
+function Slider:new(p)
 	local new = {}
 	setmetatable(new,self)
 	self.__index = self
-
-	new.v = math.random()
-	new.name = name or "Value"
+	
+	new.p = p
 
 	return new	
 end
@@ -38,6 +37,8 @@ function Slider:draw(y, w, mode)
 	local ys = y + 0.5*(UI_GRID - SLIDER_HEIGHT)
 	local ws = (w-pad)-SLIDER_OFFSET
 
+	local v = self.p:getNormalized()
+
 	love.graphics.stencil( function() self:stencil(xs, ys, ws, SLIDER_HEIGHT) end, "increment", 1 , true )
 	love.graphics.setStencilTest("greater", 2)
 
@@ -50,7 +51,12 @@ function Slider:draw(y, w, mode)
 	end
 	love.graphics.rectangle("fill", xs, ys, ws, SLIDER_HEIGHT)
 	love.graphics.setColor(Theme.slider)
-	love.graphics.rectangle("fill", xs, ys, ws*self.v, SLIDER_HEIGHT)
+	if self.p.centered then
+		love.graphics.rectangle("fill", xs+ws*0.5, ys, ws*(v-0.5), SLIDER_HEIGHT)
+		-- love.graphics.rectangle("line", xs+ws*0.5, ys, ws*(v-0.5), SLIDER_HEIGHT)
+	else
+		love.graphics.rectangle("fill", xs, ys, ws*v, SLIDER_HEIGHT)
+	end
 
 	love.graphics.setStencilTest("greater", 1)
 
@@ -58,12 +64,16 @@ function Slider:draw(y, w, mode)
 	love.graphics.rectangle("line", xs, ys, ws, SLIDER_HEIGHT, SLIDER_RADIUS)
 
 	love.graphics.setColor(Theme.ui_text)
-	drawText(self.name, 0, y, xs, UI_GRID, "right")
-	drawText(string.format("%0.3f", self.v), xs, y-1, ws, UI_GRID, "center")
+	drawText(self.p.name, 0, y, xs, UI_GRID, "right")
+	drawText(self.p:getDisplay(), xs, y-1, ws, UI_GRID, "center")
 end
 
 function Slider:dragStart()
-	self.pv = self.v
+	self.pv = self.p:getNormalized()
+end
+
+function Slider:reset()
+	self.p:reset()
 end
 
 function Slider:drag(w)
@@ -72,7 +82,8 @@ function Slider:drag(w)
 	local scale = 0.7/ws
 	-- scale = 0.002
 
-	self.v = clamp(self.pv + scale*Mouse.dx, 0, 1)		
+	local v = clamp(self.pv + scale*Mouse.dx, 0, 1)		
+	self.p:setNormalized(v)
 end
 
 function Slider:getPosition(w)
@@ -80,5 +91,5 @@ function Slider:getPosition(w)
 	local xs = pad
 	local ws = (w-pad)-SLIDER_OFFSET
 
-	return xs + ws*self.v
+	return xs + ws*self.p:getNormalized()
 end

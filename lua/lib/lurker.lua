@@ -113,6 +113,8 @@ function lurker.onerror(e, nostacktrace)
   local setgrab = love.mouse.setGrab or love.mouse.setGrabbed
   setgrab(false)
 
+  love.mouse.setRelativeMode( false )
+
   -- Set up callbacks
   for _, v in pairs(lovecallbacknames) do
     love[v] = function() end

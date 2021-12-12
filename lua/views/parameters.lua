@@ -11,13 +11,9 @@ function Group:new(name)
 	new.name = name
 	new.collapse = false
 	new.sliders = {}
-	new.y = {}
-	for i = 1,5 do
-		table.insert(new.sliders,  Slider:new("more sliders!"))
-		table.insert(new.y,  i)
-	end
-	new.sliders[1].name = "a slider"
-	new.sliders[2].name = "another slider"
+
+	new.sliders[1] = Slider:new(gainp)
+	new.sliders[2] = Slider:new(panp)
 
 	return new
 end
@@ -37,7 +33,7 @@ function Group:draw(y,w,selected)
 	if not self.collapse then
 
 		love.graphics.setColor(Theme.bg_nested)
-		love.graphics.rectangle("fill", 0, y0+UI_GRID, w, (self.y[#self.y])*UI_GRID)
+		love.graphics.rectangle("fill", 0, y0+UI_GRID, w, (#self.sliders)*UI_GRID)
 
 		for i,v in ipairs(self.sliders) do
 			local mode = false
@@ -48,16 +44,17 @@ function Group:draw(y,w,selected)
 					mode = "hover"
 				end
 			end
-			v:draw(y0 + self.y[i]*UI_GRID, w, mode)
+			v:draw(y0 + i*UI_GRID, w, mode)
 		end
 	end
 end
+
 
 function Group:getLength()
 	if self.collapse then
 		return 1
 	end
-	return #self.y + 1
+	return #self.sliders + 1
 end
 
 function ParameterView:new()
@@ -147,6 +144,10 @@ function ParameterView:mousepressed()
 				index = index - v:getLength()
 			end
 		end
+	elseif Mouse.button == 2 then
+		if self.select then
+			self.select:reset()
+		end
 	end
 end
 
@@ -177,8 +178,6 @@ end
 
 function ParameterView:wheelmoved(y)
 	self.scroll_ = math.floor(self.scroll - y*1.5*UI_GRID)
-
-	
 end
 
 function ParameterView:getMaxScroll()

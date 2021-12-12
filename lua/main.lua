@@ -15,6 +15,7 @@ require("mouse")
 require("ui")
 require("views")
 require("workspace")
+require("parameter")
 
 -- load color theme
 require("settings/theme")
@@ -25,8 +26,24 @@ io.stdout:setvbuf("no")
 
 width, height = love.graphics.getDimensions( )
 
+audio_status = "wait"
 
-blocks = {}
+function audioSetup()
+	-- audiolib.load(settings.audio.default_host, settings.audio.default_device)
+	-- audiolib.load("wasapi") 
+
+	-- midi_in = midi.load(settings.midi.default_input)
+	
+	audiolib.add()
+	-- audiolib.add()
+	-- audiolib.add()
+
+	audiolib.send_noteOn(0, {49   , 0.2});
+	-- audiolib.send_noteOn(1, {49+4 , 0.2});
+	-- audiolib.send_noteOn(2, {49+7 , 0.2});
+	-- audiolib.send_noteOn(3, {49+14, 0.2});
+	audio_status = "done"
+end
 
 function love.load()
 	math.randomseed(os.time())
@@ -49,6 +66,9 @@ function love.load()
 
 	love.graphics.setFont(font_main)
 
+	gainp = Parameter:new("gain", {default = 0,  t = "dB"})
+	panp = Parameter:new("pan", {default = 0, min = -1,max = 1, centered = true})
+
 	Workspace:load()
 	Workspace.box:split(0.7, true)
 	Workspace.box.children[2]:split(0.7, false)
@@ -57,24 +77,7 @@ function love.load()
 	Workspace.box.children[2].children[2]:setView(PannerView:new())
 	Workspace.box.children[2].children[1]:setView(ParameterView:new())
 
-
-	-- Workspace.box.children[1].view = PannerView
-	-- Workspace.box.children[2].children[2].view = PannerView
-	-- Workspace.box.children[2].children[1].view = PannerView
-
-	-- audiolib.load(settings.audio.default_host, settings.audio.default_device)
-	-- audiolib.load("wasapi") 
-
-	-- midi_in = midi.load(settings.midi.default_input)
 	
-	-- audiolib.add()
-	-- audiolib.add()
-	-- audiolib.add()
-
-	-- audiolib.send_noteOn(0, {49   , 0.2});
-	-- audiolib.send_noteOn(1, {49+4 , 0.2});
-	-- audiolib.send_noteOn(2, {49+7 , 0.2});
-	-- audiolib.send_noteOn(3, {49+14, 0.2});
 end
 
 
@@ -88,6 +91,11 @@ end
 
 function love.draw()
 	----update--------
+	if audio_status == "request" then
+		audioSetup()
+	elseif audio_status == "wait" then
+		audio_status = "request"
+	end
 	if not release then
 		lurker.update()
 	end

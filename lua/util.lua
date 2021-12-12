@@ -18,6 +18,18 @@ function to_dB(x)
 	return 20.0 * math.log10(x)
 end
 
+-- 12 or 18 is good
+local curve_param = -18/math.log(0.5)
+print(curve_param)
+
+function curve_dB(x, max)
+	return from_dB(curve_param*math.log(x) + (max or 0))
+end
+
+function curve_dB_inv(x, max)
+	return math.exp((to_dB(x) - (max or 0))/curve_param)
+end
+
 function deepcopy(orig, copies)
 	copies = copies or {}
 	local orig_type = type(orig)
