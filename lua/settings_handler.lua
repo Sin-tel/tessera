@@ -8,25 +8,26 @@ end
 local M = {}
 
 function M.load()
-   local settings = nil
-   if file_exists("./settings.lua") then
-      settings = require("./settings")
+   local setup = nil
+   if file_exists("settings/setup.lua") then
+      setup = require("settings/setup")
    else
-      settings = {}
-      settings.audio = {}
-      settings.audio.default_host = "default"
-      settings.audio.default_device = "default"
-      settings.midi = {}
-      settings.midi.default_input = "default"
+      setup = {}
+      setup.audio = {}
+      setup.audio.default_host = "default"
+      setup.audio.default_device = "default"
+      setup.midi = {}
+      setup.midi.default_input = "default"
       
-      M.save(settings)
+      M.save(setup)
    end
+
 
    return settings
 end
 
-function M.save(settings)
-   writefile("./settings", settings, "settings")
+function M.save(setup)
+   writefile("settings/setup", setup, "setup")
 end
 
 

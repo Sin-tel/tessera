@@ -15,8 +15,11 @@ require("mouse")
 require("ui")
 require("views")
 require("workspace")
-Theme = require("theme")
+
+-- load color theme
+require("settings/theme")
 White = {1.0,1.0,1.0}
+
 
 io.stdout:setvbuf("no")
 
@@ -52,7 +55,7 @@ function love.load()
 
 	Workspace.box.children[1]:setView(DefaultView:new())
 	Workspace.box.children[2].children[2]:setView(PannerView:new())
-	Workspace.box.children[2].children[1]:setView(TestView:new())
+	Workspace.box.children[2].children[1]:setView(ParameterView:new())
 
 
 	-- Workspace.box.children[1].view = PannerView
