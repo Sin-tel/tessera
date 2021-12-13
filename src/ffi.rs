@@ -53,6 +53,13 @@ pub extern "C" fn send_noteOn(stream_ptr: *mut c_void, ch: usize, pitch: f32, ve
 }
 
 #[no_mangle]
+pub extern "C" fn send_pan(stream_ptr: *mut c_void, ch: usize, gain: f32, pan: f32) {
+	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
+
+	send_message(d, AudioMessage::Pan(ch, gain, pan));
+}
+
+#[no_mangle]
 pub extern "C" fn send_param(
 	stream_ptr: *mut c_void,
 	ch_index: usize,

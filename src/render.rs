@@ -3,11 +3,17 @@ use ringbuf::{Consumer, Producer};
 use crate::defs::*;
 use crate::instrument::sine::*;
 use crate::instrument::*;
+use crate::pan::*;
+
+pub struct Channel {
+	pub instrument: Box<dyn Instrument + Send>,
+	pub pan: Pan,
+}
 
 pub struct Render {
 	audio_rx: Consumer<AudioMessage>,
 	lua_tx: Producer<LuaMessage>,
-	instruments: Vec<Box<dyn Instrument + Send>>,
+	channels: Vec<Channel>,
 	effects: Vec<Vec<Box<dyn Effect + Send>>>,
 	// buffer2: Vec<StereoSample>,
 	buffer2: [StereoSample; MAX_BUF_SIZE],
@@ -23,7 +29,7 @@ impl Render {
 		Render {
 			audio_rx,
 			lua_tx,
-			instruments: Vec::new(),
+			channels: Vec::new(),
 			effects: Vec::new(),
 			// buffer2: vec![StereoSample { l: 0.0, r: 0.0 }; MAX_BUF_SIZE],
 			buffer2: [StereoSample { l: 0.0, r: 0.0 }; MAX_BUF_SIZE],
@@ -40,11 +46,13 @@ impl Render {
 	}
 
 	pub fn add(&mut self) {
-		// permit_alloc(|| {
 		let new = Sine::new(self.sample_rate);
-		self.instruments.push(Box::new(new));
+		let newp = Channel {
+			instrument: Box::new(new),
+			pan: Pan::new(),
+		};
+		self.channels.push(newp);
 		self.effects.push(Vec::new());
-		// });
 
 		// arbitrary test value
 		self.send(LuaMessage::Test(42.0));
@@ -59,9 +67,10 @@ impl Render {
 			sample.r = 0.0;
 		}
 
-		// process all instruments
-		for ch in self.instruments.iter_mut() {
-			ch.process(buf_slice);
+		// process all channels
+		for ch in self.channels.iter_mut() {
+			ch.instrument.process(buf_slice);
+			ch.pan.process(buf_slice);
 			for (outsample, insample) in buffer.iter_mut().zip(buf_slice.iter()) {
 				outsample.l += insample.l;
 				outsample.r += insample.r;
@@ -69,41 +78,44 @@ impl Render {
 		}
 
 		// default 12dB headroom + tanh
-		for sample in buffer.iter_mut() {
-			sample.l = (sample.l * 0.25).tanh();
-			sample.r = (sample.r * 0.25).tanh();
-		}
+		// for sample in buffer.iter_mut() {
+		// 	sample.l = (sample.l * 0.25).tanh();
+		// 	sample.r = (sample.r * 0.25).tanh();
+		// }
 	}
 
 	pub fn parse_messages(&mut self) {
 		while let Some(m) = self.audio_rx.pop() {
 			match m {
 				// todo send to correct channel
-				AudioMessage::CV(ch_index, cv) => match self.instruments.get_mut(ch_index) {
-					Some(ch) => ch.cv(cv.pitch, cv.vel),
+				AudioMessage::CV(ch_index, cv) => match self.channels.get_mut(ch_index) {
+					Some(ch) => ch.instrument.cv(cv.pitch, cv.vel),
 					None => println!("Channel index out of bounds!"),
 				},
-				AudioMessage::NoteOn(ch_index, cv) => match self.instruments.get_mut(ch_index) {
-					Some(ch) => ch.note_on(cv.pitch, cv.vel),
+				AudioMessage::NoteOn(ch_index, cv) => match self.channels.get_mut(ch_index) {
+					Some(ch) => ch.instrument.note_on(cv.pitch, cv.vel),
 					None => println!("Channel index out of bounds!"),
 				},
 				AudioMessage::SetParam(ch_index, device_index, index, val) => {
 					if device_index == 0 {
-						match self.instruments.get_mut(ch_index) {
-							Some(ch) => ch.set_param(index, val),
+						match self.channels.get_mut(ch_index) {
+							Some(ch) => ch.instrument.set_param(index, val),
 							None => println!("Channel index out of bounds!"),
 						}
 					} else {
 						match self.effects.get_mut(ch_index) {
 							Some(ch) => match ch.get_mut(device_index - 1) {
-								Some(ch) => ch.set_param(index, val),
+								Some(e) => e.set_param(index, val),
 								None => println!("Device index out of bounds!"),
 							},
 							None => println!("Channel index out of bounds!"),
 						}
 					}
 				}
-
+				AudioMessage::Pan(ch_index, gain, pan) => match self.channels.get_mut(ch_index) {
+					Some(ch) => ch.pan.set(gain, pan),
+					None => println!("Channel index out of bounds!"),
+				},
 				// _ => eprintln!("Didnt handle message!"),
 				// AudioMessage::Add => self.add(),
 			}

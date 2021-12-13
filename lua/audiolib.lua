@@ -70,6 +70,12 @@ function audiolib.send_noteOn(index, t)
 	end
 end
 
+function audiolib.send_pan(index, t)
+	if stream_handle then
+		lib.send_pan(stream_handle, index,t[1], t[2] );
+	end
+end
+
 function audiolib.play()
 	if stream_handle then
 		lib.play(stream_handle)

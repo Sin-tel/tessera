@@ -17,23 +17,23 @@ function Parameter:new(name, tbl)
 
 		assert(new.default <= from_dB(new.max))
 	else
-		new.v = tbl.default
-		new.default = tbl.default
 		new.min = tbl.min or 0
 		new.max = tbl.max or 1
+		local default = tbl.default or 0.5*(new.max + new.min)
+		new.v = default
+		new.default = default
+		new.fmt = tbl.fmt or "%0.3f"
 		assert(new.min < new.max)
 		assert(new.min <= new.default)
 		assert(new.default <= new.max)
 	end
 
-	
-
 	return new	
 end
 
-function Parameter:set(x)
-	self.v = clamp(x, self.min, self.max)
-end
+-- function Parameter:setRaw(x)
+-- 	self.v = x
+-- end
 
 function Parameter:reset()
 	self.v = self.default
@@ -61,8 +61,7 @@ end
 function Parameter:getDisplay()
 	if self.t == "dB" then
 		return string.format("%0.1f dB", to_dB(self.v))
-		-- return string.format("%0.3f", self.v)
 	else
-		return string.format("%0.3f", self.v)
+		return string.format(self.fmt, self.v)
 	end
 end

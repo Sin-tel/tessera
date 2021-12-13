@@ -29,7 +29,7 @@ width, height = love.graphics.getDimensions( )
 audio_status = "wait"
 
 function audioSetup()
-	-- audiolib.load(settings.audio.default_host, settings.audio.default_device)
+	audiolib.load(settings.audio.default_host, settings.audio.default_device)
 	-- audiolib.load("wasapi") 
 
 	-- midi_in = midi.load(settings.midi.default_input)
@@ -66,8 +66,8 @@ function love.load()
 
 	love.graphics.setFont(font_main)
 
-	gainp = Parameter:new("gain", {default = 0,  t = "dB"})
-	panp = Parameter:new("pan", {default = 0, min = -1,max = 1, centered = true})
+	gainp = Parameter:new("gain", {default = -12,  t = "dB"})
+	panp = Parameter:new("pan", {default = 0, min = -1,max = 1, centered = true, fmt = "%0.2f"})
 
 	Workspace:load()
 	Workspace.box:split(0.7, true)
@@ -76,14 +76,14 @@ function love.load()
 	Workspace.box.children[1]:setView(DefaultView:new())
 	Workspace.box.children[2].children[2]:setView(PannerView:new())
 	Workspace.box.children[2].children[1]:setView(ParameterView:new())
-
-	
 end
 
 
 function love.update(dt) 
 	-- print(1/dt)
 	audiolib.parse_messages()
+
+	audiolib.send_pan(0, {gainp.v, panp.v})
 
 	-- midi.update(midi_in, handle_midi)
 end

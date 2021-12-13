@@ -43,7 +43,7 @@ Rust
 [x] Single instrument
 [x] Render to wav
 [+] Mixing channels
-[ ] volume / panning
+[x] volume / panning
 [ ] Simple metering (cpu, dB meters, audio engine state)
 [ ] Poll audio/midi settings
 [ ] Port over a bunch of protoplug devices
