@@ -3,7 +3,7 @@
 -- should also handle nullpointers gracefully
 
 local ffi = require("ffi")
-local cstring = require("cstring")
+local cstring = require("lib/cstring")
 
 require("header")
 
@@ -43,12 +43,6 @@ function audiolib.load(host, device)
 			stream_handle = ffi.gc(stream_handle, lib.stream_free)
 			audiolib.paused = false
 		end
-
-		
-
-		
-
-		
 	else
 		print("Stream already running!")
 	end
@@ -121,8 +115,6 @@ function audiolib.parse_messages()
 			nn = nn + 1
 			if p.tag == "Cpu" then
 				Workspace.cpu_load = p.cpu
-			elseif p.tag == "Test" then
-				-- print("test message received")
 			elseif p.tag == "Meter" then
 				Workspace.meter.l = to_dB(p.meter._0)
 				Workspace.meter.r = to_dB(p.meter._1)

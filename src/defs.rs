@@ -59,7 +59,7 @@ pub struct CV {
 #[repr(C)]
 #[derive(Debug)]
 pub enum LuaMessage {
-	Test(),
+	// Test(),
 	Cpu(f32),
 	Meter(f32, f32),
 }

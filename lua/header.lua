@@ -12,14 +12,9 @@ typedef struct C_AudioBuffer {
 } C_AudioBuffer;
 
 typedef enum LuaMessage_Tag {
-  Test,
   Cpu,
   Meter,
 } LuaMessage_Tag;
-
-typedef struct Test_Body {
-
-} Test_Body;
 
 typedef struct Meter_Body {
   float _0;
@@ -29,7 +24,6 @@ typedef struct Meter_Body {
 typedef struct LuaMessage {
   LuaMessage_Tag tag;
   union {
-    Test_Body test;
     struct {
       float cpu;
     };

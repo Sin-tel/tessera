@@ -1,7 +1,7 @@
-release = true
+release = false
 
-require("errorhandler")
-require("run")
+require("lib/errorhandler")
+require("lib/run")
 
 lurker = false
 
@@ -33,8 +33,8 @@ width, height = love.graphics.getDimensions( )
 audio_status = "wait"
 
 function audioSetup()
-	-- audiolib.load(settings.audio.default_host, settings.audio.default_device)
-	audiolib.load("wasapi") 
+	audiolib.load(settings.audio.default_host, settings.audio.default_device)
+	-- audiolib.load("wasapi") 
 
 	-- midi_in = midi.load(settings.midi.default_input)
 	
@@ -114,12 +114,12 @@ function love.draw()
 	love.graphics.setColor(1.0, 1.0, 1.0)
 	-- midi.draw(midi_in)
 
-	love.graphics.setColor(1.0, 0.0, 0.0)
-	for i,v in ipairs(tracks) do
-		if v.isPlaying then
-			love.graphics.ellipse("fill", (v.note)*10, 500, 10)
-		end
-	end
+	-- love.graphics.setColor(1.0, 0.0, 0.0)
+	-- for i,v in ipairs(tracks) do
+	-- 	if v.isPlaying then
+	-- 		love.graphics.ellipse("fill", (v.note)*10, 500, 10)
+	-- 	end
+	-- end
 end
 
 function love.mousepressed(x, y, button)
@@ -155,10 +155,10 @@ function love.keypressed( key, isrepeat )
 		render_wav()
 	elseif key == 'a' then
 		for i = 1, 5 do
-			numch = (numch or 0) 
+			numch = (numch or 1) 
 			print("numch: " .. numch)
 			audiolib.add()
-			audiolib.send_noteOn(numch, {(35 + numch)%300  , 0.1});
+			audiolib.send_noteOn(numch, {(35 + numch)%300  , 0.5});
 			audiolib.send_pan(numch, {0.25, math.random()*2.0 - 1.0})
 			numch = numch + 1
 		end

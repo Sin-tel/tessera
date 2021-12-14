@@ -90,9 +90,10 @@ impl Render {
 		// 	sample.r = (sample.r * 0.25).tanh();
 		// }
 
+
 		let mut suml: f32 = 0.0;
 		let mut sumr: f32 = 0.0;
-
+		// peak meter
 		for sample in buffer.iter_mut() {
 			suml = suml.max(sample.l.abs());
 			sumr = sumr.max(sample.r.abs());
@@ -105,6 +106,11 @@ impl Render {
 		self.peakr.update();
 
 		self.send(LuaMessage::Meter(self.peakl.value, self.peakr.value));
+
+		 for sample in buffer.iter_mut() {
+			sample.l = sample.l.clamp(-1.0,1.0);
+			sample.r = sample.r.clamp(-1.0,1.0);
+		}
 	}
 
 	pub fn parse_messages(&mut self) {
