@@ -13,6 +13,7 @@ static A: AllocDisabler = AllocDisabler;
 use crate::defs::*;
 use crate::ffi::*;
 use crate::render::*;
+use crate::math::*;
 
 pub fn audio_run(host_name: &str, output_device_name: &str) -> Result<Userdata, Box<dyn Error>> {
 	let output_device = find_output_device(host_name, output_device_name)?;
@@ -86,6 +87,8 @@ where
 
 	let mut audiobuf = [StereoSample { l: 0.0, r: 0.0 }; MAX_BUF_SIZE];
 
+	let mut cpu_load = SmoothedEnv::new(0.0, 0.2, 0.0005);
+
 	move |buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
 		assert_no_alloc(|| {
 			let buf_size = buffer.len() / 2;
@@ -96,15 +99,13 @@ where
 
 			let mut buf_slice = &mut audiobuf[..buf_size];
 
-			// let time = std::time::Instant::now();
-
 			match m_render.try_lock() {
 				Ok(mut render) if !paused => {
 					if !start {
 						start = true;
 						fix_denorms();
-						// render.add();
 					}
+					let time = std::time::Instant::now();
 
 					// parse all messages
 					stream_rx.pop_each(
@@ -119,11 +120,17 @@ where
 					render.process(&mut buf_slice);
 
 					// dunno if this assert helps
-					assert!(buffer.len() == buf_slice.len() * 2);
+					// assert!(buffer.len() == buf_slice.len() * 2);
 					for (outsample, gensample) in buffer.chunks_exact_mut(2).zip(buf_slice.iter()) {
 						outsample[0] = cpal::Sample::from::<f32>(&gensample.l);
 						outsample[1] = cpal::Sample::from::<f32>(&gensample.r);
 					}
+
+					let t = time.elapsed();
+					let p = t.as_secs_f64() / ((buf_size as f64) / render.sample_rate as f64);
+					cpu_load.set(p as f32);
+					cpu_load.update();
+					render.send(LuaMessage::Cpu(cpu_load.value));
 				}
 				_ => {
 					stream_rx.pop_each(
@@ -133,6 +140,7 @@ where
 						},
 						None,
 					);
+					println!("aaaaaaaaa");
 
 					for outsample in buffer.chunks_exact_mut(2) {
 						outsample[0] = cpal::Sample::from::<f32>(&0.0f32);
@@ -140,14 +148,6 @@ where
 					}
 				}
 			}
-
-			// dbg!(buf_size)
-			// let t = time.elapsed();
-			// println!(
-			// 	"Cpu load {:.2}%",
-			// 	100.0 * t.as_secs_f64() / ((buf_size as f64) / 44100.0)
-			// );
-			// println!("{:?}", t);
 		});
 	}
 }

@@ -80,3 +80,15 @@ function drawText(str, x, y, w, h, align)
 		strip = true
 	end
 end
+
+function average(t)
+	local n = #t
+	if n == 0 then
+		return 0
+	end
+	local sum = 0
+	for i,v in ipairs(t) do
+		sum = sum + v
+	end
+	return sum / n
+end

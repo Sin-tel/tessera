@@ -11,6 +11,32 @@ typedef struct C_AudioBuffer {
   size_t cap;
 } C_AudioBuffer;
 
+typedef enum LuaMessage_Tag {
+  Test,
+  Cpu,
+  Meter,
+} LuaMessage_Tag;
+
+typedef struct Test_Body {
+
+} Test_Body;
+
+typedef struct Meter_Body {
+  float _0;
+  float _1;
+} Meter_Body;
+
+typedef struct LuaMessage {
+  LuaMessage_Tag tag;
+  union {
+    Test_Body test;
+    struct {
+      float cpu;
+    };
+    Meter_Body meter;
+  };
+} LuaMessage;
+
 void add(void *stream_ptr);
 
 void block_free(struct C_AudioBuffer block);
@@ -23,7 +49,7 @@ struct C_AudioBuffer render_block(void *stream_ptr);
 
 bool rx_is_empty(void *stream_ptr);
 
-float rx_pop(void *stream_ptr);
+struct LuaMessage rx_pop(void *stream_ptr);
 
 void send_CV(void *stream_ptr, size_t ch, float pitch, float vel);
 

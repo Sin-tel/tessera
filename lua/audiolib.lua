@@ -23,6 +23,10 @@ local audiolib = {}
 
 audiolib.paused = true
 
+function audiolib.status()
+	return stream_handle ~= nil
+end
+
 function audiolib.load(host, device)
 	if stream_handle == nil then
 		host = host or "default"
@@ -111,12 +115,22 @@ end
 
 function audiolib.parse_messages()
 	if stream_handle then
+		local nn = 0
 		while not lib.rx_is_empty(stream_handle) do
 			p = lib.rx_pop(stream_handle)
-
-			print(p)
-			
+			nn = nn + 1
+			if p.tag == "Cpu" then
+				Workspace.cpu_load = p.cpu
+			elseif p.tag == "Test" then
+				-- print("test message received")
+			elseif p.tag == "Meter" then
+				Workspace.meter.l = to_dB(p.meter._0)
+				Workspace.meter.r = to_dB(p.meter._1)
+			end
 		end
+		-- if nn > 0 then
+			-- print("got n messages: ", nn)
+		-- end
 	end
 end
 

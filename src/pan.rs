@@ -1,30 +1,31 @@
 use crate::defs::*;
+use crate::math::*;
 
 #[derive(Debug, Default)]
 pub struct Pan {
-	gain: f32,
-	pan: f32,
+	gainl: Smoothed,
+	gainr: Smoothed,
 }
 
 impl Pan {
-	pub fn new() -> Pan {
+	pub fn new(sample_rate: f32) -> Pan {
 		Pan {
-			gain: 1.0,
-			pan: 0.0,
+			gainl: Smoothed::new(0.25, 200.0 / sample_rate),
+			gainr: Smoothed::new(0.25, 200.0 / sample_rate),
 		}
 	}
 
 	pub fn set(&mut self, gain: f32, pan: f32) {
-		self.gain = gain;
-		self.pan = pan;
+		self.gainl.set(gain * (0.5 - 0.5 * pan).sqrt());
+		self.gainr.set(gain * (0.5 + 0.5 * pan).sqrt());
 	}
 
 	pub fn process(&mut self, buffer: &mut [StereoSample]) {
-		let gl: f32 = self.gain * (0.5 - 0.5 * self.pan);
-		let gr: f32 = self.gain * (0.5 + 0.5 * self.pan);
 		for sample in buffer.iter_mut() {
-			sample.l *= gl;
-			sample.r *= gr;
+			self.gainl.update();
+			self.gainr.update();
+			sample.l *= self.gainl.value;
+			sample.r *= self.gainr.value;
 		}
 	}
 }

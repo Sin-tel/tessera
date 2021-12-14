@@ -1,3 +1,5 @@
+local audiolib = require("audiolib")
+
 Workspace = {}
 
 RESIZE_W = 5
@@ -11,6 +13,9 @@ function Workspace:load()
 	self.w = width
 	self.h = height
 	self.box = Box:new(0, RIBBON, width, height - RIBBON)
+
+	self.cpu_load = 0
+	self.meter = {l = -math.huge, r = -math.huge}
 end
 
 function Workspace:resize(w,h) 
@@ -22,6 +27,49 @@ function Workspace:resize(w,h)
 end
 
 function Workspace:draw()
+	local ll = clamp(self.cpu_load, 0, 1)
+	local hl_col = Theme.highlight
+	if self.cpu_load > 1.0 then
+		hl_col = Theme.warning
+	end
+
+	local w1 = 64
+	local h1 = 16
+	local y1 = 0.5*(RIBBON - h1)
+	local x1 = self.w - 64 - y1
+
+	love.graphics.setColor(Theme.slider_bg)
+	love.graphics.rectangle("fill", x1, y1, w1, h1, 2)
+	love.graphics.setColor(hl_col)
+	love.graphics.rectangle("fill", x1, y1, w1*ll, h1)
+	love.graphics.setColor(Theme.slider_line)
+	love.graphics.rectangle("line", x1, y1, w1, h1, 2)
+	love.graphics.setColor(Theme.ui_text)
+	if audiolib.status() then
+		drawText(string.format("%d %%", 100*self.cpu_load), x1, 0, w1, RIBBON, "center")
+	else
+		drawText("offline", x1, 0, w1, RIBBON, "center")
+	end
+	drawText("CPU:", x1-w1, 0, w1, RIBBON, "right")
+
+	w1 = 96
+	h1 = 16
+	y1 = 0.5*(RIBBON - h1)
+	x1 = self.w - 224 - y1
+
+	local ml = clamp((self.meter.l+80)/80,0,1)
+	local mr = clamp((self.meter.r+80)/80,0,1)
+
+	love.graphics.setColor(Theme.slider_bg)
+	love.graphics.rectangle("fill", x1, y1, w1, h1, 2)
+	love.graphics.setColor(ml < 1.0 and Theme.meter or Theme.meter_clip)
+	love.graphics.rectangle("fill", x1, y1, w1*ml, 0.5*h1 -1)
+	love.graphics.setColor(mr < 1.0 and Theme.meter or Theme.meter_clip)
+	love.graphics.rectangle("fill", x1, y1 + 0.5*h1, w1*mr, 0.5*h1)
+	love.graphics.setColor(Theme.slider_line)
+	love.graphics.rectangle("line", x1, y1, w1, h1, 2)
+	love.graphics.setColor(Theme.ui_text)
+
 	self.box:draw()
 end
 

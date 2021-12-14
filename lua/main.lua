@@ -1,12 +1,16 @@
+release = true
+
+require("errorhandler")
 require("run")
-release = false
+
+lurker = false
 
 local settings_handler = require("settings_handler")
 local audiolib = require("audiolib")
 local wav = require("lib/wav_save")
 local midi = require("midi")
 
-if not release then
+if not release and lurker then
 	lurker = require("lib/lurker")
 end
 
@@ -29,19 +33,14 @@ width, height = love.graphics.getDimensions( )
 audio_status = "wait"
 
 function audioSetup()
-	audiolib.load(settings.audio.default_host, settings.audio.default_device)
-	-- audiolib.load("wasapi") 
+	-- audiolib.load(settings.audio.default_host, settings.audio.default_device)
+	audiolib.load("wasapi") 
 
 	-- midi_in = midi.load(settings.midi.default_input)
 	
 	audiolib.add()
-	-- audiolib.add()
-	-- audiolib.add()
 
-	audiolib.send_noteOn(0, {49   , 0.2});
-	-- audiolib.send_noteOn(1, {49+4 , 0.2});
-	-- audiolib.send_noteOn(2, {49+7 , 0.2});
-	-- audiolib.send_noteOn(3, {49+14, 0.2});
+	audiolib.send_noteOn(0, {49   , 1.0});
 	audio_status = "done"
 end
 
@@ -96,7 +95,7 @@ function love.draw()
 	elseif audio_status == "wait" then
 		audio_status = "request"
 	end
-	if not release then
+	if not release and lurker then
 		lurker.update()
 	end
 
@@ -155,13 +154,14 @@ function love.keypressed( key, isrepeat )
 	elseif key == 'r' then
 		render_wav()
 	elseif key == 'a' then
-		-- for i = 1, 20 do
+		for i = 1, 5 do
 			numch = (numch or 0) 
 			print("numch: " .. numch)
 			audiolib.add()
-			audiolib.send_noteOn(numch, {32 + numch*5  , 0.1/(numch+1)});
+			audiolib.send_noteOn(numch, {(35 + numch)%300  , 0.1});
+			audiolib.send_pan(numch, {0.25, math.random()*2.0 - 1.0})
 			numch = numch + 1
-		-- end
+		end
 	end
 
 end
@@ -197,6 +197,7 @@ function render_wav()
 		for i = 1, tonumber(block.len) do
 			samples[i] = s[i-1]
 		end
+		-- print(s[1])
 		wav.append(samples)
 	end
 	wav.close()

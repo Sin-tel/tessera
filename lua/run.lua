@@ -52,7 +52,7 @@ function love.run()
 	 			break
 	 		end
 
-	 		if love.timer then love.timer.sleep(0.001) end
+	 		if love.timer then love.timer.sleep(0.002) end
 	 	end
 
 		-- Call draw

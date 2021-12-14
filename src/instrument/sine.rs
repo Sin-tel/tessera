@@ -22,8 +22,9 @@ impl Instrument for Sine {
 	}
 
 	fn cv(&mut self, pitch: f32, vel: f32) {
-		// if vel != 0.0 { // note off
-		self.freq.set(pitch_to_f(pitch, self.sample_rate));
+		let p = pitch_to_f(pitch, self.sample_rate);
+		dbg!(p);
+		self.freq.set(p);
 		// }
 		self.vel.set(vel);
 	}
@@ -39,16 +40,14 @@ impl Instrument for Sine {
 
 			self.prev = out;
 
-			// self.accum += 440.0 / self.sample_rate;
-			// let mut out = (self.accum * TWO_PI + 0.5 * self.prev).sin() * 0.1;
-			// out *= 0.2;
 			sample.l = out;
 			sample.r = out;
 		}
 	}
 
 	fn note_on(&mut self, pitch: f32, vel: f32) {
-		self.freq.set_hard(pitch_to_f(pitch, self.sample_rate));
+		let p = pitch_to_f(pitch, self.sample_rate);
+		self.freq.set_hard(p);
 		if self.vel.value < 0.0001 {
 			self.vel.set_hard(vel);
 			self.accum = 0.0;

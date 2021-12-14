@@ -31,7 +31,7 @@ Lua
 [ ] Harmonic coordinate logic
 [ ] Root translation
 [x] Add font
-[ ] Render proper accidentals
+[x] Render proper accidentals
 [ ] Fuzzy search command palette
 [ ] Temperament projection mapping
 
@@ -44,7 +44,7 @@ Rust
 [x] Render to wav
 [+] Mixing channels
 [x] volume / panning
-[ ] Simple metering (cpu, dB meters, audio engine state)
+[x] Simple metering (cpu, dB meters, audio engine state)
 [ ] Poll audio/midi settings
 [ ] Port over a bunch of protoplug devices
 [ ] Simple audio flow (parallel), maybe upgrade to DAG later

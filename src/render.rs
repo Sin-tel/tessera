@@ -4,6 +4,7 @@ use crate::defs::*;
 use crate::instrument::sine::*;
 use crate::instrument::*;
 use crate::pan::*;
+use crate::math::*;
 
 pub struct Channel {
 	pub instrument: Box<dyn Instrument + Send>,
@@ -17,7 +18,10 @@ pub struct Render {
 	effects: Vec<Vec<Box<dyn Effect + Send>>>,
 	// buffer2: Vec<StereoSample>,
 	buffer2: [StereoSample; MAX_BUF_SIZE],
-	sample_rate: f32,
+	pub sample_rate: f32,
+
+	peakl: SmoothedEnv,
+	peakr: SmoothedEnv,
 }
 
 impl Render {
@@ -31,13 +35,15 @@ impl Render {
 			lua_tx,
 			channels: Vec::new(),
 			effects: Vec::new(),
-			// buffer2: vec![StereoSample { l: 0.0, r: 0.0 }; MAX_BUF_SIZE],
-			buffer2: [StereoSample { l: 0.0, r: 0.0 }; MAX_BUF_SIZE],
+			// buffer2: vec![Default::default(); MAX_BUF_SIZE],
+			buffer2: [Default::default(); MAX_BUF_SIZE],
 			sample_rate,
+			peakl: SmoothedEnv::new(0.0, 0.5, 0.1),
+			peakr: SmoothedEnv::new(0.0, 0.5, 0.1),
 		}
 	}
 
-	fn send(&mut self, m: LuaMessage) {
+	pub fn send(&mut self, m: LuaMessage) {
 		if !self.lua_tx.is_full() {
 			self.lua_tx.push(m).unwrap();
 		} else {
@@ -46,16 +52,17 @@ impl Render {
 	}
 
 	pub fn add(&mut self) {
+
 		let new = Sine::new(self.sample_rate);
-		let newp = Channel {
+		let newch = Channel {
 			instrument: Box::new(new),
-			pan: Pan::new(),
+			pan: Pan::new(self.sample_rate),
 		};
-		self.channels.push(newp);
+		self.channels.push(newch);
 		self.effects.push(Vec::new());
 
 		// arbitrary test value
-		self.send(LuaMessage::Test(42.0));
+		// self.send(LuaMessage::Test());
 	}
 
 	pub fn process(&mut self, buffer: &mut [StereoSample]) {
@@ -77,11 +84,27 @@ impl Render {
 			}
 		}
 
-		// default 12dB headroom + tanh
+		// // default 12dB headroom + tanh
 		// for sample in buffer.iter_mut() {
 		// 	sample.l = (sample.l * 0.25).tanh();
 		// 	sample.r = (sample.r * 0.25).tanh();
 		// }
+
+		let mut suml: f32 = 0.0;
+		let mut sumr: f32 = 0.0;
+
+		for sample in buffer.iter_mut() {
+			suml = suml.max(sample.l.abs());
+			sumr = sumr.max(sample.r.abs());
+		}
+
+		self.peakl.set(suml);
+		self.peakr.set(sumr);
+
+		self.peakl.update();
+		self.peakr.update();
+
+		self.send(LuaMessage::Meter(self.peakl.value, self.peakr.value));
 	}
 
 	pub fn parse_messages(&mut self) {

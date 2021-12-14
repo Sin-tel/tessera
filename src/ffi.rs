@@ -185,10 +185,8 @@ pub extern "C" fn rx_is_empty(stream_ptr: *mut c_void) -> bool {
 }
 
 #[no_mangle]
-pub extern "C" fn rx_pop(stream_ptr: *mut c_void) -> f32 {
+pub extern "C" fn rx_pop(stream_ptr: *mut c_void) -> LuaMessage {
 	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
 
-	match d.lua_rx.pop().unwrap() {
-		LuaMessage::Test(v) => v,
-	}
+	d.lua_rx.pop().unwrap()
 }
