@@ -24,13 +24,11 @@ function TestPadView:draw()
 	local x2 = w * 0.95
 	local y2 = h * 0.95
 
+	love.graphics.setColor(Theme.bg_nested)
+	love.graphics.rectangle("fill", x1, y1, x2-x1, y2-y1)
 
-	
-	love.graphics.setColor(Theme.slider_line)
-	love.graphics.line(x1, y1, x1, y2)
-	love.graphics.line(x1, y1, x2, y1)
-	love.graphics.line(x1, y2, x2, y2)
-	love.graphics.line(x2, y1, x2, y2)
+	love.graphics.setColor(Theme.widget_line)
+	love.graphics.rectangle("line", x1, y1, x2-x1, y2-y1)
 
 	love.graphics.setColor(Theme.ui_text)
 

@@ -81,11 +81,10 @@ impl Render {
 		}
 
 		// default 12dB headroom + tanh
-		// for sample in buffer.iter_mut() {
-		// 	sample.l = (sample.l * 0.25).tanh();
-		// 	sample.r = (sample.r * 0.25).tanh();
-		// }
-
+		for sample in buffer.iter_mut() {
+			sample.l = (sample.l * 0.25).tanh();
+			sample.r = (sample.r * 0.25).tanh();
+		}
 
 		let mut suml: f32 = 0.0;
 		let mut sumr: f32 = 0.0;

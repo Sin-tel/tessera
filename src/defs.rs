@@ -11,27 +11,6 @@ pub struct StereoSample {
 	pub r: f32,
 }
 
-// impl AddAssign for StereoSample {
-//     fn add_assign(&mut self, other: Self) {
-//         *self = Self {
-//             l: self.l + other.l,
-//             r: self.r + other.r,
-//         };
-//     }
-// }
-
-// impl Add for StereoSample {
-//     type Output = Self;
-
-//     fn add(self, other: Self) -> Self {
-//         Self {
-//             l: self.l + other.l,
-//             r: self.r + other.r,
-//         }
-//     }
-// }
-
-
 #[repr(C)]
 #[derive(Debug)]
 pub struct C_AudioBuffer {

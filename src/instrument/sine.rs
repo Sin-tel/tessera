@@ -16,7 +16,7 @@ pub struct Sine {
 impl Instrument for Sine {
 	fn new(sample_rate: f32) -> Sine {
 		let mut filter = Filter::new(sample_rate);
-		filter.set(FilterSettings::HighShelf(300.0, 5.0, -12.0));
+		filter.set_lowpass(1200.0, 5.0);
 		Sine {
 			freq: Smoothed::new(0.0, 50.0 / sample_rate),
 			vel: SmoothedEnv::new(0.0, 200.0 / sample_rate, 20.0 / sample_rate),

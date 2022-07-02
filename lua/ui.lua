@@ -43,14 +43,14 @@ function Slider:draw(y, w, mode)
 	love.graphics.setStencilTest("greater", 2)
 
 	if mode == "hover" then
-		love.graphics.setColor(Theme.slider_hover)
+		love.graphics.setColor(Theme.widget_hover)
 	elseif mode == "press" then
-		love.graphics.setColor(Theme.slider_press)
+		love.graphics.setColor(Theme.widget_press)
 	else
-		love.graphics.setColor(Theme.slider_bg)
+		love.graphics.setColor(Theme.widget_bg)
 	end
 	love.graphics.rectangle("fill", xs, ys, ws, SLIDER_HEIGHT)
-	love.graphics.setColor(Theme.slider)
+	love.graphics.setColor(Theme.widget)
 	if self.p.centered then
 		love.graphics.rectangle("fill", xs+ws*0.5, ys, ws*(v-0.5), SLIDER_HEIGHT)
 		-- love.graphics.rectangle("line", xs+ws*0.5, ys, ws*(v-0.5), SLIDER_HEIGHT)
@@ -60,7 +60,7 @@ function Slider:draw(y, w, mode)
 
 	love.graphics.setStencilTest("greater", 1)
 
-	love.graphics.setColor(Theme.slider_line)
+	love.graphics.setColor(Theme.widget_line)
 	love.graphics.rectangle("line", xs, ys, ws, SLIDER_HEIGHT, SLIDER_RADIUS)
 
 	love.graphics.setColor(Theme.ui_text)

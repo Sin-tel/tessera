@@ -25,9 +25,9 @@ function Group:draw(y,w,selected)
 	local s = 32
 	love.graphics.setColor(Theme.ui_text)
 	if self.collapse then
-		drawText(">", 0, y0, s, UI_GRID, "left")
+		drawText("+", 0, y0, s, UI_GRID, "left")
 	else
-		drawText("V", 0, y0, s, UI_GRID, "left")
+		drawText("-", 0, y0, s, UI_GRID, "left")
 	end
 	drawText("    " .. self.name, 0, y0, w - s, UI_GRID, "left")
 
@@ -94,22 +94,14 @@ function ParameterView:update()
 	if math.abs(self.scroll - self.scroll_) < 2 then
 		self.scroll = self.scroll_
 	end
-	
 
 	if self.box.focus then
-		local mx, my = self:getMouse()
-
 		if self.action == "slider" then
-			-- Mouse.cursor = nil
 			if Mouse.drag then
 				self.select:drag(w)
 			end
 		else
-			local index = -1
-			if self.box.focus then
-				index = math.floor((my + self.scroll)/UI_GRID)
-			end
-
+			local index = math.floor((my + self.scroll)/UI_GRID)
 			local y = 0
 			self.select = nil
 			for i,v in ipairs(self.groups) do

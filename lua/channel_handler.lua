@@ -31,12 +31,15 @@ function channels.add(name)
 			instrument = deepcopy(devicelist.instruments[name]),
 			effects = {},
 		}
+
 		new.instrument.name = name
 		new.parametergroups = ParameterView:makeparametergroups(new)
 
-		new.index = #channels.list
-		table.insert(channels.list, new)
 
+		table.insert(channels.list, new)
+		new.index = #channels.list - 1
+
+		new.name = name .. " " .. new.index
 
 		audiolib.add_channel(new.instrument.index)
 

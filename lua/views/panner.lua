@@ -26,7 +26,7 @@ function PannerView:draw()
 		my = d*math.sin(a) + cy
 
 		
-		love.graphics.setColor(Theme.slider_line)
+		love.graphics.setColor(Theme.widget_line)
 		-- love.graphics.setColor(White)
 		love.graphics.arc("line", "open", cx, cy, radius, 0, -math.pi)
 		love.graphics.arc("line", "open", cx, cy, radius2, 0, -math.pi)
