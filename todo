@@ -11,16 +11,16 @@ Lua
 [x] Sliders
 [x] Color theme file
 [-] Panner view
-[ ] Scrolling
 [x] Test pad view
 [x] Parameter list
-[ ] Basic midi handling
+[-] Basic midi handling
 [x] Parameter view
 [+] Send parameters
+[ ] Scrolling
 [ ] Type value in slider
-[ ] channel/outliner view
+[-] channel/outliner view
 [ ] Static piano roll setup
-[ ] Tabs
+[ ] Tabs/workspaces
 [ ] Top ribbon menu
 [ ] Loop
 [ ] Tools
