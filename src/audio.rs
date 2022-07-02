@@ -13,7 +13,7 @@ static A: AllocDisabler = AllocDisabler;
 use crate::defs::*;
 use crate::ffi::*;
 use crate::render::*;
-use crate::math::*;
+use crate::dsp::*;
 
 pub fn audio_run(host_name: &str, output_device_name: &str) -> Result<Userdata, Box<dyn Error>> {
 	let output_device = find_output_device(host_name, output_device_name)?;

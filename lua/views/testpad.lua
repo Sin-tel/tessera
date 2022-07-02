@@ -27,7 +27,6 @@ function TestPadView:draw()
 
 	
 	love.graphics.setColor(Theme.slider_line)
-	-- love.graphics.setColor(White)
 	love.graphics.line(x1, y1, x1, y2)
 	love.graphics.line(x1, y1, x2, y1)
 	love.graphics.line(x1, y2, x2, y2)
@@ -37,8 +36,6 @@ function TestPadView:draw()
 
 	mx = clamp(mx,x1,x2)
 	my = clamp(my,y1,y2)
-
-
 
 	if self.box.focus then
 		love.graphics.ellipse("line", mx, my, 5)
@@ -51,9 +48,8 @@ function TestPadView:draw()
 		self.v = 1.0 - myy
 
 		if self.note then
-			audiolib.send_CV(selection.channel.index, {self.f   , self.v})
+			audiolib.send_CV(selection.channel.index, {self.f, self.v})
 		end
-		-- print(my/(0.9*h))
 	end
 end
 
@@ -62,7 +58,7 @@ function TestPadView:mousepressed()
 	local mx, my = self:getMouse()
 
 	if Mouse.button == 1 and selection.channel then
-		audiolib.send_noteOn(selection.channel.index, {self.f   , self.v})
+		audiolib.send_noteOn(selection.channel.index, {self.f, self.v})
 		self.note = true
 	end
 end
@@ -72,7 +68,7 @@ function TestPadView:mousereleased()
 	local mx, my = self:getMouse()
 
 	if Mouse.button == 1 and selection.channel then
-		audiolib.send_noteOn(selection.channel.index, {self.f   , 0})
+		audiolib.send_CV(selection.channel.index, {self.f, 0})
 		self.note = false
 	end
 end

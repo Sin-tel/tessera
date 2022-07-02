@@ -1,5 +1,6 @@
 use crate::instrument::*;
-use crate::math::*;
+use crate::dsp::*;
+use crate::dsp::simper::*;
 
 #[derive(Debug, Default)]
 pub struct Sine {
@@ -9,14 +10,18 @@ pub struct Sine {
 	sample_rate: f32,
 	prev: f32,
 	pub feedback: f32,
+	filter: Filter,
 }
 
 impl Instrument for Sine {
 	fn new(sample_rate: f32) -> Sine {
+		let mut filter = Filter::new(sample_rate);
+		filter.set(FilterSettings::HighShelf(300.0, 5.0, -12.0));
 		Sine {
 			freq: Smoothed::new(0.0, 50.0 / sample_rate),
 			vel: SmoothedEnv::new(0.0, 200.0 / sample_rate, 20.0 / sample_rate),
 			sample_rate,
+			filter,
 			..Default::default()
 		}
 	}
@@ -38,6 +43,8 @@ impl Instrument for Sine {
 			out *= self.vel.value;
 
 			self.prev = out;
+
+			out = self.filter.process(out);
 
 			sample.l = out;
 			sample.r = out;

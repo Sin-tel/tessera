@@ -1,1 +1,1 @@
-ChannelView =  View:derive("Channel")
+ChannelView =  View:derive("Channels")

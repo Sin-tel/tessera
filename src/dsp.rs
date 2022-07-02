@@ -1,3 +1,5 @@
+pub mod simper;
+
 #[inline]
 pub fn pitch_to_f(p: f32, sample_rate: f32) -> f32 {
 	(2.0_f32).powf((p - 49.0) / 12.0) * 440.0 / sample_rate

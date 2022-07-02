@@ -1,5 +1,5 @@
 use crate::defs::*;
-use crate::math::*;
+use crate::dsp::*;
 
 #[derive(Debug, Default)]
 pub struct Pan {

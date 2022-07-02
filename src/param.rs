@@ -7,7 +7,7 @@ pub fn new_instrument(sample_rate: f32, index: usize) -> Box<dyn Instrument + Se
 	match index {
 		0 => Box::new(Sine::new(sample_rate)),
 		_ => {
-			println!("Istrument index invalid! Returning default.");
+			eprintln!("Instrument with index {} not found. Returning default.", index);
 			Box::new(Sine::new(sample_rate))
 		}
 	}

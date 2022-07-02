@@ -25,9 +25,6 @@ function View:draw() end
 
 function View:drawFull()
 	local w, h = self.box.w, self.box.h
-
-	
-	
 	
 	love.graphics.push()
 		love.graphics.translate(BORDER_SIZE, HEADER + BORDER_SIZE)
@@ -72,8 +69,8 @@ require("views/song")
 require("views/testpad")
 
 
-Views = {
-	DefaultView,
-	ParameterView,
-	PannerView,
-}
+-- Views = {
+-- 	DefaultView,
+-- 	ParameterView,
+-- 	PannerView,
+-- }

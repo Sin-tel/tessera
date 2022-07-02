@@ -21,7 +21,7 @@ require("views")
 require("workspace")
 require("parameter")
 require("devicelist")
-require("channels")
+require("channel_handler")
 
 -- load color theme
 require("settings/theme")
@@ -41,9 +41,10 @@ function audioSetup()
 	-- audiolib.load("wasapi") 
 
 	-- midi_in = midi.load(settings.midi.default_input)
+
 	channels.init()
 	channels.add("sine")
-	-- audiolib.send_noteOn(0, {49   , 1.0});
+
 	audio_status = "done"
 end
 
@@ -70,20 +71,25 @@ function love.load()
 
 	Workspace:load()
 	Workspace.box:split(0.7, true)
-	Workspace.box.children[2]:split(0.7, false)
 
-	Workspace.box.children[1]:setView(DefaultView:new())
-	Workspace.box.children[2].children[2]:setView(TestPadView:new())
-	Workspace.box.children[2].children[1]:setView(ParameterView:new())
+	-- Workspace.box.children[1]:setView(DefaultView:new())
+	Workspace.box.children[1]:split(0.7, false)
+	Workspace.box.children[1].children[1]:setView(DefaultView:new())
+	Workspace.box.children[1].children[2]:setView(TestPadView:new())
+
+	Workspace.box.children[2]:split(0.5, false)
+	Workspace.box.children[2].children[1]:setView(ChannelView:new())
+	Workspace.box.children[2].children[2]:setView(ParameterView:new())
+	
 end
 
 
 function love.update(dt) 
 	-- print(1/dt)
+
 	audiolib.parse_messages()
-
 	channels.update()
-
+	
 	-- midi.update(midi_in, handle_midi)
 end
 

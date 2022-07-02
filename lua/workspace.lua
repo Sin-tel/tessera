@@ -165,7 +165,7 @@ function Box:draw()
 			v:draw()
 		end
 	else
-		love.graphics.stencil( function() self:stencil() end, "replace", 2, true )
+		love.graphics.stencil( function() self:stencil() end, "replace", 2, false )
 		love.graphics.setStencilTest("greater", 1)
 
 		love.graphics.setColor(Theme.background)

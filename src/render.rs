@@ -4,7 +4,7 @@ use crate::defs::*;
 use crate::instrument::*;
 use crate::param::*;
 use crate::pan::*;
-use crate::math::*;
+use crate::dsp::*;
 
 pub struct Channel {
 	pub instrument: Box<dyn Instrument + Send>,
@@ -52,11 +52,9 @@ impl Render {
 
 	pub fn add_channel(&mut self, instrument_index: usize) {
 
-		// let new = Sine::new(self.sample_rate);
-		let new = new_instrument(self.sample_rate, instrument_index);
+		let new_instr = new_instrument(self.sample_rate, instrument_index);
 		let newch = Channel {
-			// instrument: Box::new(new),
-			instrument: new,
+			instrument: new_instr,
 			pan: Pan::new(self.sample_rate),
 		};
 		self.channels.push(newch);
