@@ -20,6 +20,8 @@ require("ui")
 require("views")
 require("workspace")
 require("parameter")
+require("devicelist")
+require("channels")
 
 -- load color theme
 require("settings/theme")
@@ -32,15 +34,16 @@ width, height = love.graphics.getDimensions( )
 
 audio_status = "wait"
 
+selection = {}
+
 function audioSetup()
 	audiolib.load(settings.audio.default_host, settings.audio.default_device)
 	-- audiolib.load("wasapi") 
 
 	-- midi_in = midi.load(settings.midi.default_input)
-	
-	audiolib.add()
-
-	audiolib.send_noteOn(0, {49   , 1.0});
+	channels.init()
+	channels.add("sine")
+	-- audiolib.send_noteOn(0, {49   , 1.0});
 	audio_status = "done"
 end
 
@@ -55,7 +58,7 @@ function love.load()
 	font_notes = love.graphics.newImageFont("res/font_notes.png",
 		" ABCDEFGHIJKLMNOPQRSTUVWXYZ"..
 		"0123456789.+-/"..
-		"qwerty".. --flats/sharps  b#
+		"qwerty" .. --flats/sharps  b#
 		"asdfgh" .. -- pluses minuses  +-
 		"zxcvbn" .. -- septimals L7
 		"iopjkl" .. -- quarternotes / undecimals  dt
@@ -65,15 +68,12 @@ function love.load()
 
 	love.graphics.setFont(font_main)
 
-	gainp = Parameter:new("gain", {default = -12,  t = "dB"})
-	panp = Parameter:new("pan", {default = 0, min = -1,max = 1, centered = true, fmt = "%0.2f"})
-
 	Workspace:load()
 	Workspace.box:split(0.7, true)
 	Workspace.box.children[2]:split(0.7, false)
 
 	Workspace.box.children[1]:setView(DefaultView:new())
-	Workspace.box.children[2].children[2]:setView(PannerView:new())
+	Workspace.box.children[2].children[2]:setView(TestPadView:new())
 	Workspace.box.children[2].children[1]:setView(ParameterView:new())
 end
 
@@ -82,7 +82,7 @@ function love.update(dt)
 	-- print(1/dt)
 	audiolib.parse_messages()
 
-	audiolib.send_pan(0, {gainp.v, panp.v})
+	channels.update()
 
 	-- midi.update(midi_in, handle_midi)
 end
@@ -144,7 +144,8 @@ function love.keypressed( key, isrepeat )
 	elseif key == 'q' then
 		audiolib.quit()
 	elseif key == 's' then
-		audiolib.load()
+		-- audiolib.load()
+		audio_status = "wait"
 	elseif key == 'p' then
 		if audiolib.paused then
 			audiolib.play()
@@ -154,14 +155,10 @@ function love.keypressed( key, isrepeat )
 	elseif key == 'r' then
 		render_wav()
 	elseif key == 'a' then
-		for i = 1, 5 do
-			numch = (numch or 1) 
-			print("numch: " .. numch)
-			audiolib.add()
-			audiolib.send_noteOn(numch, {(35 + numch)%300  , 0.5});
-			audiolib.send_pan(numch, {0.25, math.random()*2.0 - 1.0})
-			numch = numch + 1
-		end
+		channels.add("sine")
+		-- l = #channels.list - 1
+		-- audiolib.send_noteOn(l, {(35 + l)%300  , 0.5});
+		-- audiolib.send_pan(l, {0.05, math.random()*2.0 - 1.0})
 	end
 
 end
@@ -169,8 +166,6 @@ end
 function love.resize(w, h)
 	width = w
 	height = h
-
-	-- canvas = love.graphics.newCanvas(width, height)
 
 	Workspace:resize(width,height)
 end
@@ -199,6 +194,8 @@ function render_wav()
 		end
 		-- print(s[1])
 		wav.append(samples)
+
+		audiolib.parse_messages()
 	end
 	wav.close()
 	audiolib.play()

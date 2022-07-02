@@ -1,8 +1,8 @@
 ParameterView = View:derive("Parameters")
 
-Group = {}
+local Group = {}
 
-function Group:new(name)
+function Group:new(name, paramlist)
 	local new = {}
 	setmetatable(new,self)
 	self.__index = self
@@ -12,8 +12,9 @@ function Group:new(name)
 	new.collapse = false
 	new.sliders = {}
 
-	new.sliders[1] = Slider:new(gainp)
-	new.sliders[2] = Slider:new(panp)
+	for k,v in ipairs(paramlist) do
+		table.insert(new.sliders, Slider:new(v))
+	end 
 
 	return new
 end
@@ -57,15 +58,20 @@ function Group:getLength()
 	return #self.sliders + 1
 end
 
+function ParameterView:makeparametergroups(channel)
+	local parametergroups = {}
+	table.insert(parametergroups, Group:new("channel", channel.channel))
+	table.insert(parametergroups, Group:new(channel.instrument.name, channel.instrument.parameters))
+
+	return parametergroups
+end
+
 function ParameterView:new()
 	local new = {}
 	setmetatable(new,self)
 	self.__index = self
 
 	new.groups = {}
-	table.insert(new.groups, Group:new("first"))
-	table.insert(new.groups, Group:new("second"))
-	table.insert(new.groups, Group:new("third"))
 
 	new.select = nil
 	new.action = nil
@@ -120,6 +126,10 @@ function ParameterView:update()
 		end
 	else
 		self.select = nil
+	end
+
+	if selection.channel then
+		self.groups = selection.channel.parametergroups
 	end
 end
 

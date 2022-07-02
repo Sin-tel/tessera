@@ -45,7 +45,7 @@ pub struct C_AudioBuffer {
 #[derive(Debug)]
 pub enum AudioMessage {
 	CV(usize, CV),
-	NoteOn(usize, CV),
+	Note(usize, CV),
 	SetParam(usize, usize, usize, f32),
 	Pan(usize, f32, f32),
 }

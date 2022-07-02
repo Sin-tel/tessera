@@ -49,7 +49,7 @@ pub extern "C" fn send_CV(stream_ptr: *mut c_void, ch: usize, pitch: f32, vel: f
 pub extern "C" fn send_noteOn(stream_ptr: *mut c_void, ch: usize, pitch: f32, vel: f32) {
 	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
 
-	send_message(d, AudioMessage::NoteOn(ch, CV { pitch, vel }));
+	send_message(d, AudioMessage::Note(ch, CV { pitch, vel }));
 }
 
 #[no_mangle]
@@ -90,15 +90,13 @@ pub extern "C" fn pause(stream_ptr: *mut c_void) {
 }
 
 #[no_mangle]
-pub extern "C" fn add(stream_ptr: *mut c_void) {
+pub extern "C" fn add_channel(stream_ptr: *mut c_void, instrument_index: usize) {
 	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
-
-	// send_message(d, AudioMessage::Add);
 
 	// Should never fail
 	let mut render = d.m_render.lock().expect("Failed to get lock.");
 
-	render.add();
+	render.add_channel(instrument_index);
 }
 
 #[inline]

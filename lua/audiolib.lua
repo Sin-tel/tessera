@@ -58,19 +58,25 @@ end
 
 function audiolib.send_CV(index, t)
 	if stream_handle then
-		lib.send_CV(stream_handle, index,t[1], t[2] );
+		lib.send_CV(stream_handle, index, t[1], t[2] );
 	end
 end
 
 function audiolib.send_noteOn(index, t)
 	if stream_handle then
-		lib.send_noteOn(stream_handle, index,t[1], t[2] );
+		lib.send_noteOn(stream_handle, index, t[1], t[2] );
 	end
 end
 
 function audiolib.send_pan(index, t)
 	if stream_handle then
-		lib.send_pan(stream_handle, index,t[1], t[2] );
+		lib.send_pan(stream_handle, index, t[1], t[2] );
+	end
+end
+
+function audiolib.send_param(ch_index, device_index, index, value)
+	if stream_handle then
+		lib.send_param(stream_handle, ch_index, device_index, index, value);
 	end
 end
 
@@ -88,9 +94,9 @@ function audiolib.pause()
 	end
 end
 
-function audiolib.add()
+function audiolib.add_channel(instrument_index)
 	if stream_handle then
-		lib.add(stream_handle)
+		lib.add_channel(stream_handle, instrument_index)
 	end
 end
 
@@ -103,16 +109,14 @@ function audiolib.render_block()
 			return block
 		end
 	else
-		print("pause stream before rendering!!")
+		print("pause stream before rendering!")
 	end
 end
 
 function audiolib.parse_messages()
 	if stream_handle then
-		local nn = 0
 		while not lib.rx_is_empty(stream_handle) do
 			p = lib.rx_pop(stream_handle)
-			nn = nn + 1
 			if p.tag == "Cpu" then
 				Workspace.cpu_load = p.cpu
 			elseif p.tag == "Meter" then
@@ -120,9 +124,6 @@ function audiolib.parse_messages()
 				Workspace.meter.r = to_dB(p.meter._1)
 			end
 		end
-		-- if nn > 0 then
-			-- print("got n messages: ", nn)
-		-- end
 	end
 end
 

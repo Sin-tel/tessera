@@ -10,19 +10,23 @@ Lua
 [x] GUI Windowing 
 [x] Sliders
 [x] Color theme file
-[ ] Panner view
+[-] Panner view
 [ ] Scrolling
-[ ] Test pad view
-[ ] Parameter view
-[-] Send parameters
+[x] Test pad view
+[x] Parameter list
+[ ] Basic midi handling
+[x] Parameter view
+[+] Send parameters
 [ ] Type value in slider
-[ ] Layer/outliner view
+[ ] channel/outliner view
 [ ] Static piano roll setup
+[ ] Tabs
+[ ] Top ribbon menu
 [ ] Loop
 [ ] Tools
 [ ] Monophonic instruments list
 [ ] Save project
-[ ] Autogenerate params
+[ ] Autogenerate devicelist
 [ ] Basic piano roll editing
 [ ] Undo
 [ ] Implement decorators
@@ -30,10 +34,10 @@ Lua
 [ ] Envelope types
 [ ] Harmonic coordinate logic
 [ ] Root translation
+[ ] Temperament projection mapping
 [x] Add font
 [x] Render proper accidentals
 [ ] Fuzzy search command palette
-[ ] Temperament projection mapping
 
 Rust
 [x] ASIO support
@@ -46,14 +50,16 @@ Rust
 [x] volume / panning
 [x] Simple metering (cpu, dB meters, audio engine state)
 [ ] Poll audio/midi settings
+[ ] Add some effects
 [ ] Port over a bunch of protoplug devices
-[ ] Simple audio flow (parallel), maybe upgrade to DAG later
+[ ] Prepare for play (reset envs etc)
 [ ] Grouping mono instruments (e.g. string quartet)
 [ ] Polyphonic instruments (plucked, piano, etc)
 [ ] Spatial mixing (binaural panning, auto reverb)
 [ ] Automation
 [x] Support WASAPI
 [ ] Support macOS
+[ ] Simple audio flow (parallel)
 [ ] Support linux
 [ ] Vst hosting (pianoteq)
 [ ] FFT convolver

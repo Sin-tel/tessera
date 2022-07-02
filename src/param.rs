@@ -1,5 +1,17 @@
 // can autogen this
 use crate::instrument::sine::*;
+use crate::instrument::*;
+
+// list of instruments
+pub fn new_instrument(sample_rate: f32, index: usize) -> Box<dyn Instrument + Send>  {
+	match index {
+		0 => Box::new(Sine::new(sample_rate)),
+		_ => {
+			println!("Istrument index invalid! Returning default.");
+			Box::new(Sine::new(sample_rate))
+		}
+	}
+}
 
 pub trait Param {
 	fn set_param(&mut self, index: usize, val: f32);

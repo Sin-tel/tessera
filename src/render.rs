@@ -1,8 +1,8 @@
 use ringbuf::{Consumer, Producer};
 
 use crate::defs::*;
-use crate::instrument::sine::*;
 use crate::instrument::*;
+use crate::param::*;
 use crate::pan::*;
 use crate::math::*;
 
@@ -16,7 +16,6 @@ pub struct Render {
 	lua_tx: Producer<LuaMessage>,
 	channels: Vec<Channel>,
 	effects: Vec<Vec<Box<dyn Effect + Send>>>,
-	// buffer2: Vec<StereoSample>,
 	buffer2: [StereoSample; MAX_BUF_SIZE],
 	pub sample_rate: f32,
 
@@ -51,18 +50,17 @@ impl Render {
 		}
 	}
 
-	pub fn add(&mut self) {
+	pub fn add_channel(&mut self, instrument_index: usize) {
 
-		let new = Sine::new(self.sample_rate);
+		// let new = Sine::new(self.sample_rate);
+		let new = new_instrument(self.sample_rate, instrument_index);
 		let newch = Channel {
-			instrument: Box::new(new),
+			// instrument: Box::new(new),
+			instrument: new,
 			pan: Pan::new(self.sample_rate),
 		};
 		self.channels.push(newch);
 		self.effects.push(Vec::new());
-
-		// arbitrary test value
-		// self.send(LuaMessage::Test());
 	}
 
 	pub fn process(&mut self, buffer: &mut [StereoSample]) {
@@ -84,7 +82,7 @@ impl Render {
 			}
 		}
 
-		// // default 12dB headroom + tanh
+		// default 12dB headroom + tanh
 		// for sample in buffer.iter_mut() {
 		// 	sample.l = (sample.l * 0.25).tanh();
 		// 	sample.r = (sample.r * 0.25).tanh();
@@ -121,8 +119,8 @@ impl Render {
 					Some(ch) => ch.instrument.cv(cv.pitch, cv.vel),
 					None => println!("Channel index out of bounds!"),
 				},
-				AudioMessage::NoteOn(ch_index, cv) => match self.channels.get_mut(ch_index) {
-					Some(ch) => ch.instrument.note_on(cv.pitch, cv.vel),
+				AudioMessage::Note(ch_index, cv) => match self.channels.get_mut(ch_index) {
+					Some(ch) => ch.instrument.note(cv.pitch, cv.vel),
 					None => println!("Channel index out of bounds!"),
 				},
 				AudioMessage::SetParam(ch_index, device_index, index, val) => {
