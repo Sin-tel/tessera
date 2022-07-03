@@ -1,5 +1,3 @@
-
-
 View = {}
 
 function View:new()
@@ -19,7 +17,6 @@ function View:derive(name)
 	new.name = name
 	return new	
 end
-
 
 function View:draw() end
 
@@ -46,7 +43,6 @@ function View:mousereleased() end
 function View:update() end
 function View:wheelmoved() end
 
-
 function View:getDimensions()
 	return self.box.w - 2*BORDER_SIZE, self.box.h - HEADER - 2*BORDER_SIZE
 end
@@ -62,11 +58,11 @@ DefaultView =  View:derive("Default")
 
 
 -- kind of annoying but this has to be at the bottom
-require("views/channels")
-require("views/panner")
-require("views/parameters")
-require("views/song")
-require("views/testpad")
+require("views/channelview")
+require("views/pannerview")
+require("views/parameterview")
+require("views/songview")
+require("views/testpadview")
 
 
 -- Views = {

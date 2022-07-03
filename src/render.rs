@@ -9,6 +9,7 @@ use crate::param::*;
 pub struct Channel {
 	pub instrument: Box<dyn Instrument + Send>,
 	pub pan: Pan,
+	pub effects: Vec<Box<dyn Effect + Send>>,
 	pub mute: bool,
 }
 
@@ -16,7 +17,6 @@ pub struct Render {
 	audio_rx: Consumer<AudioMessage>,
 	lua_tx: Producer<LuaMessage>,
 	channels: Vec<Channel>,
-	effects: Vec<Vec<Box<dyn Effect + Send>>>,
 	buffer2: [StereoSample; MAX_BUF_SIZE],
 	pub sample_rate: f32,
 
@@ -34,7 +34,6 @@ impl Render {
 			audio_rx,
 			lua_tx,
 			channels: Vec::new(),
-			effects: Vec::new(),
 			buffer2: [Default::default(); MAX_BUF_SIZE],
 			sample_rate,
 			peakl: SmoothedEnv::new(0.0, 0.5, 0.1),
@@ -55,10 +54,10 @@ impl Render {
 		let newch = Channel {
 			instrument: new_instr,
 			pan: Pan::new(self.sample_rate),
+			effects: Vec::new(),
 			mute: false,
 		};
 		self.channels.push(newch);
-		self.effects.push(Vec::new());
 	}
 
 	pub fn process(&mut self, buffer: &mut [StereoSample]) {
@@ -114,29 +113,31 @@ impl Render {
 	pub fn parse_messages(&mut self) {
 		while let Some(m) = self.audio_rx.pop() {
 			match m {
-				// todo send to correct channel
 				AudioMessage::CV(ch_index, cv) => match self.channels.get_mut(ch_index) {
-					Some(ch) => ch.instrument.cv(cv.pitch, cv.vel),
+					Some(ch) => if !ch.mute {
+						ch.instrument.cv(cv.pitch, cv.vel);
+					},
 					None => println!("Channel index out of bounds!"),
 				},
 				AudioMessage::Note(ch_index, cv) => match self.channels.get_mut(ch_index) {
-					Some(ch) => ch.instrument.note(cv.pitch, cv.vel),
+					Some(ch) => if !ch.mute {
+						ch.instrument.note(cv.pitch, cv.vel);
+					},
 					None => println!("Channel index out of bounds!"),
 				},
 				AudioMessage::SetParam(ch_index, device_index, index, val) => {
-					if device_index == 0 {
-						match self.channels.get_mut(ch_index) {
-							Some(ch) => ch.instrument.set_param(index, val),
-							None => println!("Channel index out of bounds!"),
+					match self.channels.get_mut(ch_index) {
+						Some(ch) => {
+							if device_index == 0 {
+								ch.instrument.set_param(index, val);
+							} else {
+								match ch.effects.get_mut(device_index - 1) {
+									Some(e) => e.set_param(index, val),
+									None => println!("Device index out of bounds!"),
+								}
+							}
 						}
-					} else {
-						match self.effects.get_mut(ch_index) {
-							Some(ch) => match ch.get_mut(device_index - 1) {
-								Some(e) => e.set_param(index, val),
-								None => println!("Device index out of bounds!"),
-							},
-							None => println!("Channel index out of bounds!"),
-						}
+						None => println!("Channel index out of bounds!"),
 					}
 				}
 				AudioMessage::Pan(ch_index, gain, pan) => match self.channels.get_mut(ch_index) {

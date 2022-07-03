@@ -43,7 +43,6 @@ time = 0
 
 function audioSetup()
 	audiolib.load(settings.audio.default_host, settings.audio.default_device)
-	-- audiolib.load("wasapi") 
 
 	midi_in = midi.load(settings.midi.default_input)
 
@@ -79,13 +78,13 @@ function love.load()
 	love.graphics.setFont(font_main)
 
 	icons = {}
-	icons.solo = love.graphics.newImage("res/solo.png")
-	icons.mute = love.graphics.newImage("res/mute.png")
-	icons.armed = love.graphics.newImage("res/armed.png")
-	icons.visible = love.graphics.newImage("res/visible.png")
+	icons.solo      = love.graphics.newImage("res/solo.png")
+	icons.mute      = love.graphics.newImage("res/mute.png")
+	icons.armed     = love.graphics.newImage("res/armed.png")
+	icons.visible   = love.graphics.newImage("res/visible.png")
 	icons.invisible = love.graphics.newImage("res/invisible.png")
-	icons.lock = love.graphics.newImage("res/lock.png")
-	icons.unlock = love.graphics.newImage("res/unlock.png")
+	icons.lock      = love.graphics.newImage("res/lock.png")
+	icons.unlock    = love.graphics.newImage("res/unlock.png")
 
 	---setup workspace---
 	Workspace:load()
@@ -129,7 +128,6 @@ function love.draw()
 
 	Mouse:update()
 	Workspace:update()
-
 
 	Mouse:updateCursor()
 	----draw----------
@@ -185,9 +183,6 @@ function love.keypressed( key, isrepeat )
 		render_wav()
 	elseif key == 'a' then
 		channels.add("sine")
-		-- l = #channels.list - 1
-		-- audiolib.send_noteOn(l, {(35 + l)%300  , 0.5});
-		-- audiolib.send_pan(l, {0.05, math.random()*2.0 - 1.0})
 	end
 
 end

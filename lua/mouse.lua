@@ -86,12 +86,6 @@ function Mouse:update(x, y)
 		end
 	end
 
-	-- print(self.dx, self.dy)
-	-- if self.drag then
-		-- self.dx = self.x - self.ix
-		-- self.dy = self.y - self.iy
-	-- end
-
 	self.cursor = cursor_default
 end
 
