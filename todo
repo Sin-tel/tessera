@@ -13,7 +13,7 @@ Lua
 [-] Panner view
 [x] Test pad view
 [x] Parameter list
-[-] Basic midi handling
+[x] Basic midi handling
 [x] Parameter view
 [x] Send parameters
 [x] Scrolling
@@ -27,6 +27,10 @@ Lua
 [ ] Tools
 [ ] add instrument menu/list
 [ ] add effects menu/list
+[ ] Remove channel
+[ ] Reorder channels
+[ ] Reorder effects
+[ ] Rebuild channels from lua data
 [ ] Save project
 [ ] Autogenerate devicelist
 [ ] Basic piano roll editing

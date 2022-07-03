@@ -41,11 +41,11 @@ function TestPadView:draw()
 		mxx = (mx - x1) / (x2-x1)
 		myy = (my - y1) / (y2-y1)
 
-		self.f = 12 + 48*mxx
+		self.f = 36 + 48*mxx
 
 		self.v = 1.0 - myy
 
-		if self.note then
+		if Mouse.button == 1 or Mouse.button == 2 then
 			audiolib.send_CV(selection.channel.index, {self.f, self.v})
 		end
 	end
@@ -55,7 +55,7 @@ function TestPadView:mousepressed()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
-	if Mouse.button == 1 and selection.channel then
+	if Mouse.button == 1 or Mouse.button == 2 and selection.channel then
 		audiolib.send_noteOn(selection.channel.index, {self.f, self.v})
 		self.note = true
 	end

@@ -53,6 +53,8 @@ function channels.add(name)
 
 		audiolib.add_channel(new.instrument.index)
 		selection.channel = new
+
+		return new
 	else
 		print("instrument not found: " .. name)
 	end

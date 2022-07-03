@@ -101,7 +101,7 @@ function ChannelView:draw()
 		if selection.channel == v then
 			love.graphics.setColor(Theme.highlight)
 		end
-		drawText(v.name, 0, y, w, UI_GRID, "left")
+		drawText(v.name, 0, y, w - BUTTON_SMALL*5 , UI_GRID, "left")
 
 		if v.mute then
 			love.graphics.setColor(Theme.mute)

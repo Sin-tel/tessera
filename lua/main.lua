@@ -36,17 +36,19 @@ audio_status = "wait"
 
 selection = {}
 
+time = 0
+
 -- temp stuff, to delete
-sendcount = 0
+
 
 function audioSetup()
 	audiolib.load(settings.audio.default_host, settings.audio.default_device)
 	-- audiolib.load("wasapi") 
 
-	-- midi_in = midi.load(settings.midi.default_input)
+	midi_in = midi.load(settings.midi.default_input)
 
 	channels.init()
-	channels.add("sine")
+	channels.add("sine").armed = true
 	channels.add("sine")
 	channels.add("sine")
 
@@ -85,16 +87,13 @@ function love.load()
 	icons.lock = love.graphics.newImage("res/lock.png")
 	icons.unlock = love.graphics.newImage("res/unlock.png")
 
-
-
-
 	---setup workspace---
 	Workspace:load()
 	Workspace.box:split(0.7, true)
 
 	-- Workspace.box.children[1]:setView(DefaultView:new())
 	Workspace.box.children[1]:split(0.7, false)
-	Workspace.box.children[1].children[1]:setView(DefaultView:new())
+	Workspace.box.children[1].children[1]:setView(SongView:new())
 	Workspace.box.children[1].children[2]:setView(TestPadView:new())
 
 	Workspace.box.children[2]:split(0.5, false)
@@ -105,12 +104,15 @@ end
 
 
 function love.update(dt) 
+	time = time + dt
 	-- print(1/dt)
+	if audio_status == "done" then
+		audiolib.parse_messages()
+		
+		midi.update(midi_in, handle_midi)
 
-	audiolib.parse_messages()
-	channels.update()
-	
-	-- midi.update(midi_in, handle_midi)
+		channels.update()
+	end
 end
 
 
@@ -168,6 +170,7 @@ function love.keypressed( key, isrepeat )
 	if key == 'escape' then
 			love.event.quit()
 	elseif key == 'q' then
+		midi.close(midi_in)
 		audiolib.quit()
 	elseif key == 's' then
 		-- audiolib.load()
