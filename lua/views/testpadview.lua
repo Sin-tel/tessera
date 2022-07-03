@@ -30,6 +30,15 @@ function TestPadView:draw()
 	love.graphics.setColor(Theme.widget_line)
 	love.graphics.rectangle("line", x1, y1, x2-x1, y2-y1)
 
+	local oct = math.floor(w / 200)
+	if oct < 1 then
+		oct = 1
+	end
+	for i = 1, oct-1 do
+		xx = x1 + i * (x2-x1) / oct
+		love.graphics.line(xx, y1, xx, y2)
+	end
+
 	love.graphics.setColor(Theme.ui_text)
 
 	mx = clamp(mx,x1,x2)
@@ -41,7 +50,7 @@ function TestPadView:draw()
 		mxx = (mx - x1) / (x2-x1)
 		myy = (my - y1) / (y2-y1)
 
-		self.f = 36 + 48*mxx
+		self.f = 60 - math.floor(oct*0.5)*12  + oct*12*mxx
 
 		self.v = 1.0 - myy
 

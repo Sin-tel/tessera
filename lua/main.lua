@@ -22,6 +22,7 @@ require("workspace")
 require("parameter")
 require("devicelist")
 require("channel_handler")
+require("pitch")
 
 -- load color theme
 require("settings/theme")
@@ -67,7 +68,7 @@ function love.load()
 	font_notes = love.graphics.newImageFont("res/font_notes.png",
 		" ABCDEFGHIJKLMNOPQRSTUVWXYZ"..
 		"0123456789.+-/"..
-		"qwerty" .. --flats/sharps  b#
+		"qwerty" .. -- flats/sharps  b#
 		"asdfgh" .. -- pluses minuses  +-
 		"zxcvbn" .. -- septimals L7
 		"iopjkl" .. -- quarternotes / undecimals  dt

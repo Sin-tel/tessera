@@ -133,7 +133,11 @@ function ChannelView:draw()
 		end
 		
 		if v.lock then
-			love.graphics.setColor(Theme.ui_text)
+			if v.visible then
+				love.graphics.setColor(Theme.ui_text)
+			else
+				love.graphics.setColor(Theme.text_dim)
+			end
 			love.graphics.draw(icons.lock, w - BUTTON_SMALL*1, y+4)
 		else
 			love.graphics.setColor(Theme.text_dim)

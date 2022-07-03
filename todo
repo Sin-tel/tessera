@@ -10,37 +10,43 @@ Lua
 [x] GUI Windowing 
 [x] Sliders
 [x] Color theme file
-[-] Panner view
 [x] Test pad view
 [x] Parameter list
 [x] Basic midi handling
 [x] Parameter view
 [x] Send parameters
 [x] Scrolling
-[ ] Type value in slider
 [x] outliner buttons (mute, solo, arm, visible)
-[-] channel/outliner view
+[x] channel/outliner view
+[-] Panner view
+[ ] Keyboard note playing
+[ ] Harmonic coordinate logic
 [ ] Static piano roll setup
+[ ] Basic piano roll keyboard editing
+[ ] Add note internal vertices
+[ ] Project tempo
+[ ] Project grid / time division
+[ ] Time warping
+[ ] Type value in slider
 [ ] Top ribbon menu
 [ ] Tabs/workspaces
 [ ] Loop
 [ ] Tools
 [ ] add instrument menu/list
 [ ] add effects menu/list
+[ ] Parse tuning files
+[ ] Midi remapping 
 [ ] Remove channel
 [ ] Reorder channels
 [ ] Reorder effects
 [ ] Rebuild channels from lua data
 [ ] Save project
 [ ] Autogenerate devicelist
-[ ] Basic piano roll editing
 [ ] Undo
 [ ] Implement decorators
 [ ] Implement envelopes
 [ ] Envelope types
-[ ] Harmonic coordinate logic
 [ ] Root translation
-[ ] Temperament projection mapping
 [x] Add font
 [x] Render proper accidentals
 [ ] Fuzzy search command palette
@@ -52,18 +58,22 @@ Rust
 [x] Dynamic buffer size
 [x] Single instrument
 [x] Render to wav
-[+] Mixing channels
 [x] volume / panning
 [x] Simple metering (cpu, dB meters, audio engine state)
 [x] channel mute
-[ ] Poll audio/midi settings
+[+] Mixing channels
 [ ] Add some effects
+[ ] Poll audio/midi settings
+[ ] Reset audio driver to change settings in ASIO panel
 [ ] Port over a bunch of protoplug devices
 [ ] Prepare for play (reset envs etc)
-[ ] Grouping mono instruments (e.g. string quartet)
+[ ] Group channels
+[ ] Master channel
+[ ] Return track?
+[ ] global reverb ~ panning
 [ ] Polyphonic instruments (plucked, piano, etc)
 [x] binaural panning 
-[ ] global reverb ~ panning
+[ ] panning pre/post switch
 [ ] Automation
 [x] Support WASAPI
 [ ] Support macOS
