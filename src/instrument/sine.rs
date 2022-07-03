@@ -44,7 +44,7 @@ impl Instrument for Sine {
 
 			self.prev = out;
 
-			out = self.filter.process(out);
+			// out = self.filter.process(out);
 
 			sample.l = out;
 			sample.r = out;

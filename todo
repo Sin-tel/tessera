@@ -55,7 +55,8 @@ Rust
 [ ] Prepare for play (reset envs etc)
 [ ] Grouping mono instruments (e.g. string quartet)
 [ ] Polyphonic instruments (plucked, piano, etc)
-[ ] Spatial mixing (binaural panning, auto reverb)
+[x] binaural panning 
+[ ] global reverb ~ panning
 [ ] Automation
 [x] Support WASAPI
 [ ] Support macOS

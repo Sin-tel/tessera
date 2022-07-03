@@ -78,6 +78,7 @@ name = "audiolib"
 version = "0.1.0"
 dependencies = [
  "assert_no_alloc",
+ "bit_mask_ring_buf",
  "clang-sys",
  "cpal",
  "fastrand",
@@ -133,6 +134,12 @@ dependencies = [
  "shlex",
  "which",
 ]
+
+[[package]]
+name = "bit_mask_ring_buf"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "814d322c0ca70335d8f592e2bc02e1110dc8b2ba3a4c9a2d1c3b624c2681eb0b"
 
 [[package]]
 name = "bitflags"
