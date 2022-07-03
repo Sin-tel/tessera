@@ -15,16 +15,18 @@ Lua
 [x] Parameter list
 [-] Basic midi handling
 [x] Parameter view
-[+] Send parameters
-[ ] Scrolling
+[x] Send parameters
+[x] Scrolling
 [ ] Type value in slider
+[x] outliner buttons (mute, solo, arm, visible)
 [-] channel/outliner view
 [ ] Static piano roll setup
-[ ] Tabs/workspaces
 [ ] Top ribbon menu
+[ ] Tabs/workspaces
 [ ] Loop
 [ ] Tools
-[ ] Monophonic instruments list
+[ ] add instrument menu/list
+[ ] add effects menu/list
 [ ] Save project
 [ ] Autogenerate devicelist
 [ ] Basic piano roll editing
@@ -49,6 +51,7 @@ Rust
 [+] Mixing channels
 [x] volume / panning
 [x] Simple metering (cpu, dB meters, audio engine state)
+[x] channel mute
 [ ] Poll audio/midi settings
 [ ] Add some effects
 [ ] Port over a bunch of protoplug devices

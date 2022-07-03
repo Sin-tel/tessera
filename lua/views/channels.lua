@@ -39,15 +39,51 @@ function ChannelView:mousepressed()
 	if Mouse.button == 1 then
 		for i,v in ipairs(channels.list) do
 			if i == self.index then
-				selection.channel = v
+				if mx < w - BUTTON_SMALL*5 then
+					selection.channel = v
+				else
+					local ind = math.floor(((mx - w)/BUTTON_SMALL) + 6)
+					if ind == 1 then
+						channels.mute(v, not v.mute)
+						for _,ch in ipairs(channels.list) do
+							ch.solo = false
+						end
+					elseif ind == 2 then
+						if v.solo then
+							for _,ch in ipairs(channels.list) do
+								ch.solo = false
+								channels.mute(ch, false)
+							end
+						else
+							for _,ch in ipairs(channels.list) do
+								ch.solo = false
+								channels.mute(ch, true)
+							end
+							v.solo = true
+							channels.mute(v, false)
+						end
+					elseif ind == 3 then
+						if v.armed then
+							v.armed = false
+						else
+							for _,ch in ipairs(channels.list) do
+								ch.armed = false
+							end
+							v.armed = true
+						end
+					elseif ind == 4 then
+						v.visible = not v.visible
+					elseif ind == 5 then
+						v.lock = not v.lock
+					end
+				end
+
+
 			end
 		end
 	end
 end
 
-function ChannelView:mousereleased()
-
-end
 
 function ChannelView:draw()
 	local w, h = self:getDimensions()
@@ -66,6 +102,44 @@ function ChannelView:draw()
 			love.graphics.setColor(Theme.highlight)
 		end
 		drawText(v.name, 0, y, w, UI_GRID, "left")
+
+		if v.mute then
+			love.graphics.setColor(Theme.mute)
+		else
+			love.graphics.setColor(Theme.text_dim)
+		end
+		love.graphics.draw(icons.mute   , w - BUTTON_SMALL*5, y+4)
+
+		if v.solo then
+			love.graphics.setColor(Theme.solo)
+		else
+			love.graphics.setColor(Theme.text_dim)
+		end
+		love.graphics.draw(icons.solo   , w - BUTTON_SMALL*4, y+4)
+
+		if v.armed then
+			love.graphics.setColor(Theme.recording)
+		else
+			love.graphics.setColor(Theme.text_dim)
+		end
+		love.graphics.draw(icons.armed  , w - BUTTON_SMALL*3, y+4)
+
+		if v.visible then
+			love.graphics.setColor(Theme.ui_text)
+			love.graphics.draw(icons.visible, w - BUTTON_SMALL*2, y+4)
+		else
+			love.graphics.setColor(Theme.text_dim)
+			love.graphics.draw(icons.invisible, w - BUTTON_SMALL*2, y+4)
+		end
+		
+		if v.lock then
+			love.graphics.setColor(Theme.ui_text)
+			love.graphics.draw(icons.lock, w - BUTTON_SMALL*1, y+4)
+		else
+			love.graphics.setColor(Theme.text_dim)
+			love.graphics.draw(icons.unlock, w - BUTTON_SMALL*1, y+4)
+		end
+
 	end
 end
 

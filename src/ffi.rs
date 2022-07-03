@@ -60,6 +60,13 @@ pub extern "C" fn send_pan(stream_ptr: *mut c_void, ch: usize, gain: f32, pan: f
 }
 
 #[no_mangle]
+pub extern "C" fn send_mute(stream_ptr: *mut c_void, ch: usize, mute: bool) {
+	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
+
+	send_message(d, AudioMessage::Mute(ch, mute));
+}
+
+#[no_mangle]
 pub extern "C" fn send_param(
 	stream_ptr: *mut c_void,
 	ch_index: usize,

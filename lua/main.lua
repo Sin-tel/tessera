@@ -36,6 +36,9 @@ audio_status = "wait"
 
 selection = {}
 
+-- temp stuff, to delete
+sendcount = 0
+
 function audioSetup()
 	audiolib.load(settings.audio.default_host, settings.audio.default_device)
 	-- audiolib.load("wasapi") 
@@ -43,6 +46,8 @@ function audioSetup()
 	-- midi_in = midi.load(settings.midi.default_input)
 
 	channels.init()
+	channels.add("sine")
+	channels.add("sine")
 	channels.add("sine")
 
 	audio_status = "done"
@@ -53,6 +58,8 @@ function love.load()
 	love.math.setRandomSeed(os.time())
 	settings = settings_handler.load()
 	Mouse:load()
+
+	---load resources---
 
 	-- font_main = love.graphics.newFont(12)
 	font_main = love.graphics.newFont("res/dejavu_normal.fnt", "res/dejavu_normal.png")
@@ -69,6 +76,19 @@ function love.load()
 
 	love.graphics.setFont(font_main)
 
+	icons = {}
+	icons.solo = love.graphics.newImage("res/solo.png")
+	icons.mute = love.graphics.newImage("res/mute.png")
+	icons.armed = love.graphics.newImage("res/armed.png")
+	icons.visible = love.graphics.newImage("res/visible.png")
+	icons.invisible = love.graphics.newImage("res/invisible.png")
+	icons.lock = love.graphics.newImage("res/lock.png")
+	icons.unlock = love.graphics.newImage("res/unlock.png")
+
+
+
+
+	---setup workspace---
 	Workspace:load()
 	Workspace.box:split(0.7, true)
 

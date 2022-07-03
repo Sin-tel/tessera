@@ -2,9 +2,9 @@
 
 mod audio;
 mod defs;
+mod dsp;
 mod ffi;
 mod instrument;
-mod dsp;
 mod pan;
 mod param;
 mod render;

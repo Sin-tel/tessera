@@ -5,6 +5,7 @@ SLIDER_HEIGHT = 18
 SLIDER_RADIUS = 6
 SLIDER_TEXT_PAD = 150
 SLIDER_OFFSET = 8
+BUTTON_SMALL = 18
 
 function Slider:new(p)
 	local new = {}

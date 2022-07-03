@@ -3,7 +3,7 @@ use crate::param::Param;
 
 pub mod sine;
 
-pub trait Instrument: Param{
+pub trait Instrument: Param {
 	fn new(sample_rate: f32) -> Self
 	where
 		Self: Sized;
@@ -12,10 +12,9 @@ pub trait Instrument: Param{
 	fn note(&mut self, pitch: f32, vel: f32);
 }
 
-pub trait Effect: Param{
+pub trait Effect: Param {
 	fn new(sample_rate: f32) -> Self
 	where
 		Self: Sized;
 	fn process(&mut self, buffer: &mut [StereoSample]);
 }
-

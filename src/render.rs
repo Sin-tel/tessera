@@ -1,14 +1,15 @@
 use ringbuf::{Consumer, Producer};
 
 use crate::defs::*;
-use crate::instrument::*;
-use crate::param::*;
-use crate::pan::*;
 use crate::dsp::*;
+use crate::instrument::*;
+use crate::pan::*;
+use crate::param::*;
 
 pub struct Channel {
 	pub instrument: Box<dyn Instrument + Send>,
 	pub pan: Pan,
+	pub mute: bool,
 }
 
 pub struct Render {
@@ -34,7 +35,6 @@ impl Render {
 			lua_tx,
 			channels: Vec::new(),
 			effects: Vec::new(),
-			// buffer2: vec![Default::default(); MAX_BUF_SIZE],
 			buffer2: [Default::default(); MAX_BUF_SIZE],
 			sample_rate,
 			peakl: SmoothedEnv::new(0.0, 0.5, 0.1),
@@ -51,11 +51,11 @@ impl Render {
 	}
 
 	pub fn add_channel(&mut self, instrument_index: usize) {
-
 		let new_instr = new_instrument(self.sample_rate, instrument_index);
 		let newch = Channel {
 			instrument: new_instr,
 			pan: Pan::new(self.sample_rate),
+			mute: false,
 		};
 		self.channels.push(newch);
 		self.effects.push(Vec::new());
@@ -72,11 +72,13 @@ impl Render {
 
 		// process all channels
 		for ch in self.channels.iter_mut() {
-			ch.instrument.process(buf_slice);
-			ch.pan.process(buf_slice);
-			for (outsample, insample) in buffer.iter_mut().zip(buf_slice.iter()) {
-				outsample.l += insample.l;
-				outsample.r += insample.r;
+			if !ch.mute {
+				ch.instrument.process(buf_slice);
+				ch.pan.process(buf_slice);
+				for (outsample, insample) in buffer.iter_mut().zip(buf_slice.iter()) {
+					outsample.l += insample.l;
+					outsample.r += insample.r;
+				}
 			}
 		}
 
@@ -88,6 +90,7 @@ impl Render {
 
 		let mut suml: f32 = 0.0;
 		let mut sumr: f32 = 0.0;
+
 		// peak meter
 		for sample in buffer.iter_mut() {
 			suml = suml.max(sample.l.abs());
@@ -102,9 +105,9 @@ impl Render {
 
 		self.send(LuaMessage::Meter(self.peakl.value, self.peakr.value));
 
-		 for sample in buffer.iter_mut() {
-			sample.l = sample.l.clamp(-1.0,1.0);
-			sample.r = sample.r.clamp(-1.0,1.0);
+		for sample in buffer.iter_mut() {
+			sample.l = sample.l.clamp(-1.0, 1.0);
+			sample.r = sample.r.clamp(-1.0, 1.0);
 		}
 	}
 
@@ -140,8 +143,10 @@ impl Render {
 					Some(ch) => ch.pan.set(gain, pan),
 					None => println!("Channel index out of bounds!"),
 				},
-				// _ => eprintln!("Didnt handle message!"),
-				// AudioMessage::Add => self.add(),
+				AudioMessage::Mute(ch_index, mute) => match self.channels.get_mut(ch_index) {
+					Some(ch) => ch.mute = mute,
+					None => println!("Channel index out of bounds!"),
+				},
 			}
 		}
 	}

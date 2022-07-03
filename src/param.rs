@@ -3,11 +3,14 @@ use crate::instrument::sine::*;
 use crate::instrument::*;
 
 // list of instruments
-pub fn new_instrument(sample_rate: f32, index: usize) -> Box<dyn Instrument + Send>  {
+pub fn new_instrument(sample_rate: f32, index: usize) -> Box<dyn Instrument + Send> {
 	match index {
 		0 => Box::new(Sine::new(sample_rate)),
 		_ => {
-			eprintln!("Instrument with index {} not found. Returning default.", index);
+			eprintln!(
+				"Instrument with index {} not found. Returning default.",
+				index
+			);
 			Box::new(Sine::new(sample_rate))
 		}
 	}

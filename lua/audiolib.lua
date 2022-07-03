@@ -74,6 +74,12 @@ function audiolib.send_pan(index, t)
 	end
 end
 
+function audiolib.send_mute(index, mute)
+	if stream_handle then
+		lib.send_mute(stream_handle, index, mute);
+	end
+end
+
 function audiolib.send_param(ch_index, device_index, index, value)
 	if stream_handle then
 		lib.send_param(stream_handle, ch_index, device_index, index, value);

@@ -11,9 +11,9 @@ use assert_no_alloc::*;
 static A: AllocDisabler = AllocDisabler;
 
 use crate::defs::*;
+use crate::dsp::*;
 use crate::ffi::*;
 use crate::render::*;
-use crate::dsp::*;
 
 pub fn audio_run(host_name: &str, output_device_name: &str) -> Result<Userdata, Box<dyn Error>> {
 	let output_device = find_output_device(host_name, output_device_name)?;
@@ -119,8 +119,6 @@ where
 					// write to output buffer
 					render.process(&mut buf_slice);
 
-					// dunno if this assert helps
-					// assert!(buffer.len() == buf_slice.len() * 2);
 					for (outsample, gensample) in buffer.chunks_exact_mut(2).zip(buf_slice.iter()) {
 						outsample[0] = cpal::Sample::from::<f32>(&gensample.l);
 						outsample[1] = cpal::Sample::from::<f32>(&gensample.r);
@@ -227,7 +225,6 @@ fn err_fn(err: cpal::StreamError) {
 	eprintln!("an error occurred on stream: {}", err);
 }
 
-#[inline]
 pub fn fix_denorms() {
 	unsafe {
 		use std::arch::x86_64::*;

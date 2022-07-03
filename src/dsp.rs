@@ -1,6 +1,5 @@
-pub mod simper;
 pub mod delayline;
-
+pub mod simper;
 
 #[inline]
 pub fn pitch_to_f(p: f32, sample_rate: f32) -> f32 {
@@ -13,6 +12,7 @@ pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
 }
 
 #[inline]
+#[allow(dead_code)]
 pub fn from_db(x: f32) -> f32 {
 	(10.0f32).powf(x / 20.0)
 }

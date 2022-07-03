@@ -6,6 +6,7 @@ pub struct DelayLine {
 	buf: BMRingBuf<f32>,
 	sample_rate: f32,
 	pos: isize,
+	h: [f32; 4],
 }
 
 #[allow(dead_code)]
@@ -15,6 +16,7 @@ impl DelayLine {
 			buf: BMRingBuf::<f32>::from_len((len * sample_rate) as usize),
 			sample_rate,
 			pos: 0,
+			h: [0.0, 0.0, 0.0, 0.0],
 		}
 	}
 
@@ -30,10 +32,36 @@ impl DelayLine {
 
 	pub fn go_back_linear(&mut self, time: f32) -> f32 {
 		let dt = time * self.sample_rate;
-		let fpos = (self.pos as f32) - dt;
-		let ipos = fpos as isize;
-		let frac = fpos.fract();
+		let idt = dt as isize;
+		let frac = dt.fract();
 
-		lerp(self.buf[ipos], self.buf[ipos - 1], frac)
+		lerp(self.buf[self.pos - idt], self.buf[self.pos - idt - 1], frac)
+	}
+
+	fn calc_coeff(&mut self, delay: f32) -> isize {
+		let intd = delay.floor();
+		let dm1 = delay - intd;
+		let d = dm1 + 1.;
+		let dm2 = dm1 - 1.;
+		let dm3 = dm1 - 2.;
+		self.h[0] = (-1. / 6.) * dm1 * dm2 * dm3;
+		self.h[1] = 0.5 * d * dm2 * dm3;
+		self.h[2] = -0.5 * d * dm1 * dm3;
+		self.h[3] = (1. / 6.) * d * dm1 * dm2;
+
+		(intd - 1.) as isize
+	}
+
+	pub fn go_back_cubic(&mut self, time: f32) -> f32 {
+		let dt = time * self.sample_rate;
+		let idt = self.calc_coeff(dt);
+
+		let mut sum = 0.0f32;
+
+		for (i, h) in self.h.iter().enumerate() {
+			sum += self.buf[self.pos - idt - (i as isize)] * h;
+		}
+
+		sum
 	}
 }

@@ -9,6 +9,8 @@ function Parameter:new(name, tbl)
 	new.name = name or "Value"
 	new.centered = tbl.centered
 
+	new.dirty = true
+
 	if new.t == "dB" then
 		new.v = from_dB(tbl.default)
 		new.default = from_dB(tbl.default)
@@ -33,10 +35,12 @@ end
 
 -- function Parameter:setRaw(x)
 -- 	self.v = x
+-- 	self.dirty = true
 -- end
 
 function Parameter:reset()
 	self.v = self.default
+	self.dirty = true
 end
 
 function Parameter:setNormalized(x)
@@ -47,6 +51,7 @@ function Parameter:setNormalized(x)
 	else
 		self.v = x * (self.max - self.min) + self.min
 	end
+	self.dirty = true
 end
 
 function Parameter:getNormalized(x)
