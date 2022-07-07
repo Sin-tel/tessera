@@ -60,7 +60,7 @@ end
 
 function ParameterView:makeparametergroups(channel)
 	local parametergroups = {}
-	table.insert(parametergroups, Group:new("channel", channel.channel))
+	table.insert(parametergroups, Group:new("channel", channel.parameters))
 	table.insert(parametergroups, Group:new(channel.instrument.name, channel.instrument.parameters))
 
 	return parametergroups
@@ -97,7 +97,7 @@ function ParameterView:update()
 
 	if self.box.focus then
 		if self.action == "slider" then
-			if Mouse.drag then
+			if mouse.drag then
 				self.select:drag(w)
 			end
 		else
@@ -129,7 +129,7 @@ function ParameterView:mousepressed()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
-	if Mouse.button == 1 then
+	if mouse.button == 1 then
 		if self.select then
 			self.select:dragStart()
 
@@ -146,7 +146,7 @@ function ParameterView:mousepressed()
 				index = index - v:getLength()
 			end
 		end
-	elseif Mouse.button == 2 then
+	elseif mouse.button == 2 then
 		if self.select then
 			self.select:reset()
 		end
@@ -160,7 +160,7 @@ function ParameterView:mousereleased()
 	if self.action == "slider" then
 		local s = self.select:getPosition(w)
 		love.mouse.setRelativeMode(false)
-		if Mouse.drag then
+		if mouse.drag then
 			love.mouse.setPosition(self.box.x + s, self.box.y + self.select_i*UI_GRID + HEADER + 0.5*UI_GRID - self.scroll)
 		end
 	end

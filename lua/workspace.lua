@@ -1,6 +1,6 @@
 local audiolib = require("audiolib")
 
-Workspace = {}
+workspace = {}
 
 RESIZE_W = 5
 MIN_SIZE = 32
@@ -9,7 +9,7 @@ BORDER_RADIUS = 4
 BORDER_SIZE = 1
 RIBBON = 32
 
-function Workspace:load()
+function workspace:load()
 	self.w = width
 	self.h = height
 	self.box = Box:new(0, RIBBON, width, height - RIBBON)
@@ -18,7 +18,7 @@ function Workspace:load()
 	self.meter = {l = -math.huge, r = -math.huge}
 end
 
-function Workspace:resize(w,h) 
+function workspace:resize(w,h) 
 	self.w = w
 	self.h = h 
 
@@ -26,7 +26,7 @@ function Workspace:resize(w,h)
 	self.box:resize(0,RIBBON,w,h- RIBBON) -- second time to satisfy constraints properly
 end
 
-function Workspace:draw()
+function workspace:draw()
 	local ll = clamp(self.cpu_load, 0, 1)
 	local hl_col = Theme.highlight
 	if self.cpu_load > 1.0 then
@@ -73,9 +73,9 @@ function Workspace:draw()
 	self.box:draw()
 end
 
-function Workspace:update()
-	if self.dragDiv and Mouse.drag then
-		self.dragDiv:set_split(Mouse.x,Mouse.y)
+function workspace:update()
+	if self.dragDiv and mouse.drag then
+		self.dragDiv:set_split(mouse.x,mouse.y)
 	end
 	-- update
 	self.box:forAll(function(b)
@@ -83,19 +83,19 @@ function Workspace:update()
 	end)
 	
 	local div = self.dragDiv
-	if not Mouse.isDown then
+	if not mouse.isDown then
 		div = div or self.box:getDivider()
 		self.box:forAll(function(b) b.focus = false end)
 		self.focus = nil
 	end
 	if div then
 		if div.vertical then
-			Mouse.cursor = cursor_v
+			mouse.cursor = cursor_v
 		else
-			Mouse.cursor = cursor_h
+			mouse.cursor = cursor_h
 		end
 	else
-		if not Mouse.isDown then
+		if not mouse.isDown then
 			b = self.box:get()
 			if b then
 				b.focus = true
@@ -105,10 +105,10 @@ function Workspace:update()
 	end
 end
 
-function Workspace:mousepressed()
+function workspace:mousepressed()
 	local div = false
-	if Mouse.button == 1 then
-		div = self.box:getDivider(Mouse.x, Mouse.y)
+	if mouse.button == 1 then
+		div = self.box:getDivider(mouse.x, mouse.y)
 		if div then
 			self.dragDiv = div
 		end
@@ -119,14 +119,14 @@ function Workspace:mousepressed()
 	end
 end
 
-function Workspace:mousereleased()
+function workspace:mousereleased()
 	self.dragDiv = nil
 	if self.focus then
 		self.focus:mousereleased()
 	end
 end
 
-function Workspace:wheelmoved(y)
+function workspace:wheelmoved(y)
 	if self.focus then
 		self.focus:wheelmoved(y)
 	end
@@ -187,8 +187,8 @@ function Box:draw()
 end
 
 function Box:getDivider()
-	local mx = Mouse.x - self.x
-	local my = Mouse.y - self.y
+	local mx = mouse.x - self.x
+	local my = mouse.y - self.y
 	if mx < 0 or my < 0 or mx > self.w or my > self.h then
 		return false
 	end
@@ -217,8 +217,8 @@ function Box:getDivider()
 end
 
 function Box:get()
-	local mx = Mouse.x - self.x
-	local my = Mouse.y - self.y
+	local mx = mouse.x - self.x
+	local my = mouse.y - self.y
 	if mx < 0 or my < 0 or mx > self.w or my > self.h then
 		return false
 	end

@@ -48,7 +48,7 @@ function View:getDimensions()
 end
 
 function View:getMouse()
-	return Mouse.x - (self.box.x + BORDER_SIZE), Mouse.y - (self.box.y + HEADER + BORDER_SIZE)
+	return mouse.x - (self.box.x + BORDER_SIZE), mouse.y - (self.box.y + HEADER + BORDER_SIZE)
 end
 
 -----------------------------------------------

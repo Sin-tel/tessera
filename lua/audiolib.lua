@@ -9,7 +9,8 @@ require("header")
 
 
 -- should fix this
-local lib_path = love.filesystem.getSource( ) .. "/../target/debug"
+-- local lib_path = love.filesystem.getSource( ) .. "/../target/debug"
+local lib_path =  "../target/debug"
 if release then
 	lib_path = "../target/release"
 end
@@ -124,10 +125,10 @@ function audiolib.parse_messages()
 		while not lib.rx_is_empty(stream_handle) do
 			p = lib.rx_pop(stream_handle)
 			if p.tag == "Cpu" then
-				Workspace.cpu_load = p.cpu
+				workspace.cpu_load = p.cpu
 			elseif p.tag == "Meter" then
-				Workspace.meter.l = to_dB(p.meter._0)
-				Workspace.meter.r = to_dB(p.meter._1)
+				workspace.meter.l = to_dB(p.meter._0)
+				workspace.meter.r = to_dB(p.meter._1)
 			end
 		end
 	end

@@ -1,18 +1,18 @@
 local audiolib = require("audiolib")
 
-channels = {}
-channels.list = {}
+channelHandler = {}
+channelHandler.list = {}
 
-function channels.init()
-	channels.list = {}
+function channelHandler:load()
+	self.list = {}
 end
 
-function channels.update()
-	for k, ch in ipairs(channels.list) do
-		if ch.channel[1].dirty or ch.channel[2].dirty then
-			audiolib.send_pan(k-1, {ch.channel[1].v, ch.channel[2].v})
-			ch.channel[1].dirty = false
-			ch.channel[2].dirty = false
+function channelHandler:update()
+	for k, ch in ipairs(self.list) do
+		if ch.parameters[1].dirty or ch.parameters[2].dirty then
+			audiolib.send_pan(k-1, {ch.parameters[1].v, ch.parameters[2].v})
+			ch.parameters[1].dirty = false
+			ch.parameters[2].dirty = false
 		end
 
 		for l, par in ipairs(ch.instrument.parameters) do
@@ -30,26 +30,27 @@ function channels.update()
 	end
 end
 
-function channels.add(name)
-	if devicelist.instruments[name] then
+function channelHandler:add(name)
+	if deviceList.instruments[name] then
 		local new = {
-			channel = deepcopy(devicelist.channel),
-			instrument = deepcopy(devicelist.instruments[name]),
+			parameters = deepcopy(deviceList.channel),
+			instrument = deepcopy(deviceList.instruments[name]),
 			effects = {},
+			visible = true,
+			mute = false,
+			solo = false,
+			lock = false,
+			armed = false,
 		}
 
 		new.instrument.name = name
 		new.parametergroups = ParameterView:makeparametergroups(new)
 
-		table.insert(channels.list, new)
-		new.index = #channels.list - 1
+		table.insert(self.list, new)
+		new.index = #self.list - 1
 		new.name = name .. " " .. new.index
 
-		new.visible = true
-		new.mute = false
-		new.solo = false
-		new.lock = false
-		new.armed = false
+		
 
 		audiolib.add_channel(new.instrument.index)
 		selection.channel = new
@@ -60,7 +61,7 @@ function channels.add(name)
 	end
 end
 
-function channels.mute(ch, mute)
+function channelHandler:mute(ch, mute)
 	if ch.mute ~= mute then
 		ch.mute = mute
 		audiolib.send_mute(ch.index, mute)

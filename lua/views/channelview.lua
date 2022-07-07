@@ -36,37 +36,37 @@ function ChannelView:mousepressed()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
-	if Mouse.button == 1 then
-		for i,v in ipairs(channels.list) do
+	if mouse.button == 1 then
+		for i,v in ipairs(channelHandler.list) do
 			if i == self.index then
 				if mx < w - BUTTON_SMALL*5 then
 					selection.channel = v
 				else
 					local ind = math.floor(((mx - w)/BUTTON_SMALL) + 6)
 					if ind == 1 then
-						channels.mute(v, not v.mute)
-						for _,ch in ipairs(channels.list) do
+						channelHandler:mute(v, not v.mute)
+						for _,ch in ipairs(channelHandler.list) do
 							ch.solo = false
 						end
 					elseif ind == 2 then
 						if v.solo then
-							for _,ch in ipairs(channels.list) do
+							for _,ch in ipairs(channelHandler.list) do
 								ch.solo = false
-								channels.mute(ch, false)
+								channelHandler:mute(ch, false)
 							end
 						else
-							for _,ch in ipairs(channels.list) do
+							for _,ch in ipairs(channelHandler.list) do
 								ch.solo = false
-								channels.mute(ch, true)
+								channelHandler:mute(ch, true)
 							end
 							v.solo = true
-							channels.mute(v, false)
+							channelHandler:mute(v, false)
 						end
 					elseif ind == 3 then
 						if v.armed then
 							v.armed = false
 						else
-							for _,ch in ipairs(channels.list) do
+							for _,ch in ipairs(channelHandler.list) do
 								ch.armed = false
 							end
 							v.armed = true
@@ -89,7 +89,7 @@ function ChannelView:draw()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
-	for i, v in ipairs(channels.list) do
+	for i, v in ipairs(channelHandler.list) do
 		local y = UI_GRID*(i-1) - self.scroll
 
 		if self.index == i then
@@ -154,6 +154,6 @@ end
 function ChannelView:getMaxScroll()
 	local w, h = self:getDimensions()
 
-	local l = #channels.list
+	local l = #channelHandler.list
 	return math.max(0, (l*UI_GRID) - h)
 end

@@ -16,7 +16,7 @@ impl DelayLine {
 			buf: BMRingBuf::<f32>::from_len((len * sample_rate) as usize),
 			sample_rate,
 			pos: 0,
-			h: [0.0, 0.0, 0.0, 0.0],
+			h: [0.0; 4],
 		}
 	}
 
@@ -39,8 +39,7 @@ impl DelayLine {
 	}
 
 	fn calc_coeff(&mut self, delay: f32) -> isize {
-		let intd = delay.floor();
-		let dm1 = delay - intd;
+		let dm1 = delay.fract();
 		let d = dm1 + 1.;
 		let dm2 = dm1 - 1.;
 		let dm3 = dm1 - 2.;
@@ -49,7 +48,7 @@ impl DelayLine {
 		self.h[2] = -0.5 * d * dm1 * dm3;
 		self.h[3] = (1. / 6.) * d * dm1 * dm2;
 
-		(intd - 1.) as isize
+		delay as isize
 	}
 
 	pub fn go_back_cubic(&mut self, time: f32) -> f32 {

@@ -39,8 +39,31 @@ function PannerView:draw()
 			nd = (d-radius2) / (radius - radius2)
 			nd = 17.31234*math.log(1-nd) -- magic formula
 			
-			love.graphics.print(string.format("%0.1f dB", (nd)), math.floor(mx),math.floor( my-24))
+			love.graphics.print(string.format("%0.1f dB", nd), math.floor(mx), math.floor( my-24))
 			-- love.graphics.print(string.format("%0.5f", from_dB(nd)), mx, my-24)
+		end
+
+		for k,v in ipairs(channels.list) do
+			local gain = v.parameters[1].v
+			local pan = v.parameters[2].v
+
+			local d = 1.0 - math.exp(to_dB(gain) / 17.31234)
+			d = d * (radius - radius2) + radius2
+
+			-- local a = 2*math.asin(pan) / math.pi
+			local a = pan
+			a = 0.5 * ((a-1) * math.pi)
+
+			local x = d*math.cos(a) + cx
+			local y = d*math.sin(a) + cy
+
+			if v == selection.channel then
+				love.graphics.ellipse("fill", x, y, 6)
+			end
+
+			love.graphics.ellipse("line", x, y, 6)
+
+
 		end
 	end
 end

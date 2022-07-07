@@ -138,7 +138,7 @@ where
 						},
 						None,
 					);
-					println!("Lock failed. Output silence.");
+					println!("Output silent");
 
 					for outsample in buffer.chunks_exact_mut(2) {
 						outsample[0] = cpal::Sample::from::<f32>(&0.0f32);

@@ -4,6 +4,14 @@
 
 (roughly in order of importance)
 
+lua style
+  - classes: PascalCase
+  - instances/tables: camelCase, index with : 
+  - methods/functions: camelCase
+  - variables: snake_case
+  - constants: SCREAMING_SNAKE_CASE
+  - singletons: camelCase, index with : 
+
 Lua
 [x] luajit host w love2d
 [x] Simple settings text file
@@ -19,13 +27,13 @@ Lua
 [x] outliner buttons (mute, solo, arm, visible)
 [x] channel/outliner view
 [-] Panner view
-[ ] Keyboard note playing
+[-] Keyboard note playing
 [ ] Harmonic coordinate logic
 [ ] Static piano roll setup
 [ ] Basic piano roll keyboard editing
-[ ] Add note internal vertices
 [ ] Project tempo
 [ ] Project grid / time division
+[ ] Add note internal vertices
 [ ] Time warping
 [ ] Type value in slider
 [ ] Top ribbon menu
@@ -62,6 +70,7 @@ Rust
 [x] Simple metering (cpu, dB meters, audio engine state)
 [x] channel mute
 [+] Mixing channels
+[ ] check capitalization, snake case, etc.. consistency
 [ ] Add some effects
 [ ] Poll audio/midi settings
 [ ] Reset audio driver to change settings in ASIO panel

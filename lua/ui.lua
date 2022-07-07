@@ -83,7 +83,7 @@ function Slider:drag(w)
 	local scale = 0.7/ws
 	-- scale = 0.002
 
-	local v = clamp(self.pv + scale*Mouse.dx, 0, 1)		
+	local v = clamp(self.pv + scale*mouse.dx, 0, 1)		
 	self.p:setNormalized(v)
 end
 

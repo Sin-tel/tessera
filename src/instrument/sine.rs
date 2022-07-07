@@ -34,6 +34,7 @@ impl Instrument for Sine {
 			self.accum += self.freq.value;
 			self.accum = self.accum.fract();
 			let mut out = (self.accum * TWO_PI + self.feedback * self.prev).sin();
+			// let mut out = fastapprox::faster::sinfull(self.accum * TWO_PI + self.feedback * self.prev);
 			out *= self.vel.value;
 
 			self.prev = out;

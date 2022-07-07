@@ -1,11 +1,11 @@
-Mouse = {}
+mouse = {}
 
 
 DOUBLE_CLICK_TIME = 0.35
 DRAG_DIST = 3
 
 
-function Mouse:load()
+function mouse:load()
 	self.x = 0
 	self.y = 0
 
@@ -38,9 +38,7 @@ end
 
 
 
-function Mouse:pressed(x, y, button)
-	
-	
+function mouse:pressed(x, y, button)
 	self.x, self.y = x, y
 	if not self.button then -- ignore buttons while other is pressed
 		self.ix = x
@@ -61,21 +59,21 @@ function Mouse:pressed(x, y, button)
 		self.isDown = true
 
 		-- handle press
-		Workspace:mousepressed()
+		workspace:mousepressed()
 	end
 end
 
-function Mouse:released(x, y, button)
+function mouse:released(x, y, button)
 	self.x, self.y = x, y
 	if button == self.button then
 		self.isDown = false
-		Workspace:mousereleased()
+		workspace:mousereleased()
 		self.drag = false
 		self.button = false
 	end
 end
 
-function Mouse:update(x, y)
+function mouse:update(x, y)
 	self.x, self.y = love.mouse.getPosition()
 	self.x = x or self.x
 	self.y = y or self.y
@@ -89,7 +87,7 @@ function Mouse:update(x, y)
 	self.cursor = cursor_default
 end
 
-function Mouse:updateCursor()
+function mouse:updateCursor()
 	if self.cursor then
 		love.mouse.setVisible(true)
 		love.mouse.setCursor( self.cursor )
@@ -98,13 +96,13 @@ function Mouse:updateCursor()
 	end
 end
 
-function love.mousemoved( x, y, dx, dy, istouch )
+function mouse:mousemoved( x, y, dx, dy, istouch )
 	if love.keyboard.isDown("lshift") then
-		Mouse.dx = Mouse.dx + 0.1*dx
-		Mouse.dy = Mouse.dy + 0.1*dy
+		self.dx = self.dx + 0.1*dx
+		self.dy = self.dy + 0.1*dy
 	else
-		Mouse.dx = Mouse.dx + dx
-		Mouse.dy = Mouse.dy + dy
+		self.dx = self.dx + dx
+		self.dy = self.dy + dy
 	end
-		
 end
+

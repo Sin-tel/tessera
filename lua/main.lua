@@ -5,7 +5,7 @@ require("lib/run")
 
 lurker = false
 
-local settings_handler = require("settings_handler")
+local settingsHandler = require("settings_handler")
 local audiolib = require("audiolib")
 local wav = require("lib/wav_save")
 local midi = require("midi")
@@ -16,6 +16,7 @@ end
 
 require("util")
 require("mouse")
+require("keyboard")
 require("ui")
 require("views")
 require("workspace")
@@ -47,10 +48,13 @@ function audioSetup()
 
 	midi_in = midi.load(settings.midi.default_input)
 
-	channels.init()
-	channels.add("sine").armed = true
-	channels.add("sine")
-	channels.add("sine")
+	channelHandler:load()
+	channelHandler:add("sine").armed = true
+	-- for i = 1, 150 do
+	-- 	local n = channelHandler:add("sine")
+	-- 	n.parameters[2]:setNormalized(math.random())
+	-- 	audiolib.send_noteOn(n.index, {math.random()*36+36, 0.5})
+	-- end
 
 	audio_status = "done"
 end
@@ -58,8 +62,8 @@ end
 function love.load()
 	math.randomseed(os.time())
 	love.math.setRandomSeed(os.time())
-	settings = settings_handler.load()
-	Mouse:load()
+	settings = settingsHandler.load()
+	mouse:load()
 
 	---load resources---
 
@@ -88,17 +92,17 @@ function love.load()
 	icons.unlock    = love.graphics.newImage("res/unlock.png")
 
 	---setup workspace---
-	Workspace:load()
-	Workspace.box:split(0.7, true)
+	workspace:load()
+	workspace.box:split(0.7, true)
 
-	-- Workspace.box.children[1]:setView(DefaultView:new())
-	Workspace.box.children[1]:split(0.7, false)
-	Workspace.box.children[1].children[1]:setView(SongView:new())
-	Workspace.box.children[1].children[2]:setView(TestPadView:new())
+	-- workspace.box.children[1]:setView(DefaultView:new())
+	workspace.box.children[1]:split(0.7, false)
+	workspace.box.children[1].children[1]:setView(SongView:new())
+	workspace.box.children[1].children[2]:setView(TestPadView:new())
 
-	Workspace.box.children[2]:split(0.5, false)
-	Workspace.box.children[2].children[1]:setView(ChannelView:new())
-	Workspace.box.children[2].children[2]:setView(ParameterView:new())
+	workspace.box.children[2]:split(0.5, false)
+	workspace.box.children[2].children[1]:setView(ChannelView:new())
+	workspace.box.children[2].children[2]:setView(ParameterView:new())
 	
 end
 
@@ -111,7 +115,7 @@ function love.update(dt)
 		
 		midi.update(midi_in, handle_midi)
 
-		channels.update()
+		channelHandler:update()
 	end
 end
 
@@ -127,16 +131,17 @@ function love.draw()
 		lurker.update()
 	end
 
-	Mouse:update()
-	Workspace:update()
+	mouse:update()
+	workspace:update()
 
-	Mouse:updateCursor()
+	mouse:updateCursor()
+
 	----draw----------
 	love.graphics.clear()
 	love.graphics.setColor(Theme.borders)
 	love.graphics.rectangle("fill", 0,0, width, height)
 
-	Workspace:draw()
+	workspace:draw()
 
 	love.graphics.setColor(1.0, 1.0, 1.0)
 	-- midi.draw(midi_in)
@@ -150,15 +155,20 @@ function love.draw()
 end
 
 function love.mousepressed(x, y, button)
-	Mouse:pressed(x, y, button)
+	mouse:pressed(x, y, button)
 end
 
 function love.mousereleased(x, y, button)
-	Mouse:released(x, y, button)
+	mouse:released(x, y, button)
+end
+
+function love.mousemoved( x, y, dx, dy, istouch )
+	mouse:mousemoved(x, y, dx, dy, istouch)
+		
 end
 
 function love.wheelmoved( x, y )
-	Workspace:wheelmoved(y)
+	workspace:wheelmoved(y)
 end
 
 -- function love.textinput(t)
@@ -166,25 +176,38 @@ end
 -- end
 
 function love.keypressed( key, isrepeat )
+	if keyboard:keypressed(key) then
+		return
+	end
+
 	if key == 'escape' then
 			love.event.quit()
-	elseif key == 'q' then
+	elseif key == 'k' then
 		midi.close(midi_in)
 		audiolib.quit()
-	elseif key == 's' then
+	elseif key == 'l' then
 		-- audiolib.load()
 		audio_status = "wait"
-	elseif key == 'p' then
+	elseif key == 'b' then
 		if audiolib.paused then
 			audiolib.play()
 		else
 			audiolib.pause()
 		end
-	elseif key == 'r' then
+	elseif key == 's' then
 		render_wav()
 	elseif key == 'a' then
-		channels.add("sine")
+		local n = channelHandler:add("sine")
+		n.parameters[2]:setNormalized(math.random())
 	end
+
+end
+
+function love.keyreleased(key)
+	if keyboard:keyreleased(key) then
+		return
+	end
+
 
 end
 
@@ -192,16 +215,17 @@ function love.resize(w, h)
 	width = w
 	height = h
 
-	Workspace:resize(width,height)
+	workspace:resize(width,height)
 end
 
 function love.quit()
-	settings_handler.save(settings)
+	settingsHandler.save(settings)
 	
 	audiolib.quit()
 end
 
 function render_wav()
+	--TODO: make this into a coroutine so we can yield from it
 	love.mouse.setCursor( cursor_wait )
 
 	audiolib.pause()
@@ -212,6 +236,12 @@ function render_wav()
 	wav.open()
 	for n = 1,5000 do
 		local block = audiolib.render_block()
+		if not block then
+			print("failed to get block. try again")
+			wav.close()
+			audiolib.play()
+			return
+		end
 		local s = block.ptr
 		local samples = {}
 		for i = 1, tonumber(block.len) do

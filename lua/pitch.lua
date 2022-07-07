@@ -16,6 +16,11 @@ base pitch is always 60 = C4 = 261.63Hz
     | look up generator sizes
   pitch in semitones/midi number
 
+( possible modal + domal? -> eg 3*4 chromatic grid moving by fifths and thirds )
+(  --> specify moves e.g. keys d and c move by third instead of whole syntonic )
+
+( also possible: just make the home row a fixed arbitrary scale eg overtone scale)
+
 info for tuning specification:
   - size of all generators (first two are period and gen)
   - which accidentals are used
@@ -40,41 +45,41 @@ finetuning w mouse--
 ]]
 
 
-pitch = {}
+Pitch = {}
 
-function ratioToPitch(r)
+function ratio(r)
 	return 12.0 * math.log(r) / math.log(2)
 end
 
 -- default 11-limit JI table
-gen_table = {
-	ratioToPitch(2/1),
-	ratioToPitch(3/2),
-	ratioToPitch(81/80),
-	ratioToPitch(64/63),
-	ratioToPitch(33/32),
-}
+-- gen_table = {
+-- 	ratio(2/1),
+-- 	ratio(3/2),
+-- 	ratio(81/80),
+-- 	ratio(64/63),
+-- 	ratio(33/32),
+-- }
 
 
 -- meantone TE optimal
--- gen_table = {
--- 	12.01397,
--- 	6.97049,
--- }
+Pitch.generators = {
+	12.01397,
+	6.97049,
+}
 
-pitch_table = {
+Pitch.table = {
 	{1},
 	{0,1},
-	{0,0,1},
-	{0,0,0,1},
-	{0,0,0,0,1},
+	{},
+	{},
+	{},
 	{},
 	{},
 }
 
-diatonic_names = {"C", "D", "E", "F", "G", "A", "B"}
+Pitch.diatonic_names = {"C", "D", "E", "F", "G", "A", "B"}
 
-diatonic_table = {
+Pitch.diatonic_table = {
 	{ 0, 0},
 	{-1, 2},
 	{-2, 4},
@@ -85,13 +90,16 @@ diatonic_table = {
 }
 
 
-for i,v in ipairs(pitch_table) do
+for i,v in ipairs(Pitch.table) do
 	print(i,v)
 end
 
-function pitch:new() 
-	return {
-		coord = {
+function Pitch:new() 
+	local new = {}
+	setmetatable(new,self)
+	self.__index = self
+
+	new.coord = {
 			0, -- octave / period
 			0, -- fifth  / gen
 			0, -- syntonic / plus,minus
@@ -100,8 +108,39 @@ function pitch:new()
 			0, -- ups,downs 
 			0, -- arrows
 			0, -- free / offset (cents)
-		},
-		pitch = 60,
-		name = "C"
-	}
+		}
+	new.pitch = 60
+	new.name = "C"
+
+	return new
+end
+
+
+function Pitch:newFromDiatonic(n) 
+	local new = Pitch:new()
+
+	local s = #Pitch.diatonic_table
+	print(n, s)
+	local oct = math.floor((n - 1) / s)
+	n = n - oct*s
+	print(oct, n)
+	local dia = Pitch.diatonic_table[n]
+	new.coord[1] = dia[1] + oct
+	new.coord[2] = dia[2]
+
+	-- for i,v in ipairs(new.coord) do
+	-- 	print(i,v)
+	-- end
+
+	new:recalc()
+
+	return new
+end
+
+function Pitch:recalc()
+	local f = 60
+	for i,v in ipairs(self.coord) do
+		f = f + v * (self.generators[i] or 0)
+	end
+	self.pitch = f
 end
