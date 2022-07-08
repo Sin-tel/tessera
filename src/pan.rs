@@ -38,7 +38,6 @@ impl Pan {
 	}
 
 	pub fn set(&mut self, gain: f32, pan: f32) {
-		
 		self.pan.set(pan);
 
 		let lshelf = -1.5 * pan * (pan + 3.0);
@@ -48,8 +47,8 @@ impl Pan {
 
 		let lgain = -0.084 * pan * (pan + 2.53) + 1.0;
 		let rgain = -0.084 * pan * (pan - 2.53) + 1.0;
-		self.lgain.set(lgain*gain);
-	    self.rgain.set(rgain*gain);
+		self.lgain.set(lgain * gain);
+		self.rgain.set(rgain * gain);
 	}
 
 	pub fn process(&mut self, buffer: &mut [StereoSample]) {

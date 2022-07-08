@@ -26,14 +26,14 @@ function PannerView:draw()
 		my = d*math.sin(a) + cy
 
 		
-		love.graphics.setColor(Theme.widget_line)
+		love.graphics.setColor(theme.widget_line)
 		-- love.graphics.setColor(White)
 		love.graphics.arc("line", "open", cx, cy, radius, 0, -math.pi)
 		love.graphics.arc("line", "open", cx, cy, radius2, 0, -math.pi)
 		love.graphics.line(cx - radius2, cy, cx - radius, cy)
 		love.graphics.line(cx + radius2, cy, cx + radius, cy)
 
-		love.graphics.setColor(Theme.ui_text)
+		love.graphics.setColor(theme.ui_text)
 		if self.box.focus then
 			love.graphics.ellipse("fill", mx, my, 5)
 			nd = (d-radius2) / (radius - radius2)

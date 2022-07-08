@@ -3,7 +3,7 @@ release = false
 require("lib/errorhandler")
 require("lib/run")
 
-lurker = false
+local lurker = false
 
 local settingsHandler = require("settings_handler")
 local audiolib = require("audiolib")
@@ -27,12 +27,10 @@ require("pitch")
 
 -- load color theme
 require("settings/theme")
-White = {1.0,1.0,1.0}
-
 
 io.stdout:setvbuf("no")
 
-width, height = love.graphics.getDimensions( )
+width, height = love.graphics.getDimensions()
 
 audio_status = "wait"
 
@@ -42,8 +40,7 @@ time = 0
 
 -- temp stuff, to delete
 
-
-function audioSetup()
+local function audioSetup()
 	audiolib.load(settings.audio.default_host, settings.audio.default_device)
 
 	midi_in = midi.load(settings.midi.default_input)
@@ -67,29 +64,32 @@ function love.load()
 
 	---load resources---
 
-	-- font_main = love.graphics.newFont(12)
-	font_main = love.graphics.newFont("res/dejavu_normal.fnt", "res/dejavu_normal.png")
-	font_notes = love.graphics.newImageFont("res/font_notes.png",
-		" ABCDEFGHIJKLMNOPQRSTUVWXYZ"..
-		"0123456789.+-/"..
-		"qwerty" .. -- flats/sharps  b#
-		"asdfgh" .. -- pluses minuses  +-
-		"zxcvbn" .. -- septimals L7
-		"iopjkl" .. -- quarternotes / undecimals  dt
-		"{[()]}" .. -- ups/downs  v^
-		"!@#$&*"    -- arrows   ??
-		,-1)
+	-- fonts.main = love.graphics.newFont(12)
+	fonts = {}
+	fonts.main = love.graphics.newFont("res/dejavu_normal.fnt", "res/dejavu_normal.png")
+	fonts.notes = love.graphics.newImageFont(
+		"res/font_notes.png",
+		" ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+			.. "0123456789.+-/"
+			.. "qwerty" -- flats/sharps  b#
+			.. "asdfgh" -- pluses minuses  +-
+			.. "zxcvbn" -- septimals L7
+			.. "iopjkl" -- quarternotes / undecimals  dt
+			.. "{[()]}" -- ups/downs  v^
+			.. "!@#$&*", -- arrows   ??
+		-1
+	)
 
-	love.graphics.setFont(font_main)
+	love.graphics.setFont(fonts.main)
 
 	icons = {}
-	icons.solo      = love.graphics.newImage("res/solo.png")
-	icons.mute      = love.graphics.newImage("res/mute.png")
-	icons.armed     = love.graphics.newImage("res/armed.png")
-	icons.visible   = love.graphics.newImage("res/visible.png")
+	icons.solo = love.graphics.newImage("res/solo.png")
+	icons.mute = love.graphics.newImage("res/mute.png")
+	icons.armed = love.graphics.newImage("res/armed.png")
+	icons.visible = love.graphics.newImage("res/visible.png")
 	icons.invisible = love.graphics.newImage("res/invisible.png")
-	icons.lock      = love.graphics.newImage("res/lock.png")
-	icons.unlock    = love.graphics.newImage("res/unlock.png")
+	icons.lock = love.graphics.newImage("res/lock.png")
+	icons.unlock = love.graphics.newImage("res/unlock.png")
 
 	---setup workspace---
 	workspace:load()
@@ -103,22 +103,19 @@ function love.load()
 	workspace.box.children[2]:split(0.5, false)
 	workspace.box.children[2].children[1]:setView(ChannelView:new())
 	workspace.box.children[2].children[2]:setView(ParameterView:new())
-	
 end
 
-
-function love.update(dt) 
+function love.update(dt)
 	time = time + dt
 	-- print(1/dt)
 	if audio_status == "done" then
 		audiolib.parse_messages()
-		
+
 		midi.update(midi_in, handle_midi)
 
 		channelHandler:update()
 	end
 end
-
 
 function love.draw()
 	----update--------
@@ -138,8 +135,8 @@ function love.draw()
 
 	----draw----------
 	love.graphics.clear()
-	love.graphics.setColor(Theme.borders)
-	love.graphics.rectangle("fill", 0,0, width, height)
+	love.graphics.setColor(theme.borders)
+	love.graphics.rectangle("fill", 0, 0, width, height)
 
 	workspace:draw()
 
@@ -162,12 +159,11 @@ function love.mousereleased(x, y, button)
 	mouse:released(x, y, button)
 end
 
-function love.mousemoved( x, y, dx, dy, istouch )
+function love.mousemoved(x, y, dx, dy, istouch)
 	mouse:mousemoved(x, y, dx, dy, istouch)
-		
 end
 
-function love.wheelmoved( x, y )
+function love.wheelmoved(x, y)
 	workspace:wheelmoved(y)
 end
 
@@ -175,58 +171,56 @@ end
 --     print(t)
 -- end
 
-function love.keypressed( key, isrepeat )
-	if keyboard:keypressed(key) then
+function love.keypressed(key, isrepeat)
+	if keyboard:keypressed(key, isrepeat) then
 		return
 	end
 
-	if key == 'escape' then
-			love.event.quit()
-	elseif key == 'k' then
+	if key == "escape" then
+		love.event.quit()
+	elseif key == "k" then
 		midi.close(midi_in)
 		audiolib.quit()
-	elseif key == 'l' then
+	elseif key == "l" then
 		-- audiolib.load()
 		audio_status = "wait"
-	elseif key == 'b' then
+	elseif key == "b" then
 		if audiolib.paused then
 			audiolib.play()
 		else
 			audiolib.pause()
 		end
-	elseif key == 's' then
+	elseif key == "s" then
 		render_wav()
-	elseif key == 'a' then
+	elseif key == "a" then
 		local n = channelHandler:add("sine")
 		n.parameters[2]:setNormalized(math.random())
 	end
-
 end
 
 function love.keyreleased(key)
 	if keyboard:keyreleased(key) then
 		return
 	end
-
-
 end
 
 function love.resize(w, h)
 	width = w
 	height = h
 
-	workspace:resize(width,height)
+	workspace:resize(width, height)
 end
 
 function love.quit()
 	settingsHandler.save(settings)
-	
+
 	audiolib.quit()
 end
 
 function render_wav()
 	--TODO: make this into a coroutine so we can yield from it
-	love.mouse.setCursor( cursor_wait )
+
+	mouse:setCursor("wait")
 
 	audiolib.pause()
 
@@ -234,7 +228,7 @@ function render_wav()
 	love.timer.sleep(0.01)
 
 	wav.open()
-	for n = 1,5000 do
+	for _ = 1, 5000 do
 		local block = audiolib.render_block()
 		if not block then
 			print("failed to get block. try again")
@@ -245,7 +239,7 @@ function render_wav()
 		local s = block.ptr
 		local samples = {}
 		for i = 1, tonumber(block.len) do
-			samples[i] = s[i-1]
+			samples[i] = s[i - 1]
 		end
 		-- print(s[1])
 		wav.append(samples)
@@ -255,5 +249,5 @@ function render_wav()
 	wav.close()
 	audiolib.play()
 
-	love.mouse.setCursor( cursor_default )
+	mouse:setCursor("default")
 end

@@ -8,8 +8,8 @@ local midi = {}
 local function newdevice(handle, devicetype, n)
 	local voices = {}
 	if devicetype == "mpe" then
-		for i = 1,16 do
-			voices[i] = {vel = 0.0, note = 49, offset = 0.0, y = 0, noteOn = false, noteOff = false}
+		for i = 1, 16 do
+			voices[i] = { vel = 0.0, note = 49, offset = 0.0, y = 0, noteOn = false, noteOff = false }
 		end
 	end
 	return {
@@ -24,7 +24,6 @@ function midi.load(name)
 	local device_handle = rtmidi.createIn()
 	rtmidi.printPorts(device_handle)
 
-
 	local port_n = false
 	if name ~= "default" then
 		port_n = rtmidi.findPort(device_handle, name)
@@ -36,7 +35,6 @@ function midi.load(name)
 	end
 
 	rtmidi.openPort(device_handle, port_n)
-
 
 	rtmidi.ignoreTypes(device_handle, true, true, true)
 
@@ -51,9 +49,9 @@ function midi.update(device, func)
 		end
 
 		local status = bit.rshift(msg.data[0], 4)
-		local channel = bit.band(msg.data[0], 15)	
+		local channel = bit.band(msg.data[0], 15)
 
-		local index = channel + 1
+		-- local index = channel + 1
 
 		local b = msg.data[1]
 		local c = 0
@@ -66,32 +64,32 @@ function midi.update(device, func)
 
 		event.channel = channel
 
-		if status == 9 and c > 0 then 
+		if status == 9 and c > 0 then
 			-- note on
 			event.name = "note on"
 			event.note = b
-			event.vel = c/127
-		elseif status == 8 or (status == 9 and c == 0) then 
+			event.vel = c / 127
+		elseif status == 8 or (status == 9 and c == 0) then
 			-- note off
 			event.name = "note off"
 			event.note = b
-		elseif status == 13 then 
+		elseif status == 13 then
 			-- pressure
 			event.name = "pressure"
-			event.vel = b/127
-		elseif status == 14 then 
+			event.vel = b / 127
+		elseif status == 14 then
 			-- pitchbend
 			event.name = "pitchbend"
 			if device.devicetype == "mpe" then
-				event.offset = 48*(b+c*128 - 8192)/8192 -- MPE
+				event.offset = 48 * (b + c * 128 - 8192) / 8192 -- MPE
 			else
-				event.offset = 2*(b+c*128 - 8192)/8192
+				event.offset = 2 * (b + c * 128 - 8192) / 8192
 			end
-		elseif status == 11 then  
+		elseif status == 11 then
 			-- CC y
 			event.name = "CC"
 			event.cc = b
-			event.y = c/127
+			event.y = c / 127
 			-- if b == 74 then
 			--
 			-- end
@@ -105,21 +103,19 @@ function midi.close(device)
 	rtmidi.closePort(device.handle)
 end
 
-function midi.draw(device) 
-	for i,v in ipairs(device.voices) do
-		love.graphics.ellipse("fill", (v.note+v.offset)*10, 500-200*v.y, v.vel*20)
+function midi.draw(device)
+	for _, v in ipairs(device.voices) do
+		love.graphics.ellipse("fill", (v.note + v.offset) * 10, 500 - 200 * v.y, v.vel * 20)
 	end
 end
-
 
 function handle_midi_test(event)
 	print(event.name)
 end
 
-
-polyphony = 1
-n_index = 1
-tracks = {}
+local polyphony = 1
+-- local n_index = 1
+local tracks = {}
 
 function newTrack()
 	local new = {}
@@ -148,28 +144,27 @@ function handle_midi(event)
 	end
 
 	if index ~= -1 then
-
-		if event.name == "note on" then	
+		if event.name == "note on" then
 			print(event.note)
 			local oldestPlaying_age, oldestPlaying_i = -1, -1
 			local oldestReleased_age, oldestReleased_i = -1, -1
-			for j,b in ipairs(tracks) do
-				b.age = b.age+1
+			for j, b in ipairs(tracks) do
+				b.age = b.age + 1
 				if b.isPlaying then
 					-- track note is on
-					if b.age>oldestPlaying_age then
+					if b.age > oldestPlaying_age then
 						oldestPlaying_i = j
 						oldestPlaying_age = b.age
 					end
 				else
 					-- track is free
-					if b.age>oldestReleased_age then
+					if b.age > oldestReleased_age then
 						oldestReleased_i = j
 						oldestReleased_age = b.age
 					end
 				end
 			end
-			local new_i = nil
+			local new_i
 			if oldestReleased_i ~= -1 then
 				new_i = oldestReleased_i
 			else
@@ -181,17 +176,17 @@ function handle_midi(event)
 			tracks[new_i].isPlaying = true
 			tracks[new_i].vel = event.vel
 
-			audiolib.send_noteOn(index, {tracks[new_i].note + tracks[new_i].offset, event.vel})
+			audiolib.send_noteOn(index, { tracks[new_i].note + tracks[new_i].offset, event.vel })
 		end
 
 		if event.name == "note off" then
-			for j,b in ipairs(tracks) do
+			for _, b in ipairs(tracks) do
 				if b.note == event.note then
 					print("noteoff")
 					b.isPlaying = false
 					b.age = 0
 					b.vel = 0
-					audiolib.send_CV(index, {b.note + b.offset, 0})
+					audiolib.send_CV(index, { b.note + b.offset, 0 })
 					-- b.note = -1
 
 					break
@@ -200,11 +195,11 @@ function handle_midi(event)
 		end
 
 		if event.name == "CC" then
-			for j,b in ipairs(tracks) do
+			for _, b in ipairs(tracks) do
 				if b.channel == event.channel then
 					if event.cc == 74 then
 						b.vel = event.y
-						audiolib.send_CV(index, {b.note + b.offset, b.vel})
+						audiolib.send_CV(index, { b.note + b.offset, b.vel })
 						break
 					end
 				end
@@ -212,10 +207,10 @@ function handle_midi(event)
 		end
 
 		if event.name == "pitchbend" then
-			for j,b in ipairs(tracks) do
+			for _, b in ipairs(tracks) do
 				if b.channel == event.channel then
 					b.offset = event.offset
-					audiolib.send_CV(index, {b.note + b.offset, b.vel})
+					audiolib.send_CV(index, { b.note + b.offset, b.vel })
 					break
 				end
 			end

@@ -114,15 +114,19 @@ impl Render {
 		while let Some(m) = self.audio_rx.pop() {
 			match m {
 				AudioMessage::CV(ch_index, cv) => match self.channels.get_mut(ch_index) {
-					Some(ch) => if !ch.mute {
-						ch.instrument.cv(cv.pitch, cv.vel);
-					},
+					Some(ch) => {
+						if !ch.mute {
+							ch.instrument.cv(cv.pitch, cv.vel);
+						}
+					}
 					None => println!("Channel index out of bounds!"),
 				},
 				AudioMessage::Note(ch_index, cv) => match self.channels.get_mut(ch_index) {
-					Some(ch) => if !ch.mute {
-						ch.instrument.note(cv.pitch, cv.vel);
-					},
+					Some(ch) => {
+						if !ch.mute {
+							ch.instrument.note(cv.pitch, cv.vel);
+						}
+					}
 					None => println!("Channel index out of bounds!"),
 				},
 				AudioMessage::SetParam(ch_index, device_index, index, val) => {

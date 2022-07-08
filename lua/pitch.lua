@@ -44,12 +44,7 @@ tracker-like keyboard nav!
 finetuning w mouse--
 ]]
 
-
 Pitch = {}
-
-function ratio(r)
-	return 12.0 * math.log(r) / math.log(2)
-end
 
 -- default 11-limit JI table
 -- gen_table = {
@@ -60,7 +55,6 @@ end
 -- 	ratio(33/32),
 -- }
 
-
 -- meantone TE optimal
 Pitch.generators = {
 	12.01397,
@@ -68,8 +62,8 @@ Pitch.generators = {
 }
 
 Pitch.table = {
-	{1},
-	{0,1},
+	{ 1 },
+	{ 0, 1 },
 	{},
 	{},
 	{},
@@ -77,52 +71,50 @@ Pitch.table = {
 	{},
 }
 
-Pitch.diatonic_names = {"C", "D", "E", "F", "G", "A", "B"}
+Pitch.diatonic_names = { "C", "D", "E", "F", "G", "A", "B" }
 
 Pitch.diatonic_table = {
-	{ 0, 0},
-	{-1, 2},
-	{-2, 4},
-	{ 1,-1},
-	{ 0, 1},
-	{-1, 3},
-	{-2, 5},
+	{ 0, 0 },
+	{ -1, 2 },
+	{ -2, 4 },
+	{ 1, -1 },
+	{ 0, 1 },
+	{ -1, 3 },
+	{ -2, 5 },
 }
 
-
-for i,v in ipairs(Pitch.table) do
-	print(i,v)
+for i, v in ipairs(Pitch.table) do
+	print(i, v)
 end
 
-function Pitch:new() 
+function Pitch:new()
 	local new = {}
-	setmetatable(new,self)
+	setmetatable(new, self)
 	self.__index = self
 
 	new.coord = {
-			0, -- octave / period
-			0, -- fifth  / gen
-			0, -- syntonic / plus,minus
-			0, -- septimal / L-shaped
-			0, -- quarter  / halfsharp,halfflat
-			0, -- ups,downs 
-			0, -- arrows
-			0, -- free / offset (cents)
-		}
+		0, -- octave / period
+		0, -- fifth  / gen
+		0, -- syntonic / plus,minus
+		0, -- septimal / L-shaped
+		0, -- quarter  / halfsharp,halfflat
+		0, -- ups,downs
+		0, -- arrows
+		0, -- free / offset (cents)
+	}
 	new.pitch = 60
 	new.name = "C"
 
 	return new
 end
 
-
-function Pitch:newFromDiatonic(n) 
+function Pitch:newFromDiatonic(n)
 	local new = Pitch:new()
 
 	local s = #Pitch.diatonic_table
 	print(n, s)
 	local oct = math.floor((n - 1) / s)
-	n = n - oct*s
+	n = n - oct * s
 	print(oct, n)
 	local dia = Pitch.diatonic_table[n]
 	new.coord[1] = dia[1] + oct
@@ -139,7 +131,7 @@ end
 
 function Pitch:recalc()
 	local f = 60
-	for i,v in ipairs(self.coord) do
+	for i, v in ipairs(self.coord) do
 		f = f + v * (self.generators[i] or 0)
 	end
 	self.pitch = f

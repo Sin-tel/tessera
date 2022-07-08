@@ -21,7 +21,9 @@ fastrand = "1.5.0"
 bit_mask_ring_buf = "0.5"
 # fastapprox = "0.3"
 
-
+[profile.dev]
+opt-level = 1
+overflow-checks = false
 
 [profile.release]
 debug = 1 # for profiling

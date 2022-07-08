@@ -4,26 +4,25 @@ local Group = {}
 
 function Group:new(name, paramlist)
 	local new = {}
-	setmetatable(new,self)
+	setmetatable(new, self)
 	self.__index = self
-
 
 	new.name = name
 	new.collapse = false
 	new.sliders = {}
 
-	for k,v in ipairs(paramlist) do
+	for _, v in ipairs(paramlist) do
 		table.insert(new.sliders, Slider:new(v))
-	end 
+	end
 
 	return new
 end
 
-function Group:draw(y,w,selected)
-	y0 = UI_GRID*y
+function Group:draw(y, w, selected)
+	y0 = UI_GRID * y
 
 	local s = 32
-	love.graphics.setColor(Theme.ui_text)
+	love.graphics.setColor(theme.ui_text)
 	if self.collapse then
 		drawText("+", 0, y0, s, UI_GRID, "left")
 	else
@@ -32,24 +31,22 @@ function Group:draw(y,w,selected)
 	drawText("    " .. self.name, 0, y0, w - s, UI_GRID, "left")
 
 	if not self.collapse then
+		love.graphics.setColor(theme.bg_nested)
+		love.graphics.rectangle("fill", 0, y0 + UI_GRID, w, #self.sliders * UI_GRID)
 
-		love.graphics.setColor(Theme.bg_nested)
-		love.graphics.rectangle("fill", 0, y0+UI_GRID, w, (#self.sliders)*UI_GRID)
-
-		for i,v in ipairs(self.sliders) do
+		for i, v in ipairs(self.sliders) do
 			local mode = false
-			if  v == selected then
+			if v == selected then
 				if self.action == "slider" then
 					mode = "press"
 				else
 					mode = "hover"
 				end
 			end
-			v:draw(y0 + i*UI_GRID, w, mode)
+			v:draw(y0 + i * UI_GRID, w, mode)
 		end
 	end
 end
-
 
 function Group:getLength()
 	if self.collapse then
@@ -68,7 +65,7 @@ end
 
 function ParameterView:new()
 	local new = {}
-	setmetatable(new,self)
+	setmetatable(new, self)
 	self.__index = self
 
 	new.groups = {}
@@ -86,10 +83,9 @@ function ParameterView:update()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
-	self.scroll = self.scroll + (self.scroll_ - self.scroll)*0.5
+	self.scroll = self.scroll + (self.scroll_ - self.scroll) * 0.5
 	self.scroll = clamp(self.scroll, 0, self:getMaxScroll())
 	self.scroll_ = clamp(self.scroll_, 0, self:getMaxScroll())
-
 
 	if math.abs(self.scroll - self.scroll_) < 2 then
 		self.scroll = self.scroll_
@@ -101,13 +97,13 @@ function ParameterView:update()
 				self.select:drag(w)
 			end
 		else
-			local index = math.floor((my + self.scroll)/UI_GRID)
+			local index = math.floor((my + self.scroll) / UI_GRID)
 			local y = 0
 			self.select = nil
-			for i,v in ipairs(self.groups) do
+			for i, v in ipairs(self.groups) do
 				if not v.collapse then
-					local get = v.sliders[index-y]
-					if get and mx > get:getPad(w)-2 then
+					local get = v.sliders[index - y]
+					if get and mx > get:getPad(w) - 2 then
 						self.select = get
 						self.select_i = index
 						break
@@ -133,12 +129,12 @@ function ParameterView:mousepressed()
 		if self.select then
 			self.select:dragStart()
 
-			love.mouse.setRelativeMode( true )
+			love.mouse.setRelativeMode(true)
 			self.action = "slider"
 		else
-			local index = math.floor((my + self.scroll)/UI_GRID)
+			local index = math.floor((my + self.scroll) / UI_GRID)
 
-			for i,v in ipairs(self.groups) do
+			for _, v in ipairs(self.groups) do
 				if index == 0 then
 					v.collapse = not v.collapse
 					break
@@ -161,7 +157,10 @@ function ParameterView:mousereleased()
 		local s = self.select:getPosition(w)
 		love.mouse.setRelativeMode(false)
 		if mouse.drag then
-			love.mouse.setPosition(self.box.x + s, self.box.y + self.select_i*UI_GRID + HEADER + 0.5*UI_GRID - self.scroll)
+			love.mouse.setPosition(
+				self.box.x + s,
+				self.box.y + self.select_i * UI_GRID + HEADER + 0.5 * UI_GRID - self.scroll
+			)
 		end
 	end
 	self.action = nil
@@ -171,23 +170,23 @@ function ParameterView:draw()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
-	local y = -self.scroll/UI_GRID
-	for k,group in ipairs(self.groups) do
-		group:draw(y,w,self.select)
+	local y = -self.scroll / UI_GRID
+	for _, group in ipairs(self.groups) do
+		group:draw(y, w, self.select)
 		y = y + group:getLength()
 	end
 end
 
 function ParameterView:wheelmoved(y)
-	self.scroll_ = math.floor(self.scroll - y*1.5*UI_GRID)
+	self.scroll_ = math.floor(self.scroll - y * 1.5 * UI_GRID)
 end
 
 function ParameterView:getMaxScroll()
 	local w, h = self:getDimensions()
 
 	local l = 0
-	for k,group in ipairs(self.groups) do
+	for _, group in ipairs(self.groups) do
 		l = l + group:getLength()
 	end
-	return math.max(0, (l*UI_GRID) - h)
+	return math.max(0, (l * UI_GRID) - h)
 end

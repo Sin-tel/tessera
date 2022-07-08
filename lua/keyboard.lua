@@ -2,19 +2,19 @@ local audiolib = require("audiolib")
 
 keyboard = {}
 
-keyboard.diatonic_row = {"q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]"}
+keyboard.diatonic_row = { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]" }
 
-function keyboard:keypressed(key)
+function keyboard:keypressed(key, isrepeat)
 	local handled = false
 	for i, v in ipairs(self.diatonic_row) do
 		if v == key then
 			local ch = selection.channel
 
 			-- p = Pitch:new()
-			p = Pitch:newFromDiatonic(i)
+			local p = Pitch:newFromDiatonic(i)
 
 			if ch then
-				audiolib.send_noteOn(ch.index, {p.pitch, 0.5})
+				audiolib.send_noteOn(ch.index, { p.pitch, 0.5 })
 			end
 
 			handled = true
@@ -31,10 +31,10 @@ function keyboard:keyreleased(key)
 		if v == key then
 			local ch = selection.channel
 
-			p = Pitch:newFromDiatonic(i)
+			local p = Pitch:newFromDiatonic(i)
 
 			if ch then
-				audiolib.send_CV(ch.index, {p.pitch, 0.0})
+				audiolib.send_CV(ch.index, { p.pitch, 0.0 })
 			end
 
 			handled = true
@@ -43,4 +43,3 @@ function keyboard:keyreleased(key)
 
 	return handled
 end
-

@@ -2,7 +2,7 @@ Parameter = {}
 
 function Parameter:new(name, tbl)
 	local new = {}
-	setmetatable(new,self)
+	setmetatable(new, self)
 	self.__index = self
 
 	new.t = tbl.t
@@ -21,7 +21,7 @@ function Parameter:new(name, tbl)
 	else
 		new.min = tbl.min or 0
 		new.max = tbl.max or 1
-		local default = tbl.default or 0.5*(new.max + new.min)
+		local default = tbl.default or 0.5 * (new.max + new.min)
 		new.v = default
 		new.default = default
 		new.fmt = tbl.fmt or "%0.3f"
@@ -30,7 +30,7 @@ function Parameter:new(name, tbl)
 		assert(new.default <= new.max)
 	end
 
-	return new	
+	return new
 end
 
 -- function Parameter:setRaw(x)
@@ -60,7 +60,6 @@ function Parameter:getNormalized(x)
 	else
 		return (self.v - self.min) / (self.max - self.min)
 	end
-	
 end
 
 function Parameter:getDisplay()

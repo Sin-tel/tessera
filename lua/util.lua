@@ -1,17 +1,17 @@
 function clamp(x, min, max)
-  return x < min and min or (x > max and max or x)
+	return x < min and min or (x > max and max or x)
 end
 
-function dist(x1,y1,x2,y2)
-	return math.sqrt((x1-x2)^2 + (y1-y2)^2)
+function dist(x1, y1, x2, y2)
+	return math.sqrt((x1 - x2) ^ 2 + (y1 - y2) ^ 2)
 end
 
 function length(x, y)
-	return math.sqrt(x^2 + y^2)
+	return math.sqrt(x ^ 2 + y ^ 2)
 end
 
 function from_dB(x)
-	return 10.0^(x/20.0)
+	return 10.0 ^ (x / 20.0)
 end
 
 function to_dB(x)
@@ -20,21 +20,25 @@ end
 
 -- set dB at halfway point
 -- 12 or 18 is good
-local curve_param = -18/math.log(0.5)
+local curve_param = -18 / math.log(0.5)
 
 function curve_dB(x, max)
-	return from_dB(curve_param*math.log(x) + (max or 0))
+	return from_dB(curve_param * math.log(x) + (max or 0))
 end
 
 function curve_dB_inv(x, max)
-	return math.exp((to_dB(x) - (max or 0))/curve_param)
+	return math.exp((to_dB(x) - (max or 0)) / curve_param)
+end
+
+function ratio(r)
+	return 12.0 * math.log(r) / math.log(2)
 end
 
 function deepcopy(orig, copies)
 	copies = copies or {}
 	local orig_type = type(orig)
 	local copy
-	if orig_type == 'table' then
+	if orig_type == "table" then
 		if copies[orig] then
 			copy = copies[orig]
 		else
@@ -57,18 +61,18 @@ function drawText(str, x, y, w, h, align)
 	local f = love.graphics.getFont()
 	local str2 = str
 	local fh = f:getHeight()
-	local fo = 0.5*(HEADER - fh)
+	local fo = 0.5 * (HEADER - fh)
 	local l = str:len()
 	local strip = false
 	while true do
 		local fw = f:getWidth(str2)
-		if fw+2*fo < w then
+		if fw + 2 * fo < w then
 			if align == "left" or strip then
 				love.graphics.print(str2, math.floor(x + fo), math.floor(y + fo))
 			elseif align == "center" then
-				love.graphics.print(str2, math.floor(x + (w-fw)/2), math.floor(y + fo))
+				love.graphics.print(str2, math.floor(x + (w - fw) / 2), math.floor(y + fo))
 			elseif align == "right" then
-				love.graphics.print(str2, math.floor(x + w-fw-fo), math.floor(y + fo))
+				love.graphics.print(str2, math.floor(x + w - fw - fo), math.floor(y + fo))
 			end
 			break
 		end
@@ -76,7 +80,7 @@ function drawText(str, x, y, w, h, align)
 		if l <= 0 then
 			break
 		end
-		str2 = str:sub(1,l) .. "..."
+		str2 = str:sub(1, l) .. "..."
 		strip = true
 	end
 end
@@ -87,7 +91,7 @@ function average(t)
 		return 0
 	end
 	local sum = 0
-	for i,v in ipairs(t) do
+	for i, v in ipairs(t) do
 		sum = sum + v
 	end
 	return sum / n

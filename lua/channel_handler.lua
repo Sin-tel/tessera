@@ -10,14 +10,14 @@ end
 function channelHandler:update()
 	for k, ch in ipairs(self.list) do
 		if ch.parameters[1].dirty or ch.parameters[2].dirty then
-			audiolib.send_pan(k-1, {ch.parameters[1].v, ch.parameters[2].v})
+			audiolib.send_pan(k - 1, { ch.parameters[1].v, ch.parameters[2].v })
 			ch.parameters[1].dirty = false
 			ch.parameters[2].dirty = false
 		end
 
 		for l, par in ipairs(ch.instrument.parameters) do
 			if par.dirty then
-				audiolib.send_param(k-1, 0, l-1, par.v)
+				audiolib.send_param(k - 1, 0, l - 1, par.v)
 				par.dirty = false
 			end
 		end
@@ -49,8 +49,6 @@ function channelHandler:add(name)
 		table.insert(self.list, new)
 		new.index = #self.list - 1
 		new.name = name .. " " .. new.index
-
-		
 
 		audiolib.add_channel(new.instrument.index)
 		selection.channel = new
