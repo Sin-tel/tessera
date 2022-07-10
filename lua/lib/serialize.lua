@@ -8,30 +8,29 @@ doesn't support functions, userdata, circular references, and probably a lot of 
 local infinity = math.huge
 local writer = {}
 
-local function getWriter (value)
+local function getWriter(value)
 	return writer[type(value)]
 end
 
-local function writeNan (n)
-	return tostring(n) == tostring(0/0) and '0/0' or '-(0/0)'
+local function writeNan(n)
+	return tostring(n) == tostring(0 / 0) and "0/0" or "-(0/0)"
 end
 
 -- serialize numbers
-function writer.number (value)
-	return value == infinity and '1/0'
-	or value == -infinity and '-1/0'
-	or value ~= value and writeNan(value)
-	or ('%.17G'):format(value)
+function writer.number(value)
+	return value == infinity and "1/0"
+		or value == -infinity and "-1/0"
+		or value ~= value and writeNan(value)
+		or ("%.17G"):format(value)
 end
 
 -- serialize strings
-function writer.string (value)
-	return ('%q'):format(value):gsub("\\\n","\\n")
+function writer.string(value)
+	return ("%q"):format(value):gsub("\\\n", "\\n")
 end
 
 -- serialize booleans
 writer.boolean = tostring
-
 
 local function is_array(t)
 	local i = 0
@@ -40,34 +39,36 @@ local function is_array(t)
 	end
 	for _ in pairs(t) do
 		i = i + 1
-		if t[i] == nil then return false end
+		if t[i] == nil then
+			return false
+		end
 	end
 	return true
 end
 
-local function writeTable(t,depth)
+local function writeTable(t, depth)
 	local depth = depth or 0
 	local s = ""
 
 	local arr = is_array(t)
 
 	depth = depth + 1
-	for k,v in pairs(t) do
+	for k, v in pairs(t) do
 		if type(v) == "table" then
 			if type(k) == "string" then
-				s = s .. ("\t"):rep(depth) .. ('%s'):format(k) .. " = {\n" ..writeTable(v,depth) .. ",\n"
+				s = s .. ("\t"):rep(depth) .. ("%s"):format(k) .. " = {\n" .. writeTable(v, depth) .. ",\n"
 			else
 				if arr then
-					s = s .. ("\t"):rep(depth) .. "{\n" .. writeTable(v,depth) .. ",\n"
+					s = s .. ("\t"):rep(depth) .. "{\n" .. writeTable(v, depth) .. ",\n"
 				else
-					s = s .. ("\t"):rep(depth) .. ('[%s]'):format(k) .. " = {\n" .. writeTable(v,depth) .. ",\n"
+					s = s .. ("\t"):rep(depth) .. ("[%s]"):format(k) .. " = {\n" .. writeTable(v, depth) .. ",\n"
 				end
 			end
 		else
 			if type(k) == "string" then
-				local writeValue =  getWriter(v)
+				local writeValue = getWriter(v)
 				local value = writeValue(v)
-				s = s .. ("\t"):rep(depth) .. ('%s = %s,\n'):format(k, value)
+				s = s .. ("\t"):rep(depth) .. ("%s = %s,\n"):format(k, value)
 			else
 				local writeKey, writeValue = getWriter(k), getWriter(v)
 				local key, value = writeKey(k), writeValue(v)
@@ -78,10 +79,10 @@ local function writeTable(t,depth)
 						end
 						s = s ..  ('%s, '):format(value)
 					else]]
-						s = s .. ("\t"):rep(depth) ..  ('%s,\n'):format(value)
+					s = s .. ("\t"):rep(depth) .. ("%s,\n"):format(value)
 					--end
 				else
-					s = s .. ("\t"):rep(depth) ..  ('[%s] = %s,\n'):format(key, value)
+					s = s .. ("\t"):rep(depth) .. ("[%s] = %s,\n"):format(key, value)
 				end
 			end
 		end
@@ -92,26 +93,26 @@ local function writeTable(t,depth)
 	return s
 end
 
-local function writeTable2(t,var)
+local function writeTable2(t, var)
 	local s = ""
-	
+
 	s = s .. (var .. " = {}\n")
-	for k,v in pairs(t) do
+	for k, v in pairs(t) do
 		if type(v) == "table" then
 			if type(k) == "string" then
-				s = s .. writeTable2(v,('%s.%s'):format(var, k))   
+				s = s .. writeTable2(v, ("%s.%s"):format(var, k))
 			else
-				s = s .. writeTable2(v,('%s[%s]'):format(var, k)) 
+				s = s .. writeTable2(v, ("%s[%s]"):format(var, k))
 			end
 		else
 			if type(k) == "string" then
-				local writeValue =  getWriter(v)
+				local writeValue = getWriter(v)
 				local value = writeValue(v)
-				s = s .. ('%s.%s = %s\n'):format(var, k, value)
+				s = s .. ("%s.%s = %s\n"):format(var, k, value)
 			else
 				local writeKey, writeValue = getWriter(k), getWriter(v)
 				local key, value = writeKey(k), writeValue(v)
-				s = s .. ('%s[%s] = %s\n'):format(var, key, value)
+				s = s .. ("%s[%s] = %s\n"):format(var, key, value)
 			end
 		end
 	end
@@ -119,7 +120,7 @@ local function writeTable2(t,var)
 	return s
 end
 
-local function serialize(t,var)
+local function serialize(t, var)
 	local var = var or "t"
 
 	local s = "local " .. var .. " = {\n"
@@ -128,10 +129,10 @@ local function serialize(t,var)
 	return s
 end
 
-local function serialize2(t,var)
+local function serialize2(t, var)
 	local var = var or "t"
 
-	local s = "local " 
+	local s = "local "
 	s = s .. writeTable2(t, var)
 	s = s .. "\nreturn " .. var
 	return s
@@ -141,13 +142,13 @@ local function deserialize(s)
 	return setfenv(loadstring(s), {})()
 end
 
-local function writefile(filename,tbl,var)
+local function writefile(filename, tbl, var)
 	local f = filename .. ".lua"
 
-	local s = serialize(tbl,var)
-	local file,err = io.open(f, "w" )
-	if err then 
-		print(err) 
+	local s = serialize(tbl, var)
+	local file, err = io.open(f, "w")
+	if err then
+		print(err)
 		return err
 	end
 

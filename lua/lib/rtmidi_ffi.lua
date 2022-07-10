@@ -7,21 +7,21 @@ message parsing
 
 local ffi = require("ffi")
 
-local lib = ffi.load( love.filesystem.getSource( ) .. "/lib/RtMidi")
+local lib = ffi.load(love.filesystem.getSource() .. "/lib/RtMidi")
 
 ffi.cdef([[
 
 //! \brief Wraps an RtMidi object for C function return statuses.
 struct RtMidiWrapper {
-		//! The wrapped RtMidi object.
-		void* ptr;
-		void* data;
+        //! The wrapped RtMidi object.
+        void* ptr;
+        void* data;
 
-		//! True when the last function call was OK.
-		bool  ok;
+        //! True when the last function call was OK.
+        bool  ok;
 
-		//! If an error occured (ok != true), set to an error message.
-		const char* msg;
+        //! If an error occured (ok != true), set to an error message.
+        const char* msg;
 };
 
 //! \brief Typedef for a generic RtMidi pointer.
@@ -35,28 +35,28 @@ typedef struct RtMidiWrapper* RtMidiOutPtr;
 
 //! \brief MIDI API specifier arguments.  See \ref RtMidi::Api.
 enum RtMidiApi {
-		RTMIDI_API_UNSPECIFIED,    /*!< Search for a working compiled API. */
-		RTMIDI_API_MACOSX_CORE,    /*!< Macintosh OS-X CoreMIDI API. */
-		RTMIDI_API_LINUX_ALSA,     /*!< The Advanced Linux Sound Architecture API. */
-		RTMIDI_API_UNIX_JACK,      /*!< The Jack Low-Latency MIDI Server API. */
-		RTMIDI_API_WINDOWS_MM,     /*!< The Microsoft Multimedia MIDI API. */
-		RTMIDI_API_RTMIDI_DUMMY,   /*!< A compilable but non-functional API. */
-		RTMIDI_API_NUM             /*!< Number of values in this enum. */
+        RTMIDI_API_UNSPECIFIED,    /*!< Search for a working compiled API. */
+        RTMIDI_API_MACOSX_CORE,    /*!< Macintosh OS-X CoreMIDI API. */
+        RTMIDI_API_LINUX_ALSA,     /*!< The Advanced Linux Sound Architecture API. */
+        RTMIDI_API_UNIX_JACK,      /*!< The Jack Low-Latency MIDI Server API. */
+        RTMIDI_API_WINDOWS_MM,     /*!< The Microsoft Multimedia MIDI API. */
+        RTMIDI_API_RTMIDI_DUMMY,   /*!< A compilable but non-functional API. */
+        RTMIDI_API_NUM             /*!< Number of values in this enum. */
 };
 
 //! \brief Defined RtMidiError types. See \ref RtMidiError::Type.
 enum RtMidiErrorType {
-	RTMIDI_ERROR_WARNING,           /*!< A non-critical error. */
-	RTMIDI_ERROR_DEBUG_WARNING,     /*!< A non-critical error which might be useful for debugging. */
-	RTMIDI_ERROR_UNSPECIFIED,       /*!< The default, unspecified error type. */
-	RTMIDI_ERROR_NO_DEVICES_FOUND,  /*!< No devices found on system. */
-	RTMIDI_ERROR_INVALID_DEVICE,    /*!< An invalid device ID was specified. */
-	RTMIDI_ERROR_MEMORY_ERROR,      /*!< An error occured during memory allocation. */
-	RTMIDI_ERROR_INVALID_PARAMETER, /*!< An invalid parameter was specified to a function. */
-	RTMIDI_ERROR_INVALID_USE,       /*!< The function was called incorrectly. */
-	RTMIDI_ERROR_DRIVER_ERROR,      /*!< A system driver error occured. */
-	RTMIDI_ERROR_SYSTEM_ERROR,      /*!< A system error occured. */
-	RTMIDI_ERROR_THREAD_ERROR       /*!< A thread error occured. */
+    RTMIDI_ERROR_WARNING,           /*!< A non-critical error. */
+    RTMIDI_ERROR_DEBUG_WARNING,     /*!< A non-critical error which might be useful for debugging. */
+    RTMIDI_ERROR_UNSPECIFIED,       /*!< The default, unspecified error type. */
+    RTMIDI_ERROR_NO_DEVICES_FOUND,  /*!< No devices found on system. */
+    RTMIDI_ERROR_INVALID_DEVICE,    /*!< An invalid device ID was specified. */
+    RTMIDI_ERROR_MEMORY_ERROR,      /*!< An error occured during memory allocation. */
+    RTMIDI_ERROR_INVALID_PARAMETER, /*!< An invalid parameter was specified to a function. */
+    RTMIDI_ERROR_INVALID_USE,       /*!< The function was called incorrectly. */
+    RTMIDI_ERROR_DRIVER_ERROR,      /*!< A system driver error occured. */
+    RTMIDI_ERROR_SYSTEM_ERROR,      /*!< A system error occured. */
+    RTMIDI_ERROR_THREAD_ERROR       /*!< A thread error occured. */
 };
 
 /*! \brief The type of a RtMidi callback function.
@@ -68,7 +68,7 @@ enum RtMidiErrorType {
  * See \ref RtMidiIn::RtMidiCallback.
  */
 typedef void(* RtMidiCCallback) (double timeStamp, const unsigned char* message,
-																 size_t messageSize, void *userData);
+                                                                 size_t messageSize, void *userData);
 
 
 /* RtMidi API */
@@ -215,24 +215,24 @@ typedef void(* RtMidiCCallback) (double timeStamp, const unsigned char* message,
  int rtmidi_out_send_message (RtMidiOutPtr device, const unsigned char *message, int length);
 ]])
 
-ffi.cdef [[
+ffi.cdef([[
 typedef struct
 {
-	double time;
-	size_t size[1];
-	unsigned char data[?];
+    double time;
+    size_t size[1];
+    unsigned char data[?];
 } MidiEvent;
-]]
+]])
 
-local M = {C=lib}
+local M = { C = lib }
 
 local maxSize = 1024 --max sysex size
-local msg = ffi.new("MidiEvent",maxSize)
+local msg = ffi.new("MidiEvent", maxSize)
 
-local function toBits(num,bits)
+local function toBits(num, bits)
     -- returns a table of bits, most significant first.
     bits = bits or math.max(1, select(2, math.frexp(num)))
-    local t = {} -- will contain the bits        
+    local t = {} -- will contain the bits
     for b = bits, 1, -1 do
         t[b] = math.fmod(num, 2)
         num = math.floor((num - t[b]) / 2)
@@ -241,32 +241,32 @@ local function toBits(num,bits)
 end
 
 function M.createIn()
-	local dev = lib.rtmidi_in_create_default()
-	return ffi.gc(dev, lib.rtmidi_in_free)
+    local dev = lib.rtmidi_in_create_default()
+    return ffi.gc(dev, lib.rtmidi_in_free)
 end
 
 function M.createOut()
-	local dev = lib.rtmidi_out_create_default()
-	return ffi.gc(dev, lib.rtmidi_out_free)
+    local dev = lib.rtmidi_out_create_default()
+    return ffi.gc(dev, lib.rtmidi_out_free)
 end
 
 function M.ignoreTypes(device, midiSysex, midiTime, midiSense)
-	lib.rtmidi_in_ignore_types(device, midiSysex, midiTime, midiSense)
+    lib.rtmidi_in_ignore_types(device, midiSysex, midiTime, midiSense)
 end
 
 function M.printPorts(device)
-	local nPorts = lib.rtmidi_get_port_count(device)
+    local nPorts = lib.rtmidi_get_port_count(device)
 
-	for i=0, nPorts-1 do
-		local portName = ffi.string(lib.rtmidi_get_port_name(device, i))
-		print(i, portName)
-	end
+    for i = 0, nPorts - 1 do
+        local portName = ffi.string(lib.rtmidi_get_port_name(device, i))
+        print(i, portName)
+    end
 end
 
 function M.findPort(device, name)
     local nPorts = lib.rtmidi_get_port_count(device)
 
-    for i=0, nPorts-1 do
+    for i = 0, nPorts - 1 do
         local portName = ffi.string(lib.rtmidi_get_port_name(device, i))
         print(string.lower(portName), string.lower(name))
         if string.match(string.lower(portName), string.lower(name)) then
@@ -274,38 +274,38 @@ function M.findPort(device, name)
         end
     end
 
-    print("Midi port \"" .. name .. "\" not found!")
+    print('Midi port "' .. name .. '" not found!')
     return false
 end
 
 function M.openPort(device, p)
-	local portName = lib.rtmidi_get_port_name(device, p)
-	print("opening port: "..ffi.string(portName) )
-	lib.rtmidi_open_port(device, p, portName)
+    local portName = lib.rtmidi_get_port_name(device, p)
+    print("opening port: " .. ffi.string(portName))
+    lib.rtmidi_open_port(device, p, portName)
 end
 
 function M.closePort(device)
-	lib.rtmidi_close_port(device)
+    lib.rtmidi_close_port(device)
 end
 
 function M.newMessage(t)
-	local new = ffi.new("MidiEvent",#t,{size = {#t}, data = t})
-	return new
+    local new = ffi.new("MidiEvent", #t, { size = { #t }, data = t })
+    return new
 end
 
-function M.sendMessage(device,msg)
-	--print(msg.data[0], msg.size[0])
-	lib.rtmidi_out_send_message(device, msg.data, msg.size[0])
+function M.sendMessage(device, msg)
+    --print(msg.data[0], msg.size[0])
+    lib.rtmidi_out_send_message(device, msg.data, msg.size[0])
 end
 
 function M.getMessage(device)
-	msg.size[0] = ffi.cast("size_t", maxSize)
-	msg.time = lib.rtmidi_in_get_message(device, msg.data, msg.size);
-	return msg, tonumber(msg.size[0])
+    msg.size[0] = ffi.cast("size_t", maxSize)
+    msg.time = lib.rtmidi_in_get_message(device, msg.data, msg.size)
+    return msg, tonumber(msg.size[0])
 end
 
 function M.isSysex(m)
-	return m.data[0] == 0xf0 and m.data[1] == 0x00
+    return m.data[0] == 0xf0 and m.data[1] == 0x00
 end
 
 return M

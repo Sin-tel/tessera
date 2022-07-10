@@ -18,6 +18,12 @@ pub fn from_db(x: f32) -> f32 {
 	(10.0f32).powf(x / 20.0)
 }
 
+#[inline]
+pub fn softclip(x: f32) -> f32 {
+	let s = x.clamp(-3.0, 3.0);
+	s * (27.0 + s * s) / (27.0 + 9.0 * s * s)
+}
+
 #[derive(Debug)]
 pub struct Smoothed {
 	pub value: f32,

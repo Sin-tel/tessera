@@ -1,6 +1,6 @@
-SongView = View:derive("Song")
+songView = View:derive("Song")
 
-function SongView:draw()
+function songView:draw()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 

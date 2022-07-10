@@ -44,7 +44,7 @@ function channelHandler:add(name)
 		}
 
 		new.instrument.name = name
-		new.parametergroups = ParameterView:makeparametergroups(new)
+		new.parameterGroups = parameterView:makeParameterParameterGroups(new)
 
 		table.insert(self.list, new)
 		new.index = #self.list - 1

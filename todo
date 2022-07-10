@@ -76,7 +76,7 @@ Rust
 [ ] Reset audio driver to change settings in ASIO panel
 [ ] Port over a bunch of protoplug devices
 [ ] Prepare for play (reset envs etc)
-[ ] Group channels
+[ ] ParameterGroup channels
 [ ] Master channel
 [ ] Return track?
 [ ] global reverb ~ panning

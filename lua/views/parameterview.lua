@@ -1,8 +1,8 @@
-ParameterView = View:derive("Parameters")
+parameterView = View:derive("Parameters")
 
-local Group = {}
+local ParameterGroup = {}
 
-function Group:new(name, paramlist)
+function ParameterGroup:new(name, paramlist)
 	local new = {}
 	setmetatable(new, self)
 	self.__index = self
@@ -18,7 +18,7 @@ function Group:new(name, paramlist)
 	return new
 end
 
-function Group:draw(y, w, selected)
+function ParameterGroup:draw(y, w, selected)
 	y0 = UI_GRID * y
 
 	local s = 32
@@ -48,22 +48,22 @@ function Group:draw(y, w, selected)
 	end
 end
 
-function Group:getLength()
+function ParameterGroup:getLength()
 	if self.collapse then
 		return 1
 	end
 	return #self.sliders + 1
 end
 
-function ParameterView:makeparametergroups(channel)
-	local parametergroups = {}
-	table.insert(parametergroups, Group:new("channel", channel.parameters))
-	table.insert(parametergroups, Group:new(channel.instrument.name, channel.instrument.parameters))
+function parameterView:makeParameterParameterGroups(channel)
+	local parameterGroups = {}
+	table.insert(parameterGroups, ParameterGroup:new("channel", channel.parameters))
+	table.insert(parameterGroups, ParameterGroup:new(channel.instrument.name, channel.instrument.parameters))
 
-	return parametergroups
+	return parameterGroups
 end
 
-function ParameterView:new()
+function parameterView:new()
 	local new = {}
 	setmetatable(new, self)
 	self.__index = self
@@ -79,7 +79,7 @@ function ParameterView:new()
 	return new
 end
 
-function ParameterView:update()
+function parameterView:update()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
@@ -117,11 +117,11 @@ function ParameterView:update()
 	end
 
 	if selection.channel then
-		self.groups = selection.channel.parametergroups
+		self.groups = selection.channel.parameterGroups
 	end
 end
 
-function ParameterView:mousepressed()
+function parameterView:mousepressed()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
@@ -149,7 +149,7 @@ function ParameterView:mousepressed()
 	end
 end
 
-function ParameterView:mousereleased()
+function parameterView:mousereleased()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
@@ -166,7 +166,7 @@ function ParameterView:mousereleased()
 	self.action = nil
 end
 
-function ParameterView:draw()
+function parameterView:draw()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
@@ -177,11 +177,11 @@ function ParameterView:draw()
 	end
 end
 
-function ParameterView:wheelmoved(y)
+function parameterView:wheelmoved(y)
 	self.scroll_ = math.floor(self.scroll - y * 1.5 * UI_GRID)
 end
 
-function ParameterView:getMaxScroll()
+function parameterView:getMaxScroll()
 	local w, h = self:getDimensions()
 
 	local l = 0

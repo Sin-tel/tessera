@@ -3,7 +3,7 @@ local audiolib = require("audiolib")
 local utf8 = require("utf8")
 
 local function error_printer(msg, layer)
-	print((debug.traceback("Error: " .. tostring(msg), 1+(layer or 1)):gsub("\n[^\n]+$", "")))
+	print((debug.traceback("Error: " .. tostring(msg), 1 + (layer or 1)):gsub("\n[^\n]+$", "")))
 end
 
 function love.errorhandler(msg)
@@ -34,11 +34,13 @@ function love.errorhandler(msg)
 	end
 	if love.joystick then
 		-- Stop all joystick vibrations.
-		for i,v in ipairs(love.joystick.getJoysticks()) do
+		for i, v in ipairs(love.joystick.getJoysticks()) do
 			v:setVibration()
 		end
 	end
-	if love.audio then love.audio.stop() end
+	if love.audio then
+		love.audio.stop()
+	end
 
 	love.graphics.reset()
 	local font = love.graphics.setNewFont(14)
@@ -76,18 +78,20 @@ function love.errorhandler(msg)
 	local p = table.concat(err, "\n")
 
 	p = p:gsub("\t", "")
-	p = p:gsub("%[string \"(.-)\"%]", "%1")
+	p = p:gsub('%[string "(.-)"%]', "%1")
 
 	local function draw()
 		local pos = 70
-		love.graphics.clear(89/255, 157/255, 220/255)
+		love.graphics.clear(89 / 255, 157 / 255, 220 / 255)
 		love.graphics.printf(p, pos, pos, love.graphics.getWidth() - pos)
 		love.graphics.present()
 	end
 
 	local fullErrorText = p
 	local function copyToClipboard()
-		if not love.system then return end
+		if not love.system then
+			return
+		end
 		love.system.setClipboardText(fullErrorText)
 		p = p .. "\nCopied to clipboard!"
 		draw()
@@ -109,12 +113,14 @@ function love.errorhandler(msg)
 				copyToClipboard()
 			elseif e == "touchpressed" then
 				local name = love.window.getTitle()
-				if #name == 0 or name == "Untitled" then name = "Game" end
-				local buttons = {"OK", "Cancel"}
+				if #name == 0 or name == "Untitled" then
+					name = "Game"
+				end
+				local buttons = { "OK", "Cancel" }
 				if love.system then
 					buttons[3] = "Copy to clipboard"
 				end
-				local pressed = love.window.showMessageBox("Quit "..name.."?", "", buttons)
+				local pressed = love.window.showMessageBox("Quit " .. name .. "?", "", buttons)
 				if pressed == 1 then
 					return 1
 				elseif pressed == 3 then
@@ -129,5 +135,4 @@ function love.errorhandler(msg)
 			love.timer.sleep(0.1)
 		end
 	end
-
 end

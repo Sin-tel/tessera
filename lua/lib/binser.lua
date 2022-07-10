@@ -45,14 +45,16 @@ if not frexp then
     local log, abs, floor = math.log, math.abs, math.floor
     local log2 = log(2)
     frexp = function(x)
-        if x == 0 then return 0, 0 end
+        if x == 0 then
+            return 0, 0
+        end
         local e = floor(log(abs(x)) / log2 + 1)
         return x / 2 ^ e, e
     end
 end
 
 local function pack(...)
-    return {...}, select("#", ...)
+    return { ... }, select("#", ...)
 end
 
 local function not_array_index(x, len)
@@ -60,15 +62,14 @@ local function not_array_index(x, len)
 end
 
 local function type_check(x, tp, name)
-    assert(type(x) == tp,
-        format("Expected parameter %q to be of type %q.", name, tp))
+    assert(type(x) == tp, format("Expected parameter %q to be of type %q.", name, tp))
 end
 
 local bigIntSupport = false
 local isInteger
 if math.type then -- Detect Lua 5.3
     local mtype = math.type
-    bigIntSupport = loadstring[[
+    bigIntSupport = loadstring([[
     local char = string.char
     return function(n)
         local nn = n < 0 and -(n + 1) or n
@@ -85,9 +86,9 @@ if math.type then -- Detect Lua 5.3
             b5, b6, b7, b8 = 0xFF - b5, 0xFF - b6, 0xFF - b7, 0xFF - b8
         end
         return char(212, b1, b2, b3, b4, b5, b6, b7, b8)
-    end]]()
+    end]])()
     isInteger = function(x)
-        return mtype(x) == 'integer'
+        return mtype(x) == "integer"
     end
 else
     isInteger = function(x)
@@ -117,7 +118,7 @@ local function number_to_str(n)
     local m, e = frexp(n) -- mantissa, exponent
     if m ~= m then
         return char(203, 0xFF, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
-    elseif m == 1/0 then
+    elseif m == 1 / 0 then
         if sign == 0 then
             return char(203, 0x7F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
         else
@@ -131,32 +132,37 @@ local function number_to_str(n)
     else
         m = (m * 2 - 1) * 2 ^ 52
     end
-    return char(203,
-                sign + floor(e / 0x10),
-                (e % 0x10) * 0x10 + floor(m / 0x1000000000000),
-                floor(m / 0x10000000000) % 0x100,
-                floor(m / 0x100000000) % 0x100,
-                floor(m / 0x1000000) % 0x100,
-                floor(m / 0x10000) % 0x100,
-                floor(m / 0x100) % 0x100,
-                m % 0x100)
+    return char(
+        203,
+        sign + floor(e / 0x10),
+        (e % 0x10) * 0x10 + floor(m / 0x1000000000000),
+        floor(m / 0x10000000000) % 0x100,
+        floor(m / 0x100000000) % 0x100,
+        floor(m / 0x1000000) % 0x100,
+        floor(m / 0x10000) % 0x100,
+        floor(m / 0x100) % 0x100,
+        m % 0x100
+    )
 end
 
 -- Copyright (C) 2012-2015 Francois Perrad.
 -- number deserialization code also modified from https://github.com/fperrad/lua-MessagePack
 local function number_from_str(str, index)
     local b = byte(str, index)
-    if not b then error("Expected more bytes of input.") end
+    if not b then
+        error("Expected more bytes of input.")
+    end
     if b < 128 then
         return b - 27, index + 1
     elseif b < 192 then
         local b2 = byte(str, index + 1)
-        if not b2 then error("Expected more bytes of input.") end
+        if not b2 then
+            error("Expected more bytes of input.")
+        end
         return b2 + 0x100 * (b - 128) - 8192, index + 2
     end
     local b1, b2, b3, b4, b5, b6, b7, b8 = byte(str, index + 1, index + 8)
-    if (not b1) or (not b2) or (not b3) or (not b4) or
-        (not b5) or (not b6) or (not b7) or (not b8) then
+    if not b1 or not b2 or not b3 or not b4 or not b5 or not b6 or not b7 or not b8 then
         error("Expected more bytes of input.")
     end
     if b == 212 then
@@ -165,10 +171,10 @@ local function number_from_str(str, index)
             b1, b2, b3, b4 = 0xFF - b1, 0xFF - b2, 0xFF - b3, 0xFF - b4
             b5, b6, b7, b8 = 0xFF - b5, 0xFF - b6, 0xFF - b7, 0xFF - b8
         end
-        local n = ((((((b1 * 0x100 + b2) * 0x100 + b3) * 0x100 + b4) *
-            0x100 + b5) * 0x100 + b6) * 0x100 + b7) * 0x100 + b8
+        local n = ((((((b1 * 0x100 + b2) * 0x100 + b3) * 0x100 + b4) * 0x100 + b5) * 0x100 + b6) * 0x100 + b7) * 0x100
+            + b8
         if flip then
-            return (-n) - 1, index + 9
+            return -n - 1, index + 9
         else
             return n, index + 9
         end
@@ -188,9 +194,9 @@ local function number_from_str(str, index)
         end
     elseif e == 0x7FF then
         if m == 0 then
-            n = sign * (1/0)
+            n = sign * (1 / 0)
         else
-            n = 0.0/0.0
+            n = 0.0 / 0.0
         end
     else
         n = sign * (1.0 + m / 2 ^ 52) * 2 ^ (e - 0x3FF)
@@ -198,9 +204,7 @@ local function number_from_str(str, index)
     return n, index + 9
 end
 
-
 local function newbinser()
-
     -- unique table key for getting next value
     local NEXT = {}
     local CTORSTACK = {}
@@ -245,7 +249,7 @@ local function newbinser()
             accum[alen + 2] = number_to_str(visited[x])
         else
             visited[x] = visited[NEXT]
-            visited[NEXT] =  visited[NEXT] + 1
+            visited[NEXT] = visited[NEXT] + 1
             accum[alen + 1] = "\206"
             accum[alen + 2] = number_to_str(#x)
             accum[alen + 3] = x
@@ -288,7 +292,9 @@ local function newbinser()
             accum[#accum + 1] = "\208"
             accum[#accum + 1] = number_to_str(visited[x])
         else
-            if check_custom_type(x, visited, accum) then return end
+            if check_custom_type(x, visited, accum) then
+                return
+            end
             error("Cannot serialize this userdata.")
         end
     end
@@ -298,9 +304,11 @@ local function newbinser()
             accum[#accum + 1] = "\208"
             accum[#accum + 1] = number_to_str(visited[x])
         else
-            if check_custom_type(x, visited, accum) then return end
+            if check_custom_type(x, visited, accum) then
+                return
+            end
             visited[x] = visited[NEXT]
-            visited[NEXT] =  visited[NEXT] + 1
+            visited[NEXT] = visited[NEXT] + 1
             local xlen = #x
             local mt = getmetatable(x)
             if mt then
@@ -335,9 +343,11 @@ local function newbinser()
             accum[#accum + 1] = "\208"
             accum[#accum + 1] = number_to_str(visited[x])
         else
-            if check_custom_type(x, visited, accum) then return end
+            if check_custom_type(x, visited, accum) then
+                return
+            end
             visited[x] = visited[NEXT]
-            visited[NEXT] =  visited[NEXT] + 1
+            visited[NEXT] = visited[NEXT] + 1
             local str = dump(x)
             accum[#accum + 1] = "\210"
             accum[#accum + 1] = number_to_str(#str)
@@ -350,21 +360,29 @@ local function newbinser()
             accum[#accum + 1] = "\208"
             accum[#accum + 1] = number_to_str(visited[x])
         else
-            if check_custom_type(x, visited, #accum) then return end
+            if check_custom_type(x, visited, #accum) then
+                return
+            end
             error("Cannot serialize this cdata.")
         end
     end
 
-    types.thread = function() error("Cannot serialize threads.") end
+    types.thread = function()
+        error("Cannot serialize threads.")
+    end
 
     local function deserialize_value(str, index, visited)
         local t = byte(str, index)
-        if not t then return nil, index end
+        if not t then
+            return nil, index
+        end
         if t < 128 then
             return t - 27, index + 1
         elseif t < 192 then
             local b2 = byte(str, index + 1)
-            if not b2 then error("Expected more bytes of input.") end
+            if not b2 then
+                error("Expected more bytes of input.")
+            end
             return b2 + 0x100 * (t - 128) - 8192, index + 2
         elseif t == 202 then
             return nil, index + 1
@@ -377,8 +395,12 @@ local function newbinser()
         elseif t == 206 then
             local length, dataindex = number_from_str(str, index + 1)
             local nextindex = dataindex + length
-            if not (length >= 0) then error("Bad string length") end
-            if #str < nextindex - 1 then error("Expected more bytes of string") end
+            if not (length >= 0) then
+                error("Bad string length")
+            end
+            if #str < nextindex - 1 then
+                error("Expected more bytes of string")
+            end
             local substr = sub(str, dataindex, nextindex - 1)
             visited[#visited + 1] = substr
             return substr, nextindex
@@ -389,27 +411,39 @@ local function newbinser()
             nextindex = index + 1
             if t == 213 then
                 mt, nextindex = deserialize_value(str, nextindex, visited)
-                if type(mt) ~= "table" then error("Expected table metatable") end
+                if type(mt) ~= "table" then
+                    error("Expected table metatable")
+                end
             end
             count, nextindex = number_from_str(str, nextindex)
             for i = 1, count do
                 local oldindex = nextindex
                 ret[i], nextindex = deserialize_value(str, nextindex, visited)
-                if nextindex == oldindex then error("Expected more bytes of input.") end
+                if nextindex == oldindex then
+                    error("Expected more bytes of input.")
+                end
             end
             count, nextindex = number_from_str(str, nextindex)
             for i = 1, count do
                 local k, v
                 local oldindex = nextindex
                 k, nextindex = deserialize_value(str, nextindex, visited)
-                if nextindex == oldindex then error("Expected more bytes of input.") end
+                if nextindex == oldindex then
+                    error("Expected more bytes of input.")
+                end
                 oldindex = nextindex
                 v, nextindex = deserialize_value(str, nextindex, visited)
-                if nextindex == oldindex then error("Expected more bytes of input.") end
-                if k == nil then error("Can't have nil table keys") end
+                if nextindex == oldindex then
+                    error("Expected more bytes of input.")
+                end
+                if k == nil then
+                    error("Can't have nil table keys")
+                end
                 ret[k] = v
             end
-            if mt then setmetatable(ret, mt) end
+            if mt then
+                setmetatable(ret, mt)
+            end
             return ret, nextindex
         elseif t == 208 then
             local ref, nextindex = number_from_str(str, index + 1)
@@ -422,7 +456,9 @@ local function newbinser()
             for i = 1, count do
                 local oldindex = nextindex
                 args[i], nextindex = deserialize_value(str, nextindex, visited)
-                if nextindex == oldindex then error("Expected more bytes of input.") end
+                if nextindex == oldindex then
+                    error("Expected more bytes of input.")
+                end
             end
             if not name or not deserializers[name] then
                 error(("Cannot deserialize class '%s'"):format(tostring(name)))
@@ -433,14 +469,20 @@ local function newbinser()
         elseif t == 210 then
             local length, dataindex = number_from_str(str, index + 1)
             local nextindex = dataindex + length
-            if not (length >= 0) then error("Bad string length") end
-            if #str < nextindex - 1 then error("Expected more bytes of string") end
+            if not (length >= 0) then
+                error("Bad string length")
+            end
+            if #str < nextindex - 1 then
+                error("Expected more bytes of string")
+            end
             local ret = loadstring(sub(str, dataindex, nextindex - 1))
             visited[#visited + 1] = ret
             return ret, nextindex
         elseif t == 211 then
             local resname, nextindex = deserialize_value(str, index + 1, visited)
-            if resname == nil then error("Got nil resource name") end
+            if resname == nil then
+                error("Got nil resource name")
+            end
             local res = resources_by_name[resname]
             if res == nil then
                 error(("No resources found for name '%s'"):format(tostring(resname)))
@@ -452,7 +494,7 @@ local function newbinser()
     end
 
     local function serialize(...)
-        local visited = {[NEXT] = 1, [CTORSTACK] = {}}
+        local visited = { [NEXT] = 1, [CTORSTACK] = {} }
         local accum = {}
         for i = 1, select("#", ...) do
             local x = select(i, ...)
@@ -465,14 +507,14 @@ local function newbinser()
         return setmetatable({}, {
             __newindex = function(_, _, v)
                 file:write(v)
-            end
+            end,
         })
     end
 
     local function serialize_to_file(path, mode, ...)
         local file, err = io.open(path, mode)
         assert(file, err)
-        local visited = {[NEXT] = 1, [CTORSTACK] = {}}
+        local visited = { [NEXT] = 1, [CTORSTACK] = {} }
         local accum = make_file_writer(file)
         for i = 1, select("#", ...) do
             local x = select(i, ...)
@@ -549,10 +591,8 @@ local function newbinser()
 
     local function registerResource(resource, name)
         type_check(name, "string", "name")
-        assert(not resources[resource],
-            "Resource already registered.")
-        assert(not resources_by_name[name],
-            format("Resource %q already exists.", name))
+        assert(not resources[resource], "Resource already registered.")
+        assert(not resources_by_name[name], format("Resource %q already exists.", name))
         resources_by_name[name] = resource
         resources[resource] = name
         return resource
@@ -586,7 +626,7 @@ local function newbinser()
         table.sort(non_array_part)
         for i = 1, #non_array_part do
             local name = non_array_part[i]
-            ret[#ret + 1] = {name, normalize_template(template[name])}
+            ret[#ret + 1] = { name, normalize_template(template[name]) }
         end
         return ret
     end
@@ -649,7 +689,7 @@ local function newbinser()
             return unpack(argaccum, 1, len)
         end, function(...)
             local ret = {}
-            local args = {...}
+            local args = { ... }
             templatepart_deserialize(ret, template, args, 1)
             return setmetatable(ret, metatable)
         end
@@ -663,7 +703,7 @@ local function newbinser()
             name = name or metatable.name
             serialize = serialize or metatable._serialize
             deserialize = deserialize or metatable._deserialize
-            if (not serialize) or (not deserialize) then
+            if not serialize or not deserialize then
                 if metatable._template then
                     -- Register as template
                     local t = normalize_template(metatable._template)
@@ -681,10 +721,8 @@ local function newbinser()
         type_check(name, "string", "name")
         type_check(serialize, "function", "serialize")
         type_check(deserialize, "function", "deserialize")
-        assert((not ids[metatable]) and (not resources[metatable]),
-            "Metatable already registered.")
-        assert((not mts[name]) and (not resources_by_name[name]),
-            ("Name %q already registered."):format(name))
+        assert(not ids[metatable] and not resources[metatable], "Metatable already registered.")
+        assert(not mts[name] and not resources_by_name[name], ("Name %q already registered."):format(name))
         mts[name] = metatable
         ids[metatable] = name
         serializers[name] = serialize
@@ -701,13 +739,13 @@ local function newbinser()
         end
         type_check(name, "string", "name")
         mts[name] = nil
-        if (metatable) then
+        if metatable then
             resources[metatable] = nil
             ids[metatable] = nil
         end
         serializers[name] = nil
         deserializers[name] = nil
-        resources_by_name[name] = nil;
+        resources_by_name[name] = nil
         return metatable
     end
 
@@ -743,7 +781,7 @@ local function newbinser()
         unregisterResource = unregisterResource,
         registerClass = registerClass,
 
-        newbinser = newbinser
+        newbinser = newbinser,
     }
 end
 

@@ -1,8 +1,8 @@
 local audiolib = require("audiolib")
 
-TestPadView = View:derive("TestPad")
+testPadView = View:derive("TestPad")
 
-function TestPadView:new()
+function testPadView:new()
 	local new = {}
 	setmetatable(new, self)
 	self.__index = self
@@ -15,7 +15,7 @@ function TestPadView:new()
 	return new
 end
 
-function TestPadView:draw()
+function testPadView:draw()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
@@ -60,14 +60,14 @@ function TestPadView:draw()
 	end
 end
 
-function TestPadView:mousepressed()
+function testPadView:mousepressed()
 	if mouse.button == 1 or mouse.button == 2 and selection.channel then
 		audiolib.send_noteOn(selection.channel.index, { self.f, self.v })
 		self.note = true
 	end
 end
 
-function TestPadView:mousereleased()
+function testPadView:mousereleased()
 	if mouse.button == 1 and selection.channel then
 		audiolib.send_CV(selection.channel.index, { self.f, 0 })
 		self.note = false

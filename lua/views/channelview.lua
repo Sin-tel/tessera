@@ -1,6 +1,6 @@
-ChannelView = View:derive("Channels")
+channelView = View:derive("Channels")
 
-function ChannelView:new()
+function channelView:new()
 	local new = {}
 	setmetatable(new, self)
 	self.__index = self
@@ -13,7 +13,7 @@ function ChannelView:new()
 	return new
 end
 
-function ChannelView:update()
+function channelView:update()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
@@ -30,7 +30,7 @@ function ChannelView:update()
 	end
 end
 
-function ChannelView:mousepressed()
+function channelView:mousepressed()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
@@ -80,7 +80,7 @@ function ChannelView:mousepressed()
 	end
 end
 
-function ChannelView:draw()
+function channelView:draw()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
@@ -141,11 +141,11 @@ function ChannelView:draw()
 	end
 end
 
-function ChannelView:wheelmoved(y)
+function channelView:wheelmoved(y)
 	self.scroll_ = math.floor(self.scroll - y * 1.5 * UI_GRID)
 end
 
-function ChannelView:getMaxScroll()
+function channelView:getMaxScroll()
 	local w, h = self:getDimensions()
 
 	local l = #channelHandler.list

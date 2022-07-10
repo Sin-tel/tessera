@@ -1,5 +1,6 @@
+-- stylua: ignore
 theme = {
-	white = { 1.0, 1.0, 1.0 },
+	white =         {1.00, 1.00, 1.00},
 
 	borders =		{0.05, 0.05, 0.05},
 	background =	{0.12, 0.12, 0.12},

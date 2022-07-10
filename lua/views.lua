@@ -58,13 +58,13 @@ DefaultView = View:derive("Default")
 
 -- kind of annoying but this has to be at the bottom
 require("views/channelview")
-require("views/pannerview")
+require("views/pannerView")
 require("views/parameterview")
 require("views/songview")
 require("views/testpadview")
 
 -- Views = {
 -- 	DefaultView,
--- 	ParameterView,
--- 	PannerView,
+-- 	parameterView,
+-- 	pannerView,
 -- }

@@ -41,7 +41,7 @@ wav = {
 	create_context = function(filename, mode)
 		-- Check function parameters
 		if type(filename) ~= "string" or not (mode == "r" or mode == "w") then
-			error("invalid function parameters, expected filename and mode \"r\" or \"w\"", 2)
+			error('invalid function parameters, expected filename and mode "r" or "w"', 2)
 		end
 		-- Audio file handle
 		local file = io.open(filename, mode == "r" and "rb" or "wb")
@@ -50,17 +50,17 @@ wav = {
 		end
 		-- Byte-string(unsigend integer,little endian)<->Lua-number converters
 		local function bton(s)
-			local bytes = {s:byte(1,#s)}
+			local bytes = { s:byte(1, #s) }
 			local n, bytes_n = 0, #bytes
-			for i = 0, bytes_n-1 do
-				n = n + bytes[1+i] * 2^(i*8)
+			for i = 0, bytes_n - 1 do
+				n = n + bytes[1 + i] * 2 ^ (i * 8)
 			end
 			return n
 		end
-		local unpack = table.unpack or unpack	-- Lua 5.1 or 5.2 table unpacker
+		local unpack = table.unpack or unpack -- Lua 5.1 or 5.2 table unpacker
 		local function ntob(n, len)
 			local n, bytes = math.max(math.floor(n), 0), {}
-			for i=1, len do
+			for i = 1, len do
 				bytes[i] = n % 256
 				n = math.floor(n / 256)
 			end
@@ -129,10 +129,15 @@ wav = {
 						error("bits per sample not found")
 					end
 					bits_per_sample = bton(bytes)
-					if bits_per_sample ~= 8 and bits_per_sample ~= 16 and bits_per_sample ~= 24 and bits_per_sample ~= 32 then
+					if
+						bits_per_sample ~= 8
+						and bits_per_sample ~= 16
+						and bits_per_sample ~= 24
+						and bits_per_sample ~= 32
+					then
 						error("bits per sample must be 8, 16, 24 or 32", 2)
 					end
-					file:seek("cur", chunk_size-16)
+					file:seek("cur", chunk_size - 16)
 				elseif chunk_id == "data" then
 					-- Read samples
 					if not block_align then
@@ -141,7 +146,7 @@ wav = {
 					samples_per_channel = chunk_size / block_align
 					data_begin = file:seek()
 					data_end = data_begin + chunk_size
-					break	-- Stop here for later reading
+					break -- Stop here for later reading
 				else
 					-- Skip chunk
 					file:seek("cur", chunk_size)
@@ -194,7 +199,7 @@ wav = {
 					return sample / sample_rate * 1000
 				end,
 				get_min_max_amplitude = function()
-					local half_level = 2^bits_per_sample / 2
+					local half_level = 2 ^ bits_per_sample / 2
 					return -half_level, half_level - 1
 				end,
 				get_position = function()
@@ -221,29 +226,29 @@ wav = {
 					elseif file:seek() + n * block_align > data_end then
 						error("tried to read over data end", 2)
 					end
-					local bytes, sample, output = file:read(n * block_align), nil, {n = 0}
+					local bytes, sample, output = file:read(n * block_align), nil, { n = 0 }
 					local bytes_n = #bytes
 					if bits_per_sample == 8 then
-						for i=1, bytes_n, 1 do
-							sample = bton(bytes:sub(i,i))
+						for i = 1, bytes_n, 1 do
+							sample = bton(bytes:sub(i, i))
 							output.n = output.n + 1
 							output[output.n] = sample > 127 and sample - 256 or sample
 						end
 					elseif bits_per_sample == 16 then
-						for i=1, bytes_n, 2 do
-							sample = bton(bytes:sub(i,i+1))
+						for i = 1, bytes_n, 2 do
+							sample = bton(bytes:sub(i, i + 1))
 							output.n = output.n + 1
 							output[output.n] = sample > 32767 and sample - 65536 or sample
 						end
 					elseif bits_per_sample == 24 then
-						for i=1, bytes_n, 3 do
-							sample = bton(bytes:sub(i,i+2))
+						for i = 1, bytes_n, 3 do
+							sample = bton(bytes:sub(i, i + 2))
 							output.n = output.n + 1
 							output[output.n] = sample > 8388607 and sample - 16777216 or sample
 						end
-					else	-- if bits_per_sample == 32 then
-						for i=1, bytes_n, 4 do
-							sample = bton(bytes:sub(i,i+3))
+					else -- if bits_per_sample == 32 then
+						for i = 1, bytes_n, 4 do
+							sample = bton(bytes:sub(i, i + 3))
 							output.n = output.n + 1
 							output[output.n] = sample > 2147483647 and sample - 4294967296 or sample
 						end
@@ -255,16 +260,16 @@ wav = {
 					if not success then
 						error(samples, 2)
 					end
-					local output, channel_samples = {n = channels_number}
-					for c=1, output.n do
-						channel_samples = {n = samples.n / channels_number}
-						for s=1, channel_samples.n do
-							channel_samples[s] = samples[c + (s-1) * channels_number]
+					local output, channel_samples = { n = channels_number }
+					for c = 1, output.n do
+						channel_samples = { n = samples.n / channels_number }
+						for s = 1, channel_samples.n do
+							channel_samples[s] = samples[c + (s - 1) * channels_number]
 						end
 						output[c] = channel_samples
 					end
 					return output
-				end
+				end,
 			}
 			return obj
 		-- Initialize write process
@@ -281,9 +286,18 @@ wav = {
 				end,
 				init = function(channels_number, sample_rate, bits_per_sample)
 					-- Check function parameters
-					if not isint(channels_number) or channels_number < 1 or
-						not isint(sample_rate) or sample_rate < 2 or
-						not (bits_per_sample == 8 or bits_per_sample == 16 or bits_per_sample == 24 or bits_per_sample == 32) then
+					if
+						not isint(channels_number)
+						or channels_number < 1
+						or not isint(sample_rate)
+						or sample_rate < 2
+						or not (
+							bits_per_sample == 8
+							or bits_per_sample == 16
+							or bits_per_sample == 24
+							or bits_per_sample == 32
+						)
+					then
 						error("valid channels number, sample rate and bits per sample expected", 2)
 					-- Already finished?
 					elseif not file then
@@ -293,18 +307,20 @@ wav = {
 						error("already initialized", 2)
 					end
 					-- Write file type
-					file:write("RIFF????WAVE")	-- file size to insert later
+					file:write("RIFF????WAVE") -- file size to insert later
 					-- Write format chunk
-					file:write("fmt ",
-								ntob(16, 4),
-								ntob(1, 2),
-								ntob(channels_number, 2),
-								ntob(sample_rate, 4),
-								ntob(sample_rate * channels_number * (bits_per_sample / 8), 4),
-								ntob(channels_number * (bits_per_sample / 8), 2),
-								ntob(bits_per_sample, 2))
+					file:write(
+						"fmt ",
+						ntob(16, 4),
+						ntob(1, 2),
+						ntob(channels_number, 2),
+						ntob(sample_rate, 4),
+						ntob(sample_rate * channels_number * (bits_per_sample / 8), 4),
+						ntob(channels_number * (bits_per_sample / 8), 2),
+						ntob(bits_per_sample, 2)
+					)
 					-- Write data chunk (so far)
-					file:write("data????")	-- data size to insert later
+					file:write("data????") -- data size to insert later
 					-- Set format memory
 					channels_number_private, bytes_per_sample = channels_number, bits_per_sample / 8
 				end,
@@ -324,7 +340,7 @@ wav = {
 						error("initialize before writing samples", 2)
 					end
 					-- All samples are numbers?
-					for i=1, samples_n do
+					for i = 1, samples_n do
 						if type(samples[i]) ~= "number" then
 							error("samples have to be numbers", 2)
 						end
@@ -332,22 +348,22 @@ wav = {
 					-- Write samples to file
 					local sample
 					if bytes_per_sample == 1 then
-						for i=1, samples_n do
+						for i = 1, samples_n do
 							sample = samples[i]
 							file:write(ntob(sample < 0 and sample + 256 or sample, 1))
 						end
 					elseif bytes_per_sample == 2 then
-						for i=1, samples_n do
+						for i = 1, samples_n do
 							sample = samples[i]
 							file:write(ntob(sample < 0 and sample + 65536 or sample, 2))
 						end
 					elseif bytes_per_sample == 3 then
-						for i=1, samples_n do
+						for i = 1, samples_n do
 							sample = samples[i]
 							file:write(ntob(sample < 0 and sample + 16777216 or sample, 3))
 						end
-					else	-- if bytes_per_sample == 4 then
-						for i=1, samples_n do
+					else -- if bytes_per_sample == 4 then
+						for i = 1, samples_n do
 							sample = samples[i]
 							file:write(ntob(sample < 0 and sample + 4294967296 or sample, 4))
 						end
@@ -372,7 +388,7 @@ wav = {
 					-- Finalize file for secure reading
 					file:close()
 					file = nil
-				end
+				end,
 			}
 		end
 	end,
@@ -389,8 +405,12 @@ wav = {
 	]]
 	create_frequency_analyzer = function(samples, sample_rate)
 		-- Check function parameters
-		if type(samples) ~= "table" or
-			type(sample_rate) ~= "number" or sample_rate ~= math.floor(sample_rate) or sample_rate < 2 then
+		if
+			type(samples) ~= "table"
+			or type(sample_rate) ~= "number"
+			or sample_rate ~= math.floor(sample_rate)
+			or sample_rate < 2
+		then
 			error("samples table and sample rate expected", 2)
 		end
 		local samples_n = #samples
@@ -409,32 +429,36 @@ wav = {
 		do
 			local complex = {}
 			local function tocomplex(a, b)
-				if getmetatable(b) ~= complex then return a, {r = b, i = 0}
-				elseif getmetatable(a) ~= complex then return {r = a, i = 0}, b
-				else return a, b end
+				if getmetatable(b) ~= complex then
+					return a, { r = b, i = 0 }
+				elseif getmetatable(a) ~= complex then
+					return { r = a, i = 0 }, b
+				else
+					return a, b
+				end
 			end
 			complex.__add = function(a, b)
 				local c1, c2 = tocomplex(a, b)
-				return setmetatable({r = c1.r + c2.r, i = c1.i + c2.i}, complex)
+				return setmetatable({ r = c1.r + c2.r, i = c1.i + c2.i }, complex)
 			end
 			complex.__sub = function(a, b)
 				local c1, c2 = tocomplex(a, b)
-				return setmetatable({r = c1.r - c2.r, i = c1.i - c2.i}, complex)
+				return setmetatable({ r = c1.r - c2.r, i = c1.i - c2.i }, complex)
 			end
 			complex.__mul = function(a, b)
 				local c1, c2 = tocomplex(a, b)
-				return setmetatable({r = c1.r * c2.r - c1.i * c2.i, i = c1.r * c2.i + c1.i * c2.r}, complex)
+				return setmetatable({ r = c1.r * c2.r - c1.i * c2.i, i = c1.r * c2.i + c1.i * c2.r }, complex)
 			end
 			complex.__index = complex
 			complex_t = function(r, i)
-				return setmetatable({r = r, i = i}, complex)
+				return setmetatable({ r = r, i = i }, complex)
 			end
 		end
 		local function polar(theta)
 			return complex_t(math.cos(theta), math.sin(theta))
 		end
 		local function magnitude(c)
-			return math.sqrt(c.r^2 + c.i^2)
+			return math.sqrt(c.r ^ 2 + c.i ^ 2)
 		end
 		-- Fast Fourier Transform
 		local function fft(x)
@@ -442,12 +466,12 @@ wav = {
 			local N = x.n
 			if N > 1 then
 				-- Divide
-				local even, odd = {n = 0}, {n = 0}
-				for i=1, N, 2 do
+				local even, odd = { n = 0 }, { n = 0 }
+				for i = 1, N, 2 do
 					even.n = even.n + 1
 					even[even.n] = x[i]
 				end
-				for i=2, N, 2 do
+				for i = 2, N, 2 do
 					odd.n = odd.n + 1
 					odd[odd.n] = x[i]
 				end
@@ -456,15 +480,15 @@ wav = {
 				fft(odd)
 				--Combine
 				local t
-				for k = 1, N/2 do
-					t = polar(-2 * math.pi * (k-1) / N) * odd[k]
+				for k = 1, N / 2 do
+					t = polar(-2 * math.pi * (k - 1) / N) * odd[k]
 					x[k] = even[k] + t
-					x[k+N/2] = even[k] - t
+					x[k + N / 2] = even[k] - t
 				end
 			end
 		end
 		-- Numbers to complex numbers
-		local data = {n = samples_n}
+		local data = { n = samples_n }
 		for i = 1, data.n do
 			data[i] = complex_t(samples[i], 0)
 		end
@@ -475,26 +499,27 @@ wav = {
 			data[i] = magnitude(data[i])
 		end
 		-- Calculate ordered frequencies
-		local frequencies, frequency_sum, sample_rate_half = {n = data.n / 2}, 0, sample_rate / 2
-		for i=1, frequencies.n do
+		local frequencies, frequency_sum, sample_rate_half = { n = data.n / 2 }, 0, sample_rate / 2
+		for i = 1, frequencies.n do
 			frequency_sum = frequency_sum + data[i]
 		end
 		if frequency_sum > 0 then
-			for i=1, frequencies.n do
-				frequencies[i] = {freq = (i-1) / (frequencies.n-1) * sample_rate_half, weight = data[i] / frequency_sum}
+			for i = 1, frequencies.n do
+				frequencies[i] =
+					{ freq = (i - 1) / (frequencies.n - 1) * sample_rate_half, weight = data[i] / frequency_sum }
 			end
 		else
-			frequencies[1] = {freq = 0, weight = 1}
-			for i=2, frequencies.n do
-				frequencies[i] = {freq = (i-1) / (frequencies.n-1) * sample_rate_half, weight = 0}
+			frequencies[1] = { freq = 0, weight = 1 }
+			for i = 2, frequencies.n do
+				frequencies[i] = { freq = (i - 1) / (frequencies.n - 1) * sample_rate_half, weight = 0 }
 			end
 		end
 		-- Return frequencies getter
 		return {
 			get_frequencies = function()
-				local out = {n = frequencies.n}
-				for i=1, frequencies.n do
-					out[i] = {freq = frequencies[i].freq, weight = frequencies[i].weight}
+				local out = { n = frequencies.n }
+				for i = 1, frequencies.n do
+					out[i] = { freq = frequencies[i].freq, weight = frequencies[i].weight }
 				end
 				return out
 			end,
@@ -506,15 +531,24 @@ wav = {
 					if frequency.freq == freq then
 						return frequency.weight
 					elseif frequency.freq > freq then
-						local frequency_last = frequencies[i-1]
-						return (freq - frequency_last.freq) / (frequency.freq - frequency_last.freq) * (frequency.weight - frequency_last.weight) + frequency_last.weight
+						local frequency_last = frequencies[i - 1]
+						return (freq - frequency_last.freq)
+								/ (frequency.freq - frequency_last.freq)
+								* (frequency.weight - frequency_last.weight)
+							+ frequency_last.weight
 					end
 				end
 			end,
 			get_frequency_range_weight = function(freq_min, freq_max)
-				if type(freq_min) ~= "number" or freq_min < 0 or freq_min > sample_rate_half or
-					type(freq_max) ~= "number" or freq_max < 0 or freq_max > sample_rate_half or
-					freq_min > freq_max then
+				if
+					type(freq_min) ~= "number"
+					or freq_min < 0
+					or freq_min > sample_rate_half
+					or type(freq_max) ~= "number"
+					or freq_max < 0
+					or freq_max > sample_rate_half
+					or freq_min > freq_max
+				then
 					error("valid frequencies expected", 2)
 				end
 				local weight_sum = 0
@@ -524,9 +558,9 @@ wav = {
 					end
 				end
 				return weight_sum
-			end
+			end,
 		}
-	end
+	end,
 }
 
 --[[
@@ -562,7 +596,7 @@ function math.round_pow2(x)
 		error("number expected", 2)
 	end
 	local min, max = math.floor_pow2(x), math.ceil_pow2(x)
-	return (x - min) / (max-min) < 0.5 and min or max
+	return (x - min) / (max - min) < 0.5 and min or max
 end
 
 --[[
@@ -570,10 +604,15 @@ end
 ]]
 function audio_to_ass(samples, wave_width, wave_height_scale, wave_thickness)
 	-- Check function parameters
-	if type(samples) ~= "table" or not samples[1] or
-		type(wave_width) ~= "number" or wave_width <= 0 or
-		type(wave_height_scale) ~= "number" or
-		type(wave_thickness) ~= "number" or wave_thickness <= 0 then
+	if
+		type(samples) ~= "table"
+		or not samples[1]
+		or type(wave_width) ~= "number"
+		or wave_width <= 0
+		or type(wave_height_scale) ~= "number"
+		or type(wave_thickness) ~= "number"
+		or wave_thickness <= 0
+	then
 		error("samples table, positive wave width, height scale and thickness expected", 2)
 	end
 	for _, sample in ipairs(samples) do
@@ -585,11 +624,21 @@ function audio_to_ass(samples, wave_width, wave_height_scale, wave_thickness)
 	local thick2, samples_n = wave_thickness / 2, #samples
 	-- Build shape
 	local shape = string.format("m 0 %d l", samples[1] * wave_height_scale - thick2)
-	for i=2, samples_n do
-		shape = string.format("%s %d %d", shape, (i-1) / (samples_n-1) * wave_width, samples[i] * wave_height_scale - thick2)
+	for i = 2, samples_n do
+		shape = string.format(
+			"%s %d %d",
+			shape,
+			(i - 1) / (samples_n - 1) * wave_width,
+			samples[i] * wave_height_scale - thick2
+		)
 	end
-	for i=samples_n, 1, -1 do
-		shape = string.format("%s %d %d", shape, (i-1) / (samples_n-1) * wave_width, samples[i] * wave_height_scale + thick2)
+	for i = samples_n, 1, -1 do
+		shape = string.format(
+			"%s %d %d",
+			shape,
+			(i - 1) / (samples_n - 1) * wave_width,
+			samples[i] * wave_height_scale + thick2
+		)
 	end
 	return shape
 end

@@ -61,6 +61,7 @@ Pitch.generators = {
 	6.97049,
 }
 
+-- stylua: ignore
 Pitch.table = {
 	{ 1 },
 	{ 0, 1 },
@@ -73,14 +74,15 @@ Pitch.table = {
 
 Pitch.diatonic_names = { "C", "D", "E", "F", "G", "A", "B" }
 
+-- stylua: ignore
 Pitch.diatonic_table = {
-	{ 0, 0 },
-	{ -1, 2 },
-	{ -2, 4 },
-	{ 1, -1 },
-	{ 0, 1 },
-	{ -1, 3 },
-	{ -2, 5 },
+	{  0,  0 },
+	{ -1,  2 },
+	{ -2,  4 },
+	{  1, -1 },
+	{  0,  1 },
+	{ -1,  3 },
+	{ -2,  5 },
 }
 
 for i, v in ipairs(Pitch.table) do

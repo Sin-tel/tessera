@@ -83,8 +83,8 @@ impl Render {
 
 		// default 6dB headroom + tanh
 		for sample in buffer.iter_mut() {
-			sample.l = (sample.l * 0.50).tanh();
-			sample.r = (sample.r * 0.50).tanh();
+			sample.l = softclip(sample.l * 0.50);
+			sample.r = softclip(sample.r * 0.50);
 		}
 
 		let mut suml: f32 = 0.0;
