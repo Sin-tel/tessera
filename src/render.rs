@@ -42,10 +42,9 @@ impl Render {
 	}
 
 	pub fn send(&mut self, m: LuaMessage) {
-		if !self.lua_tx.is_full() {
-			self.lua_tx.push(m).unwrap();
-		} else {
-			println!("Lua queue full. Dropped message!")
+		match self.lua_tx.push(m) {
+			Ok(()) => (),
+			Err(_) => println!("Lua queue full. Dropped message!"),
 		}
 	}
 
@@ -121,10 +120,10 @@ impl Render {
 					}
 					None => println!("Channel index out of bounds!"),
 				},
-				AudioMessage::Note(ch_index, cv) => match self.channels.get_mut(ch_index) {
+				AudioMessage::Note(ch_index, cv, id) => match self.channels.get_mut(ch_index) {
 					Some(ch) => {
 						if !ch.mute {
-							ch.instrument.note(cv.pitch, cv.vel);
+							ch.instrument.note(cv.pitch, cv.vel, id);
 						}
 					}
 					None => println!("Channel index out of bounds!"),

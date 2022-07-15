@@ -28,7 +28,8 @@ Lua
 [x] channel/outliner view
 [-] Panner view
 [-] Keyboard note playing
-[ ] Harmonic coordinate logic
+[-] Harmonic coordinate logic
+[ ] handle MPE input
 [ ] Static piano roll setup
 [ ] Basic piano roll keyboard editing
 [ ] Project tempo
@@ -76,7 +77,7 @@ Rust
 [ ] Reset audio driver to change settings in ASIO panel
 [ ] Port over a bunch of protoplug devices
 [ ] Prepare for play (reset envs etc)
-[ ] ParameterGroup channels
+[ ] Group channels
 [ ] Master channel
 [ ] Return track?
 [ ] global reverb ~ panning

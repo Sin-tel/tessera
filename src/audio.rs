@@ -33,17 +33,18 @@ pub fn audio_run(host_name: &str, output_device_name: &str) -> Result<Userdata, 
 		cpal::SampleFormat::F32 => build_stream::<f32>(&output_device, &config2),
 		cpal::SampleFormat::I16 => build_stream::<i16>(&output_device, &config2),
 		cpal::SampleFormat::U16 => build_stream::<u16>(&output_device, &config2),
-	};
+	}?;
 
 	userdata.stream.play()?;
-
-	// Err("Something wrong".into())
 
 	println!("Stream set up succesfully!");
 	Ok(userdata)
 }
 
-pub fn build_stream<T: 'static>(device: &cpal::Device, config: &cpal::StreamConfig) -> Userdata
+pub fn build_stream<T: 'static>(
+	device: &cpal::Device,
+	config: &cpal::StreamConfig,
+) -> Result<Userdata, Box<dyn Error>>
 where
 	T: cpal::Sample,
 {
@@ -60,17 +61,15 @@ where
 
 	let audio_closure = build_closure::<T>(stream_rx, m_render_clone);
 
-	let stream = device
-		.build_output_stream(config, audio_closure, err_fn)
-		.unwrap();
+	let stream = device.build_output_stream(config, audio_closure, err_fn)?;
 
-	Userdata {
+	Ok(Userdata {
 		stream,
 		audio_tx,
 		stream_tx,
 		lua_rx,
 		m_render,
-	}
+	})
 }
 
 fn build_closure<T>(
@@ -93,11 +92,9 @@ where
 		assert_no_alloc(|| {
 			let buf_size = buffer.len() / 2;
 
-			// dbg!(buf_size);
-
 			assert!(buf_size <= MAX_BUF_SIZE);
 
-			let mut buf_slice = &mut audiobuf[..buf_size];
+			let buf_slice = &mut audiobuf[..buf_size];
 
 			match m_render.try_lock() {
 				Ok(mut render) if !paused => {
@@ -117,7 +114,7 @@ where
 					);
 					render.parse_messages();
 					// write to output buffer
-					render.process(&mut buf_slice);
+					render.process(buf_slice);
 
 					for (outsample, gensample) in buffer.chunks_exact_mut(2).zip(buf_slice.iter()) {
 						outsample[0] = cpal::Sample::from::<f32>(&gensample.l);

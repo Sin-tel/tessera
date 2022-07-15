@@ -9,7 +9,7 @@ pub trait Instrument: Param {
 		Self: Sized;
 	fn cv(&mut self, pitch: f32, vel: f32);
 	fn process(&mut self, buffer: &mut [StereoSample]);
-	fn note(&mut self, pitch: f32, vel: f32);
+	fn note(&mut self, pitch: f32, vel: f32, id: usize);
 }
 
 pub trait Effect: Param {

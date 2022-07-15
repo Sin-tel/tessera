@@ -1,7 +1,4 @@
-// use std::ops::AddAssign;
-// use std::ops::Add;
-
-pub const TWO_PI: f32 = 2f32 * std::f32::consts::PI;
+pub const TWO_PI: f32 = std::f32::consts::TAU;
 pub const MAX_BUF_SIZE: usize = 1024;
 
 #[repr(C)]
@@ -24,7 +21,7 @@ pub struct C_AudioBuffer {
 #[derive(Debug)]
 pub enum AudioMessage {
 	CV(usize, CV),
-	Note(usize, CV),
+	Note(usize, CV, usize),
 	SetParam(usize, usize, usize, f32),
 	Pan(usize, f32, f32),
 	Mute(usize, bool),

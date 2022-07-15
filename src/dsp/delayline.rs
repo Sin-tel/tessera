@@ -9,7 +9,6 @@ pub struct DelayLine {
 	h: [f32; 4],
 }
 
-#[allow(dead_code)]
 impl DelayLine {
 	pub fn new(sample_rate: f32, len: f32) -> Self {
 		Self {

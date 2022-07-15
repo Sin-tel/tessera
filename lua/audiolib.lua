@@ -64,7 +64,7 @@ end
 
 function audiolib.send_noteOn(index, t)
 	if stream_handle then
-		lib.send_noteOn(stream_handle, index, t[1], t[2])
+		lib.send_noteOn(stream_handle, index, t[1], t[2], 0) -- id will be used for polyphony
 	end
 end
 

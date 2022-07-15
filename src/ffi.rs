@@ -18,14 +18,20 @@ pub struct Userdata {
 	pub m_render: Arc<Mutex<Render>>,
 }
 
+/// # Safety
+///
+/// Make sure the arguments point to valid null-terminated c strings.
 #[no_mangle]
-pub extern "C" fn stream_new(host_ptr: *const c_char, device_ptr: *const c_char) -> *mut c_void {
-	let host_name = unsafe { CStr::from_ptr(host_ptr).to_str().unwrap() };
-	let device_name = unsafe { CStr::from_ptr(device_ptr).to_str().unwrap() };
+pub unsafe extern "C" fn stream_new(
+	host_ptr: *const c_char,
+	device_ptr: *const c_char,
+) -> *mut c_void {
+	let host_name = CStr::from_ptr(host_ptr).to_str().unwrap();
+	let device_name = CStr::from_ptr(device_ptr).to_str().unwrap();
 
 	match audio_run(host_name, device_name) {
 		Ok(ud) => Box::into_raw(Box::new(ud)) as *mut c_void,
-		Err(_) => std::ptr::null_mut() as *mut c_void,
+		Err(_) => std::ptr::null_mut() as *mut c_void, 
 	}
 }
 
@@ -46,10 +52,10 @@ pub extern "C" fn send_CV(stream_ptr: *mut c_void, ch: usize, pitch: f32, vel: f
 }
 
 #[no_mangle]
-pub extern "C" fn send_noteOn(stream_ptr: *mut c_void, ch: usize, pitch: f32, vel: f32) {
+pub extern "C" fn send_noteOn(stream_ptr: *mut c_void, ch: usize, pitch: f32, vel: f32, id: usize) {
 	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
 
-	send_message(d, AudioMessage::Note(ch, CV { pitch, vel }));
+	send_message(d, AudioMessage::Note(ch, CV { pitch, vel }, id));
 }
 
 #[no_mangle]
@@ -167,18 +173,16 @@ pub extern "C" fn block_free(block: C_AudioBuffer) {
 }
 
 fn send_message(d: &mut Userdata, m: AudioMessage) {
-	if !d.audio_tx.is_full() {
-		d.audio_tx.push(m).unwrap();
-	} else {
-		println!("Queue full. Dropped message!")
+	match d.audio_tx.push(m) {
+		Ok(()) => (),
+		Err(_) => println!("Queue full. Dropped message!")
 	}
 }
 
 fn send_paused(d: &mut Userdata, paused: bool) {
-	if !d.stream_tx.is_full() {
-		d.stream_tx.push(paused).unwrap();
-	} else {
-		println!("Stream queue full. Dropped message!")
+	match d.stream_tx.push(paused) {
+		Ok(()) => (),
+		Err(_) => println!("Stream queue full. Dropped message!"),
 	}
 }
 
@@ -193,5 +197,5 @@ pub extern "C" fn rx_is_empty(stream_ptr: *mut c_void) -> bool {
 pub extern "C" fn rx_pop(stream_ptr: *mut c_void) -> LuaMessage {
 	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
 
-	d.lua_rx.pop().unwrap()
+	d.lua_rx.pop().unwrap() // caller should make sure its not empty
 }

@@ -49,7 +49,7 @@ void send_CV(void *stream_ptr, size_t ch, float pitch, float vel);
 
 void send_mute(void *stream_ptr, size_t ch, bool mute);
 
-void send_noteOn(void *stream_ptr, size_t ch, float pitch, float vel);
+void send_noteOn(void *stream_ptr, size_t ch, float pitch, float vel, size_t id);
 
 void send_pan(void *stream_ptr, size_t ch, float gain, float pan);
 
@@ -57,6 +57,11 @@ void send_param(void *stream_ptr, size_t ch_index, size_t device_index, size_t i
 
 void stream_free(void *stream_ptr);
 
+/**
+ * # Safety
+ *
+ * Make sure the arguments point to valid null-terminated c strings.
+ */
 void *stream_new(const char *host_ptr, const char *device_ptr);
 
 ]]

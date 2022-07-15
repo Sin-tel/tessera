@@ -7,6 +7,10 @@ there is also 6 extra accidental pairs
 
 base pitch is always 60 = C4 = 261.63Hz
 
+there are seperate accidentals for "double half sherp/flat"
+when 243/242 is tempered out (rastmic), these should revert to normal sharps/flats
+(this is true for 17, 24, 31, 41, 72)
+
 4 layers:
   note names  (only view)
     | convert diatonic scale notation to oct/fifth pair

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 [lib]
 path = "src/lib.rs"
-crate-type = ["cdylib"]
+crate-type = ["lib","cdylib"]
 
 # ASIO requirements
 [target.'cfg(target_os = "windows")'.dependencies]
@@ -14,12 +14,11 @@ clang-sys = "0.29.3"
 cpal = { version = "0.13.4"}
 
 [dependencies]
-ringbuf = "0.2.6"
-# hound = "3.4"
+ringbuf = "0.2.8"
 assert_no_alloc = {version = "1.1.2", features = ["warn_debug"]}
 fastrand = "1.5.0"
 bit_mask_ring_buf = "0.5"
-# fastapprox = "0.3"
+bencher = "0.1"
 
 [profile.dev]
 opt-level = 1
@@ -32,3 +31,7 @@ debug = 1 # for profiling
 # panic = "abort"
 # enabling this flag will increase performance by a lot
 # RUSTFLAGS="-C target-cpu=native" cargo build --release
+
+[[bench]]
+name = "bench"
+harness = false

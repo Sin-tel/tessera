@@ -14,7 +14,6 @@ pub struct Filter {
 	sample_rate: f32,
 }
 
-#[allow(dead_code)]
 impl Filter {
 	pub fn new(sample_rate: f32) -> Self {
 		Self {

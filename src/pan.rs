@@ -3,9 +3,9 @@ use crate::dsp::delayline::*;
 use crate::dsp::simper::*;
 use crate::dsp::*;
 
-// inter aural delay
-const IAD: f32 = 0.00066;
-// const IAD: f32 = 0.1;
+// interaural time difference, 660 μs
+const ITD: f32 = 0.00066;
+// head filter at 4 kHz
 const HEAD_CUTOFF: f32 = 4000.0;
 const HEAD_Q: f32 = 0.4;
 
@@ -32,8 +32,8 @@ impl Pan {
 			pan: Smoothed::new(0.0, 100.0 / sample_rate),
 			lfilter,
 			rfilter,
-			ldelayline: DelayLine::new(sample_rate, IAD),
-			rdelayline: DelayLine::new(sample_rate, IAD),
+			ldelayline: DelayLine::new(sample_rate, ITD),
+			rdelayline: DelayLine::new(sample_rate, ITD),
 		}
 	}
 
@@ -63,8 +63,8 @@ impl Pan {
 			let p = self.pan.value;
 
 			// delay
-			let mut l = self.ldelayline.go_back_cubic((IAD * p).max(0.0));
-			let mut r = self.rdelayline.go_back_cubic((-IAD * p).max(0.0));
+			let mut l = self.ldelayline.go_back_cubic((ITD * p).max(0.0));
+			let mut r = self.rdelayline.go_back_cubic((-ITD * p).max(0.0));
 
 			// head shadow filter
 			l = self.lfilter.process(l);

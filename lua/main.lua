@@ -3,7 +3,7 @@ release = false
 require("lib/errorhandler")
 require("lib/run")
 
-local lurker = false
+local lurker = true
 
 local settingsHandler = require("settings_handler")
 local audiolib = require("audiolib")
@@ -166,6 +166,14 @@ end
 function love.wheelmoved(x, y)
 	workspace:wheelmoved(y)
 end
+
+-- function love.focus(f)
+-- 	if f then
+-- 		print("Window is focused.")
+-- 	else
+-- 		print("Window is not focused.")
+-- 	end
+-- end
 
 -- function love.textinput(t)
 --     print(t)
