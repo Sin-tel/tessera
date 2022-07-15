@@ -1,4 +1,5 @@
 local audiolib = require("audiolib")
+local midi = require("midi")
 
 local utf8 = require("utf8")
 
@@ -8,6 +9,7 @@ end
 
 function love.errorhandler(msg)
 	audiolib.quit()
+	midi.quit()
 	msg = tostring(msg)
 
 	error_printer(msg, 2)

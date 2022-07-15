@@ -12,6 +12,7 @@ deviceList.instruments.sine = {
 	parameters = {
 		Parameter:new("feedback", { default = 1.0, max = 1.5 }),
 	},
+	mono = true,
 }
 
 deviceList.effects = {}

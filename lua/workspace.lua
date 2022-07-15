@@ -45,7 +45,7 @@ function workspace:draw()
 	love.graphics.setColor(theme.widget_line)
 	love.graphics.rectangle("line", x1, y1, w1, h1, 2)
 	love.graphics.setColor(theme.ui_text)
-	if audiolib.status() then
+	if audiolib.status == "running" then
 		drawText(string.format("%d %%", 100 * self.cpu_load), x1, 0, w1, RIBBON, "center")
 	else
 		drawText("offline", x1, 0, w1, RIBBON, "center")

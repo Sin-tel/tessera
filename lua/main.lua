@@ -32,8 +32,6 @@ io.stdout:setvbuf("no")
 
 width, height = love.graphics.getDimensions()
 
-audio_status = "wait"
-
 selection = {}
 
 time = 0
@@ -43,7 +41,7 @@ time = 0
 local function audioSetup()
 	audiolib.load(settings.audio.default_host, settings.audio.default_device)
 
-	midi_in = midi.load(settings.midi.default_input)
+	midi.load(settings.midi.inputs)
 
 	channelHandler:load()
 	channelHandler:add("sine").armed = true
@@ -52,8 +50,6 @@ local function audioSetup()
 	-- 	n.parameters[2]:setNormalized(math.random())
 	-- 	audiolib.send_noteOn(n.index, {math.random()*36+36, 0.5})
 	-- end
-
-	audio_status = "done"
 end
 
 function love.load()
@@ -107,11 +103,10 @@ end
 
 function love.update(dt)
 	time = time + dt
-	-- print(1/dt)
-	if audio_status == "done" then
-		audiolib.parse_messages()
 
-		midi.update(midi_in, handle_midi)
+	midi.update()
+	if audiolib.status == "running" then
+		audiolib.parse_messages()
 
 		channelHandler:update()
 	end
@@ -119,10 +114,10 @@ end
 
 function love.draw()
 	----update--------
-	if audio_status == "request" then
+	if audiolib.status == "request" then
 		audioSetup()
-	elseif audio_status == "wait" then
-		audio_status = "request"
+	elseif audiolib.status == "wait" then
+		audiolib.status = "request"
 	end
 	if not release and lurker then
 		lurker.update()
@@ -139,16 +134,6 @@ function love.draw()
 	love.graphics.rectangle("fill", 0, 0, width, height)
 
 	workspace:draw()
-
-	love.graphics.setColor(1.0, 1.0, 1.0)
-	-- midi.draw(midi_in)
-
-	-- love.graphics.setColor(1.0, 0.0, 0.0)
-	-- for i,v in ipairs(tracks) do
-	-- 	if v.isPlaying then
-	-- 		love.graphics.ellipse("fill", (v.note)*10, 500, 10)
-	-- 	end
-	-- end
 end
 
 function love.mousepressed(x, y, button)
@@ -187,11 +172,12 @@ function love.keypressed(key, isrepeat)
 	if key == "escape" then
 		love.event.quit()
 	elseif key == "k" then
-		midi.close(midi_in)
-		audiolib.quit()
-	elseif key == "l" then
-		-- audiolib.load()
-		audio_status = "wait"
+		if audiolib.status == "running" then
+			midi.quit()
+			audiolib.quit()
+		elseif audiolib.status == "offline" then
+			audiolib.status = "request"
+		end
 	elseif key == "b" then
 		if audiolib.paused then
 			audiolib.play()
@@ -222,6 +208,7 @@ end
 function love.quit()
 	settingsHandler.save(settings)
 
+	midi.quit()
 	audiolib.quit()
 end
 

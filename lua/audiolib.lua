@@ -22,10 +22,7 @@ local stream_handle = nil
 local audiolib = {}
 
 audiolib.paused = true
-
-function audiolib.status()
-	return stream_handle ~= nil
-end
+audiolib.status = "wait"
 
 function audiolib.load(host, device)
 	if stream_handle == nil then
@@ -42,6 +39,7 @@ function audiolib.load(host, device)
 		else
 			stream_handle = ffi.gc(stream_handle, lib.stream_free)
 			audiolib.paused = false
+			audiolib.status = "running"
 		end
 	else
 		print("Stream already running!")
@@ -51,6 +49,7 @@ end
 function audiolib.quit()
 	if stream_handle then
 		stream_handle = nil
+		audiolib.status = "offline"
 		-- force garbage collection so the finalizer gets called immediately
 		collectgarbage()
 	end
