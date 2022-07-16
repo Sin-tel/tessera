@@ -61,7 +61,7 @@ function handle_midi(event)
 			tracks[new_i].isPlaying = true
 			tracks[new_i].vel = event.vel
 
-			audiolib.send_noteOn(index, { tracks[new_i].note + tracks[new_i].offset, event.vel })
+			audiolib.send_noteOn(index, tracks[new_i].note + tracks[new_i].offset, event.vel)
 		end
 
 		if event.name == "note off" then
@@ -71,7 +71,7 @@ function handle_midi(event)
 					b.isPlaying = false
 					b.age = 0
 					b.vel = 0
-					audiolib.send_CV(index, { b.note + b.offset, 0 })
+					audiolib.send_CV(index, b.note + b.offset, 0)
 					-- b.note = -1
 
 					break
@@ -84,7 +84,7 @@ function handle_midi(event)
 				if b.channel == event.channel then
 					if event.cc == 74 then
 						b.vel = event.y
-						audiolib.send_CV(index, { b.note + b.offset, b.vel })
+						audiolib.send_CV(index, b.note + b.offset, b.vel)
 						break
 					end
 				end
@@ -95,7 +95,7 @@ function handle_midi(event)
 			for _, b in ipairs(tracks) do
 				if b.channel == event.channel then
 					b.offset = event.offset
-					audiolib.send_CV(index, { b.note + b.offset, b.vel })
+					audiolib.send_CV(index, b.note + b.offset, b.vel)
 					break
 				end
 			end

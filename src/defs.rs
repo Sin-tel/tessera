@@ -20,17 +20,11 @@ pub struct C_AudioBuffer {
 // Should not contain any boxed values
 #[derive(Debug)]
 pub enum AudioMessage {
-	CV(usize, CV),
-	Note(usize, CV, usize),
+	CV(usize, f32, f32),
+	Note(usize, f32, f32, usize),
 	SetParam(usize, usize, usize, f32),
 	Pan(usize, f32, f32),
 	Mute(usize, bool),
-}
-
-#[derive(Debug)]
-pub struct CV {
-	pub pitch: f32,
-	pub vel: f32,
 }
 
 #[repr(C)]

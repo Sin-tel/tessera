@@ -10,7 +10,7 @@ end
 function channelHandler:update()
 	for k, ch in ipairs(self.list) do
 		if ch.parameters[1].dirty or ch.parameters[2].dirty then
-			audiolib.send_pan(k - 1, { ch.parameters[1].v, ch.parameters[2].v })
+			audiolib.send_pan(k - 1, ch.parameters[1].v, ch.parameters[2].v)
 			ch.parameters[1].dirty = false
 			ch.parameters[2].dirty = false
 		end

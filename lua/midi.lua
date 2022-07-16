@@ -1,28 +1,10 @@
 local audiolib = require("audiolib")
-
 local rtmidi = require("./lib/rtmidi_ffi")
 local bit = require("bit")
 
 local midi = {}
 
 local devices = {}
-
-local function newdevice(handle, devicetype, n)
-	local new = {}
-	new.handle = handle
-	new.devicetype = devicetype
-	new.port = n
-	new.voices = {}
-	new.pitchbend = 2
-
-	if devicetype == "mpe" then
-		new.pitchbend = 48
-		-- for i = 1, 16 do
-		-- 	new.voices[i] = { vel = 0.0, note = 49, offset = 0.0, y = 0, noteOn = false, noteOff = false }
-		-- end
-	end
-	return new
-end
 
 function midi.load(names)
 	local device_handle = rtmidi.createIn()
@@ -33,32 +15,65 @@ function midi.load(names)
 	end
 end
 
+function midi.openDevice(name)
+	local device_handle = rtmidi.createIn()
+	local port_n
+
+	if name == "default" then
+		port_n = 0
+	else
+		port_n = rtmidi.findPort(device_handle, name)
+	end
+
+	if port_n then
+		rtmidi.openPort(device_handle, port_n)
+
+		if device_handle.ok then
+			rtmidi.ignoreTypes(device_handle, true, true, true)
+			table.insert(devices, midi.newDevice(device_handle, "keyboard", port_n))
+			return
+		end
+	end
+
+	print("Couldn't open port: " .. name)
+end
+
+function midi.newDevice(handle, devicetype, n)
+	local new = {}
+	new.handle = handle
+	new.devicetype = devicetype
+	new.port = n
+	new.voices = {}
+	new.pitchbend = 2
+
+	---temp
+	new.offset = 0
+	new.vel = 0
+
+	if devicetype == "mpe" then
+		new.pitchbend = 48
+		-- for i = 1, 16 do
+		-- 	new.voices[i] = { vel = 0.0, note = 49, offset = 0.0, y = 0, noteOn = false, noteOff = false }
+		-- end
+	end
+	return new
+end
+
 function midi.update()
 	for _, v in ipairs(devices) do
 		midi.updateDevice(v)
 	end
 end
 
-function midi.openDevice(name)
-	local device_handle = rtmidi.createIn()
-	local port_n
+function midi.updateDevice(device)
+	while true do
+		local msg, s = rtmidi.getMessage(device.handle)
+		if s == 0 then
+			break
+		end
+		local event = midi.parse(msg, s)
 
-	if name ~= "default" then
-		port_n = rtmidi.findPort(device_handle, name)
-	end
-
-	if not port_n then
-		print("Opening default midi port (0)")
-		port_n = 0
-	end
-
-	rtmidi.openPort(device_handle, port_n)
-
-	if device_handle.ok then
-		rtmidi.ignoreTypes(device_handle, true, true, true)
-		table.insert(devices, newdevice(device_handle, "keyboard", port_n))
-	else
-		print("Couldn't open port: " .. name)
+		midi.handle_event(device, event)
 	end
 end
 
@@ -103,23 +118,31 @@ function midi.parse(msg, s)
 	return event
 end
 
-local function handle_midi_test(device, event)
+function midi.handle_event_test(device, event)
 	print(event.name)
 end
 
-local function handle_midi_mono(device, event)
-	print(event.name)
-end
-
-function midi.updateDevice(device)
-	while true do
-		local msg, s = rtmidi.getMessage(device.handle)
-		if s == 0 then
-			break
+function midi.handle_event(device, event)
+	if event.name == "note on" then
+		audiolib.send_noteOn(0, event.note + device.offset, event.vel)
+		device.note = event.note
+	elseif event.name == "note off" then
+		if device.note then
+			audiolib.send_CV(0, device.note + device.offset, 0)
 		end
-		local event = midi.parse(msg, s)
-
-		handle_midi_mono(device, event)
+		device.note = nil
+	elseif event.name == "pressure" then
+		device.vel = event.vel
+		if device.note then
+			audiolib.send_CV(0, device.note + device.offset, device.vel)
+		end
+	elseif event.name == "pitchbend" then
+		device.offset = 48 * event.offset
+		if device.note then
+			audiolib.send_CV(0, device.note + device.offset, device.vel)
+		end
+	else
+		-- print(event.name)
 	end
 end
 

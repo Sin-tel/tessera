@@ -49,11 +49,11 @@ pub struct Smoothed {
 }
 
 impl Smoothed {
-	pub fn new(value: f32, f: f32) -> Self {
+	pub fn new(value: f32, f: f32, sample_rate: f32) -> Self {
 		Smoothed {
 			inner: value,
 			value,
-			f,
+			f: f / sample_rate,
 		}
 	}
 	pub fn update(&mut self) {
@@ -72,11 +72,7 @@ impl Smoothed {
 
 impl Default for Smoothed {
 	fn default() -> Self {
-		Smoothed {
-			inner: 0.0,
-			value: 0.0,
-			f: 0.001,
-		}
+		Smoothed::new(0.0, 0.5, 1.0)
 	}
 }
 
@@ -89,12 +85,12 @@ pub struct SmoothedEnv {
 }
 
 impl SmoothedEnv {
-	pub fn new(value: f32, attack: f32, release: f32) -> Self {
+	pub fn new(value: f32, attack: f32, release: f32, sample_rate: f32) -> Self {
 		SmoothedEnv {
 			inner: value,
 			value,
-			attack,
-			release,
+			attack: attack / sample_rate,
+			release: release / sample_rate,
 		}
 	}
 
@@ -122,11 +118,6 @@ impl SmoothedEnv {
 
 impl Default for SmoothedEnv {
 	fn default() -> Self {
-		SmoothedEnv {
-			inner: 0.0,
-			value: 0.0,
-			attack: 0.002,
-			release: 0.0005,
-		}
+		SmoothedEnv::new(0.0, 0.5, 0.1, 1.0)
 	}
 }

@@ -27,9 +27,9 @@ impl Pan {
 		let mut rfilter = Filter::new(sample_rate);
 		rfilter.set_highshelf(HEAD_CUTOFF, HEAD_Q, 0.0);
 		Pan {
-			lgain: Smoothed::new(1.0, 100.0 / sample_rate),
-			rgain: Smoothed::new(1.0, 100.0 / sample_rate),
-			pan: Smoothed::new(0.0, 100.0 / sample_rate),
+			lgain: Smoothed::new(1.0, 100.0, sample_rate),
+			rgain: Smoothed::new(1.0, 100.0, sample_rate),
+			pan: Smoothed::new(0.0, 100.0, sample_rate),
 			lfilter,
 			rfilter,
 			ldelayline: DelayLine::new(sample_rate, ITD),

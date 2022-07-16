@@ -14,7 +14,7 @@ function keyboard:keypressed(key, isrepeat)
 			local p = Pitch:newFromDiatonic(i)
 
 			if ch then
-				audiolib.send_noteOn(ch.index, { p.pitch, 0.5 })
+				audiolib.send_noteOn(ch.index, p.pitch, 0.5)
 			end
 
 			handled = true
@@ -34,7 +34,7 @@ function keyboard:keyreleased(key)
 			local p = Pitch:newFromDiatonic(i)
 
 			if ch then
-				audiolib.send_CV(ch.index, { p.pitch, 0.0 })
+				audiolib.send_CV(ch.index, p.pitch, 0.0)
 			end
 
 			handled = true

@@ -29,7 +29,7 @@ Lua
 [-] Panner view
 [-] Keyboard note playing
 [-] Harmonic coordinate logic
-[ ] handle MPE input
+[-] handle MPE input
 [ ] Static piano roll setup
 [ ] Basic piano roll keyboard editing
 [ ] Project tempo

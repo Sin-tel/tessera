@@ -36,8 +36,8 @@ impl Render {
 			channels: Vec::new(),
 			buffer2: [Default::default(); MAX_BUF_SIZE],
 			sample_rate,
-			peakl: SmoothedEnv::new(0.0, 0.5, 0.1),
-			peakr: SmoothedEnv::new(0.0, 0.5, 0.1),
+			peakl: SmoothedEnv::new(0.0, 0.5, 0.1, 1.0),
+			peakr: SmoothedEnv::new(0.0, 0.5, 0.1, 1.0),
 		}
 	}
 
@@ -112,22 +112,24 @@ impl Render {
 	pub fn parse_messages(&mut self) {
 		while let Some(m) = self.audio_rx.pop() {
 			match m {
-				AudioMessage::CV(ch_index, cv) => match self.channels.get_mut(ch_index) {
+				AudioMessage::CV(ch_index, pitch, vel) => match self.channels.get_mut(ch_index) {
 					Some(ch) => {
 						if !ch.mute {
-							ch.instrument.cv(cv.pitch, cv.vel);
+							ch.instrument.cv(pitch, vel);
 						}
 					}
 					None => println!("Channel index out of bounds!"),
 				},
-				AudioMessage::Note(ch_index, cv, id) => match self.channels.get_mut(ch_index) {
-					Some(ch) => {
-						if !ch.mute {
-							ch.instrument.note(cv.pitch, cv.vel, id);
+				AudioMessage::Note(ch_index, pitch, vel, id) => {
+					match self.channels.get_mut(ch_index) {
+						Some(ch) => {
+							if !ch.mute {
+								ch.instrument.note(pitch, vel, id);
+							}
 						}
+						None => println!("Channel index out of bounds!"),
 					}
-					None => println!("Channel index out of bounds!"),
-				},
+				}
 				AudioMessage::SetParam(ch_index, device_index, index, val) => {
 					match self.channels.get_mut(ch_index) {
 						Some(ch) => {

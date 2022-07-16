@@ -86,7 +86,7 @@ where
 
 	let mut audiobuf = [StereoSample { l: 0.0, r: 0.0 }; MAX_BUF_SIZE];
 
-	let mut cpu_load = SmoothedEnv::new(0.0, 0.2, 0.0005);
+	let mut cpu_load = SmoothedEnv::new(0.0, 0.2, 0.0005, 1.0);
 
 	move |buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
 		assert_no_alloc(|| {

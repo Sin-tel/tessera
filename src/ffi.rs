@@ -31,7 +31,7 @@ pub unsafe extern "C" fn stream_new(
 
 	match audio_run(host_name, device_name) {
 		Ok(ud) => Box::into_raw(Box::new(ud)) as *mut c_void,
-		Err(_) => std::ptr::null_mut() as *mut c_void, 
+		Err(_) => std::ptr::null_mut() as *mut c_void,
 	}
 }
 
@@ -48,14 +48,14 @@ pub extern "C" fn stream_free(stream_ptr: *mut c_void) {
 pub extern "C" fn send_CV(stream_ptr: *mut c_void, ch: usize, pitch: f32, vel: f32) {
 	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
 
-	send_message(d, AudioMessage::CV(ch, CV { pitch, vel }));
+	send_message(d, AudioMessage::CV(ch, pitch, vel));
 }
 
 #[no_mangle]
 pub extern "C" fn send_noteOn(stream_ptr: *mut c_void, ch: usize, pitch: f32, vel: f32, id: usize) {
 	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
 
-	send_message(d, AudioMessage::Note(ch, CV { pitch, vel }, id));
+	send_message(d, AudioMessage::Note(ch, pitch, vel, id));
 }
 
 #[no_mangle]
@@ -175,7 +175,7 @@ pub extern "C" fn block_free(block: C_AudioBuffer) {
 fn send_message(d: &mut Userdata, m: AudioMessage) {
 	match d.audio_tx.push(m) {
 		Ok(()) => (),
-		Err(_) => println!("Queue full. Dropped message!")
+		Err(_) => println!("Queue full. Dropped message!"),
 	}
 }
 
