@@ -116,19 +116,12 @@ end
 
 function Pitch:newFromDiatonic(n)
 	local new = Pitch:new()
-
 	local s = #Pitch.diatonic_table
-	print(n, s)
 	local oct = math.floor((n - 1) / s)
 	n = n - oct * s
-	print(oct, n)
 	local dia = Pitch.diatonic_table[n]
 	new.coord[1] = dia[1] + oct
 	new.coord[2] = dia[2]
-
-	-- for i,v in ipairs(new.coord) do
-	-- 	print(i,v)
-	-- end
 
 	new:recalc()
 

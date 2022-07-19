@@ -24,7 +24,7 @@ function M.load()
       setup.audio.default_host = "default"
       setup.audio.default_device = "default"
       setup.midi = {}
-      setup.midi.default_input = "default"
+      setup.midi.inputs = { { name = "default" } }
 
       M.save(setup)
    end

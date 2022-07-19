@@ -46,6 +46,7 @@ Lua
 [ ] Parse tuning files
 [ ] Midi remapping 
 [ ] Remove channel
+[ ] Effect bypass
 [ ] Reorder channels
 [ ] Reorder effects
 [ ] Rebuild channels from lua data
@@ -71,24 +72,23 @@ Rust
 [x] Simple metering (cpu, dB meters, audio engine state)
 [x] channel mute
 [+] Mixing channels
-[ ] check capitalization, snake case, etc.. consistency
 [ ] Add some effects
 [ ] Poll audio/midi settings
-[ ] Reset audio driver to change settings in ASIO panel
+[x] Reset audio driver to change settings in ASIO panel
 [ ] Port over a bunch of protoplug devices
 [ ] Prepare for play (reset envs etc)
 [ ] Group channels
 [ ] Master channel
-[ ] Return track?
+[ ] Return tracks?
 [ ] global reverb ~ panning
 [ ] Polyphonic instruments (plucked, piano, etc)
 [x] binaural panning 
-[ ] panning pre/post switch
-[ ] Automation
 [x] Support WASAPI
 [ ] Support macOS
-[ ] Simple audio flow (parallel)
 [ ] Support linux
+[ ] Automation
+[ ] Simple audio flow (parallel)
+[ ] panning pre/post switch
 [ ] Vst hosting (pianoteq)
 [ ] FFT convolver
 

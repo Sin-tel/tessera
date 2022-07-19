@@ -1,4 +1,4 @@
-local polyphony = 1
+local polyphony = 16
 -- local n_index = 1
 local tracks = {}
 

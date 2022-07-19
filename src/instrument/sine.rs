@@ -34,7 +34,6 @@ impl Instrument for Sine {
 			self.accum += self.freq.value;
 			self.accum = self.accum.fract();
 			let mut out = (self.accum * TWO_PI + self.feedback * self.prev).sin();
-			// let mut out = fastapprox::faster::sinfull(self.accum * TWO_PI + self.feedback * self.prev);
 			out *= self.vel.value;
 
 			self.prev = out;
@@ -47,7 +46,11 @@ impl Instrument for Sine {
 	fn note(&mut self, pitch: f32, vel: f32, _id: usize) {
 		let p = pitch_to_f(pitch, self.sample_rate);
 		self.freq.set_hard(p);
-		if self.vel.value < 0.0001 {
+
+		// self.vel.set_hard(vel);
+		// self.accum = 0.0;
+
+		if self.vel.value < 0.01 {
 			self.vel.set_hard(vel);
 			self.accum = 0.0;
 		} else {

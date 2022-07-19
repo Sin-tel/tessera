@@ -173,16 +173,14 @@ pub extern "C" fn block_free(block: C_AudioBuffer) {
 }
 
 fn send_message(d: &mut Userdata, m: AudioMessage) {
-	match d.audio_tx.push(m) {
-		Ok(()) => (),
-		Err(_) => println!("Queue full. Dropped message!"),
+	if d.audio_tx.push(m).is_err() {
+		println!("Queue full. Dropped message!");
 	}
 }
 
 fn send_paused(d: &mut Userdata, paused: bool) {
-	match d.stream_tx.push(paused) {
-		Ok(()) => (),
-		Err(_) => println!("Stream queue full. Dropped message!"),
+	if d.stream_tx.push(paused).is_err() {
+		println!("Stream queue full. Dropped message!");
 	}
 }
 

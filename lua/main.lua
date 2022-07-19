@@ -8,7 +8,7 @@ local lurker = true
 local settingsHandler = require("settings_handler")
 local audiolib = require("audiolib")
 local wav = require("lib/wav_save")
-local midi = require("midi")
+local midilib = require("midilib")
 
 if not release and lurker then
 	lurker = require("lib/lurker")
@@ -25,7 +25,6 @@ require("devicelist")
 require("channel_handler")
 require("pitch")
 
--- load color theme
 require("settings/theme")
 
 io.stdout:setvbuf("no")
@@ -41,7 +40,7 @@ time = 0
 local function audioSetup()
 	audiolib.load(settings.audio.default_host, settings.audio.default_device)
 
-	midi.load(settings.midi.inputs)
+	midilib.load(settings.midi.inputs)
 
 	channelHandler:load()
 	channelHandler:add("sine").armed = true
@@ -104,7 +103,7 @@ end
 function love.update(dt)
 	time = time + dt
 
-	midi.update()
+	midilib.update()
 	if audiolib.status == "running" then
 		audiolib.parse_messages()
 
@@ -173,7 +172,7 @@ function love.keypressed(key, isrepeat)
 		love.event.quit()
 	elseif key == "k" then
 		if audiolib.status == "running" then
-			midi.quit()
+			midilib.quit()
 			audiolib.quit()
 		elseif audiolib.status == "offline" then
 			audiolib.status = "request"
@@ -208,7 +207,7 @@ end
 function love.quit()
 	settingsHandler.save(settings)
 
-	midi.quit()
+	midilib.quit()
 	audiolib.quit()
 end
 

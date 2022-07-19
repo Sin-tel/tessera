@@ -2,27 +2,27 @@ local audiolib = require("audiolib")
 local rtmidi = require("./lib/rtmidi_ffi")
 local bit = require("bit")
 
-local midi = {}
+local M = {}
 
 local devices = {}
 
-function midi.load(names)
+function M.load(devicelist)
 	local device_handle = rtmidi.createIn()
 	print("available midi input ports:")
 	rtmidi.printPorts(device_handle)
-	for _, v in ipairs(names) do
-		midi.openDevice(v)
+	for _, v in ipairs(devicelist) do
+		M.openDevice(v)
 	end
 end
 
-function midi.openDevice(name)
+function M.openDevice(v)
 	local device_handle = rtmidi.createIn()
 	local port_n
 
-	if name == "default" then
+	if v.name == "default" then
 		port_n = 0
 	else
-		port_n = rtmidi.findPort(device_handle, name)
+		port_n = rtmidi.findPort(device_handle, v.name)
 	end
 
 	if port_n then
@@ -30,18 +30,18 @@ function midi.openDevice(name)
 
 		if device_handle.ok then
 			rtmidi.ignoreTypes(device_handle, true, true, true)
-			table.insert(devices, midi.newDevice(device_handle, "keyboard", port_n))
+			table.insert(devices, M.newDevice(device_handle, v.mpe, port_n))
 			return
 		end
 	end
 
-	print("Couldn't open port: " .. name)
+	print("Couldn't open port: " .. v.name)
 end
 
-function midi.newDevice(handle, devicetype, n)
+function M.newDevice(handle, mpe, n)
 	local new = {}
 	new.handle = handle
-	new.devicetype = devicetype
+	new.mpe = mpe
 	new.port = n
 	new.voices = {}
 	new.pitchbend = 2
@@ -50,7 +50,7 @@ function midi.newDevice(handle, devicetype, n)
 	new.offset = 0
 	new.vel = 0
 
-	if devicetype == "mpe" then
+	if mpe then
 		new.pitchbend = 48
 		-- for i = 1, 16 do
 		-- 	new.voices[i] = { vel = 0.0, note = 49, offset = 0.0, y = 0, noteOn = false, noteOff = false }
@@ -59,25 +59,25 @@ function midi.newDevice(handle, devicetype, n)
 	return new
 end
 
-function midi.update()
+function M.update()
 	for _, v in ipairs(devices) do
-		midi.updateDevice(v)
+		M.updateDevice(v)
 	end
 end
 
-function midi.updateDevice(device)
+function M.updateDevice(device)
 	while true do
 		local msg, s = rtmidi.getMessage(device.handle)
 		if s == 0 then
 			break
 		end
-		local event = midi.parse(msg, s)
+		local event = M.parse(msg, s)
 
-		midi.handle_event(device, event)
+		M.handleEvent(device, event)
 	end
 end
 
-function midi.parse(msg, s)
+function M.parse(msg, s)
 	local status = bit.rshift(msg.data[0], 4)
 	local channel = bit.band(msg.data[0], 15)
 
@@ -118,38 +118,53 @@ function midi.parse(msg, s)
 	return event
 end
 
-function midi.handle_event_test(device, event)
+function M.handleEventTest(device, event)
 	print(event.name)
 end
 
-function midi.handle_event(device, event)
+function M.handleEvent(device, event)
 	if event.name == "note on" then
-		audiolib.send_noteOn(0, event.note + device.offset, event.vel)
+		table.insert(device.voices, event.note)
 		device.note = event.note
+		device.vel = event.vel
+		audiolib.send_noteOn(0, device.note + device.offset, device.vel)
 	elseif event.name == "note off" then
-		if device.note then
-			audiolib.send_CV(0, device.note + device.offset, 0)
+		local get_i
+		for i, v in ipairs(device.voices) do
+			if v == event.note then
+				get_i = i
+				break
+			end
 		end
-		device.note = nil
+		if device.note and #device.voices == 1 then
+			audiolib.send_CV(0, device.note + device.offset, 0)
+			device.note = nil
+		elseif get_i == #device.voices then
+			device.note = device.voices[get_i - 1]
+			audiolib.send_noteOn(0, device.note + device.offset, device.vel)
+		end
+		table.remove(device.voices, get_i)
 	elseif event.name == "pressure" then
 		device.vel = event.vel
 		if device.note then
 			audiolib.send_CV(0, device.note + device.offset, device.vel)
 		end
 	elseif event.name == "pitchbend" then
-		device.offset = 48 * event.offset
+		device.offset = device.pitchbend * event.offset
 		if device.note then
 			audiolib.send_CV(0, device.note + device.offset, device.vel)
 		end
 	else
 		-- print(event.name)
 	end
+
+	-- return signal
 end
 
-function midi.quit()
+function M.quit()
 	for _, v in ipairs(devices) do
 		rtmidi.closePort(v.handle)
 	end
 end
 
-return midi
+return M

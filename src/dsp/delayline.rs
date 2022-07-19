@@ -19,6 +19,15 @@ impl DelayLine {
 		}
 	}
 
+	// pub fn new_from_usize(sample_rate: f32, len: usize) -> Self {
+	// 	Self {
+	// 		buf: BMRingBuf::<f32>::from_len(len),
+	// 		sample_rate,
+	// 		pos: 0,
+	// 		h: [0.0; 4],
+	// 	}
+	// }
+
 	pub fn push(&mut self, s: f32) {
 		self.pos = self.buf.constrain(self.pos + 1);
 		self.buf[self.pos] = s;
@@ -28,6 +37,10 @@ impl DelayLine {
 		let dt = (time * self.sample_rate).round() as isize;
 		self.buf[self.pos - dt]
 	}
+
+	// pub fn go_back_int_s(&mut self, samples: isize) -> f32 {
+	// 	self.buf[self.pos - samples]
+	// }
 
 	pub fn go_back_linear(&mut self, time: f32) -> f32 {
 		let dt = time * self.sample_rate;

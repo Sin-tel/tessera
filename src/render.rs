@@ -6,10 +6,15 @@ use crate::instrument::*;
 use crate::pan::*;
 use crate::param::*;
 
+pub struct BypassEffect {
+	pub effect: Box<dyn Effect + Send>,
+	pub bypassed: bool,
+}
+
 pub struct Channel {
 	pub instrument: Box<dyn Instrument + Send>,
 	pub pan: Pan,
-	pub effects: Vec<Box<dyn Effect + Send>>,
+	pub effects: Vec<BypassEffect>,
 	pub mute: bool,
 }
 
@@ -42,9 +47,8 @@ impl Render {
 	}
 
 	pub fn send(&mut self, m: LuaMessage) {
-		match self.lua_tx.push(m) {
-			Ok(()) => (),
-			Err(_) => println!("Lua queue full. Dropped message!"),
+		if self.lua_tx.push(m).is_err() {
+			println!("Lua queue full. Dropped message!");
 		}
 	}
 
@@ -137,7 +141,7 @@ impl Render {
 								ch.instrument.set_param(index, val);
 							} else {
 								match ch.effects.get_mut(device_index - 1) {
-									Some(e) => e.set_param(index, val),
+									Some(e) => e.effect.set_param(index, val),
 									None => println!("Device index out of bounds!"),
 								}
 							}

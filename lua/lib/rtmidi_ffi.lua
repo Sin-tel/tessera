@@ -2,7 +2,6 @@
 todo 
 crossplatform dlls
 better ffi loading (see protoplug)
-message parsing
 ]]
 
 local ffi = require("ffi")
