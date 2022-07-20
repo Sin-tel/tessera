@@ -6,8 +6,8 @@ pub const MAX_BUF_SIZE: usize = 1024;
 #[derive(Debug, Copy, Clone, Default)]
 pub struct Stereo(pub [f32; 2]);
 
-#[derive(Debug, Copy, Clone, Default)]
-pub struct Mono(f32);
+#[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
+pub struct Mono(pub f32);
 
 pub trait Sample:
 	Add<Self, Output = Self>
@@ -20,6 +20,7 @@ pub trait Sample:
 	+ Div<f32, Output = Self>
 	+ Sized
 	+ Copy
+	+ Default
 {
 	fn map<F: Fn(f32) -> f32>(self, f: F) -> Self;
 }

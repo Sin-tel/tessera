@@ -11,13 +11,11 @@ const HEAD_Q: f32 = 0.4;
 
 #[derive(Debug)]
 pub struct Pan {
-	lgain: Smoothed,
-	rgain: Smoothed,
-	pan: Smoothed,
+	gain: Smoothed<Stereo>,
+	pan: Smoothed<Mono>,
 	lfilter: Filter,
 	rfilter: Filter,
-	ldelayline: DelayLine,
-	rdelayline: DelayLine,
+	delayline: DelayLine<Stereo>,
 }
 
 impl Pan {
@@ -27,18 +25,16 @@ impl Pan {
 		let mut rfilter = Filter::new(sample_rate);
 		rfilter.set_highshelf(HEAD_CUTOFF, HEAD_Q, 0.0);
 		Pan {
-			lgain: Smoothed::new(1.0, 100.0, sample_rate),
-			rgain: Smoothed::new(1.0, 100.0, sample_rate),
-			pan: Smoothed::new(0.0, 100.0, sample_rate),
+			gain: Smoothed::<Stereo>::new(Stereo([1.0; 2]), 100.0, sample_rate),
+			pan: Smoothed::new(Mono(0.0), 100.0, sample_rate),
 			lfilter,
 			rfilter,
-			ldelayline: DelayLine::new(sample_rate, ITD),
-			rdelayline: DelayLine::new(sample_rate, ITD),
+			delayline: DelayLine::<Stereo>::new(sample_rate, ITD),
 		}
 	}
 
 	pub fn set(&mut self, gain: f32, pan: f32) {
-		self.pan.set(pan);
+		self.pan.set(Mono(pan));
 
 		let lshelf = -1.5 * pan * (pan + 3.0);
 		let rshelf = -1.5 * pan * (pan - 3.0);
@@ -47,18 +43,15 @@ impl Pan {
 
 		let lgain = -0.084 * pan * (pan + 2.53) + 1.0;
 		let rgain = -0.084 * pan * (pan - 2.53) + 1.0;
-		self.lgain.set(lgain * gain);
-		self.rgain.set(rgain * gain);
+		self.gain.set(Stereo([lgain, rgain]) * gain);
 	}
 
 	pub fn process(&mut self, buffer: &mut [Stereo]) {
 		for sample in buffer.iter_mut() {
-			self.lgain.update();
-			self.rgain.update();
+			self.gain.update();
 			self.pan.update();
 
-			let l_in = sample.0[0];
-			let r_in = sample.0[1];
+			let input = sample.clone();
 
 			let p = self.pan.value;
 
@@ -76,8 +69,8 @@ impl Pan {
 
 			*sample = Stereo([l, r]);
 
-			self.ldelayline.push(l_in);
-			self.rdelayline.push(r_in);
+			self.ldelayline.push(input.0[0]);
+			self.rdelayline.push(input.0[1]);
 		}
 	}
 }

@@ -85,7 +85,7 @@ where
 
 	let mut audiobuf = [Stereo([0.0; 2]); MAX_BUF_SIZE];
 
-	let mut cpu_load = SmoothedEnv::new(0.0, 0.2, 0.0005, 1.0);
+	let mut cpu_load = SmoothedEnv::<Mono>::new(Mono(0.0), 0.2, 0.0005, 1.0);
 
 	move |buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
 		assert_no_alloc(|| {
@@ -122,9 +122,9 @@ where
 
 					let t = time.elapsed();
 					let p = t.as_secs_f64() / ((buf_size as f64) / f64::from(render.sample_rate));
-					cpu_load.set(p as f32);
+					cpu_load.set(Mono(p as f32));
 					cpu_load.update();
-					render.send(LuaMessage::Cpu(cpu_load.value));
+					render.send(LuaMessage::Cpu(cpu_load.value.0));
 				}
 				_ => {
 					stream_rx.pop_each(

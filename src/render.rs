@@ -25,8 +25,7 @@ pub struct Render {
 	buffer2: [Stereo; MAX_BUF_SIZE],
 	pub sample_rate: f32,
 
-	peakl: SmoothedEnv,
-	peakr: SmoothedEnv,
+	peak: SmoothedEnv<Stereo>,
 }
 
 impl Render {

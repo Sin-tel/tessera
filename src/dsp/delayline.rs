@@ -1,18 +1,23 @@
+use crate::defs::*;
+
 use crate::dsp::lerp;
 use bit_mask_ring_buf::BMRingBuf;
 
 #[derive(Debug)]
-pub struct DelayLine {
-	buf: BMRingBuf<f32>,
+pub struct DelayLine<T>
+where
+	T: Sample,
+{
+	buf: BMRingBuf<T>,
 	sample_rate: f32,
 	pos: isize,
 	h: [f32; 4],
 }
 
-impl DelayLine {
+impl<T: Sample> DelayLine<T> {
 	pub fn new(sample_rate: f32, len: f32) -> Self {
 		Self {
-			buf: BMRingBuf::<f32>::from_len((len * sample_rate) as usize),
+			buf: BMRingBuf::<T>::from_len((len * sample_rate) as usize),
 			sample_rate,
 			pos: 0,
 			h: [0.0; 4],
@@ -28,12 +33,12 @@ impl DelayLine {
 	// 	}
 	// }
 
-	pub fn push(&mut self, s: f32) {
+	pub fn push(&mut self, s: T) {
 		self.pos = self.buf.constrain(self.pos + 1);
 		self.buf[self.pos] = s;
 	}
 
-	pub fn go_back_int(&mut self, time: f32) -> f32 {
+	pub fn go_back_int(&mut self, time: f32) -> T {
 		let dt = (time * self.sample_rate).round() as isize;
 		self.buf[self.pos - dt]
 	}
@@ -42,7 +47,7 @@ impl DelayLine {
 	// 	self.buf[self.pos - samples]
 	// }
 
-	pub fn go_back_linear(&mut self, time: f32) -> f32 {
+	pub fn go_back_linear(&mut self, time: f32) -> T {
 		let dt = time * self.sample_rate;
 		let idt = dt as isize;
 		let frac = dt.fract();
@@ -63,14 +68,14 @@ impl DelayLine {
 		delay as isize
 	}
 
-	pub fn go_back_cubic(&mut self, time: f32) -> f32 {
+	pub fn go_back_cubic(&mut self, time: f32) -> T {
 		let dt = time * self.sample_rate;
 		let idt = self.calc_coeff(dt);
 
-		let mut sum = 0.0f32;
+		let mut sum: T = Default::default();
 
 		for (i, h) in self.h.iter().enumerate() {
-			sum += self.buf[self.pos - idt - (i as isize)] * h;
+			sum += self.buf[self.pos - idt - (i as isize)] * (*h);
 		}
 
 		sum

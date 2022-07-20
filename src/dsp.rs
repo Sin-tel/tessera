@@ -8,7 +8,7 @@ pub fn pitch_to_f(p: f32, sample_rate: f32) -> f32 {
 	(2.0_f32).powf((p - 60.0) / 12.0) * 261.625_58 / sample_rate
 }
 
-pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
+pub fn lerp<T: Sample>(a: T, b: T, t: f32) -> T {
 	a * (1.0 - t) + b * t
 }
 
@@ -16,14 +16,7 @@ pub fn from_db(x: f32) -> f32 {
 	(10.0f32).powf(x / 20.0)
 }
 
-// pub fn softclip(x: f32) -> f32 {
-// 	let s = x.clamp(-3.0, 3.0);
-// 	s * (27.0 + s * s) / (27.0 + 9.0 * s * s)
-// }
-pub fn softclip<T>(x: T) -> T
-where
-	T: Sample,
-{
+pub fn softclip<T: Sample>(x: T) -> T {
 	let s = x.map(|x| x.clamp(-3.0, 3.0));
 	// let s = x;
 	s * (s * s + 27.0) / (s * s * 9.0 + 27.0)
@@ -46,14 +39,17 @@ pub fn pow2_fast(p: f32) -> f32 {
 }
 
 #[derive(Debug)]
-pub struct Smoothed {
-	pub value: f32,
-	inner: f32,
+pub struct Smoothed<T>
+where
+	T: Sample,
+{
+	pub value: T,
+	inner: T,
 	f: f32,
 }
 
-impl Smoothed {
-	pub fn new(value: f32, f: f32, sample_rate: f32) -> Self {
+impl<T: Sample> Smoothed<T> {
+	pub fn new(value: T, f: f32, sample_rate: f32) -> Self {
 		Smoothed {
 			inner: value,
 			value,
@@ -64,32 +60,32 @@ impl Smoothed {
 		self.value = lerp(self.value, self.inner, self.f);
 	}
 
-	pub fn set(&mut self, v: f32) {
+	pub fn set(&mut self, v: T) {
 		self.inner = v;
 	}
 
-	pub fn set_hard(&mut self, v: f32) {
+	pub fn set_hard(&mut self, v: T) {
 		self.inner = v;
 		self.value = v;
 	}
 }
 
-impl Default for Smoothed {
+impl<T: Sample> Default for Smoothed<T> {
 	fn default() -> Self {
-		Smoothed::new(0.0, 0.5, 1.0)
+		Smoothed::new(T::default(), 0.5, 1.0)
 	}
 }
 
 #[derive(Debug)]
-pub struct SmoothedEnv {
-	pub value: f32,
-	inner: f32,
+pub struct SmoothedEnv<T: Sample> {
+	pub value: T,
+	inner: T,
 	attack: f32,
 	release: f32,
 }
 
-impl SmoothedEnv {
-	pub fn new(value: f32, attack: f32, release: f32, sample_rate: f32) -> Self {
+impl<T: Sample> SmoothedEnv<T> {
+	pub fn new(value: T, attack: f32, release: f32, sample_rate: f32) -> Self {
 		SmoothedEnv {
 			inner: value,
 			value,
@@ -110,18 +106,18 @@ impl SmoothedEnv {
 		);
 	}
 
-	pub fn set(&mut self, v: f32) {
+	pub fn set(&mut self, v: T) {
 		self.inner = v;
 	}
 
-	pub fn set_hard(&mut self, v: f32) {
+	pub fn set_hard(&mut self, v: T) {
 		self.inner = v;
 		self.value = v;
 	}
 }
 
-impl Default for SmoothedEnv {
+impl<T: Sample> Default for SmoothedEnv<T> {
 	fn default() -> Self {
-		SmoothedEnv::new(0.0, 0.5, 0.1, 1.0)
+		SmoothedEnv::new(T::default(), 0.5, 0.1, 1.0)
 	}
 }
