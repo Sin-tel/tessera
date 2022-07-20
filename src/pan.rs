@@ -1,7 +1,7 @@
 use crate::defs::*;
-use crate::dsp::delayline::*;
-use crate::dsp::simper::*;
-use crate::dsp::*;
+use crate::dsp::delayline::DelayLine;
+use crate::dsp::simper::Filter;
+use crate::dsp::Smoothed;
 
 // interaural time difference, 660 μs
 const ITD: f32 = 0.00066;

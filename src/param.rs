@@ -1,6 +1,6 @@
 // can autogen this
-use crate::instrument::sine::*;
-use crate::instrument::*;
+use crate::instrument::sine::Sine;
+use crate::instrument::Instrument;
 
 // list of instruments
 pub fn new_instrument(sample_rate: f32, index: usize) -> Box<dyn Instrument + Send> {

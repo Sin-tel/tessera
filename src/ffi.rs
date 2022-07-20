@@ -1,13 +1,14 @@
 use std::ffi::{c_void, CStr};
 use std::os::raw::c_char;
+use std::ptr::null_mut;
 
 use std::sync::{Arc, Mutex};
 
 use ringbuf::{Consumer, Producer};
 
-use crate::audio::*;
+use crate::audio;
 use crate::defs::*;
-use crate::render::*;
+use crate::render;
 
 // big struct that lua side holds ptr to
 pub struct Userdata {
@@ -15,7 +16,7 @@ pub struct Userdata {
 	pub audio_tx: Producer<AudioMessage>,
 	pub stream_tx: Producer<bool>,
 	pub lua_rx: Consumer<LuaMessage>,
-	pub m_render: Arc<Mutex<Render>>,
+	pub m_render: Arc<Mutex<render::Render>>,
 }
 
 /// # Safety
@@ -29,47 +30,47 @@ pub unsafe extern "C" fn stream_new(
 	let host_name = CStr::from_ptr(host_ptr).to_str().unwrap();
 	let device_name = CStr::from_ptr(device_ptr).to_str().unwrap();
 
-	match audio_run(host_name, device_name) {
-		Ok(ud) => Box::into_raw(Box::new(ud)) as *mut c_void,
-		Err(_) => std::ptr::null_mut() as *mut c_void,
+	match audio::run(host_name, device_name) {
+		Ok(ud) => Box::into_raw(Box::new(ud)).cast::<c_void>(),
+		Err(_) => null_mut::<Userdata>().cast::<c_void>(),
 	}
 }
 
 #[no_mangle]
 pub extern "C" fn stream_free(stream_ptr: *mut c_void) {
 	unsafe {
-		let d = Box::from_raw(stream_ptr as *mut Userdata);
-		drop(d);
+		let ud = Box::from_raw(stream_ptr.cast::<Userdata>());
+		drop(ud);
 	}
 	println!("Cleaned up stream!");
 }
 
 #[no_mangle]
 pub extern "C" fn send_CV(stream_ptr: *mut c_void, ch: usize, pitch: f32, vel: f32) {
-	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
+	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
 
-	send_message(d, AudioMessage::CV(ch, pitch, vel));
+	send_message(ud, AudioMessage::CV(ch, pitch, vel));
 }
 
 #[no_mangle]
 pub extern "C" fn send_noteOn(stream_ptr: *mut c_void, ch: usize, pitch: f32, vel: f32, id: usize) {
-	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
+	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
 
-	send_message(d, AudioMessage::Note(ch, pitch, vel, id));
+	send_message(ud, AudioMessage::Note(ch, pitch, vel, id));
 }
 
 #[no_mangle]
 pub extern "C" fn send_pan(stream_ptr: *mut c_void, ch: usize, gain: f32, pan: f32) {
-	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
+	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
 
-	send_message(d, AudioMessage::Pan(ch, gain, pan));
+	send_message(ud, AudioMessage::Pan(ch, gain, pan));
 }
 
 #[no_mangle]
 pub extern "C" fn send_mute(stream_ptr: *mut c_void, ch: usize, mute: bool) {
-	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
+	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
 
-	send_message(d, AudioMessage::Mute(ch, mute));
+	send_message(ud, AudioMessage::Mute(ch, mute));
 }
 
 #[no_mangle]
@@ -80,34 +81,34 @@ pub extern "C" fn send_param(
 	index: usize,
 	value: f32,
 ) {
-	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
+	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
 
 	send_message(
-		d,
+		ud,
 		AudioMessage::SetParam(ch_index, device_index, index, value),
 	);
 }
 
 #[no_mangle]
 pub extern "C" fn play(stream_ptr: *mut c_void) {
-	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
+	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
 
-	send_paused(d, false);
+	send_paused(ud, false);
 }
 
 #[no_mangle]
 pub extern "C" fn pause(stream_ptr: *mut c_void) {
-	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
+	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
 
-	send_paused(d, true);
+	send_paused(ud, true);
 }
 
 #[no_mangle]
 pub extern "C" fn add_channel(stream_ptr: *mut c_void, instrument_index: usize) {
-	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
+	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
 
 	// Should never fail
-	let mut render = d.m_render.lock().expect("Failed to get lock.");
+	let mut render = ud.m_render.lock().expect("Failed to get lock.");
 
 	render.add_channel(instrument_index);
 }
@@ -115,26 +116,26 @@ pub extern "C" fn add_channel(stream_ptr: *mut c_void, instrument_index: usize) 
 #[inline]
 fn dither() -> f64 {
 	// Don't know if this is the correct scaling for dithering, but it sounds good
-	(fastrand::f64() - fastrand::f64()) / (2.0 * (i16::MAX as f64))
+	(fastrand::f64() - fastrand::f64()) / (2.0 * f64::from(i16::MAX))
 }
 
 #[inline]
 fn convert_sample_wav(x: f32) -> f64 {
-	let z = ((x as f64) + dither()).clamp(-1.0, 1.0);
+	let z = (f64::from(x) + dither()).clamp(-1.0, 1.0);
 
 	if z >= 0.0 {
-		z * (i16::MAX as f64)
+		z * f64::from(i16::MAX)
 	} else {
-		-z * (i16::MIN as f64)
+		-z * f64::from(i16::MIN)
 	}
 }
 
 #[no_mangle]
 pub extern "C" fn render_block(stream_ptr: *mut c_void) -> C_AudioBuffer {
-	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
+	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
 
 	// should never fail!
-	let mut render = d.m_render.lock().expect("Failed to get lock.");
+	let mut render = ud.m_render.lock().expect("Failed to get lock.");
 
 	let len = 64;
 
@@ -153,11 +154,12 @@ pub extern "C" fn render_block(stream_ptr: *mut c_void) -> C_AudioBuffer {
 		outsample[1] = convert_sample_wav(gensample.r);
 	}
 
-	// TODO: replace this by into_raw_parts() when it is in stable
-	let ptr = caudiobuf.as_mut_ptr() as *mut f64;
+	// @todo: replace this by into_raw_parts() when it is in stable
+	let ptr = caudiobuf.as_mut_ptr();
 	let len = caudiobuf.len();
 	let cap = caudiobuf.capacity();
-	std::mem::forget(caudiobuf); // dont drop it
+	// don't drop it
+	std::mem::forget(caudiobuf);
 
 	// build struct that has all the necessary information to call Vec::from_raw_parts
 	C_AudioBuffer { ptr, len, cap }
@@ -166,34 +168,33 @@ pub extern "C" fn render_block(stream_ptr: *mut c_void) -> C_AudioBuffer {
 #[no_mangle]
 pub extern "C" fn block_free(block: C_AudioBuffer) {
 	unsafe {
-		let d = Vec::from_raw_parts(block.ptr, block.len, block.cap);
-		drop(d);
+		let caudiobuf = Vec::from_raw_parts(block.ptr, block.len, block.cap);
+		drop(caudiobuf);
 	}
 	// println!("Cleaned up block!");
 }
 
-fn send_message(d: &mut Userdata, m: AudioMessage) {
-	if d.audio_tx.push(m).is_err() {
+fn send_message(ud: &mut Userdata, m: AudioMessage) {
+	if ud.audio_tx.push(m).is_err() {
 		println!("Queue full. Dropped message!");
 	}
 }
 
-fn send_paused(d: &mut Userdata, paused: bool) {
-	if d.stream_tx.push(paused).is_err() {
+fn send_paused(ud: &mut Userdata, paused: bool) {
+	if ud.stream_tx.push(paused).is_err() {
 		println!("Stream queue full. Dropped message!");
 	}
 }
 
 #[no_mangle]
 pub extern "C" fn rx_is_empty(stream_ptr: *mut c_void) -> bool {
-	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
-
-	d.lua_rx.is_empty()
+	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
+	ud.lua_rx.is_empty()
 }
 
 #[no_mangle]
 pub extern "C" fn rx_pop(stream_ptr: *mut c_void) -> LuaMessage {
-	let d = unsafe { &mut *(stream_ptr as *mut Userdata) };
-
-	d.lua_rx.pop().unwrap() // caller should make sure its not empty
+	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
+	// caller should make sure its not empty
+	ud.lua_rx.pop().unwrap()
 }

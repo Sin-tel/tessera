@@ -39,7 +39,7 @@ impl Render {
 			audio_rx,
 			lua_tx,
 			channels: Vec::new(),
-			buffer2: [Default::default(); MAX_BUF_SIZE],
+			buffer2: [StereoSample::default(); MAX_BUF_SIZE],
 			sample_rate,
 			peakl: SmoothedEnv::new(0.0, 0.5, 0.1, 1.0),
 			peakr: SmoothedEnv::new(0.0, 0.5, 0.1, 1.0),
@@ -73,7 +73,7 @@ impl Render {
 		}
 
 		// process all channels
-		for ch in self.channels.iter_mut() {
+		for ch in &mut self.channels {
 			if !ch.mute {
 				ch.instrument.process(buf_slice);
 				ch.pan.process(buf_slice);

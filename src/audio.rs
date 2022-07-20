@@ -5,17 +5,16 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use ringbuf::{Consumer, RingBuffer};
 
 use assert_no_alloc::*;
-
 #[cfg(debug_assertions)] // required when disable_release is set (default)
 #[global_allocator]
 static A: AllocDisabler = AllocDisabler;
 
 use crate::defs::*;
-use crate::dsp::*;
-use crate::ffi::*;
-use crate::render::*;
+use crate::dsp::SmoothedEnv;
+use crate::ffi::Userdata;
+use crate::render::Render;
 
-pub fn audio_run(host_name: &str, output_device_name: &str) -> Result<Userdata, Box<dyn Error>> {
+pub fn run(host_name: &str, output_device_name: &str) -> Result<Userdata, Box<dyn Error>> {
 	let output_device = find_output_device(host_name, output_device_name)?;
 
 	let config = output_device.default_output_config()?;
@@ -41,12 +40,12 @@ pub fn audio_run(host_name: &str, output_device_name: &str) -> Result<Userdata, 
 	Ok(userdata)
 }
 
-pub fn build_stream<T: 'static>(
+pub fn build_stream<T>(
 	device: &cpal::Device,
 	config: &cpal::StreamConfig,
 ) -> Result<Userdata, Box<dyn Error>>
 where
-	T: cpal::Sample,
+	T: 'static + cpal::Sample,
 {
 	let (audio_tx, audio_rx) = RingBuffer::<AudioMessage>::new(256).split();
 
@@ -122,7 +121,7 @@ where
 					}
 
 					let t = time.elapsed();
-					let p = t.as_secs_f64() / ((buf_size as f64) / render.sample_rate as f64);
+					let p = t.as_secs_f64() / ((buf_size as f64) / f64::from(render.sample_rate));
 					cpu_load.set(p as f32);
 					cpu_load.update();
 					render.send(LuaMessage::Cpu(cpu_load.value));
@@ -224,7 +223,7 @@ fn err_fn(err: cpal::StreamError) {
 
 pub fn fix_denorms() {
 	unsafe {
-		use std::arch::x86_64::*;
+		use std::arch::x86_64::{_mm_getcsr, _mm_setcsr};
 
 		let mut mxcsr = _mm_getcsr();
 

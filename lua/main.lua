@@ -212,7 +212,7 @@ function love.quit()
 end
 
 function render_wav()
-	--TODO: make this into a coroutine so we can yield from it
+	--@todo: make this into a coroutine so we can yield from it
 
 	mouse:setCursor("wait")
 

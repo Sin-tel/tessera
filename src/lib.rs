@@ -1,4 +1,5 @@
 // #![allow(dead_code)]
+// #![deny(clippy::pedantic)]
 
 pub mod audio;
 pub mod defs;
