@@ -27,7 +27,7 @@ impl Instrument for Sine {
 		self.vel.set(vel);
 	}
 
-	fn process(&mut self, buffer: &mut [StereoSample]) {
+	fn process(&mut self, buffer: &mut [Stereo]) {
 		for sample in buffer.iter_mut() {
 			self.vel.update();
 			self.freq.update();
@@ -38,8 +38,7 @@ impl Instrument for Sine {
 
 			self.prev = out;
 
-			sample.l = out;
-			sample.r = out;
+			*sample = [out; 2];
 		}
 	}
 

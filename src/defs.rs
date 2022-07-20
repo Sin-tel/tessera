@@ -1,12 +1,7 @@
 pub const TWO_PI: f32 = std::f32::consts::TAU;
 pub const MAX_BUF_SIZE: usize = 1024;
 
-#[repr(C)]
-#[derive(Debug, Clone, Copy, Default)]
-pub struct StereoSample {
-	pub l: f32,
-	pub r: f32,
-}
+pub type Stereo = [f32; 2];
 
 #[repr(C)]
 #[derive(Debug)]

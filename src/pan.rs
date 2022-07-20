@@ -51,14 +51,13 @@ impl Pan {
 		self.rgain.set(rgain * gain);
 	}
 
-	pub fn process(&mut self, buffer: &mut [StereoSample]) {
+	pub fn process(&mut self, buffer: &mut [Stereo]) {
 		for sample in buffer.iter_mut() {
 			self.lgain.update();
 			self.rgain.update();
 			self.pan.update();
 
-			let l_in = sample.l;
-			let r_in = sample.r;
+			let input = sample.clone();
 
 			let p = self.pan.value;
 
@@ -74,11 +73,10 @@ impl Pan {
 			l *= self.lgain.value;
 			r *= self.rgain.value;
 
-			sample.l = l;
-			sample.r = r;
+			*sample = [l, r];
 
-			self.ldelayline.push(l_in);
-			self.rdelayline.push(r_in);
+			self.ldelayline.push(input[0]);
+			self.rdelayline.push(input[1]);
 		}
 	}
 }
