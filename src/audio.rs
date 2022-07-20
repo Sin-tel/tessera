@@ -83,7 +83,7 @@ where
 
 	let mut paused = false;
 
-	let mut audiobuf = [StereoSample { l: 0.0, r: 0.0 }; MAX_BUF_SIZE];
+	let mut audiobuf = [Stereo([0.0; 2]); MAX_BUF_SIZE];
 
 	let mut cpu_load = SmoothedEnv::new(0.0, 0.2, 0.0005, 1.0);
 
@@ -116,8 +116,8 @@ where
 					render.process(buf_slice);
 
 					for (outsample, gensample) in buffer.chunks_exact_mut(2).zip(buf_slice.iter()) {
-						outsample[0] = cpal::Sample::from::<f32>(&gensample.l);
-						outsample[1] = cpal::Sample::from::<f32>(&gensample.r);
+						outsample[0] = cpal::Sample::from::<f32>(&gensample.0[0]);
+						outsample[1] = cpal::Sample::from::<f32>(&gensample.0[1]);
 					}
 
 					let t = time.elapsed();

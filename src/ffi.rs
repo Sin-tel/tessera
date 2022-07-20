@@ -130,6 +130,14 @@ fn convert_sample_wav(x: f32) -> f64 {
 	}
 }
 
+#[repr(C)]
+#[derive(Debug)]
+pub struct C_AudioBuffer {
+	pub ptr: *mut f64,
+	pub len: usize,
+	pub cap: usize,
+}
+
 #[no_mangle]
 pub extern "C" fn render_block(stream_ptr: *mut c_void) -> C_AudioBuffer {
 	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
@@ -140,7 +148,7 @@ pub extern "C" fn render_block(stream_ptr: *mut c_void) -> C_AudioBuffer {
 	let len = 64;
 
 	// normal audio buffer
-	let mut audiobuf = vec![StereoSample { l: 0.0, r: 0.0 }; len];
+	let mut audiobuf = vec![Stereo([0.0, 0.0]); len];
 
 	// audiobuffer to send to lua side
 	let mut caudiobuf = vec![0.0f64; len * 2];
@@ -150,8 +158,8 @@ pub extern "C" fn render_block(stream_ptr: *mut c_void) -> C_AudioBuffer {
 
 	// interlace and convert to i16 as f64 (lua wants doubles anyway)
 	for (outsample, gensample) in caudiobuf.chunks_exact_mut(2).zip(audiobuf.iter()) {
-		outsample[0] = convert_sample_wav(gensample.l);
-		outsample[1] = convert_sample_wav(gensample.r);
+		outsample[0] = convert_sample_wav(gensample.0[0]);
+		outsample[1] = convert_sample_wav(gensample.0[1]);
 	}
 
 	// @todo: replace this by into_raw_parts() when it is in stable

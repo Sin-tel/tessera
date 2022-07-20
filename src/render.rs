@@ -22,7 +22,7 @@ pub struct Render {
 	audio_rx: Consumer<AudioMessage>,
 	lua_tx: Producer<LuaMessage>,
 	channels: Vec<Channel>,
-	buffer2: [StereoSample; MAX_BUF_SIZE],
+	buffer2: [Stereo; MAX_BUF_SIZE],
 	pub sample_rate: f32,
 
 	peakl: SmoothedEnv,
@@ -39,7 +39,7 @@ impl Render {
 			audio_rx,
 			lua_tx,
 			channels: Vec::new(),
-			buffer2: [StereoSample::default(); MAX_BUF_SIZE],
+			buffer2: [Stereo::default(); MAX_BUF_SIZE],
 			sample_rate,
 			peakl: SmoothedEnv::new(0.0, 0.5, 0.1, 1.0),
 			peakr: SmoothedEnv::new(0.0, 0.5, 0.1, 1.0),
@@ -63,13 +63,12 @@ impl Render {
 		self.channels.push(newch);
 	}
 
-	pub fn process(&mut self, buffer: &mut [StereoSample]) {
+	pub fn process(&mut self, buffer: &mut [Stereo]) {
 		let buf_slice = &mut self.buffer2[..buffer.len()];
 
 		// zero buffer
 		for sample in buffer.iter_mut() {
-			sample.l = 0.0;
-			sample.r = 0.0;
+			*sample = Stereo([0.0; 2]);
 		}
 
 		// process all channels
@@ -78,16 +77,16 @@ impl Render {
 				ch.instrument.process(buf_slice);
 				ch.pan.process(buf_slice);
 				for (outsample, insample) in buffer.iter_mut().zip(buf_slice.iter()) {
-					outsample.l += insample.l;
-					outsample.r += insample.r;
+					outsample.0[0] += insample.0[0];
+					outsample.0[1] += insample.0[1];
 				}
 			}
 		}
 
 		// default 6dB headroom + tanh
+
 		for sample in buffer.iter_mut() {
-			sample.l = softclip(sample.l * 0.50);
-			sample.r = softclip(sample.r * 0.50);
+			*sample = softclip(*sample * 0.50);
 		}
 
 		let mut suml: f32 = 0.0;
@@ -95,8 +94,8 @@ impl Render {
 
 		// peak meter
 		for sample in buffer.iter_mut() {
-			suml = suml.max(sample.l.abs());
-			sumr = sumr.max(sample.r.abs());
+			suml = suml.max(sample.0[0].abs());
+			sumr = sumr.max(sample.0[1].abs());
 		}
 
 		self.peakl.set(suml);
@@ -108,8 +107,9 @@ impl Render {
 		self.send(LuaMessage::Meter(self.peakl.value, self.peakr.value));
 
 		for sample in buffer.iter_mut() {
-			sample.l = sample.l.clamp(-1.0, 1.0);
-			sample.r = sample.r.clamp(-1.0, 1.0);
+			// sample.0[0] = sample.0[0].clamp(-1.0, 1.0);
+			// sample.0[1] = sample.0[1].clamp(-1.0, 1.0);
+			*sample = sample.map(|x| x.clamp(-1.0, 1.0));
 		}
 	}
 

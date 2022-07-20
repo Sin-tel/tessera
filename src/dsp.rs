@@ -1,35 +1,39 @@
+use crate::defs::*;
+
 pub mod delayline;
 pub mod simper;
 
-#[inline]
 pub fn pitch_to_f(p: f32, sample_rate: f32) -> f32 {
 	// tuning to C4 = 261.63 instead of A4 = 440
 	(2.0_f32).powf((p - 60.0) / 12.0) * 261.625_58 / sample_rate
 }
 
-#[inline]
 pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
 	a * (1.0 - t) + b * t
 }
 
-#[inline]
 pub fn from_db(x: f32) -> f32 {
 	(10.0f32).powf(x / 20.0)
 }
 
-#[inline]
-pub fn softclip(x: f32) -> f32 {
-	let s = x.clamp(-3.0, 3.0);
-	s * (27.0 + s * s) / (27.0 + 9.0 * s * s)
+// pub fn softclip(x: f32) -> f32 {
+// 	let s = x.clamp(-3.0, 3.0);
+// 	s * (27.0 + s * s) / (27.0 + 9.0 * s * s)
+// }
+pub fn softclip<T>(x: T) -> T
+where
+	T: Sample,
+{
+	let s = x.map(|x| x.clamp(-3.0, 3.0));
+	// let s = x;
+	s * (s * s + 27.0) / (s * s * 9.0 + 27.0)
 }
 
-#[inline]
 pub fn softclip_cubic(x: f32) -> f32 {
 	let s = x.clamp(-1.5, 1.5);
 	s * (1.0 - (4. / 27.) * s * s)
 }
 
-#[inline]
 pub fn pow2_fast(p: f32) -> f32 {
 	let offset = if p < 0.0 { 1.0_f32 } else { 0.0_f32 };
 	let clipp = if p < -126.0 { -126.0_f32 } else { p };
