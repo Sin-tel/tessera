@@ -88,14 +88,15 @@ impl Render {
 			}
 		}
 
-		// default 6dB headroom + tanh
+		// default 6dB headroom and some tanh-like softclip
 		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
 			*s = softclip(*s * 0.50);
 		}
 
+		// calculate peak
 		let mut sum = [0.0; 2];
-		for (i, bus) in buffer.iter().enumerate() {
-			sum[i] = bus
+		for (i, track) in buffer.iter().enumerate() {
+			sum[i] = track
 				.iter()
 				.map(|x| x.abs())
 				.fold(std::f32::MIN, |a, b| a.max(b));
@@ -107,6 +108,7 @@ impl Render {
 		self.peakr.update();
 		self.send(LuaMessage::Meter(self.peakl.value, self.peakr.value));
 
+		// clipping isn't strictly necessary but we'll do it anyway
 		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
 			*s = s.clamp(-1.0, 1.0);
 		}
