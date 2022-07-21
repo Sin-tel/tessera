@@ -83,7 +83,7 @@ where
 
 	let mut paused = false;
 
-	let mut audiobuf = [[0.0; 2]; MAX_BUF_SIZE];
+	let audiobuf = [[0.0f32; MAX_BUF_SIZE]; 2];
 
 	let mut cpu_load = SmoothedEnv::new(0.0, 0.2, 0.0005, 1.0);
 
@@ -93,7 +93,9 @@ where
 
 			assert!(buf_size <= MAX_BUF_SIZE);
 
-			let buf_slice = &mut audiobuf[..buf_size];
+			let [mut l, mut r] = audiobuf;
+
+			let buf_slice = &mut [&mut l[..buf_size], &mut r[..buf_size]];
 
 			match m_render.try_lock() {
 				Ok(mut render) if !paused => {
@@ -115,9 +117,10 @@ where
 					// write to output buffer
 					render.process(buf_slice);
 
-					for (outsample, gensample) in buffer.chunks_exact_mut(2).zip(buf_slice.iter()) {
-						outsample[0] = cpal::Sample::from::<f32>(&gensample[0]);
-						outsample[1] = cpal::Sample::from::<f32>(&gensample[1]);
+					// interlace and convert
+					for (i, outsample) in buffer.chunks_exact_mut(2).enumerate() {
+						outsample[0] = cpal::Sample::from::<f32>(&buf_slice[0][i]);
+						outsample[1] = cpal::Sample::from::<f32>(&buf_slice[1][i]);
 					}
 
 					let t = time.elapsed();

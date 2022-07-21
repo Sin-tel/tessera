@@ -22,7 +22,7 @@ pub struct Render {
 	audio_rx: Consumer<AudioMessage>,
 	lua_tx: Producer<LuaMessage>,
 	channels: Vec<Channel>,
-	buffer2: [Stereo; MAX_BUF_SIZE],
+	buffer2: [[f32; MAX_BUF_SIZE]; 2],
 	pub sample_rate: f32,
 
 	peakl: SmoothedEnv,
@@ -39,7 +39,7 @@ impl Render {
 			audio_rx,
 			lua_tx,
 			channels: Vec::new(),
-			buffer2: [Stereo::default(); MAX_BUF_SIZE],
+			buffer2: [[0.0f32; MAX_BUF_SIZE]; 2],
 			sample_rate,
 			peakl: SmoothedEnv::new(0.0, 0.5, 0.1, 1.0),
 			peakr: SmoothedEnv::new(0.0, 0.5, 0.1, 1.0),
@@ -63,12 +63,13 @@ impl Render {
 		self.channels.push(newch);
 	}
 
-	pub fn process(&mut self, buffer: &mut [Stereo]) {
-		let buf_slice = &mut self.buffer2[..buffer.len()];
+	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
+		let [mut l, mut r] = self.buffer2;
+		let buf_slice = &mut [&mut l[..buffer[0].len()], &mut r[..buffer[0].len()]];
 
 		// zero buffer
-		for sample in buffer.iter_mut() {
-			*sample = [0.0; 2]
+		for sample in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
+			*sample = 0.0;
 		}
 
 		// process all channels
@@ -76,9 +77,13 @@ impl Render {
 			if !ch.mute {
 				ch.instrument.process(buf_slice);
 				ch.pan.process(buf_slice);
-				for (outsample, insample) in buffer.iter_mut().zip(buf_slice.iter()) {
-					outsample[0] += insample[0];
-					outsample[1] += insample[1];
+
+				for (outsample, insample) in buffer
+					.iter_mut()
+					.flat_map(|s| s.iter_mut())
+					.zip(buf_slice.iter().flat_map(|s| s.iter()))
+				{
+					*outsample += insample;
 				}
 			}
 		}
@@ -88,21 +93,18 @@ impl Render {
 			*s = softclip(*s * 0.50);
 		}
 
-		let mut suml: f32 = 0.0;
-		let mut sumr: f32 = 0.0;
-
-		// peak meter
-		for sample in buffer.iter() {
-			suml = suml.max(sample[0].abs());
-			sumr = sumr.max(sample[1].abs());
+		let mut sum = [0.0; 2];
+		for (i, bus) in buffer.iter().enumerate() {
+			sum[i] = bus
+				.iter()
+				.map(|x| x.abs())
+				.fold(std::f32::MIN, |a, b| a.max(b));
 		}
 
-		self.peakl.set(suml);
-		self.peakr.set(sumr);
-
+		self.peakl.set(sum[0]);
+		self.peakr.set(sum[1]);
 		self.peakl.update();
 		self.peakr.update();
-
 		self.send(LuaMessage::Meter(self.peakl.value, self.peakr.value));
 
 		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
