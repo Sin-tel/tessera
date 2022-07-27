@@ -99,9 +99,15 @@ function audiolib.pause()
 	end
 end
 
-function audiolib.add_channel(instrument_index)
+function audiolib.add_channel(instrument_number)
 	if stream_handle then
-		lib.add_channel(stream_handle, instrument_index)
+		lib.add_channel(stream_handle, instrument_number)
+	end
+end
+
+function audiolib.add_effect(channel_index, effect_number)
+	if stream_handle then
+		lib.add_channel(stream_handle, channel_index, effect_number)
 	end
 end
 

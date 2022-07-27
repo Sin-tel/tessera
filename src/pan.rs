@@ -1,7 +1,7 @@
 // use crate::defs::*;
 use crate::dsp::delayline::DelayLine;
+use crate::dsp::env::Smoothed;
 use crate::dsp::simper::Filter;
-use crate::dsp::Smoothed;
 
 // interaural time difference, 660 μs
 const ITD: f32 = 0.00066;
@@ -67,14 +67,14 @@ impl Pan {
 				track.gain.update();
 				track.delay.update();
 
-				let input = sample.clone();
+				let input = *sample;
 
 				// delay
-				let mut s = track.delayline.go_back_cubic(track.delay.value);
+				let mut s = track.delayline.go_back_cubic(track.delay.get());
 				// head shadow filter
 				s = track.filter.process(s);
 				// volume difference
-				s *= track.gain.value;
+				s *= track.gain.get();
 
 				*sample = s;
 

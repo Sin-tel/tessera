@@ -1,5 +1,8 @@
+use crate::dsp::env::*;
 use crate::dsp::*;
 use crate::instrument::*;
+use crate::param::Param;
+use std::iter::zip;
 
 #[derive(Debug, Default)]
 pub struct Sine {
@@ -12,7 +15,7 @@ pub struct Sine {
 }
 
 impl Instrument for Sine {
-	fn new(sample_rate: f32) -> Sine {
+	fn new(sample_rate: f32) -> Self {
 		Sine {
 			freq: Smoothed::new(0.0, 50.0, sample_rate),
 			vel: SmoothedEnv::new(0.0, 50.0, 20.0, sample_rate),
@@ -29,13 +32,14 @@ impl Instrument for Sine {
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
-		for (l, r) in bl.iter_mut().zip(br.iter_mut()) {
+
+		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
 			self.vel.update();
 			self.freq.update();
-			self.accum += self.freq.value;
+			self.accum += self.freq.get();
 			self.accum = self.accum.fract();
 			let mut out = (self.accum * TWO_PI + self.feedback * self.prev).sin();
-			out *= self.vel.value;
+			out *= self.vel.get();
 
 			self.prev = out;
 
@@ -51,11 +55,20 @@ impl Instrument for Sine {
 		// self.vel.set_hard(vel);
 		// self.accum = 0.0;
 
-		if self.vel.value < 0.01 {
+		if self.vel.get() < 0.01 {
 			self.vel.set_hard(vel);
 			self.accum = 0.0;
 		} else {
 			self.vel.set(vel);
+		}
+	}
+}
+
+impl Param for Sine {
+	fn set_param(&mut self, index: usize, value: f32) {
+		match index {
+			0 => self.feedback = value,
+			_ => eprintln!("Parameter with index {} not found", index),
 		}
 	}
 }

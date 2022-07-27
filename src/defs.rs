@@ -11,6 +11,8 @@ pub enum AudioMessage {
 	Pan(usize, f32, f32),
 	Mute(usize, bool),
 	// Bypass(usize, usize, bool),
+	// Swap(?),
+	//
 }
 
 #[repr(C)]

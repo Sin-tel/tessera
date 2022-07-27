@@ -1,15 +1,12 @@
 use ringbuf::{Consumer, Producer};
 
 use crate::defs::*;
+use crate::dsp::env::SmoothedEnv;
 use crate::dsp::*;
+use crate::effect::*;
 use crate::instrument::*;
 use crate::pan::*;
 use crate::param::*;
-
-pub struct BypassEffect {
-	pub effect: Box<dyn Effect + Send>,
-	pub bypassed: bool,
-}
 
 pub struct Channel {
 	pub instrument: Box<dyn Instrument + Send>,
@@ -47,9 +44,10 @@ impl Render {
 	}
 
 	pub fn send(&mut self, m: LuaMessage) {
-		if self.lua_tx.push(m).is_err() {
-			println!("Lua queue full. Dropped message!");
-		}
+		// if self.lua_tx.push(m).is_err() {
+		// 	println!("Lua queue full. Dropped message!");
+		// }
+		self.lua_tx.push(m).ok();
 	}
 
 	pub fn add_channel(&mut self, instrument_index: usize) {
@@ -61,6 +59,15 @@ impl Render {
 			mute: false,
 		};
 		self.channels.push(newch);
+	}
+
+	pub fn add_effect(&mut self, ch_index: usize, effect_number: usize) {
+		match self.channels.get_mut(ch_index) {
+			Some(ch) => ch
+				.effects
+				.push(BypassEffect::new(self.sample_rate, effect_number)),
+			None => println!("Channel index out of bounds!"),
+		}
 	}
 
 	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
@@ -76,6 +83,11 @@ impl Render {
 		for ch in &mut self.channels {
 			if !ch.mute {
 				ch.instrument.process(buf_slice);
+
+				for fx in ch.effects.iter_mut() {
+					fx.process(buf_slice);
+				}
+
 				ch.pan.process(buf_slice);
 
 				for (outsample, insample) in buffer
@@ -106,7 +118,7 @@ impl Render {
 		self.peakr.set(sum[1]);
 		self.peakl.update();
 		self.peakr.update();
-		self.send(LuaMessage::Meter(self.peakl.value, self.peakr.value));
+		self.send(LuaMessage::Meter(self.peakl.get(), self.peakr.get()));
 
 		// clipping isn't strictly necessary but we'll do it anyway
 		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {

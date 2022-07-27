@@ -31,7 +31,9 @@ typedef struct LuaMessage {
   };
 } LuaMessage;
 
-void add_channel(void *stream_ptr, size_t instrument_index);
+void add_channel(void *stream_ptr, size_t instrument_number);
+
+void add_effect(void *stream_ptr, size_t channel_index, size_t effect_number);
 
 void block_free(struct C_AudioBuffer block);
 

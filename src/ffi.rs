@@ -104,13 +104,23 @@ pub extern "C" fn pause(stream_ptr: *mut c_void) {
 }
 
 #[no_mangle]
-pub extern "C" fn add_channel(stream_ptr: *mut c_void, instrument_index: usize) {
+pub extern "C" fn add_channel(stream_ptr: *mut c_void, instrument_number: usize) {
 	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
 
 	// Should never fail
 	let mut render = ud.m_render.lock().expect("Failed to get lock.");
 
-	render.add_channel(instrument_index);
+	render.add_channel(instrument_number);
+}
+
+#[no_mangle]
+pub extern "C" fn add_effect(stream_ptr: *mut c_void, channel_index: usize, effect_number: usize) {
+	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
+
+	// Should never fail
+	let mut render = ud.m_render.lock().expect("Failed to get lock.");
+
+	render.add_effect(channel_index, effect_number);
 }
 
 #[inline]

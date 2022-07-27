@@ -10,7 +10,7 @@ use assert_no_alloc::*;
 static A: AllocDisabler = AllocDisabler;
 
 use crate::defs::*;
-use crate::dsp::SmoothedEnv;
+use crate::dsp::env::SmoothedEnv;
 use crate::ffi::Userdata;
 use crate::render::Render;
 
@@ -127,7 +127,7 @@ where
 					let p = t.as_secs_f64() / ((buf_size as f64) / f64::from(render.sample_rate));
 					cpu_load.set(p as f32);
 					cpu_load.update();
-					render.send(LuaMessage::Cpu(cpu_load.value));
+					render.send(LuaMessage::Cpu(cpu_load.get()));
 				}
 				_ => {
 					stream_rx.pop_each(
@@ -137,7 +137,7 @@ where
 						},
 						None,
 					);
-					println!("Output silent");
+					// println!("Output silent");
 
 					for outsample in buffer.chunks_exact_mut(2) {
 						outsample[0] = cpal::Sample::from::<f32>(&0.0f32);
