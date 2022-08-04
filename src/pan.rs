@@ -21,9 +21,11 @@ impl Track {
 	pub fn new(sample_rate: f32) -> Self {
 		let mut filter = Filter::new(sample_rate);
 		filter.set_highshelf(HEAD_CUTOFF, HEAD_Q, 0.0);
+		let mut gain = Smoothed::new(10.0, sample_rate);
+		gain.set_hard(1.0);
 		Track {
-			gain: Smoothed::new(1.0, 100.0, sample_rate),
-			delay: Smoothed::new(0.0, 100.0, sample_rate),
+			gain,
+			delay: Smoothed::new(10.0, sample_rate),
 			filter,
 			delayline: DelayLine::new(sample_rate, ITD),
 		}

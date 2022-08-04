@@ -2,6 +2,7 @@ use crate::defs::*;
 use crate::param::Param;
 
 pub mod sine;
+pub mod wavetable;
 
 pub trait Instrument: Param {
 	fn new(sample_rate: f32) -> Self

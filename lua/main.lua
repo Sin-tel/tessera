@@ -43,7 +43,7 @@ local function audioSetup()
 	midilib.load(settings.midi.inputs)
 
 	channelHandler:load()
-	channelHandler:add("sine").armed = true
+	channelHandler:add("wavetable").armed = true
 	-- for i = 1, 150 do
 	-- 	local n = channelHandler:add("sine")
 	-- 	n.parameters[2]:setNormalized(math.random())

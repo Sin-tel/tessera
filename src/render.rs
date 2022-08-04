@@ -38,8 +38,8 @@ impl Render {
 			channels: Vec::new(),
 			buffer2: [[0.0f32; MAX_BUF_SIZE]; 2],
 			sample_rate,
-			peakl: SmoothedEnv::new(0.0, 0.5, 0.1, 1.0),
-			peakr: SmoothedEnv::new(0.0, 0.5, 0.1, 1.0),
+			peakl: SmoothedEnv::new_direct(0.5, 0.1),
+			peakr: SmoothedEnv::new_direct(0.5, 0.1),
 		}
 	}
 

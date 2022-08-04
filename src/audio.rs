@@ -85,7 +85,7 @@ where
 
 	let audiobuf = [[0.0f32; MAX_BUF_SIZE]; 2];
 
-	let mut cpu_load = SmoothedEnv::new(0.0, 0.2, 0.0005, 1.0);
+	let mut cpu_load = SmoothedEnv::new_direct(0.2, 0.0005);
 
 	move |buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
 		assert_no_alloc(|| {
@@ -102,6 +102,8 @@ where
 					if !start {
 						start = true;
 						fix_denorms();
+
+						println!("buffer size: {:?}", buf_size);
 					}
 					let time = std::time::Instant::now();
 

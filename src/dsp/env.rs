@@ -7,12 +7,23 @@ pub struct Smoothed {
 	f: f32,
 }
 
+fn time_constant(t: f32, sample_rate: f32) -> f32 {
+	1.0 - (-1000.0 / (sample_rate * t)).exp()
+}
+
 impl Smoothed {
-	pub fn new(value: f32, f: f32, sample_rate: f32) -> Self {
+	pub fn new(t: f32, sample_rate: f32) -> Self {
 		Smoothed {
-			inner: value,
-			value,
-			f: f / sample_rate,
+			inner: 0.0,
+			value: 0.0,
+			f: time_constant(t, sample_rate),
+		}
+	}
+	pub fn new_direct(f: f32) -> Self {
+		Smoothed {
+			inner: 0.0,
+			value: 0.0,
+			f: f,
 		}
 	}
 	pub fn update(&mut self) {
@@ -35,7 +46,7 @@ impl Smoothed {
 
 impl Default for Smoothed {
 	fn default() -> Self {
-		Smoothed::new(0.0, 0.5, 1.0)
+		Smoothed::new_direct(0.5)
 	}
 }
 
@@ -48,12 +59,21 @@ pub struct SmoothedEnv {
 }
 
 impl SmoothedEnv {
-	pub fn new(value: f32, attack: f32, release: f32, sample_rate: f32) -> Self {
+	pub fn new(attack: f32, release: f32, sample_rate: f32) -> Self {
 		SmoothedEnv {
-			inner: value,
-			value,
-			attack: attack / sample_rate,
-			release: release / sample_rate,
+			inner: 0.0,
+			value: 0.0,
+			attack: time_constant(attack, sample_rate),
+			release: time_constant(release, sample_rate),
+		}
+	}
+
+	pub fn new_direct(attack: f32, release: f32) -> Self {
+		SmoothedEnv {
+			inner: 0.0,
+			value: 0.0,
+			attack: attack,
+			release: release,
 		}
 	}
 
@@ -85,6 +105,6 @@ impl SmoothedEnv {
 
 impl Default for SmoothedEnv {
 	fn default() -> Self {
-		SmoothedEnv::new(0.0, 0.5, 0.1, 1.0)
+		SmoothedEnv::new_direct(0.5, 0.1)
 	}
 }

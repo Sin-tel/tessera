@@ -1,3 +1,5 @@
+include!("wavetable_res.rs");
+
 use crate::dsp::env::*;
 use crate::dsp::*;
 use crate::instrument::*;
@@ -5,18 +7,16 @@ use crate::param::Param;
 use std::iter::zip;
 
 #[derive(Debug, Default)]
-pub struct Sine {
+pub struct Wavetable {
 	accum: f32,
 	freq: Smoothed,
 	vel: SmoothedEnv,
 	sample_rate: f32,
-	prev: f32,
-	pub feedback: f32,
 }
 
-impl Instrument for Sine {
+impl Instrument for Wavetable {
 	fn new(sample_rate: f32) -> Self {
-		Sine {
+		Wavetable {
 			freq: Smoothed::new(20.0, sample_rate),
 			vel: SmoothedEnv::new(20.0, 50.0, sample_rate),
 			sample_rate,
@@ -38,10 +38,15 @@ impl Instrument for Sine {
 			self.freq.update();
 			self.accum += self.freq.get();
 			self.accum = self.accum.fract();
-			let mut out = (self.accum * TWO_PI + self.feedback * self.prev).sin();
-			out *= self.vel.get();
 
-			self.prev = out;
+			let idx = self.accum * WT_SIZE;
+			let idx_int = idx as usize;
+			let idx_frac = idx.fract();
+
+			let w1 = WAVETABLE[idx_int];
+			let w2 = WAVETABLE[(idx_int + 1) & WT_MASK];
+			let mut out = lerp(w1, w2, idx_frac);
+			out *= self.vel.get();
 
 			*l = out;
 			*r = out;
@@ -52,9 +57,6 @@ impl Instrument for Sine {
 		let p = pitch_to_f(pitch, self.sample_rate);
 		self.freq.set_hard(p);
 
-		// self.vel.set_hard(vel);
-		// self.accum = 0.0;
-
 		if self.vel.get() < 0.01 {
 			self.vel.set_hard(vel);
 			self.accum = 0.0;
@@ -64,10 +66,9 @@ impl Instrument for Sine {
 	}
 }
 
-impl Param for Sine {
-	fn set_param(&mut self, index: usize, value: f32) {
+impl Param for Wavetable {
+	fn set_param(&mut self, index: usize, _value: f32) {
 		match index {
-			0 => self.feedback = value,
 			_ => eprintln!("Parameter with index {} not found", index),
 		}
 	}

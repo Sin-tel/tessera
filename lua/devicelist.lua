@@ -15,4 +15,10 @@ deviceList.instruments.sine = {
 	mono = true,
 }
 
+deviceList.instruments.wavetable = {
+	index = 1,
+	parameters = {},
+	mono = true,
+}
+
 deviceList.effects = {}
