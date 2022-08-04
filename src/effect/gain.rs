@@ -1,5 +1,5 @@
+use crate::device::Param;
 use crate::effect::Effect;
-use crate::param::Param;
 
 #[derive(Debug)]
 pub struct Gain {

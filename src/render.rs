@@ -1,12 +1,11 @@
 use ringbuf::{Consumer, Producer};
 
 use crate::defs::*;
+use crate::device::*;
 use crate::dsp::env::SmoothedEnv;
-use crate::dsp::*;
 use crate::effect::*;
 use crate::instrument::*;
 use crate::pan::*;
-use crate::param::*;
 
 pub struct Channel {
 	pub instrument: Box<dyn Instrument + Send>,
@@ -102,7 +101,8 @@ impl Render {
 
 		// default 6dB headroom and some tanh-like softclip
 		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
-			*s = softclip(*s * 0.50);
+			// *s = softclip(*s * 0.50);
+			*s = *s * 0.50;
 		}
 
 		// calculate peak

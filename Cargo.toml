@@ -20,6 +20,7 @@ fastrand = "1.5.0"
 bit_mask_ring_buf = "0.5"
 bencher = "0.1"
 rustfft = "6.0"
+realfft = "3.0"
 
 [profile.dev]
 opt-level = 1

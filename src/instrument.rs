@@ -1,5 +1,5 @@
 use crate::defs::*;
-use crate::param::Param;
+use crate::device::Param;
 
 pub mod sine;
 pub mod wavetable;

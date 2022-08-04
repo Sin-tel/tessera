@@ -1,5 +1,5 @@
 // use crate::defs::*;
-use crate::param::*;
+use crate::device::*;
 
 pub mod gain;
 

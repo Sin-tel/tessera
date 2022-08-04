@@ -1,7 +1,7 @@
+use crate::device::Param;
 use crate::dsp::env::*;
 use crate::dsp::*;
 use crate::instrument::*;
-use crate::param::Param;
 use std::iter::zip;
 
 #[derive(Debug, Default)]

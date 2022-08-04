@@ -4,10 +4,10 @@
 
 pub mod audio;
 pub mod defs;
+pub mod device;
 pub mod dsp;
 pub mod effect;
 pub mod ffi;
 pub mod instrument;
 pub mod pan;
-pub mod param;
 pub mod render;
