@@ -13,6 +13,7 @@ use crate::defs::*;
 use crate::dsp::env::SmoothedEnv;
 use crate::ffi::Userdata;
 use crate::render::Render;
+use crate::scope::Scope;
 
 pub fn run(host_name: &str, output_device_name: &str) -> Result<Userdata, Box<dyn Error>> {
 	let output_device = find_output_device(host_name, output_device_name)?;
@@ -53,9 +54,18 @@ where
 
 	let (lua_tx, lua_rx) = RingBuffer::<LuaMessage>::new(256).split();
 
+	let (scope_tx, scope_rx) = RingBuffer::<f32>::new(SPECTRUM_SIZE).split();
+
 	let sample_rate = config.sample_rate.0 as f32;
 
-	let m_render = Arc::new(Mutex::new(Render::new(sample_rate, audio_rx, lua_tx)));
+	let scope = Scope::new();
+
+	let m_render = Arc::new(Mutex::new(Render::new(
+		sample_rate,
+		audio_rx,
+		lua_tx,
+		scope_tx,
+	)));
 	let m_render_clone = Arc::clone(&m_render);
 
 	let audio_closure = build_closure::<T>(stream_rx, m_render_clone);
@@ -67,7 +77,9 @@ where
 		audio_tx,
 		stream_tx,
 		lua_rx,
+		scope_rx,
 		m_render,
+		scope,
 	})
 }
 
@@ -103,7 +115,7 @@ where
 						start = true;
 						fix_denorms();
 
-						println!("buffer size: {:?}", buf_size);
+						println!("Buffer size: {:?}", buf_size);
 					}
 					let time = std::time::Instant::now();
 

@@ -1,6 +1,7 @@
 // #![allow(dead_code)]
 // #![deny(clippy::pedantic)]
 #![warn(clippy::cast_lossless)]
+#![allow(clippy::excessive_precision)]
 
 pub mod audio;
 pub mod defs;
@@ -11,3 +12,4 @@ pub mod ffi;
 pub mod instrument;
 pub mod pan;
 pub mod render;
+pub mod scope;

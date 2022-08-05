@@ -124,6 +124,28 @@ function audiolib.render_block()
 	end
 end
 
+function audiolib.get_spectrum()
+	if stream_handle then
+		local block = lib.get_spectrum(stream_handle)
+		ffi.gc(block, lib.block_free)
+
+		-- Check for null ptr
+		if block == nil or tonumber(block.len) == 0 then
+			-- print("Failed to get spectrum!")
+			return
+		end
+
+		-- Copy the block so we dont keep rust vecs around
+		local s = block.ptr
+		local spectrum = {}
+		for i = 1, tonumber(block.len) do
+			spectrum[i] = s[i - 1]
+		end
+
+		return spectrum
+	end
+end
+
 function audiolib.parse_messages()
 	if stream_handle then
 		while not lib.rx_is_empty(stream_handle) do

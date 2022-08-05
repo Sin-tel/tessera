@@ -17,6 +17,7 @@ pub struct Channel {
 pub struct Render {
 	audio_rx: Consumer<AudioMessage>,
 	lua_tx: Producer<LuaMessage>,
+	scope_tx: Producer<f32>,
 	channels: Vec<Channel>,
 	buffer2: [[f32; MAX_BUF_SIZE]; 2],
 	pub sample_rate: f32,
@@ -30,10 +31,12 @@ impl Render {
 		sample_rate: f32,
 		audio_rx: Consumer<AudioMessage>,
 		lua_tx: Producer<LuaMessage>,
+		scope_tx: Producer<f32>,
 	) -> Render {
 		Render {
 			audio_rx,
 			lua_tx,
+			scope_tx,
 			channels: Vec::new(),
 			buffer2: [[0.0f32; MAX_BUF_SIZE]; 2],
 			sample_rate,
@@ -102,7 +105,7 @@ impl Render {
 		// default 6dB headroom and some tanh-like softclip
 		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
 			// *s = softclip(*s * 0.50);
-			*s = *s * 0.50;
+			*s *= 0.50;
 		}
 
 		// calculate peak
@@ -123,6 +126,10 @@ impl Render {
 		// clipping isn't strictly necessary but we'll do it anyway
 		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
 			*s = s.clamp(-1.0, 1.0);
+		}
+
+		for s in buffer[0].iter() {
+			self.scope_tx.push(*s).ok(); // don't really care if its full
 		}
 	}
 

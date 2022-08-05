@@ -14,7 +14,7 @@ impl Effect for Gain {
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		for b in buffer.iter_mut() {
 			for s in b.iter_mut() {
-				*s = *s * self.gain;
+				*s *= self.gain;
 			}
 		}
 	}

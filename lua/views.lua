@@ -56,12 +56,13 @@ end
 -- empty view
 DefaultView = View:derive("Default")
 
--- kind of annoying but this has to be at the bottom
+-- These have to be at the bottom of this file.
 require("views/channelview")
 require("views/pannerView")
 require("views/parameterview")
 require("views/songview")
 require("views/testpadview")
+require("views/scopeview")
 
 -- Views = {
 -- 	DefaultView,

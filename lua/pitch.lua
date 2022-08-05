@@ -90,7 +90,7 @@ Pitch.diatonic_table = {
 }
 
 for i, v in ipairs(Pitch.table) do
-	print(i, v)
+	-- print(i, v)
 end
 
 function Pitch:new()

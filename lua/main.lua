@@ -92,7 +92,7 @@ function love.load()
 
 	-- workspace.box.children[1]:setView(DefaultView:new())
 	workspace.box.children[1]:split(0.7, false)
-	workspace.box.children[1].children[1]:setView(songView:new())
+	workspace.box.children[1].children[1]:setView(scopeView:new())
 	workspace.box.children[1].children[2]:setView(testPadView:new())
 
 	workspace.box.children[2]:split(0.5, false)
@@ -187,7 +187,7 @@ function love.keypressed(key, isrepeat)
 		render_wav()
 	elseif key == "a" then
 		local n = channelHandler:add("sine")
-		n.parameters[2]:setNormalized(math.random())
+		-- n.parameters[2]:setNormalized(math.random())
 	end
 end
 
@@ -205,7 +205,7 @@ function love.resize(w, h)
 end
 
 function love.quit()
-	settingsHandler.save(settings)
+	-- settingsHandler.save(settings)
 
 	midilib.quit()
 	audiolib.quit()

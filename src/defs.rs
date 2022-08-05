@@ -1,6 +1,8 @@
 pub const TWO_PI: f32 = std::f32::consts::TAU;
 pub const MAX_BUF_SIZE: usize = 1024;
 
+pub const SPECTRUM_SIZE: usize = 4096;
+
 // Message struct to pass to audio thread
 // Should not contain any boxed values
 #[derive(Debug)]

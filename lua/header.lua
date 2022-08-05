@@ -5,11 +5,11 @@ ffi.cdef([[
 
 
 
-typedef struct C_AudioBuffer {
+typedef struct C_Buffer {
   double *ptr;
   size_t len;
   size_t cap;
-} C_AudioBuffer;
+} C_Buffer;
 
 typedef enum LuaMessage_Tag {
   Cpu,
@@ -35,13 +35,15 @@ void add_channel(void *stream_ptr, size_t instrument_number);
 
 void add_effect(void *stream_ptr, size_t channel_index, size_t effect_number);
 
-void block_free(struct C_AudioBuffer block);
+void block_free(struct C_Buffer block);
+
+struct C_Buffer get_spectrum(void *stream_ptr);
 
 void pause(void *stream_ptr);
 
 void play(void *stream_ptr);
 
-struct C_AudioBuffer render_block(void *stream_ptr);
+struct C_Buffer render_block(void *stream_ptr);
 
 bool rx_is_empty(void *stream_ptr);
 

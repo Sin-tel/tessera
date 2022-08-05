@@ -9,6 +9,7 @@ use ringbuf::{Consumer, Producer};
 use crate::audio;
 use crate::defs::*;
 use crate::render;
+use crate::scope::Scope;
 
 // big struct that lua side holds ptr to
 pub struct Userdata {
@@ -17,6 +18,8 @@ pub struct Userdata {
 	pub stream_tx: Producer<bool>,
 	pub lua_rx: Consumer<LuaMessage>,
 	pub m_render: Arc<Mutex<render::Render>>,
+	pub scope_rx: Consumer<f32>,
+	pub scope: Scope,
 }
 
 /// # Safety
@@ -142,14 +145,14 @@ fn convert_sample_wav(x: f32) -> f64 {
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct C_AudioBuffer {
+pub struct C_Buffer {
 	pub ptr: *mut f64,
 	pub len: usize,
 	pub cap: usize,
 }
 
 #[no_mangle]
-pub extern "C" fn render_block(stream_ptr: *mut c_void) -> C_AudioBuffer {
+pub extern "C" fn render_block(stream_ptr: *mut c_void) -> C_Buffer {
 	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
 
 	// should never fail!
@@ -180,14 +183,41 @@ pub extern "C" fn render_block(stream_ptr: *mut c_void) -> C_AudioBuffer {
 	std::mem::forget(caudiobuf);
 
 	// build struct that has all the necessary information to call Vec::from_raw_parts
-	C_AudioBuffer { ptr, len, cap }
+	C_Buffer { ptr, len, cap }
 }
 
 #[no_mangle]
-pub extern "C" fn block_free(block: C_AudioBuffer) {
+pub extern "C" fn get_spectrum(stream_ptr: *mut c_void) -> C_Buffer {
+	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
+
+	// if ud.scope_rx.is_full() {
+	ud.scope_rx.pop_each(
+		|x| {
+			ud.scope.push(x);
+			true
+		},
+		None,
+	);
+	// }
+
+	let mut spectrum = ud.scope.get_spectrum();
+
+	// @todo: replace this by into_raw_parts() when it is in stable
+	let ptr = spectrum.as_mut_ptr();
+	let len = spectrum.len();
+	let cap = spectrum.capacity();
+	// don't drop it
+	std::mem::forget(spectrum);
+
+	// build struct that has all the necessary information to call Vec::from_raw_parts
+	C_Buffer { ptr, len, cap }
+}
+
+#[no_mangle]
+pub extern "C" fn block_free(block: C_Buffer) {
 	unsafe {
-		let caudiobuf = Vec::from_raw_parts(block.ptr, block.len, block.cap);
-		drop(caudiobuf);
+		let cbuf = Vec::from_raw_parts(block.ptr, block.len, block.cap);
+		drop(cbuf);
 	}
 	// println!("Cleaned up block!");
 }

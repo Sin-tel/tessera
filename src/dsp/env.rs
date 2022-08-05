@@ -23,7 +23,7 @@ impl Smoothed {
 		Smoothed {
 			inner: 0.0,
 			value: 0.0,
-			f: f,
+			f,
 		}
 	}
 	pub fn update(&mut self) {
@@ -41,6 +41,10 @@ impl Smoothed {
 
 	pub fn get(&self) -> f32 {
 		self.value
+	}
+
+	pub fn inner(&self) -> f32 {
+		self.inner
 	}
 }
 
@@ -72,8 +76,8 @@ impl SmoothedEnv {
 		SmoothedEnv {
 			inner: 0.0,
 			value: 0.0,
-			attack: attack,
-			release: release,
+			attack,
+			release,
 		}
 	}
 
@@ -100,6 +104,10 @@ impl SmoothedEnv {
 
 	pub fn get(&self) -> f32 {
 		self.value
+	}
+
+	pub fn inner(&self) -> f32 {
+		self.inner
 	}
 }
 

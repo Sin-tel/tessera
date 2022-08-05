@@ -2,6 +2,7 @@ use crate::device::Param;
 use crate::dsp::env::*;
 use crate::dsp::*;
 use crate::instrument::*;
+// use fastrand::Rng;
 use std::iter::zip;
 
 #[derive(Debug, Default)]
@@ -12,6 +13,7 @@ pub struct Sine {
 	sample_rate: f32,
 	prev: f32,
 	pub feedback: f32,
+	// rng: Rng,
 }
 
 impl Instrument for Sine {
@@ -20,6 +22,7 @@ impl Instrument for Sine {
 			freq: Smoothed::new(20.0, sample_rate),
 			vel: SmoothedEnv::new(20.0, 50.0, sample_rate),
 			sample_rate,
+			// rng: fastrand::Rng::new(),
 			..Default::default()
 		}
 	}

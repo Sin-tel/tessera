@@ -4,7 +4,7 @@ use crate::device::Param;
 use crate::dsp::env::*;
 use crate::dsp::*;
 use crate::instrument::*;
-use realfft::{ComplexToReal, RealFftPlanner};
+use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 use std::sync::Arc;
@@ -18,21 +18,42 @@ pub struct Wavetable {
 	freq: Smoothed,
 	vel: SmoothedEnv,
 	sample_rate: f32,
-	buffer_out: Vec<f32>,
+	interpolate: f32,
+	buffer_in: Vec<f32>,
+	buffer_a: Vec<f32>,
+	buffer_b: Vec<f32>,
 	spectrum: Vec<Complex<f32>>,
 	spectrum2: Vec<Complex<f32>>,
+	r2c_sratch: Vec<Complex<f32>>,
+	r2c: Arc<dyn RealToComplex<f32>>,
 	c2r_sratch: Vec<Complex<f32>>,
 	c2r: Arc<dyn ComplexToReal<f32>>,
-	timer: f32,
 }
 
 impl Wavetable {
 	fn update_fft(&mut self) {
+		// @todo precalculate forward fft and only run inverse with corrected partials
+
+		// get table offset
+		let wt_index =
+			((self.vel.inner() * (WT_NUM as f32)) as usize).clamp(0, WT_NUM - 1) * WT_SIZE;
+
+		self.buffer_in
+			.copy_from_slice(&WAVETABLE[wt_index..wt_index + WT_SIZE]);
+
+		// forward fft
+		self.r2c
+			.process_with_scratch(
+				&mut self.buffer_in,
+				&mut self.spectrum,
+				&mut self.r2c_sratch,
+			)
+			.unwrap(); // only panics when passed incorrect buffer sizes
+
 		// calculate maximum allowed partial
 		let p_max = (MAX_F / (self.sample_rate * self.freq.get())) as usize;
 
-		// dbg!(p_max);
-
+		// zero out everything above p_max
 		let it = self.spectrum.iter().zip(self.spectrum2.iter_mut());
 		for (i, (x, y)) in it.enumerate() {
 			if i <= p_max {
@@ -42,18 +63,21 @@ impl Wavetable {
 			}
 		}
 
+		// inverse fft
 		self.c2r
 			.process_with_scratch(
 				&mut self.spectrum2,
-				&mut self.buffer_out,
+				&mut self.buffer_a,
 				&mut self.c2r_sratch,
 			)
-			.unwrap();
+			.unwrap(); // only panics when passed incorrect buffer sizes
 
 		// normalize
-		for v in self.buffer_out.iter_mut() {
+		for v in self.buffer_a.iter_mut() {
 			*v /= WT_SIZE as f32;
 		}
+
+		std::mem::swap(&mut self.buffer_a, &mut self.buffer_b);
 	}
 }
 
@@ -63,30 +87,32 @@ impl Instrument for Wavetable {
 		let r2c = real_planner.plan_fft_forward(WT_SIZE);
 		let c2r = real_planner.plan_fft_inverse(WT_SIZE);
 
-		let mut spectrum = r2c.make_output_vec();
+		let buffer_in = r2c.make_input_vec();
+		let spectrum = r2c.make_output_vec();
 		let spectrum2 = r2c.make_output_vec();
-		let mut r2c_sratch = r2c.make_scratch_vec();
+		let r2c_sratch = r2c.make_scratch_vec();
 		let c2r_sratch = c2r.make_scratch_vec();
-		let buffer_out = c2r.make_output_vec();
-		let mut buffer_in: Vec<f32> = WAVETABLE.to_vec();
+		let buffer_a = c2r.make_output_vec();
+		let buffer_b = c2r.make_output_vec();
 
-		r2c.process_with_scratch(&mut buffer_in, &mut spectrum, &mut r2c_sratch)
-			.unwrap();
-
-		// dbg!(&spectrum);
-
-		Wavetable {
+		let mut new = Wavetable {
 			accum: 0.0,
+			interpolate: 1.0,
 			freq: Smoothed::new(20.0, sample_rate),
-			vel: SmoothedEnv::new(20.0, 50.0, sample_rate),
+			vel: SmoothedEnv::new(20.0, 40.0, sample_rate),
 			sample_rate,
-			buffer_out,
+			buffer_in,
+			buffer_a,
+			buffer_b,
 			spectrum,
 			spectrum2,
+			r2c_sratch,
 			c2r_sratch,
+			r2c,
 			c2r,
-			timer: 0.0,
-		}
+		};
+		new.update_fft();
+		new
 	}
 
 	fn cv(&mut self, pitch: f32, vel: f32) {
@@ -96,15 +122,16 @@ impl Instrument for Wavetable {
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
-		self.timer -= (buffer[0].len() as f32) / self.sample_rate;
-		if self.timer <= 0.0 {
-			self.timer = 0.05; // update every 50ms
+		if self.interpolate >= 1.0 {
+			self.interpolate = 0.0;
 			self.update_fft();
 		}
 
 		let [bl, br] = buffer;
 
 		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
+			self.interpolate += 1.0 / (0.05 * self.sample_rate); // update every 50ms
+
 			self.vel.update();
 			self.freq.update();
 			self.accum += self.freq.get();
@@ -114,29 +141,17 @@ impl Instrument for Wavetable {
 			let idx_int = idx as usize;
 			let idx_frac = idx.fract();
 
-			// hermite interpolation
-			// let w0 = self.buffer_out[(idx_int - 1) & WT_MASK];
-			// let w1 = self.buffer_out[idx_int];
-			// let w2 = self.buffer_out[(idx_int + 1) & WT_MASK];
-			// let w3 = self.buffer_out[(idx_int + 2) & WT_MASK];
+			// bilinear interpolation
+			let w1a = self.buffer_a[idx_int];
+			let w2a = self.buffer_a[(idx_int + 1) & WT_MASK];
+			let wa = lerp(w1a, w2a, idx_frac);
 
-			// let slope0 = (w2 - w0) * 0.5;
-			// let slope1 = (w3 - w1) * 0.5;
-			// let v = w1 - w2;
-			// let w = slope0 + v;
-			// let a = w + v + slope1;
-			// let b_neg = w + a;
-			// let s1 = a * idx_frac - b_neg;
-			// let s2 = s1 * idx_frac + slope0;
-			// let mut out = s2 * idx_frac + w1;
+			let w1b = self.buffer_b[idx_int];
+			let w2b = self.buffer_b[(idx_int + 1) & WT_MASK];
+			let wb = lerp(w1b, w2b, idx_frac);
 
-			// linear interpolation
-			let w1 = self.buffer_out[idx_int];
-			let w2 = self.buffer_out[(idx_int + 1) & WT_MASK];
-			let mut out = lerp(w1, w2, idx_frac);
+			let mut out = lerp(wa, wb, self.interpolate.clamp(0.0, 1.0));
 
-			// no interpolation
-			// let mut out = w1;
 			out *= self.vel.get();
 
 			*l = out;
@@ -151,6 +166,7 @@ impl Instrument for Wavetable {
 		if self.vel.get() < 0.01 {
 			self.vel.set_hard(vel);
 			self.accum = 0.0;
+			self.interpolate = 1.0;
 		} else {
 			self.vel.set(vel);
 		}
