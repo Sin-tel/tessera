@@ -34,12 +34,16 @@ impl Wavetable {
 	fn update_fft(&mut self) {
 		// @todo precalculate forward fft and only run inverse with corrected partials
 
-		// get table offset
-		let wt_index =
-			((self.vel.inner() * (WT_NUM as f32)) as usize).clamp(0, WT_NUM - 1) * WT_SIZE;
+		// linear interpolation between frames
+		let wt_idx = (self.vel.inner() * (WT_NUM as f32)).clamp(0.0, (WT_NUM as f32) - 1.001);
+		let wt_idx_int = wt_idx as usize;
+		let wt_idx_frac = wt_idx.fract();
 
-		self.buffer_in
-			.copy_from_slice(&WAVETABLE[wt_index..wt_index + WT_SIZE]);
+		for (i, v) in self.buffer_in.iter_mut().enumerate() {
+			let w1 = WAVETABLE[wt_idx_int * WT_SIZE + i];
+			let w2 = WAVETABLE[(wt_idx_int + 1) * WT_SIZE + i];
+			*v = lerp(w1, w2, wt_idx_frac);
+		}
 
 		// forward fft
 		self.r2c
@@ -141,7 +145,7 @@ impl Instrument for Wavetable {
 			let idx_int = idx as usize;
 			let idx_frac = idx.fract();
 
-			// bilinear interpolation
+			// bilinear interpolation between samples and buffers
 			let w1a = self.buffer_a[idx_int];
 			let w2a = self.buffer_a[(idx_int + 1) & WT_MASK];
 			let wa = lerp(w1a, w2a, idx_frac);
