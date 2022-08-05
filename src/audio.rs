@@ -55,10 +55,9 @@ where
 	let (lua_tx, lua_rx) = RingBuffer::<LuaMessage>::new(256).split();
 
 	let (scope_tx, scope_rx) = RingBuffer::<f32>::new(SPECTRUM_SIZE).split();
+	let scope = Scope::new(scope_rx);
 
 	let sample_rate = config.sample_rate.0 as f32;
-
-	let scope = Scope::new();
 
 	let m_render = Arc::new(Mutex::new(Render::new(
 		sample_rate,
@@ -77,7 +76,6 @@ where
 		audio_tx,
 		stream_tx,
 		lua_rx,
-		scope_rx,
 		m_render,
 		scope,
 	})

@@ -3,6 +3,7 @@ use ringbuf::{Consumer, Producer};
 use crate::defs::*;
 use crate::device::*;
 use crate::dsp::env::SmoothedEnv;
+use crate::dsp::softclip;
 use crate::effect::*;
 use crate::instrument::*;
 use crate::pan::*;
@@ -74,14 +75,15 @@ impl Render {
 
 	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [mut l, mut r] = self.buffer2;
-		let buf_slice = &mut [&mut l[..buffer[0].len()], &mut r[..buffer[0].len()]];
+		let len = buffer[0].len();
+		let buf_slice = &mut [&mut l[..len], &mut r[..len]];
 
-		// zero buffer
+		// Zero buffer
 		for sample in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
 			*sample = 0.0;
 		}
 
-		// process all channels
+		// Process all channels
 		for ch in &mut self.channels {
 			if !ch.mute {
 				ch.instrument.process(buf_slice);
@@ -102,13 +104,13 @@ impl Render {
 			}
 		}
 
-		// default 6dB headroom and some tanh-like softclip
-		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
-			// *s = softclip(*s * 0.50);
-			*s *= 0.50;
+		// Send everything to scope before clipping.
+		// For now, we only send the left channel.
+		for s in buffer[0].iter() {
+			self.scope_tx.push(*s).ok(); // Don't really care if its full
 		}
 
-		// calculate peak
+		// Calculate peak
 		let mut sum = [0.0; 2];
 		for (i, track) in buffer.iter().enumerate() {
 			sum[i] = track
@@ -123,13 +125,15 @@ impl Render {
 		self.peakr.update();
 		self.send(LuaMessage::Meter(self.peakl.get(), self.peakr.get()));
 
+		// Add 6dB headroom and some tanh-like softclip
+		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
+			*s = softclip(*s * 0.50);
+			// *s *= 0.50;
+		}
+
 		// clipping isn't strictly necessary but we'll do it anyway
 		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
 			*s = s.clamp(-1.0, 1.0);
-		}
-
-		for s in buffer[0].iter() {
-			self.scope_tx.push(*s).ok(); // don't really care if its full
 		}
 	}
 

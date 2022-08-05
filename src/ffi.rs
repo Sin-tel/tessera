@@ -18,7 +18,6 @@ pub struct Userdata {
 	pub stream_tx: Producer<bool>,
 	pub lua_rx: Consumer<LuaMessage>,
 	pub m_render: Arc<Mutex<render::Render>>,
-	pub scope_rx: Consumer<f32>,
 	pub scope: Scope,
 }
 
@@ -190,15 +189,8 @@ pub extern "C" fn render_block(stream_ptr: *mut c_void) -> C_Buffer {
 pub extern "C" fn get_spectrum(stream_ptr: *mut c_void) -> C_Buffer {
 	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
 
-	// if ud.scope_rx.is_full() {
-	ud.scope_rx.pop_each(
-		|x| {
-			ud.scope.push(x);
-			true
-		},
-		None,
-	);
-	// }
+	// Process scope
+	ud.scope.update();
 
 	let mut spectrum = ud.scope.get_spectrum();
 
