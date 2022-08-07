@@ -107,7 +107,7 @@ end
 
 function audiolib.add_effect(channel_index, effect_number)
 	if stream_handle then
-		lib.add_channel(stream_handle, channel_index, effect_number)
+		lib.add_effect(stream_handle, channel_index, effect_number)
 	end
 end
 

@@ -55,12 +55,14 @@ function ParameterGroup:getLength()
 	return #self.sliders + 1
 end
 
-function parameterView:makeParameterParameterGroups(channel)
-	local parameterGroups = {}
-	table.insert(parameterGroups, ParameterGroup:new("channel", channel.parameters))
-	table.insert(parameterGroups, ParameterGroup:new(channel.instrument.name, channel.instrument.parameters))
+function parameterView:makeParameterGroups(channel)
+	channel.parameterGroups = {}
+	table.insert(channel.parameterGroups, ParameterGroup:new("channel", channel.parameters))
+	table.insert(channel.parameterGroups, ParameterGroup:new(channel.instrument.name, channel.instrument.parameters))
+end
 
-	return parameterGroups
+function parameterView:addParameters(channel, effect)
+	table.insert(channel.parameterGroups, ParameterGroup:new(effect.name, effect.parameters))
 end
 
 function parameterView:new()

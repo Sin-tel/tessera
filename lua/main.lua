@@ -3,7 +3,7 @@ release = false
 require("lib/errorhandler")
 require("lib/run")
 
-local lurker = true
+local lurker = false
 
 local settingsHandler = require("settings_handler")
 local audiolib = require("audiolib")
@@ -43,7 +43,9 @@ local function audioSetup()
 	midilib.load(settings.midi.inputs)
 
 	channelHandler:load()
-	channelHandler:add("wavetable").armed = true
+	local ch = channelHandler:add("wavetable")
+	ch.armed = true
+	channelHandler:add_effect(ch, "gain")
 	-- for i = 1, 150 do
 	-- 	local n = channelHandler:add("sine")
 	-- 	n.parameters[2]:setNormalized(math.random())

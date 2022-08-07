@@ -8,7 +8,7 @@ deviceList.channel = {
 deviceList.instruments = {}
 
 deviceList.instruments.sine = {
-	index = 0,
+	number = 0,
 	parameters = {
 		Parameter:new("feedback", { default = 1.0, max = 1.5 }),
 	},
@@ -16,9 +16,16 @@ deviceList.instruments.sine = {
 }
 
 deviceList.instruments.wavetable = {
-	index = 1,
+	number = 1,
 	parameters = {},
 	mono = true,
 }
 
 deviceList.effects = {}
+
+deviceList.effects.gain = {
+	number = 0,
+	parameters = {
+		Parameter:new("gain", { default = 0, t = "dB" }),
+	},
+}

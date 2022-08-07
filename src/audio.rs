@@ -54,7 +54,7 @@ where
 
 	let (lua_tx, lua_rx) = RingBuffer::<LuaMessage>::new(256).split();
 
-	let (scope_tx, scope_rx) = RingBuffer::<f32>::new(SPECTRUM_SIZE).split();
+	let (scope_tx, scope_rx) = RingBuffer::<f32>::new(2048).split();
 	let scope = Scope::new(scope_rx);
 
 	let sample_rate = config.sample_rate.0 as f32;
@@ -126,7 +126,7 @@ where
 						None,
 					);
 					render.parse_messages();
-					// write to output buffer
+
 					render.process(buf_slice);
 
 					// interlace and convert
@@ -142,6 +142,7 @@ where
 					render.send(LuaMessage::Cpu(cpu_load.get()));
 				}
 				_ => {
+					// Output silence as a fallback when lock fails.
 					stream_rx.pop_each(
 						|m| {
 							paused = m;

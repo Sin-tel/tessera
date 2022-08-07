@@ -22,11 +22,14 @@ function channelHandler:update()
 			end
 		end
 
-		-- for e, fx in ipairs(ch.effects) do
-		-- 	for l, par in ipairs(e.parameters) do
-		-- 		audiolib.send_param(k-1, e, l-1, par.v)
-		-- 	end
-		-- end
+		for e, fx in ipairs(ch.effects) do
+			for l, par in ipairs(fx.parameters) do
+				if par.dirty then
+					audiolib.send_param(k - 1, e, l - 1, par.v)
+					par.dirty = false
+				end
+			end
+		end
 	end
 end
 
@@ -44,18 +47,36 @@ function channelHandler:add(name)
 		}
 
 		new.instrument.name = name
-		new.parameterGroups = parameterView:makeParameterParameterGroups(new)
+		parameterView:makeParameterGroups(new)
 
 		table.insert(self.list, new)
 		new.index = #self.list - 1
 		new.name = name .. " " .. new.index
 
-		audiolib.add_channel(new.instrument.index)
+		audiolib.add_channel(new.instrument.number)
 		selection.channel = new
 
 		return new
 	else
-		print("instrument not found: " .. name)
+		print("Instrument not found: " .. name)
+	end
+end
+
+function channelHandler:add_effect(ch, name)
+	if deviceList.effects[name] then
+		local effect = deepcopy(deviceList.effects[name])
+
+		table.insert(ch.effects, effect)
+
+		effect.name = name
+
+		parameterView:addParameters(ch, effect)
+
+		audiolib.add_effect(ch.index, deviceList.effects[name].number)
+
+		return new
+	else
+		print("Effect not found: " .. name)
 	end
 end
 
