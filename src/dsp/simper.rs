@@ -49,6 +49,17 @@ impl Filter {
 		self.m1 = 1.0;
 		self.m2 = 0.0;
 	}
+	// untested
+	pub fn set_bandpass_norm(&mut self, cutoff: f32, q: f32) {
+		let g = (std::f32::consts::PI * cutoff / self.sample_rate).tan();
+		let k = 1.0 / q;
+		self.a1 = 1.0 / (1.0 + g * (g + k));
+		self.a2 = g * self.a1;
+		self.a3 = g * self.a2;
+		self.m0 = 0.0;
+		self.m1 = k;
+		self.m2 = 0.0;
+	}
 	pub fn set_highpass(&mut self, cutoff: f32, q: f32) {
 		let g = (std::f32::consts::PI * cutoff / self.sample_rate).tan();
 		let k = 1.0 / q;
@@ -103,7 +114,7 @@ impl Filter {
 	}
 	pub fn set_highshelf(&mut self, cutoff: f32, q: f32, gain: f32) {
 		let a = (10.0f32).powf(gain / 40.0);
-		let g = (std::f32::consts::PI * cutoff / self.sample_rate).tan() / a.sqrt();
+		let g = (std::f32::consts::PI * cutoff / self.sample_rate).tan() * a.sqrt();
 		let k = 1.0 / (q);
 		self.a1 = 1.0 / (1.0 + g * (g + k));
 		self.a2 = g * self.a1;
@@ -111,6 +122,17 @@ impl Filter {
 		self.m0 = a * a;
 		self.m1 = k * (1.0 - a) * a;
 		self.m2 = 1.0 - a * a;
+	}
+	pub fn set_tilt(&mut self, cutoff: f32, q: f32, gain: f32) {
+		let a = (10.0f32).powf(gain / 40.0);
+		let g = (std::f32::consts::PI * cutoff / self.sample_rate).tan() * a.sqrt();
+		let k = 1.0 / (q);
+		self.a1 = 1.0 / (1.0 + g * (g + k));
+		self.a2 = g * self.a1;
+		self.a3 = g * self.a2;
+		self.m0 = a;
+		self.m1 = k * (1.0 - a);
+		self.m2 = 1.0 / a - a;
 	}
 
 	pub fn process(&mut self, v0: f32) -> f32 {
