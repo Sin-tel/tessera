@@ -1,20 +1,24 @@
-function clamp(x, min, max)
+local ui = require("ui")
+
+local util = {}
+
+function util.clamp(x, min, max)
 	return x < min and min or (x > max and max or x)
 end
 
-function dist(x1, y1, x2, y2)
+function util.dist(x1, y1, x2, y2)
 	return math.sqrt((x1 - x2) ^ 2 + (y1 - y2) ^ 2)
 end
 
-function length(x, y)
+function util.length(x, y)
 	return math.sqrt(x ^ 2 + y ^ 2)
 end
 
-function from_dB(x)
+function util.from_dB(x)
 	return 10.0 ^ (x / 20.0)
 end
 
-function to_dB(x)
+function util.to_dB(x)
 	return 20.0 * math.log10(x)
 end
 
@@ -22,19 +26,19 @@ end
 -- 12 or 18 is good
 local curve_param = -18 / math.log(0.5)
 
-function curve_dB(x, max)
-	return from_dB(curve_param * math.log(x) + (max or 0))
+function util.curve_dB(x, max)
+	return util.from_dB(curve_param * math.log(x) + (max or 0))
 end
 
-function curve_dB_inv(x, max)
-	return math.exp((to_dB(x) - (max or 0)) / curve_param)
+function util.curve_dB_inv(x, max)
+	return math.exp((util.to_dB(x) - (max or 0)) / curve_param)
 end
 
-function ratio(r)
+function util.ratio(r)
 	return 12.0 * math.log(r) / math.log(2)
 end
 
-function deepcopy(orig, copies)
+local function deepcopy(orig, copies)
 	copies = copies or {}
 	local orig_type = type(orig)
 	local copy
@@ -55,13 +59,15 @@ function deepcopy(orig, copies)
 	return copy
 end
 
-function drawText(str, x, y, w, h, align)
+util.deepcopy = deepcopy
+
+function util.drawText(str, x, y, w, h, align)
 	align = align or "left"
 
 	local f = love.graphics.getFont()
 	local str2 = str
 	local fh = f:getHeight()
-	local fo = 0.5 * (HEADER - fh)
+	local fo = 0.5 * (ui.HEADER - fh)
 	local l = str:len()
 	local strip = false
 	while true do
@@ -85,14 +91,16 @@ function drawText(str, x, y, w, h, align)
 	end
 end
 
-function average(t)
+function util.average(t)
 	local n = #t
 	if n == 0 then
 		return 0
 	end
 	local sum = 0
-	for i, v in ipairs(t) do
+	for _, v in ipairs(t) do
 		sum = sum + v
 	end
 	return sum / n
 end
+
+return util

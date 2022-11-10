@@ -1,11 +1,11 @@
-require("./lib/wav")
+local wav = require("./lib/wav")
 
 local M = {}
 
 -- @todo set this when opening file
 local channelCount = 2
 local sampleRate = 44100
-local bitDepth = 16 -- bits per sample
+local bitDepth = 16
 
 local w
 

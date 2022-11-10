@@ -6,7 +6,7 @@
 	The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ]]
-wav = {
+local wav = {
 	--[[
 		Reads or writes audio file in WAVE format with PCM integer samples.
 		
@@ -414,7 +414,7 @@ wav = {
 			error("samples table and sample rate expected", 2)
 		end
 		local samples_n = #samples
-		if samples_n ~= math.ceil_pow2(samples_n) then
+		if samples_n ~= ceil_pow2(samples_n) then
 			error("table size has to be a power of two", 2)
 		end
 		for _, sample in ipairs(samples) do
@@ -566,7 +566,7 @@ wav = {
 --[[
 	Rounds up number to power of 2.
 ]]
-function math.ceil_pow2(x)
+local function ceil_pow2(x)
 	if type(x) ~= "number" then
 		error("number expected", 2)
 	end
@@ -577,68 +577,4 @@ function math.ceil_pow2(x)
 	return p
 end
 
---[[
-	Rounds down number to power of 2.
-]]
-function math.floor_pow2(x)
-	if type(x) ~= "number" then
-		error("number expected", 2)
-	end
-	local y = math.ceil_pow2(x)
-	return x == y and x or y / 2
-end
-
---[[
-	Rounds number nearest to power of 2.
-]]
-function math.round_pow2(x)
-	if type(x) ~= "number" then
-		error("number expected", 2)
-	end
-	local min, max = math.floor_pow2(x), math.ceil_pow2(x)
-	return (x - min) / (max - min) < 0.5 and min or max
-end
-
---[[
-	Converts samples into an ASS (Advanced Substation Alpha) subtitle shape code.
-]]
-function audio_to_ass(samples, wave_width, wave_height_scale, wave_thickness)
-	-- Check function parameters
-	if
-		type(samples) ~= "table"
-		or not samples[1]
-		or type(wave_width) ~= "number"
-		or wave_width <= 0
-		or type(wave_height_scale) ~= "number"
-		or type(wave_thickness) ~= "number"
-		or wave_thickness <= 0
-	then
-		error("samples table, positive wave width, height scale and thickness expected", 2)
-	end
-	for _, sample in ipairs(samples) do
-		if type(sample) ~= "number" then
-			error("table has only to contain numbers", 2)
-		end
-	end
-	-- Better fitting forms of known variables for most use
-	local thick2, samples_n = wave_thickness / 2, #samples
-	-- Build shape
-	local shape = string.format("m 0 %d l", samples[1] * wave_height_scale - thick2)
-	for i = 2, samples_n do
-		shape = string.format(
-			"%s %d %d",
-			shape,
-			(i - 1) / (samples_n - 1) * wave_width,
-			samples[i] * wave_height_scale - thick2
-		)
-	end
-	for i = samples_n, 1, -1 do
-		shape = string.format(
-			"%s %d %d",
-			shape,
-			(i - 1) / (samples_n - 1) * wave_width,
-			samples[i] * wave_height_scale + thick2
-		)
-	end
-	return shape
-end
+return wav

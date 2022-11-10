@@ -80,7 +80,6 @@ dependencies = [
  "assert_no_alloc",
  "bencher",
  "bit_mask_ring_buf",
- "clang-sys",
  "cpal",
  "fastrand",
  "realfft",

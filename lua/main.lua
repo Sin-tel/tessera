@@ -1,41 +1,41 @@
 release = false
+local lurker = false
+
+io.stdout:setvbuf("no")
 
 require("lib/errorhandler")
 require("lib/run")
+if not release then
+	require("lib/strict")
+end
 
-local lurker = false
-
+util = require("util")
 local settingsHandler = require("settings_handler")
 local audiolib = require("audiolib")
 local wav = require("lib/wav_save")
 local midilib = require("midilib")
+local views = require("views")
 
 if not release and lurker then
 	lurker = require("lib/lurker")
 end
 
-require("util")
-require("mouse")
-require("keyboard")
-require("ui")
-require("views")
-require("workspace")
-require("parameter")
-require("devicelist")
-require("channel_handler")
-require("pitch")
-
-require("settings/theme")
-
-io.stdout:setvbuf("no")
+workspace = require("workspace")
+mouse = require("mouse")
+keyboard = require("keyboard")
+util = require("util")
+channelHandler = require("channel_handler")
 
 width, height = love.graphics.getDimensions()
 
-selection = {}
-
 time = 0
 
--- temp stuff, to delete
+theme = require("settings/theme")
+selection = {}
+settings = {}
+resources = {}
+
+--- temp stuff, to delete ---
 
 local function audioSetup()
 	audiolib.load(settings.audio.default_host, settings.audio.default_device)
@@ -53,18 +53,52 @@ local function audioSetup()
 	-- end
 end
 
+local function render_wav()
+	--@todo: make this into a coroutine so we can yield from it
+
+	mouse:setCursor("wait")
+
+	audiolib.pause()
+
+	-- sleep for a bit to make sure the audio thread is done
+	love.timer.sleep(0.01)
+
+	wav.open()
+	for _ = 1, 5000 do
+		local block = audiolib.render_block()
+		if not block then
+			print("failed to get block. try again")
+			wav.close()
+			audiolib.play()
+			return
+		end
+		local s = block.ptr
+		local samples = {}
+		for i = 1, tonumber(block.len) do
+			samples[i] = s[i - 1]
+		end
+		wav.append(samples)
+
+		audiolib.parse_messages()
+	end
+	wav.close()
+	audiolib.play()
+
+	mouse:setCursor("default")
+end
+
 function love.load()
 	math.randomseed(os.time())
 	love.math.setRandomSeed(os.time())
 	settings = settingsHandler.load()
 	mouse:load()
 
-	---load resources---
+	--- load resources ---
 
 	-- fonts.main = love.graphics.newFont(12)
-	fonts = {}
-	fonts.main = love.graphics.newFont("res/dejavu_normal.fnt", "res/dejavu_normal.png")
-	fonts.notes = love.graphics.newImageFont(
+	resources.fonts = {}
+	resources.fonts.main = love.graphics.newFont("res/dejavu_normal.fnt", "res/dejavu_normal.png")
+	resources.fonts.notes = love.graphics.newImageFont(
 		"res/font_notes.png",
 		" ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 			.. "0123456789.+-/"
@@ -77,29 +111,28 @@ function love.load()
 		-1
 	)
 
-	love.graphics.setFont(fonts.main)
+	love.graphics.setFont(resources.fonts.main)
 
-	icons = {}
-	icons.solo = love.graphics.newImage("res/solo.png")
-	icons.mute = love.graphics.newImage("res/mute.png")
-	icons.armed = love.graphics.newImage("res/armed.png")
-	icons.visible = love.graphics.newImage("res/visible.png")
-	icons.invisible = love.graphics.newImage("res/invisible.png")
-	icons.lock = love.graphics.newImage("res/lock.png")
-	icons.unlock = love.graphics.newImage("res/unlock.png")
+	resources.icons = {}
+	resources.icons.solo = love.graphics.newImage("res/solo.png")
+	resources.icons.mute = love.graphics.newImage("res/mute.png")
+	resources.icons.armed = love.graphics.newImage("res/armed.png")
+	resources.icons.visible = love.graphics.newImage("res/visible.png")
+	resources.icons.invisible = love.graphics.newImage("res/invisible.png")
+	resources.icons.lock = love.graphics.newImage("res/lock.png")
+	resources.icons.unlock = love.graphics.newImage("res/unlock.png")
 
-	---setup workspace---
+	--- setup workspace ---
 	workspace:load()
 	workspace.box:split(0.7, true)
 
-	-- workspace.box.children[1]:setView(DefaultView:new())
 	workspace.box.children[1]:split(0.7, false)
-	workspace.box.children[1].children[1]:setView(scopeView:new())
-	workspace.box.children[1].children[2]:setView(testPadView:new())
+	workspace.box.children[1].children[1]:setView(views.scope:new())
+	workspace.box.children[1].children[2]:setView(views.testpad:new())
 
 	workspace.box.children[2]:split(0.5, false)
-	workspace.box.children[2].children[1]:setView(channelView:new())
-	workspace.box.children[2].children[2]:setView(parameterView:new())
+	workspace.box.children[2].children[1]:setView(views.channel:new())
+	workspace.box.children[2].children[2]:setView(views.parameter:new())
 end
 
 function love.update(dt)
@@ -114,7 +147,7 @@ function love.update(dt)
 end
 
 function love.draw()
-	----update--------
+	--- update ---
 	if audiolib.status == "request" then
 		audioSetup()
 	elseif audiolib.status == "wait" then
@@ -126,10 +159,9 @@ function love.draw()
 
 	mouse:update()
 	workspace:update()
-
 	mouse:updateCursor()
 
-	----draw----------
+	--- draw ---
 	love.graphics.clear()
 	love.graphics.setColor(theme.borders)
 	love.graphics.rectangle("fill", 0, 0, width, height)
@@ -211,39 +243,4 @@ function love.quit()
 
 	midilib.quit()
 	audiolib.quit()
-end
-
-function render_wav()
-	--@todo: make this into a coroutine so we can yield from it
-
-	mouse:setCursor("wait")
-
-	audiolib.pause()
-
-	-- sleep for a bit to make sure the audio thread is done
-	love.timer.sleep(0.01)
-
-	wav.open()
-	for _ = 1, 5000 do
-		local block = audiolib.render_block()
-		if not block then
-			print("failed to get block. try again")
-			wav.close()
-			audiolib.play()
-			return
-		end
-		local s = block.ptr
-		local samples = {}
-		for i = 1, tonumber(block.len) do
-			samples[i] = s[i - 1]
-		end
-		-- print(s[1])
-		wav.append(samples)
-
-		audiolib.parse_messages()
-	end
-	wav.close()
-	audiolib.play()
-
-	mouse:setCursor("default")
 end

@@ -9,7 +9,7 @@ crate-type = ["lib","cdylib"]
 # ASIO requirements
 [target.'cfg(target_os = "windows")'.dependencies]
 cpal = { version = "0.13.4", features = ["asio"] }
-clang-sys = "0.29.3"
+# clang-sys = "0.29.3"
 [target.'cfg(not(target_os = "windows"))'.dependencies]
 cpal = { version = "0.13.4"}
 

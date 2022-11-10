@@ -1,7 +1,7 @@
-mouse = {}
+local mouse = {}
 
-DOUBLE_CLICK_TIME = 0.35
-DRAG_DIST = 3
+local DOUBLE_CLICK_TIME = 0.35
+local DRAG_DIST = 3
 
 function mouse:load()
 	self.x = 0
@@ -107,3 +107,5 @@ function mouse:mousemoved(_, _, dx, dy)
 		self.dy = self.dy + dy
 	end
 end
+
+return mouse

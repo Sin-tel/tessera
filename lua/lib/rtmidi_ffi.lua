@@ -1,5 +1,5 @@
 --[[
-todo 
+todo
 crossplatform dlls
 better ffi loading (see protoplug)
 ]]
@@ -291,9 +291,9 @@ function M.newMessage(t)
     return new
 end
 
-function M.sendMessage(device, msg)
-    --print(msg.data[0], msg.size[0])
-    lib.rtmidi_out_send_message(device, msg.data, msg.size[0])
+function M.sendMessage(device, message)
+    --print(message.data[0], message.size[0])
+    lib.rtmidi_out_send_message(device, message.data, message.size[0])
 end
 
 function M.getMessage(device)

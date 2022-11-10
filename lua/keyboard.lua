@@ -1,6 +1,7 @@
+local Pitch = require("pitch")
 local audiolib = require("audiolib")
 
-keyboard = {}
+local keyboard = {}
 
 keyboard.diatonic_row = { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]" }
 
@@ -43,3 +44,5 @@ function keyboard:keyreleased(key)
 
 	return handled
 end
+
+return keyboard

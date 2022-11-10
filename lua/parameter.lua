@@ -1,4 +1,4 @@
-Parameter = {}
+local Parameter = {}
 
 function Parameter:new(name, tbl)
 	local new = {}
@@ -12,12 +12,12 @@ function Parameter:new(name, tbl)
 	new.dirty = true
 
 	if new.t == "dB" then
-		new.v = from_dB(tbl.default)
-		new.default = from_dB(tbl.default)
-		new.min = 0 --from_dB(tbl.min or -math.huge)
+		new.v = util.from_dB(tbl.default)
+		new.default = util.from_dB(tbl.default)
+		new.min = 0 --util.from_dB(tbl.min or -math.huge)
 		new.max = (tbl.max or 0)
 
-		assert(new.default <= from_dB(new.max))
+		assert(new.default <= util.from_dB(new.max))
 	else
 		new.min = tbl.min or 0
 		new.max = tbl.max or 1
@@ -43,10 +43,10 @@ function Parameter:reset()
 	self.dirty = true
 end
 
-function Parameter:setNormalized(x)
-	local x = clamp(x, 0, 1)
+function Parameter:setNormalized(value)
+	local x = util.clamp(value, 0, 1)
 	if self.t == "dB" then
-		x = curve_dB(x, self.max)
+		x = util.curve_dB(x, self.max)
 		self.v = x
 	else
 		self.v = x * (self.max - self.min) + self.min
@@ -54,9 +54,9 @@ function Parameter:setNormalized(x)
 	self.dirty = true
 end
 
-function Parameter:getNormalized(x)
+function Parameter:getNormalized()
 	if self.t == "dB" then
-		return curve_dB_inv(self.v, self.max)
+		return util.curve_dB_inv(self.v, self.max)
 	else
 		return (self.v - self.min) / (self.max - self.min)
 	end
@@ -64,8 +64,10 @@ end
 
 function Parameter:getDisplay()
 	if self.t == "dB" then
-		return string.format("%0.1f dB", to_dB(self.v))
+		return string.format("%0.1f dB", util.to_dB(self.v))
 	else
 		return string.format(self.fmt, self.v)
 	end
 end
+
+return Parameter

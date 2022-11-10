@@ -1,69 +1,7 @@
-parameterView = View:derive("Parameters")
+local View = require("view")
+local ui = require("ui")
 
-local ParameterGroup = {}
-
-function ParameterGroup:new(name, paramlist)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
-
-	new.name = name
-	new.collapse = false
-	new.sliders = {}
-
-	for _, v in ipairs(paramlist) do
-		table.insert(new.sliders, Slider:new(v))
-	end
-
-	return new
-end
-
-function ParameterGroup:draw(y, w, selected)
-	y0 = UI_GRID * y
-
-	local s = 32
-	love.graphics.setColor(theme.ui_text)
-	if self.collapse then
-		drawText("+", 0, y0, s, UI_GRID, "left")
-	else
-		drawText("-", 0, y0, s, UI_GRID, "left")
-	end
-	drawText("    " .. self.name, 0, y0, w - s, UI_GRID, "left")
-
-	if not self.collapse then
-		love.graphics.setColor(theme.bg_nested)
-		love.graphics.rectangle("fill", 0, y0 + UI_GRID, w, #self.sliders * UI_GRID)
-
-		for i, v in ipairs(self.sliders) do
-			local mode = false
-			if v == selected then
-				if self.action == "slider" then
-					mode = "press"
-				else
-					mode = "hover"
-				end
-			end
-			v:draw(y0 + i * UI_GRID, w, mode)
-		end
-	end
-end
-
-function ParameterGroup:getLength()
-	if self.collapse then
-		return 1
-	end
-	return #self.sliders + 1
-end
-
-function parameterView:makeParameterGroups(channel)
-	channel.parameterGroups = {}
-	table.insert(channel.parameterGroups, ParameterGroup:new("channel", channel.parameters))
-	table.insert(channel.parameterGroups, ParameterGroup:new(channel.instrument.name, channel.instrument.parameters))
-end
-
-function parameterView:addParameters(channel, effect)
-	table.insert(channel.parameterGroups, ParameterGroup:new(effect.name, effect.parameters))
-end
+local parameterView = View:derive("Parameters")
 
 function parameterView:new()
 	local new = {}
@@ -86,8 +24,8 @@ function parameterView:update()
 	local mx, my = self:getMouse()
 
 	self.scroll = self.scroll + (self.scroll_ - self.scroll) * 0.5
-	self.scroll = clamp(self.scroll, 0, self:getMaxScroll())
-	self.scroll_ = clamp(self.scroll_, 0, self:getMaxScroll())
+	self.scroll = util.clamp(self.scroll, 0, self:getMaxScroll())
+	self.scroll_ = util.clamp(self.scroll_, 0, self:getMaxScroll())
 
 	if math.abs(self.scroll - self.scroll_) < 2 then
 		self.scroll = self.scroll_
@@ -99,7 +37,7 @@ function parameterView:update()
 				self.select:drag(w)
 			end
 		else
-			local index = math.floor((my + self.scroll) / UI_GRID)
+			local index = math.floor((my + self.scroll) / ui.GRID)
 			local y = 0
 			self.select = nil
 			for i, v in ipairs(self.groups) do
@@ -134,7 +72,7 @@ function parameterView:mousepressed()
 			love.mouse.setRelativeMode(true)
 			self.action = "slider"
 		else
-			local index = math.floor((my + self.scroll) / UI_GRID)
+			local index = math.floor((my + self.scroll) / ui.GRID)
 
 			for _, v in ipairs(self.groups) do
 				if index == 0 then
@@ -161,7 +99,7 @@ function parameterView:mousereleased()
 		if mouse.drag then
 			love.mouse.setPosition(
 				self.box.x + s,
-				self.box.y + self.select_i * UI_GRID + HEADER + 0.5 * UI_GRID - self.scroll
+				self.box.y + self.select_i * ui.GRID + ui.HEADER + 0.5 * ui.GRID - self.scroll
 			)
 		end
 	end
@@ -172,7 +110,7 @@ function parameterView:draw()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
-	local y = -self.scroll / UI_GRID
+	local y = -self.scroll / ui.GRID
 	for _, group in ipairs(self.groups) do
 		group:draw(y, w, self.select)
 		y = y + group:getLength()
@@ -180,7 +118,7 @@ function parameterView:draw()
 end
 
 function parameterView:wheelmoved(y)
-	self.scroll_ = math.floor(self.scroll - y * 1.5 * UI_GRID)
+	self.scroll_ = math.floor(self.scroll - y * 1.5 * ui.GRID)
 end
 
 function parameterView:getMaxScroll()
@@ -190,5 +128,7 @@ function parameterView:getMaxScroll()
 	for _, group in ipairs(self.groups) do
 		l = l + group:getLength()
 	end
-	return math.max(0, (l * UI_GRID) - h)
+	return math.max(0, (l * ui.GRID) - h)
 end
+
+return parameterView

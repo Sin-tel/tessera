@@ -1,4 +1,6 @@
-deviceList = {}
+local Parameter = require("parameter")
+
+local deviceList = {}
 
 deviceList.channel = {
 	Parameter:new("gain", { default = -12, t = "dB" }),
@@ -29,3 +31,5 @@ deviceList.effects.gain = {
 		Parameter:new("gain", { default = 0, t = "dB" }),
 	},
 }
+
+return deviceList

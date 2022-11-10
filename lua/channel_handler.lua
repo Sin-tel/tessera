@@ -1,6 +1,8 @@
 local audiolib = require("audiolib")
+local ParameterGroup = require("parameter_group")
+local deviceList = require("device_list")
 
-channelHandler = {}
+local channelHandler = {}
 channelHandler.list = {}
 
 function channelHandler:load()
@@ -36,8 +38,8 @@ end
 function channelHandler:add(name)
 	if deviceList.instruments[name] then
 		local new = {
-			parameters = deepcopy(deviceList.channel),
-			instrument = deepcopy(deviceList.instruments[name]),
+			parameters = util.deepcopy(deviceList.channel),
+			instrument = util.deepcopy(deviceList.instruments[name]),
 			effects = {},
 			visible = true,
 			mute = false,
@@ -47,7 +49,7 @@ function channelHandler:add(name)
 		}
 
 		new.instrument.name = name
-		parameterView:makeParameterGroups(new)
+		ParameterGroup.makeParameterGroups(new)
 
 		table.insert(self.list, new)
 		new.index = #self.list - 1
@@ -64,17 +66,17 @@ end
 
 function channelHandler:add_effect(ch, name)
 	if deviceList.effects[name] then
-		local effect = deepcopy(deviceList.effects[name])
+		local effect = util.deepcopy(deviceList.effects[name])
 
 		table.insert(ch.effects, effect)
 
 		effect.name = name
 
-		parameterView:addParameters(ch, effect)
+		ParameterGroup.addParameters(ch, effect)
 
 		audiolib.add_effect(ch.index, deviceList.effects[name].number)
 
-		return new
+		return effect
 	else
 		print("Effect not found: " .. name)
 	end
@@ -86,3 +88,5 @@ function channelHandler:mute(ch, mute)
 		audiolib.send_mute(ch.index, mute)
 	end
 end
+
+return channelHandler

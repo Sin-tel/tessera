@@ -1,6 +1,7 @@
+local View = require("view")
 local audiolib = require("audiolib")
 
-testPadView = View:derive("TestPad")
+local testPadView = View:derive("TestPad")
 
 function testPadView:new()
 	local new = {}
@@ -35,14 +36,14 @@ function testPadView:draw()
 		oct = 1
 	end
 	for i = 1, oct - 1 do
-		xx = x1 + i * (x2 - x1) / oct
+		local xx = x1 + i * (x2 - x1) / oct
 		love.graphics.line(xx, y1, xx, y2)
 	end
 
 	love.graphics.setColor(theme.ui_text)
 
-	mx = clamp(mx, x1, x2)
-	my = clamp(my, y1, y2)
+	mx = util.clamp(mx, x1, x2)
+	my = util.clamp(my, y1, y2)
 
 	if self.box.focus then
 		love.graphics.ellipse("line", mx, my, 5)
@@ -74,3 +75,5 @@ function testPadView:mousereleased()
 		self.note = false
 	end
 end
+
+return testPadView

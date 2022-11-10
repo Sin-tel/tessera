@@ -1,5 +1,5 @@
 -- stylua: ignore
-theme = {
+return {
 	white =         {1.00, 1.00, 1.00},
 
 	borders =		{0.05, 0.05, 0.05},

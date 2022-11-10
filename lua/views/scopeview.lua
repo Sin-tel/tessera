@@ -1,6 +1,7 @@
+local View = require("view")
 local audiolib = require("audiolib")
 
-scopeView = View:derive("Scope")
+local scopeView = View:derive("Scope")
 
 scopeView.spectrum = { 0 }
 
@@ -34,3 +35,5 @@ function scopeView:draw()
 
 	-- print(#spectrum, spectrum[0])
 end
+
+return scopeView

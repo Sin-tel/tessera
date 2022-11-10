@@ -48,7 +48,7 @@ tracker-like keyboard nav!
 finetuning w mouse--
 ]]
 
-Pitch = {}
+local Pitch = {}
 
 -- default 11-limit JI table
 -- gen_table = {
@@ -135,3 +135,5 @@ function Pitch:recalc()
 	end
 	self.pitch = f
 end
+
+return Pitch

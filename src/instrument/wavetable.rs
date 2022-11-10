@@ -24,9 +24,9 @@ pub struct Wavetable {
 	buffer_b: Vec<f32>,
 	spectrum: Vec<Complex<f32>>,
 	spectrum2: Vec<Complex<f32>>,
-	r2c_sratch: Vec<Complex<f32>>,
+	r2c_scratch: Vec<Complex<f32>>,
 	r2c: Arc<dyn RealToComplex<f32>>,
-	c2r_sratch: Vec<Complex<f32>>,
+	c2r_scratch: Vec<Complex<f32>>,
 	c2r: Arc<dyn ComplexToReal<f32>>,
 }
 
@@ -50,7 +50,7 @@ impl Wavetable {
 			.process_with_scratch(
 				&mut self.buffer_in,
 				&mut self.spectrum,
-				&mut self.r2c_sratch,
+				&mut self.r2c_scratch,
 			)
 			.unwrap(); // only panics when passed incorrect buffer sizes
 
@@ -72,7 +72,7 @@ impl Wavetable {
 			.process_with_scratch(
 				&mut self.spectrum2,
 				&mut self.buffer_a,
-				&mut self.c2r_sratch,
+				&mut self.c2r_scratch,
 			)
 			.unwrap(); // only panics when passed incorrect buffer sizes
 
@@ -94,8 +94,8 @@ impl Instrument for Wavetable {
 		let buffer_in = r2c.make_input_vec();
 		let spectrum = r2c.make_output_vec();
 		let spectrum2 = r2c.make_output_vec();
-		let r2c_sratch = r2c.make_scratch_vec();
-		let c2r_sratch = c2r.make_scratch_vec();
+		let r2c_scratch = r2c.make_scratch_vec();
+		let c2r_scratch = c2r.make_scratch_vec();
 		let buffer_a = c2r.make_output_vec();
 		let buffer_b = c2r.make_output_vec();
 
@@ -110,8 +110,8 @@ impl Instrument for Wavetable {
 			buffer_b,
 			spectrum,
 			spectrum2,
-			r2c_sratch,
-			c2r_sratch,
+			r2c_scratch,
+			c2r_scratch,
 			r2c,
 			c2r,
 		};

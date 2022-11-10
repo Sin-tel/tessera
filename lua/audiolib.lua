@@ -7,14 +7,13 @@ local cstring = require("lib/cstring")
 
 require("header")
 
--- should fix this
--- local lib_path = love.filesystem.getSource( ) .. "/../target/debug"
-local lib_path = "../target/debug"
+-- @todo fix path
+local lib_path = love.filesystem.getSource()
 if release then
-	lib_path = "../target/release"
+	lib_path = lib_path .. "/../target/release"
+else
+	lib_path = lib_path .. "/../target/debug"
 end
-
--- print(lib_path)
 
 local lib = ffi.load(lib_path .. "/audiolib.dll")
 local stream_handle = nil
@@ -153,8 +152,8 @@ function audiolib.parse_messages()
 			if p.tag == "Cpu" then
 				workspace.cpu_load = p.cpu
 			elseif p.tag == "Meter" then
-				workspace.meter.l = to_dB(p.meter._0)
-				workspace.meter.r = to_dB(p.meter._1)
+				workspace.meter.l = util.to_dB(p.meter._0)
+				workspace.meter.r = util.to_dB(p.meter._1)
 			end
 		end
 	end

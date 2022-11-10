@@ -1,8 +1,13 @@
+--[[
+UNUSED
+for reference
+]]
+
 local polyphony = 16
 -- local n_index = 1
 local tracks = {}
 
-function newTrack()
+local function newTrack()
 	local new = {}
 	new.channel = 0
 	new.note = 0
@@ -19,7 +24,7 @@ end
 
 -- polyphonic note stealing logic
 -- doesnt work well for mono
-function handle_midi(event)
+local function handle_midi(event)
 	local index = -1
 
 	for i, ch in ipairs(channelHandler.list) do

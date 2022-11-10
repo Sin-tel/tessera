@@ -1,4 +1,6 @@
-pannerView = View:derive("Panning")
+local View = require("view")
+
+local pannerView = View:derive("Panning")
 
 function pannerView:draw()
 	local w, h = self:getDimensions()
@@ -15,12 +17,12 @@ function pannerView:draw()
 		my = my - cy
 		local a = math.atan2(my, mx)
 
-		local d = length(mx, my)
-		d = clamp(d, radius2, radius)
+		local d = util.length(mx, my)
+		d = util.clamp(d, radius2, radius)
 		if a > math.pi * 0.5 then
 			a = -math.pi
 		end
-		a = clamp(a, -math.pi, 0)
+		a = util.clamp(a, -math.pi, 0)
 
 		mx = d * math.cos(a) + cx
 		my = d * math.sin(a) + cy
@@ -35,26 +37,26 @@ function pannerView:draw()
 		love.graphics.setColor(theme.ui_text)
 		if self.box.focus then
 			love.graphics.ellipse("fill", mx, my, 5)
-			nd = (d - radius2) / (radius - radius2)
+			local nd = (d - radius2) / (radius - radius2)
 			nd = 17.31234 * math.log(1 - nd) -- magic formula
 
 			love.graphics.print(string.format("%0.1f dB", nd), math.floor(mx), math.floor(my - 24))
 			-- love.graphics.print(string.format("%0.5f", from_dB(nd)), mx, my-24)
 		end
 
-		for k, v in ipairs(channels.list) do
+		for _, v in ipairs(channelHandler.list) do
 			local gain = v.parameters[1].v
 			local pan = v.parameters[2].v
 
-			local d = 1.0 - math.exp(to_dB(gain) / 17.31234)
-			d = d * (radius - radius2) + radius2
+			local dist = 1.0 - math.exp(util.to_dB(gain) / 17.31234)
+			dist = dist * (radius - radius2) + radius2
 
 			-- local a = 2*math.asin(pan) / math.pi
-			local a = pan
-			a = 0.5 * ((a - 1) * math.pi)
+			local angle = pan
+			angle = 0.5 * ((angle - 1) * math.pi)
 
-			local x = d * math.cos(a) + cx
-			local y = d * math.sin(a) + cy
+			local x = dist * math.cos(angle) + cx
+			local y = dist * math.sin(angle) + cy
 
 			if v == selection.channel then
 				love.graphics.ellipse("fill", x, y, 6)
@@ -64,3 +66,5 @@ function pannerView:draw()
 		end
 	end
 end
+
+return pannerView
