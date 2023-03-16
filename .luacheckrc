@@ -1,3 +1,5 @@
+exclude_files = { "**/lib/*.lua" }
+
 std = "max+justidaw+love"
 stds.love = {
    globals = { "love" },
@@ -24,3 +26,5 @@ stds.justidaw = {
    },
    read_globals = {},
 }
+
+max_cyclomatic_complexity = 15

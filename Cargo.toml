@@ -8,10 +8,10 @@ crate-type = ["lib","cdylib"]
 
 # ASIO requirements
 [target.'cfg(target_os = "windows")'.dependencies]
-cpal = { version = "0.13.4", features = ["asio"] }
+cpal = { version = "0.13.4", features = ["asio"], default-features = false }
 # clang-sys = "0.29.3"
 [target.'cfg(not(target_os = "windows"))'.dependencies]
-cpal = { version = "0.13.4"}
+cpal = { version = "0.13.4", default-features = false}
 
 [dependencies]
 ringbuf = "0.2"

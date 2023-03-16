@@ -40,7 +40,7 @@ function parameterView:update()
 			local index = math.floor((my + self.scroll) / ui.GRID)
 			local y = 0
 			self.select = nil
-			for i, v in ipairs(self.groups) do
+			for _, v in ipairs(self.groups) do
 				if not v.collapse then
 					local get = v.sliders[index - y]
 					if get and mx > get:getPad(w) - 2 then

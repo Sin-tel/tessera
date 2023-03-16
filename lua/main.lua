@@ -181,7 +181,7 @@ function love.mousemoved(x, y, dx, dy, istouch)
 	mouse:mousemoved(x, y, dx, dy, istouch)
 end
 
-function love.wheelmoved(x, y)
+function love.wheelmoved(_, y)
 	workspace:wheelmoved(y)
 end
 
@@ -220,7 +220,9 @@ function love.keypressed(key, isrepeat)
 	elseif key == "s" then
 		render_wav()
 	elseif key == "a" then
-		local n = channelHandler:add("sine")
+		channelHandler:add("sine")
+
+		-- local n = channelHandler:add("sine")
 		-- n.parameters[2]:setNormalized(math.random())
 	end
 end
