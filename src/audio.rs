@@ -30,9 +30,18 @@ pub fn run(host_name: &str, output_device_name: &str) -> Result<Userdata, Box<dy
 	println!("{:?}", config2);
 
 	let userdata = match config.sample_format() {
+		cpal::SampleFormat::F64 => build_stream::<f64>(&output_device, &config2),
 		cpal::SampleFormat::F32 => build_stream::<f32>(&output_device, &config2),
+
+		cpal::SampleFormat::I64 => build_stream::<i64>(&output_device, &config2),
+		cpal::SampleFormat::U64 => build_stream::<u64>(&output_device, &config2),
+
+		cpal::SampleFormat::I32 => build_stream::<i32>(&output_device, &config2),
+		cpal::SampleFormat::U32 => build_stream::<u32>(&output_device, &config2),
+
 		cpal::SampleFormat::I16 => build_stream::<i16>(&output_device, &config2),
 		cpal::SampleFormat::U16 => build_stream::<u16>(&output_device, &config2),
+		sample_format => panic!("Unsupported sample format '{sample_format}'"),
 	}?;
 
 	userdata.stream.play()?;
@@ -46,7 +55,7 @@ pub fn build_stream<T>(
 	config: &cpal::StreamConfig,
 ) -> Result<Userdata, Box<dyn Error>>
 where
-	T: 'static + cpal::Sample,
+	T: 'static + cpal::SizedSample + cpal::FromSample<f32>,
 {
 	let (audio_tx, audio_rx) = RingBuffer::<AudioMessage>::new(256).split();
 
@@ -69,7 +78,7 @@ where
 
 	let audio_closure = build_closure::<T>(stream_rx, m_render_clone);
 
-	let stream = device.build_output_stream(config, audio_closure, err_fn)?;
+	let stream = device.build_output_stream(config, audio_closure, err_fn, None)?;
 
 	Ok(Userdata {
 		stream,
@@ -86,7 +95,7 @@ fn build_closure<T>(
 	m_render: Arc<Mutex<Render>>,
 ) -> impl FnMut(&mut [T], &cpal::OutputCallbackInfo)
 where
-	T: cpal::Sample,
+	T: cpal::Sample + cpal::FromSample<f32>,
 {
 	// Callback data
 	let mut start = false;
@@ -131,8 +140,8 @@ where
 
 					// interlace and convert
 					for (i, outsample) in buffer.chunks_exact_mut(2).enumerate() {
-						outsample[0] = cpal::Sample::from::<f32>(&buf_slice[0][i]);
-						outsample[1] = cpal::Sample::from::<f32>(&buf_slice[1][i]);
+						outsample[0] = T::from_sample(buf_slice[0][i]);
+						outsample[1] = T::from_sample(buf_slice[1][i]);
 					}
 
 					let t = time.elapsed();
@@ -153,8 +162,8 @@ where
 					// println!("Output silent");
 
 					for outsample in buffer.chunks_exact_mut(2) {
-						outsample[0] = cpal::Sample::from::<f32>(&0.0f32);
-						outsample[1] = cpal::Sample::from::<f32>(&0.0f32);
+						outsample[0] = T::from_sample(0.0f32);
+						outsample[1] = T::from_sample(0.0f32);
 					}
 				}
 			}
