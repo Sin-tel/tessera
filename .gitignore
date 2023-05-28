@@ -1,3 +1,4 @@
 /target
 *.wav
 lua/settings/setup.lua
+notes.md

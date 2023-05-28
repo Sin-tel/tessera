@@ -1,4 +1,5 @@
 use std::ffi::{c_void, CStr};
+use std::mem::ManuallyDrop;
 use std::os::raw::c_char;
 use std::ptr::null_mut;
 
@@ -150,6 +151,18 @@ pub struct C_Buffer {
 	pub cap: usize,
 }
 
+// https://doc.rust-lang.org/src/alloc/vec/mod.rs.html#823
+// @todo: remove this when it is stable
+trait IntoRawParts<T> {
+	fn into_raw_parts(self) -> (*mut T, usize, usize);
+}
+impl<T> IntoRawParts<T> for Vec<T> {
+	fn into_raw_parts(self) -> (*mut T, usize, usize) {
+		let mut me = ManuallyDrop::new(self);
+		(me.as_mut_ptr(), me.len(), me.capacity())
+	}
+}
+
 #[no_mangle]
 pub extern "C" fn render_block(stream_ptr: *mut c_void) -> C_Buffer {
 	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
@@ -174,12 +187,8 @@ pub extern "C" fn render_block(stream_ptr: *mut c_void) -> C_Buffer {
 		outsample[1] = convert_sample_wav(audiobuf[1][i]);
 	}
 
-	// @todo: replace this by into_raw_parts() when it is in stable
-	let ptr = caudiobuf.as_mut_ptr();
-	let len = caudiobuf.len();
-	let cap = caudiobuf.capacity();
-	// don't drop it
-	std::mem::forget(caudiobuf);
+	#[allow(unstable_name_collisions)]
+	let (ptr, len, cap) = caudiobuf.into_raw_parts();
 
 	// build struct that has all the necessary information to call Vec::from_raw_parts
 	C_Buffer { ptr, len, cap }
