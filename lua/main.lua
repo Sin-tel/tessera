@@ -49,7 +49,7 @@ local function audioSetup()
 	-- for i = 1, 150 do
 	-- 	local n = channelHandler:add("sine")
 	-- 	n.parameters[2]:setNormalized(math.random())
-	-- 	audiolib.send_noteOn(n.index, {math.random()*36+36, 0.5})
+	-- 	audiolib.send_note_on(n.index, {math.random()*36+36, 0.5})
 	-- end
 end
 

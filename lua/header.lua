@@ -49,11 +49,11 @@ bool rx_is_empty(void *stream_ptr);
 
 struct LuaMessage rx_pop(void *stream_ptr);
 
-void send_CV(void *stream_ptr, size_t ch, float pitch, float vel);
+void send_cv(void *stream_ptr, size_t ch, float pitch, float vel);
 
 void send_mute(void *stream_ptr, size_t ch, bool mute);
 
-void send_noteOn(void *stream_ptr, size_t ch, float pitch, float vel, size_t id);
+void send_note_on(void *stream_ptr, size_t ch, float pitch, float vel, size_t id);
 
 void send_pan(void *stream_ptr, size_t ch, float gain, float pan);
 

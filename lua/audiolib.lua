@@ -54,15 +54,15 @@ function audiolib.quit()
 	end
 end
 
-function audiolib.send_CV(index, pitch, vel)
+function audiolib.send_cv(index, pitch, vel)
 	if stream_handle then
-		lib.send_CV(stream_handle, index, pitch, vel)
+		lib.send_cv(stream_handle, index, pitch, vel)
 	end
 end
 
-function audiolib.send_noteOn(index, pitch, vel)
+function audiolib.send_note_on(index, pitch, vel)
 	if stream_handle then
-		lib.send_noteOn(stream_handle, index, pitch, vel, 0) -- id will be used for polyphony
+		lib.send_note_on(stream_handle, index, pitch, vel, 0) -- id will be used for polyphony
 	end
 end
 

@@ -49,14 +49,20 @@ pub extern "C" fn stream_free(stream_ptr: *mut c_void) {
 }
 
 #[no_mangle]
-pub extern "C" fn send_CV(stream_ptr: *mut c_void, ch: usize, pitch: f32, vel: f32) {
+pub extern "C" fn send_cv(stream_ptr: *mut c_void, ch: usize, pitch: f32, vel: f32) {
 	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
 
 	send_message(ud, AudioMessage::CV(ch, pitch, vel));
 }
 
 #[no_mangle]
-pub extern "C" fn send_noteOn(stream_ptr: *mut c_void, ch: usize, pitch: f32, vel: f32, id: usize) {
+pub extern "C" fn send_note_on(
+	stream_ptr: *mut c_void,
+	ch: usize,
+	pitch: f32,
+	vel: f32,
+	id: usize,
+) {
 	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
 
 	send_message(ud, AudioMessage::Note(ch, pitch, vel, id));
@@ -201,14 +207,10 @@ pub extern "C" fn get_spectrum(stream_ptr: *mut c_void) -> C_Buffer {
 	// Process scope
 	ud.scope.update();
 
-	let mut spectrum = ud.scope.get_spectrum();
+	let spectrum = ud.scope.get_spectrum();
 
-	// @todo: replace this by into_raw_parts() when it is in stable
-	let ptr = spectrum.as_mut_ptr();
-	let len = spectrum.len();
-	let cap = spectrum.capacity();
-	// don't drop it
-	std::mem::forget(spectrum);
+	#[allow(unstable_name_collisions)]
+	let (ptr, len, cap) = spectrum.into_raw_parts();
 
 	// build struct that has all the necessary information to call Vec::from_raw_parts
 	C_Buffer { ptr, len, cap }
