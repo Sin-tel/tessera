@@ -120,7 +120,6 @@ where
 				Ok(mut render) if !paused => {
 					if !start {
 						start = true;
-						fix_denorms();
 
 						println!("Buffer size: {:?}", buf_size);
 					}
@@ -244,20 +243,4 @@ fn find_output_device(
 
 fn err_fn(err: cpal::StreamError) {
 	eprintln!("an error occurred on stream: {}", err);
-}
-
-pub fn fix_denorms() {
-	unsafe {
-		use std::arch::x86_64::{_mm_getcsr, _mm_setcsr};
-
-		let mut mxcsr = _mm_getcsr();
-
-		// Denormals & underflows are flushed to zero
-		mxcsr |= (1 << 15) | (1 << 6);
-
-		// All exceptions are masked
-		mxcsr |= ((1 << 6) - 1) << 7;
-
-		_mm_setcsr(mxcsr);
-	}
 }

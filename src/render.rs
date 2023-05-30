@@ -6,6 +6,7 @@ use crate::dsp::env::SmoothedEnv;
 use crate::dsp::softclip;
 use crate::effect::*;
 use crate::instrument::*;
+use crate::no_denormals::no_denormals;
 use crate::pan::*;
 
 pub struct Channel {
@@ -74,67 +75,69 @@ impl Render {
 	}
 
 	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
-		let [mut l, mut r] = self.buffer2;
-		let len = buffer[0].len();
-		let buf_slice = &mut [&mut l[..len], &mut r[..len]];
+		no_denormals(|| {
+			let [mut l, mut r] = self.buffer2;
+			let len = buffer[0].len();
+			let buf_slice = &mut [&mut l[..len], &mut r[..len]];
 
-		// Zero buffer
-		for sample in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
-			*sample = 0.0;
-		}
+			// Zero buffer
+			for sample in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
+				*sample = 0.0;
+			}
 
-		// Process all channels
-		for ch in &mut self.channels {
-			if !ch.mute {
-				ch.instrument.process(buf_slice);
+			// Process all channels
+			for ch in &mut self.channels {
+				if !ch.mute {
+					ch.instrument.process(buf_slice);
 
-				for fx in ch.effects.iter_mut() {
-					fx.process(buf_slice);
-				}
+					for fx in ch.effects.iter_mut() {
+						fx.process(buf_slice);
+					}
 
-				ch.pan.process(buf_slice);
+					ch.pan.process(buf_slice);
 
-				for (outsample, insample) in buffer
-					.iter_mut()
-					.flat_map(|s| s.iter_mut())
-					.zip(buf_slice.iter().flat_map(|s| s.iter()))
-				{
-					*outsample += insample;
+					for (outsample, insample) in buffer
+						.iter_mut()
+						.flat_map(|s| s.iter_mut())
+						.zip(buf_slice.iter().flat_map(|s| s.iter()))
+					{
+						*outsample += insample;
+					}
 				}
 			}
-		}
 
-		// Send everything to scope before clipping.
-		// For now, we only send the left channel.
-		for s in buffer[0].iter() {
-			self.scope_tx.push(*s).ok(); // Don't really care if its full
-		}
+			// Send everything to scope before clipping.
+			// For now, we only send the left channel.
+			for s in buffer[0].iter() {
+				self.scope_tx.push(*s).ok(); // Don't really care if its full
+			}
 
-		// Calculate peak
-		let mut sum = [0.0; 2];
-		for (i, track) in buffer.iter().enumerate() {
-			sum[i] = track
-				.iter()
-				.map(|x| x.abs())
-				.fold(std::f32::MIN, |a, b| a.max(b));
-		}
+			// Calculate peak
+			let mut sum = [0.0; 2];
+			for (i, track) in buffer.iter().enumerate() {
+				sum[i] = track
+					.iter()
+					.map(|x| x.abs())
+					.fold(std::f32::MIN, |a, b| a.max(b));
+			}
 
-		self.peakl.set(sum[0]);
-		self.peakr.set(sum[1]);
-		self.peakl.update();
-		self.peakr.update();
-		self.send(LuaMessage::Meter(self.peakl.get(), self.peakr.get()));
+			self.peakl.set(sum[0]);
+			self.peakr.set(sum[1]);
+			self.peakl.update();
+			self.peakr.update();
+			self.send(LuaMessage::Meter(self.peakl.get(), self.peakr.get()));
 
-		// Add 6dB headroom and some tanh-like softclip
-		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
-			*s = softclip(*s * 0.50);
-			// *s *= 0.50;
-		}
+			// Add 6dB headroom and some tanh-like softclip
+			for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
+				*s = softclip(*s * 0.50);
+				// *s *= 0.50;
+			}
 
-		// clipping isn't strictly necessary but we'll do it anyway
-		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
-			*s = s.clamp(-1.0, 1.0);
-		}
+			// clipping isn't strictly necessary but we'll do it anyway
+			for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
+				*s = s.clamp(-1.0, 1.0);
+			}
+		})
 	}
 
 	pub fn parse_messages(&mut self) {

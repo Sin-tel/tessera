@@ -10,6 +10,7 @@ pub mod dsp;
 pub mod effect;
 pub mod ffi;
 pub mod instrument;
+pub mod no_denormals;
 pub mod pan;
 pub mod render;
 pub mod scope;
