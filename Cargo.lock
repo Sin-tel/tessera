@@ -82,6 +82,7 @@ dependencies = [
  "bit_mask_ring_buf",
  "cpal",
  "fastrand",
+ "no_denormals",
  "realfft",
  "ringbuf",
  "rustfft",
@@ -539,6 +540,11 @@ dependencies = [
  "cfg-if",
  "libc",
 ]
+
+[[package]]
+name = "no_denormals"
+version = "0.1.0"
+source = "git+https://github.com/Sin-tel/no_denormals.git#fb4a2dfe0f90ec8ca54d026f920b7461a253e9de"
 
 [[package]]
 name = "nom"

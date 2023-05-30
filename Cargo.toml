@@ -20,6 +20,7 @@ bit_mask_ring_buf = "0.5"
 bencher = "0.1"
 rustfft = "6.0"
 realfft = "3.0"
+no_denormals = { git = "https://github.com/Sin-tel/no_denormals.git" }
 
 [profile.dev]
 opt-level = 1

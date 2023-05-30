@@ -1,3 +1,4 @@
+use no_denormals::no_denormals;
 use ringbuf::{Consumer, Producer};
 
 use crate::defs::*;
@@ -6,7 +7,6 @@ use crate::dsp::env::SmoothedEnv;
 use crate::dsp::softclip;
 use crate::effect::*;
 use crate::instrument::*;
-use crate::no_denormals::no_denormals;
 use crate::pan::*;
 
 pub struct Channel {
