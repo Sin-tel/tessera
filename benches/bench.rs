@@ -5,6 +5,7 @@ use bencher::Bencher;
 
 use audiolib::dsp::delayline::*;
 use audiolib::dsp::*;
+use fastrand::Rng;
 
 const ITERATIONS: u32 = 1000;
 const SAMPLE_RATE: f32 = 44100.0;
@@ -48,8 +49,13 @@ fn pow2_std_bench(bench: &mut Bencher) {
 	run(bench, |b| 2.0_f32.powf(b))
 }
 
-fn pow2_fast_bench(bench: &mut Bencher) {
-	run(bench, |b| pow2_fast(b))
+// fn pow2_fast_bench(bench: &mut Bencher) {
+// 	run(bench, |b| pow2_fast(b))
+// }
+
+fn rand_bench(bench: &mut Bencher) {
+	let rng = fastrand::Rng::new();
+	run(bench, |_| rng.f32())
 }
 
 benchmark_group!(
@@ -62,6 +68,7 @@ benchmark_group!(
 	delay_go_back_linear_bench,
 	delay_go_back_cubic_bench,
 	pow2_std_bench,
-	pow2_fast_bench,
+	// pow2_fast_bench,
+	rand_bench,
 );
 benchmark_main!(benches);

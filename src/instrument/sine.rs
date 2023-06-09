@@ -5,6 +5,8 @@ use crate::instrument::*;
 // use fastrand::Rng;
 use std::iter::zip;
 
+// TODO: get rid of DC offset
+
 #[derive(Debug, Default)]
 pub struct Sine {
 	accum: f32,
