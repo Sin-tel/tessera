@@ -3,7 +3,7 @@ name = "rust_backend"
 version = "0.1.0"
 edition = "2021"
 [lib]
-path = "src/lib.rs"
+path = "rust/lib.rs"
 crate-type = ["lib","cdylib"]
 
 # ASIO requirements

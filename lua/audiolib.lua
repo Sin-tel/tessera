@@ -6,7 +6,6 @@ else
 end
 
 local lib = require("rust_backend")
-local stream_handle = nil
 
 local audiolib = {}
 
@@ -15,7 +14,7 @@ audiolib.paused = true
 audiolib.status = "wait"
 
 function audiolib.load(host, device)
-	if stream_handle == nil then
+	if audiolib.userdata == nil then
 		host = host or "default"
 		device = device or "default"
 

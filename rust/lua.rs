@@ -133,16 +133,16 @@ impl UserData for StreamUserData {
 		methods.add_method_mut("render_block", |_, ud, _: ()| {
 			let mut render = ud.m_render.lock().expect("Failed to get lock.");
 			let len = 64;
-			let audiobuf: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
-			let mut caudiobuf = vec![0.0f64; len * 2];
+			let buffer: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
+			let mut out_buffer = vec![0.0f64; len * 2];
 			render.parse_messages();
-			render.process(audiobuf);
+			render.process(buffer);
 			// interlace and convert to i16 as f64 (lua wants doubles anyway)
-			for (i, outsample) in caudiobuf.chunks_exact_mut(2).enumerate() {
-				outsample[0] = convert_sample_wav(audiobuf[0][i]);
-				outsample[1] = convert_sample_wav(audiobuf[1][i]);
+			for (i, outsample) in out_buffer.chunks_exact_mut(2).enumerate() {
+				outsample[0] = convert_sample_wav(buffer[0][i]);
+				outsample[1] = convert_sample_wav(buffer[1][i]);
 			}
-			Ok(caudiobuf)
+			Ok(out_buffer)
 		});
 
 		methods.add_method_mut("get_spectrum", |_, ud, _: ()| {
