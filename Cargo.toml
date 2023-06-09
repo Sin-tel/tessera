@@ -1,5 +1,5 @@
 [package]
-name = "audiolib"
+name = "rust_backend"
 version = "0.1.0"
 edition = "2021"
 [lib]
@@ -21,6 +21,7 @@ bencher = "0.1"
 rustfft = "6.0"
 realfft = "3.0"
 no_denormals = { git = "https://github.com/Sin-tel/no_denormals.git" }
+mlua = { version = "0.8", features = ["luajit", "module"] }
 
 [profile.dev]
 opt-level = 1

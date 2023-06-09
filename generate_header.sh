@@ -1,1 +1,0 @@
-cbindgen --output lua/header.lua

@@ -1,19 +1,38 @@
-use std::ffi::{c_void, CStr};
-use std::mem::ManuallyDrop;
-use std::os::raw::c_char;
-use std::ptr::null_mut;
-
-use std::sync::{Arc, Mutex};
-
-use ringbuf::{Consumer, Producer};
-
 use crate::audio;
 use crate::defs::*;
 use crate::render;
 use crate::scope::Scope;
+use mlua::prelude::*;
+use mlua::{UserData, UserDataMethods, Value};
+use ringbuf::{Consumer, Producer};
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::sync::{Arc, Mutex};
+
+impl<'lua> ToLua<'lua> for LuaMessage {
+	fn to_lua(self, lua: &'lua Lua) -> LuaResult<Value<'lua>> {
+		let table = Lua::create_table(lua)?;
+
+		use LuaMessage::*;
+
+		match self {
+			Cpu(cpu_load) => {
+				table.set("tag", "cpu")?;
+				table.set("cpu_load", cpu_load)?;
+			}
+			Meter(l, r) => {
+				table.set("tag", "meter")?;
+				table.set("l", l)?;
+				table.set("r", r)?;
+			}
+		}
+
+		Ok(Value::Table(table))
+	}
+}
 
 // big struct that lua side holds ptr to
-pub struct Userdata {
+pub struct StreamUserData {
 	pub stream: cpal::Stream,
 	pub audio_tx: Producer<AudioMessage>,
 	pub stream_tx: Producer<bool>,
@@ -22,114 +41,128 @@ pub struct Userdata {
 	pub scope: Scope,
 }
 
-/// # Safety
-///
-/// Make sure the arguments point to valid null-terminated c strings.
-#[no_mangle]
-pub unsafe extern "C" fn stream_new(
-	host_ptr: *const c_char,
-	device_ptr: *const c_char,
-) -> *mut c_void {
-	let host_name = CStr::from_ptr(host_ptr).to_str().unwrap();
-	let device_name = CStr::from_ptr(device_ptr).to_str().unwrap();
-
-	match audio::run(host_name, device_name) {
-		Ok(ud) => Box::into_raw(Box::new(ud)).cast::<c_void>(),
-		Err(_) => null_mut::<Userdata>().cast::<c_void>(),
+impl Drop for StreamUserData {
+	fn drop(&mut self) {
+		println!("Stream dropped")
 	}
 }
 
-#[no_mangle]
-pub extern "C" fn stream_free(stream_ptr: *mut c_void) {
-	unsafe {
-		let ud = Box::from_raw(stream_ptr.cast::<Userdata>());
-		drop(ud);
+fn stream_new(
+	_: &Lua,
+	(host_name, device_name): (String, String),
+) -> LuaResult<Option<Rc<RefCell<StreamUserData>>>> {
+	match audio::run(&host_name, &device_name) {
+		Ok(ud) => Ok(Some(Rc::new(RefCell::new(ud)))),
+		Err(e) => {
+			println!("{:}", e.to_string());
+			Ok(None)
+		}
 	}
-	println!("Cleaned up stream!");
 }
 
-#[no_mangle]
-pub extern "C" fn send_cv(stream_ptr: *mut c_void, ch: usize, pitch: f32, vel: f32) {
-	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
+impl UserData for StreamUserData {
+	// fn add_fields<'lua, F: UserDataFields<'lua, Self>>(fields: &mut F) {
+	// 	fields.add_field_method_get("paused", |_, this| Ok(this.paused));
+	// }
 
-	send_message(ud, AudioMessage::CV(ch, pitch, vel));
+	fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+		methods.add_method("test", |_, _, _: ()| {
+			println!("hello!");
+			Ok(())
+		});
+
+		methods.add_method_mut("send_cv", |_, ud, (ch, pitch, vel): (usize, f32, f32)| {
+			send_message(ud, AudioMessage::CV(ch, pitch, vel));
+			Ok(())
+		});
+
+		methods.add_method_mut(
+			"send_note_on",
+			|_, ud, (ch, pitch, vel, id): (usize, f32, f32, usize)| {
+				send_message(ud, AudioMessage::Note(ch, pitch, vel, id));
+				Ok(())
+			},
+		);
+
+		methods.add_method_mut("send_pan", |_, ud, (ch, gain, pan): (usize, f32, f32)| {
+			send_message(ud, AudioMessage::Pan(ch, gain, pan));
+			Ok(())
+		});
+
+		methods.add_method_mut("send_mute", |_, ud, (ch, mute): (usize, bool)| {
+			send_message(ud, AudioMessage::Mute(ch, mute));
+			Ok(())
+		});
+
+		methods.add_method_mut(
+			"send_param",
+			|_, ud, (ch_index, device_index, index, value): (usize, usize, usize, f32)| {
+				send_message(
+					ud,
+					AudioMessage::SetParam(ch_index, device_index, index, value),
+				);
+				Ok(())
+			},
+		);
+
+		methods.add_method_mut("play", |_, ud, _: ()| {
+			send_paused(ud, false);
+			Ok(())
+		});
+
+		methods.add_method_mut("pause", |_, ud, _: ()| {
+			send_paused(ud, true);
+			Ok(())
+		});
+
+		methods.add_method_mut("add_channel", |_, ud, instrument_number: usize| {
+			let mut render = ud.m_render.lock().expect("Failed to get lock.");
+			render.add_channel(instrument_number);
+			Ok(())
+		});
+
+		methods.add_method_mut(
+			"add_effect",
+			|_, ud, (channel_index, effect_number): (usize, usize)| {
+				let mut render = ud.m_render.lock().expect("Failed to get lock.");
+				render.add_effect(channel_index, effect_number);
+				Ok(())
+			},
+		);
+
+		methods.add_method_mut("render_block", |_, ud, _: ()| {
+			let mut render = ud.m_render.lock().expect("Failed to get lock.");
+			let len = 64;
+			let audiobuf: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
+			let mut caudiobuf = vec![0.0f64; len * 2];
+			render.parse_messages();
+			render.process(audiobuf);
+			// interlace and convert to i16 as f64 (lua wants doubles anyway)
+			for (i, outsample) in caudiobuf.chunks_exact_mut(2).enumerate() {
+				outsample[0] = convert_sample_wav(audiobuf[0][i]);
+				outsample[1] = convert_sample_wav(audiobuf[1][i]);
+			}
+			Ok(caudiobuf)
+		});
+
+		methods.add_method_mut("get_spectrum", |_, ud, _: ()| {
+			ud.scope.update();
+
+			let spectrum = ud.scope.get_spectrum();
+			Ok(spectrum)
+		});
+
+		methods.add_method_mut("rx_is_empty", |_, ud, _: ()| Ok(ud.lua_rx.is_empty()));
+
+		methods.add_method_mut("rx_pop", |_, ud, _: ()| Ok(ud.lua_rx.pop()));
+	}
 }
 
-#[no_mangle]
-pub extern "C" fn send_note_on(
-	stream_ptr: *mut c_void,
-	ch: usize,
-	pitch: f32,
-	vel: f32,
-	id: usize,
-) {
-	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
-
-	send_message(ud, AudioMessage::Note(ch, pitch, vel, id));
-}
-
-#[no_mangle]
-pub extern "C" fn send_pan(stream_ptr: *mut c_void, ch: usize, gain: f32, pan: f32) {
-	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
-
-	send_message(ud, AudioMessage::Pan(ch, gain, pan));
-}
-
-#[no_mangle]
-pub extern "C" fn send_mute(stream_ptr: *mut c_void, ch: usize, mute: bool) {
-	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
-
-	send_message(ud, AudioMessage::Mute(ch, mute));
-}
-
-#[no_mangle]
-pub extern "C" fn send_param(
-	stream_ptr: *mut c_void,
-	ch_index: usize,
-	device_index: usize,
-	index: usize,
-	value: f32,
-) {
-	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
-
-	send_message(
-		ud,
-		AudioMessage::SetParam(ch_index, device_index, index, value),
-	);
-}
-
-#[no_mangle]
-pub extern "C" fn play(stream_ptr: *mut c_void) {
-	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
-
-	send_paused(ud, false);
-}
-
-#[no_mangle]
-pub extern "C" fn pause(stream_ptr: *mut c_void) {
-	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
-
-	send_paused(ud, true);
-}
-
-#[no_mangle]
-pub extern "C" fn add_channel(stream_ptr: *mut c_void, instrument_number: usize) {
-	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
-
-	// Should never fail
-	let mut render = ud.m_render.lock().expect("Failed to get lock.");
-
-	render.add_channel(instrument_number);
-}
-
-#[no_mangle]
-pub extern "C" fn add_effect(stream_ptr: *mut c_void, channel_index: usize, effect_number: usize) {
-	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
-
-	// Should never fail
-	let mut render = ud.m_render.lock().expect("Failed to get lock.");
-
-	render.add_effect(channel_index, effect_number);
+#[mlua::lua_module]
+fn rust_backend(lua: &Lua) -> LuaResult<LuaTable> {
+	let exports = lua.create_table()?;
+	exports.set("stream_new", lua.create_function(stream_new)?)?;
+	Ok(exports)
 }
 
 #[inline]
@@ -149,103 +182,14 @@ fn convert_sample_wav(x: f32) -> f64 {
 	}
 }
 
-#[repr(C)]
-#[derive(Debug)]
-pub struct C_Buffer {
-	pub ptr: *mut f64,
-	pub len: usize,
-	pub cap: usize,
-}
-
-// https://doc.rust-lang.org/src/alloc/vec/mod.rs.html#823
-// @todo: remove this when it is stable
-trait IntoRawParts<T> {
-	fn into_raw_parts(self) -> (*mut T, usize, usize);
-}
-impl<T> IntoRawParts<T> for Vec<T> {
-	fn into_raw_parts(self) -> (*mut T, usize, usize) {
-		let mut me = ManuallyDrop::new(self);
-		(me.as_mut_ptr(), me.len(), me.capacity())
-	}
-}
-
-#[no_mangle]
-pub extern "C" fn render_block(stream_ptr: *mut c_void) -> C_Buffer {
-	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
-
-	// should never fail!
-	let mut render = ud.m_render.lock().expect("Failed to get lock.");
-
-	let len = 64;
-
-	// normal audio buffer
-	let audiobuf: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
-
-	// audiobuffer to send to lua side
-	let mut caudiobuf = vec![0.0f64; len * 2];
-
-	render.parse_messages();
-	render.process(audiobuf);
-
-	// interlace and convert to i16 as f64 (lua wants doubles anyway)
-	for (i, outsample) in caudiobuf.chunks_exact_mut(2).enumerate() {
-		outsample[0] = convert_sample_wav(audiobuf[0][i]);
-		outsample[1] = convert_sample_wav(audiobuf[1][i]);
-	}
-
-	#[allow(unstable_name_collisions)]
-	let (ptr, len, cap) = caudiobuf.into_raw_parts();
-
-	// build struct that has all the necessary information to call Vec::from_raw_parts
-	C_Buffer { ptr, len, cap }
-}
-
-#[no_mangle]
-pub extern "C" fn get_spectrum(stream_ptr: *mut c_void) -> C_Buffer {
-	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
-
-	// Process scope
-	ud.scope.update();
-
-	let spectrum = ud.scope.get_spectrum();
-
-	#[allow(unstable_name_collisions)]
-	let (ptr, len, cap) = spectrum.into_raw_parts();
-
-	// build struct that has all the necessary information to call Vec::from_raw_parts
-	C_Buffer { ptr, len, cap }
-}
-
-#[no_mangle]
-pub extern "C" fn block_free(block: C_Buffer) {
-	unsafe {
-		let cbuf = Vec::from_raw_parts(block.ptr, block.len, block.cap);
-		drop(cbuf);
-	}
-	// println!("Cleaned up block!");
-}
-
-fn send_message(ud: &mut Userdata, m: AudioMessage) {
+fn send_message(ud: &mut StreamUserData, m: AudioMessage) {
 	if ud.audio_tx.push(m).is_err() {
 		println!("Queue full. Dropped message!");
 	}
 }
 
-fn send_paused(ud: &mut Userdata, paused: bool) {
+fn send_paused(ud: &mut StreamUserData, paused: bool) {
 	if ud.stream_tx.push(paused).is_err() {
 		println!("Stream queue full. Dropped message!");
 	}
-}
-
-#[no_mangle]
-pub extern "C" fn rx_is_empty(stream_ptr: *mut c_void) -> bool {
-	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
-	ud.lua_rx.is_empty()
-}
-
-#[no_mangle]
-pub extern "C" fn rx_pop(stream_ptr: *mut c_void) -> LuaMessage {
-	let ud = unsafe { &mut *stream_ptr.cast::<Userdata>() };
-	// caller should make sure its not empty
-	ud.lua_rx.pop().unwrap()
 }

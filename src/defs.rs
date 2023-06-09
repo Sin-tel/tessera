@@ -17,7 +17,6 @@ pub enum AudioMessage {
 	//
 }
 
-#[repr(C)]
 #[derive(Debug)]
 pub enum LuaMessage {
 	Cpu(f32),

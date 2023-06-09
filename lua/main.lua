@@ -1,4 +1,4 @@
-release = false
+release = true
 local lurker = false
 
 io.stdout:setvbuf("no")
@@ -40,6 +40,8 @@ resources = {}
 local function audioSetup()
 	audiolib.load(settings.audio.default_host, settings.audio.default_device)
 
+	audiolib.userdata:test()
+
 	midilib.load(settings.midi.inputs)
 
 	channelHandler:load()
@@ -72,12 +74,8 @@ local function render_wav()
 			audiolib.play()
 			return
 		end
-		local s = block.ptr
-		local samples = {}
-		for i = 1, tonumber(block.len) do
-			samples[i] = s[i - 1]
-		end
-		wav.append(samples)
+
+		wav.append(block)
 
 		audiolib.parse_messages()
 	end

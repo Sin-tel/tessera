@@ -1,25 +1,16 @@
--- wrapper around rust ffi
--- respects GC bindings so theres no memory leaks
--- should also handle nullpointers gracefully
-
-local ffi = require("ffi")
-local cstring = require("lib/cstring")
-
-require("header")
-
 -- @todo fix path
-local lib_path = love.filesystem.getSource()
 if release then
-	lib_path = lib_path .. "/../target/release"
+	package.cpath = package.cpath .. ";../target/release/?.dll"
 else
-	lib_path = lib_path .. "/../target/debug"
+	package.cpath = package.cpath .. ";../target/debug/?.dll"
 end
 
-local lib = ffi.load(lib_path .. "/audiolib.dll")
+local lib = require("rust_backend")
 local stream_handle = nil
 
 local audiolib = {}
 
+audiolib.userdata = nil
 audiolib.paused = true
 audiolib.status = "wait"
 
@@ -28,15 +19,12 @@ function audiolib.load(host, device)
 		host = host or "default"
 		device = device or "default"
 
-		stream_handle = lib.stream_new(cstring(host), cstring(device))
+		audiolib.userdata = lib.stream_new(host, device)
 
-		-- check for null ptr
-		if stream_handle == nil then
+		if audiolib.userdata == nil then
 			print("Stream setup failed!")
-			stream_handle = nil -- actually set it to nil instead of Cdata<NULL>
 			return
 		else
-			stream_handle = ffi.gc(stream_handle, lib.stream_free)
 			audiolib.paused = false
 			audiolib.status = "running"
 		end
@@ -46,75 +34,74 @@ function audiolib.load(host, device)
 end
 
 function audiolib.quit()
-	if stream_handle then
-		stream_handle = nil
-		audiolib.status = "offline"
-		-- force garbage collection so the finalizer gets called immediately
+	if audiolib.userdata then
+		audiolib.userdata = nil
+		-- force GC to finalize the stream data
 		collectgarbage()
+		audiolib.status = "offline"
 	end
 end
 
 function audiolib.send_cv(index, pitch, vel)
-	if stream_handle then
-		lib.send_cv(stream_handle, index, pitch, vel)
+	if audiolib.userdata then
+		audiolib.userdata:send_cv(index, pitch, vel)
 	end
 end
 
 function audiolib.send_note_on(index, pitch, vel)
-	if stream_handle then
-		lib.send_note_on(stream_handle, index, pitch, vel, 0) -- id will be used for polyphony
+	if audiolib.userdata then
+		audiolib.userdata:send_note_on(index, pitch, vel, 0) -- id will be used for polyphony
 	end
 end
 
 function audiolib.send_pan(index, gain, pan)
-	if stream_handle then
-		lib.send_pan(stream_handle, index, gain, pan)
+	if audiolib.userdata then
+		audiolib.userdata:send_pan(index, gain, pan)
 	end
 end
 
 function audiolib.send_mute(index, mute)
-	if stream_handle then
-		lib.send_mute(stream_handle, index, mute)
+	if audiolib.userdata then
+		audiolib.userdata:send_mute(index, mute)
 	end
 end
 
 function audiolib.send_param(ch_index, device_index, index, value)
-	if stream_handle then
-		lib.send_param(stream_handle, ch_index, device_index, index, value)
+	if audiolib.userdata then
+		audiolib.userdata:send_param(ch_index, device_index, index, value)
 	end
 end
 
 function audiolib.play()
-	if stream_handle then
-		lib.play(stream_handle)
+	if audiolib.userdata then
+		audiolib.userdata:play()
 		audiolib.paused = false
 	end
 end
 
 function audiolib.pause()
-	if stream_handle then
-		lib.pause(stream_handle)
+	if audiolib.userdata then
+		audiolib.userdata:pause()
 		audiolib.paused = true
 	end
 end
 
 function audiolib.add_channel(instrument_number)
-	if stream_handle then
-		lib.add_channel(stream_handle, instrument_number)
+	if audiolib.userdata then
+		audiolib.userdata:add_channel(instrument_number)
 	end
 end
 
 function audiolib.add_effect(channel_index, effect_number)
-	if stream_handle then
-		lib.add_effect(stream_handle, channel_index, effect_number)
+	if audiolib.userdata then
+		audiolib.userdata:add_effect(channel_index, effect_number)
 	end
 end
 
 function audiolib.render_block()
 	if audiolib.paused then
-		if stream_handle then
-			local block = lib.render_block(stream_handle)
-			ffi.gc(block, lib.block_free)
+		if audiolib.userdata then
+			local block = audiolib.userdata:render_block()
 
 			return block
 		end
@@ -124,36 +111,22 @@ function audiolib.render_block()
 end
 
 function audiolib.get_spectrum()
-	if stream_handle then
-		local block = lib.get_spectrum(stream_handle)
-		ffi.gc(block, lib.block_free)
+	if audiolib.userdata then
+		local block = audiolib.userdata:get_spectrum()
 
-		-- Check for null ptr
-		if block == nil or tonumber(block.len) == 0 then
-			-- print("Failed to get spectrum!")
-			return
-		end
-
-		-- Copy the block so we dont keep rust vecs around
-		local s = block.ptr
-		local spectrum = {}
-		for i = 1, tonumber(block.len) do
-			spectrum[i] = s[i - 1]
-		end
-
-		return spectrum
+		return block
 	end
 end
 
 function audiolib.parse_messages()
-	if stream_handle then
-		while not lib.rx_is_empty(stream_handle) do
-			local p = lib.rx_pop(stream_handle)
-			if p.tag == "Cpu" then
-				workspace.cpu_load = p.cpu
-			elseif p.tag == "Meter" then
-				workspace.meter.l = util.to_dB(p.meter._0)
-				workspace.meter.r = util.to_dB(p.meter._1)
+	if audiolib.userdata then
+		while not audiolib.userdata:rx_is_empty() do
+			local p = audiolib.userdata:rx_pop()
+			if p.tag == "cpu" then
+				workspace.cpu_load = p.cpu_load
+			elseif p.tag == "meter" then
+				workspace.meter.l = util.to_dB(p.l)
+				workspace.meter.r = util.to_dB(p.r)
 			end
 		end
 	end
