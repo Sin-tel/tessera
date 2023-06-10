@@ -44,25 +44,27 @@ function pannerView:draw()
 			-- love.graphics.print(string.format("%0.5f", from_dB(nd)), mx, my-24)
 		end
 
-		for _, v in ipairs(channelHandler.list) do
-			local gain = v.parameters[1].v
-			local pan = v.parameters[2].v
+		for _, ch in ipairs(channelHandler.list) do
+			for _, fx in ipairs(ch.effects) do
+				local gain = fx.parameters[1].v
+				local pan = fx.parameters[2].v
 
-			local dist = 1.0 - math.exp(util.to_dB(gain) / 17.31234)
-			dist = dist * (radius - radius2) + radius2
+				local dist = 1.0 - math.exp(util.to_dB(gain) / 17.31234)
+				dist = dist * (radius - radius2) + radius2
 
-			-- local a = 2*math.asin(pan) / math.pi
-			local angle = pan
-			angle = 0.5 * ((angle - 1) * math.pi)
+				-- local a = 2*math.asin(pan) / math.pi
+				local angle = pan
+				angle = 0.5 * ((angle - 1) * math.pi)
 
-			local x = dist * math.cos(angle) + cx
-			local y = dist * math.sin(angle) + cy
+				local x = dist * math.cos(angle) + cx
+				local y = dist * math.sin(angle) + cy
 
-			if v == selection.channel then
-				love.graphics.ellipse("fill", x, y, 6)
+				if ch == selection.channel then
+					love.graphics.ellipse("fill", x, y, 6)
+				end
+
+				love.graphics.ellipse("line", x, y, 6)
 			end
-
-			love.graphics.ellipse("line", x, y, 6)
 		end
 	end
 end

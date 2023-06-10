@@ -70,9 +70,9 @@ impl UserData for LuaData {
 
 		methods.add_method_mut(
 			"send_note_on",
-			|_, data, (ch, pitch, vel, id): (usize, f32, f32, usize)| {
+			|_, data, (ch, pitch, vel, id): (usize, f32, f32, Option<usize>)| {
 				if let LuaData(Some(ud)) = data {
-					ud.send_message(AudioMessage::Note(ch, pitch, vel, id));
+					ud.send_message(AudioMessage::Note(ch, pitch, vel, id.unwrap_or(0)));
 				}
 				Ok(())
 			},

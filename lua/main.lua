@@ -82,9 +82,10 @@ local function parse_messages()
 end
 
 local function render_wav()
-	--TODO: make this into a coroutine so we can yield from it
+	--TODO: run this on a new thread in rust?
 
 	mouse:setCursor("wait")
+	mouse:updateCursor()
 
 	backend:set_paused(true)
 
@@ -150,9 +151,13 @@ function love.load()
 	workspace:load()
 	workspace.box:split(0.7, true)
 
-	workspace.box.children[1]:split(0.7, false)
-	workspace.box.children[1].children[1]:setView(views.scope:new())
+	workspace.box.children[1]:split(0.8, false)
+	workspace.box.children[1].children[1]:split(0.2, false)
+
 	workspace.box.children[1].children[2]:setView(views.testpad:new())
+
+	workspace.box.children[1].children[1].children[2]:setView(views.song:new())
+	workspace.box.children[1].children[1].children[1]:setView(views.scope:new())
 
 	workspace.box.children[2]:split(0.5, false)
 	workspace.box.children[2].children[1]:setView(views.channel:new())

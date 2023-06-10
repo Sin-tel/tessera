@@ -274,8 +274,10 @@ function Box:resize(x, y, w, h)
 end
 
 function Box:setView(view)
-	self.view = view
-	view.box = self
+	if not self.children then
+		self.view = view
+		view.box = self
+	end
 end
 
 function workspace:load()

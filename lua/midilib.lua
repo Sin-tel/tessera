@@ -10,9 +10,9 @@ local M = {}
 local devices = {}
 
 function M.load(devicelist)
-	-- local device_handle = rtmidi.createIn()
-	-- print("available midi input ports:")
-	-- rtmidi.printPorts(device_handle)
+	local device_handle = rtmidi.createIn()
+	print("available midi input ports:")
+	rtmidi.printPorts(device_handle)
 
 	for _, v in ipairs(devicelist) do
 		M.openDevice(v)
@@ -127,7 +127,7 @@ function M.handleEvent(device, event)
 		table.insert(device.voices, event.note)
 		device.note = event.note
 		device.vel = event.vel
-		backend:send_note_on(0, device.note + device.offset, device.vel)
+		backend:send_note_on(0, device.note + device.offset, device.vel, 0)
 	elseif event.name == "note off" then
 		local get_i
 		for i, v in ipairs(device.voices) do

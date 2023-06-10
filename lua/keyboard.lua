@@ -14,7 +14,7 @@ function keyboard:keypressed(key, _)
 			local p = Pitch:newFromDiatonic(i)
 
 			if ch then
-				backend:send_note_on(ch.index, p.pitch, 0.5, 0)
+				backend:send_note_on(ch.index, p.pitch, 0.5)
 			end
 
 			handled = true

@@ -40,6 +40,7 @@ function View:drawFull()
 	love.graphics.setColor(theme.ui_text)
 	util.drawText(self.name, 0, 0, w, ui.HEADER, "left")
 end
+
 function View:mousepressed() end
 function View:mousereleased() end
 function View:update() end
