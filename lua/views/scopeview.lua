@@ -1,5 +1,5 @@
 local View = require("view")
-local audiolib = require("audiolib")
+local backend = require("backend")
 
 local scopeView = View:derive("Scope")
 
@@ -7,10 +7,9 @@ scopeView.spectrum = { 0 }
 
 function scopeView:draw()
 	local w, h = self:getDimensions()
-	local mx, my = self:getMouse()
 
 	-- @todo make sure this only gets called once
-	local spec = audiolib.get_spectrum()
+	local spec = backend:get_spectrum()
 	if spec then
 		self.spectrum = spec
 	end

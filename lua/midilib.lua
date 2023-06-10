@@ -1,4 +1,4 @@
-local audiolib = require("audiolib")
+local backend = require("backend")
 local rtmidi = require("./lib/rtmidi_ffi")
 local bit = require("bit")
 
@@ -127,7 +127,7 @@ function M.handleEvent(device, event)
 		table.insert(device.voices, event.note)
 		device.note = event.note
 		device.vel = event.vel
-		audiolib.send_note_on(0, device.note + device.offset, device.vel)
+		backend:send_note_on(0, device.note + device.offset, device.vel)
 	elseif event.name == "note off" then
 		local get_i
 		for i, v in ipairs(device.voices) do
@@ -137,22 +137,22 @@ function M.handleEvent(device, event)
 			end
 		end
 		if device.note and #device.voices == 1 then
-			audiolib.send_cv(0, device.note + device.offset, 0)
+			backend:send_cv(0, device.note + device.offset, 0)
 			device.note = nil
 		elseif get_i == #device.voices then
 			device.note = device.voices[get_i - 1]
-			audiolib.send_note_on(0, device.note + device.offset, device.vel)
+			backend:send_note_on(0, device.note + device.offset, device.vel)
 		end
 		table.remove(device.voices, get_i)
 	elseif event.name == "pressure" then
 		device.vel = event.vel
 		if device.note then
-			audiolib.send_cv(0, device.note + device.offset, device.vel)
+			backend:send_cv(0, device.note + device.offset, device.vel)
 		end
 	elseif event.name == "pitchbend" then
 		device.offset = device.pitchbend * event.offset
 		if device.note then
-			audiolib.send_cv(0, device.note + device.offset, device.vel)
+			backend:send_cv(0, device.note + device.offset, device.vel)
 		end
 	else
 		-- print(event.name)

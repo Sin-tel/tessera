@@ -11,11 +11,11 @@ static A: AllocDisabler = AllocDisabler;
 
 use crate::defs::*;
 use crate::dsp::env::SmoothedEnv;
-use crate::ffi::StreamUserData;
+use crate::lua::AudioContext;
 use crate::render::Render;
 use crate::scope::Scope;
 
-pub fn run(host_name: &str, output_device_name: &str) -> Result<StreamUserData, Box<dyn Error>> {
+pub fn run(host_name: &str, output_device_name: &str) -> Result<AudioContext, Box<dyn Error>> {
 	let output_device = find_output_device(host_name, output_device_name)?;
 
 	let config = output_device.default_output_config()?;
@@ -53,7 +53,7 @@ pub fn run(host_name: &str, output_device_name: &str) -> Result<StreamUserData, 
 pub fn build_stream<T>(
 	device: &cpal::Device,
 	config: &cpal::StreamConfig,
-) -> Result<StreamUserData, Box<dyn Error>>
+) -> Result<AudioContext, Box<dyn Error>>
 where
 	T: 'static + cpal::SizedSample + cpal::FromSample<f32>,
 {
@@ -80,13 +80,14 @@ where
 
 	let stream = device.build_output_stream(config, audio_closure, err_fn, None)?;
 
-	Ok(StreamUserData {
+	Ok(AudioContext {
 		stream,
 		audio_tx,
 		stream_tx,
 		lua_rx,
 		m_render,
 		scope,
+		paused: false,
 	})
 }
 

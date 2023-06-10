@@ -3,15 +3,15 @@ local lurker = false
 
 io.stdout:setvbuf("no")
 
-require("lib/errorhandler")
 require("lib/run")
+
 if not release then
 	require("lib/strict")
 end
 
 util = require("util")
 local settingsHandler = require("settings_handler")
-local audiolib = require("audiolib")
+local backend = require("backend")
 local wav = require("lib/wav_save")
 local midilib = require("midilib")
 local views = require("views")
@@ -35,12 +35,23 @@ selection = {}
 settings = {}
 resources = {}
 
+audio_status = "waiting"
+
 --- temp stuff, to delete ---
 
 local function audioSetup()
-	audiolib.load(settings.audio.default_host, settings.audio.default_device)
+	if not backend:running() then
+		backend:setup(settings.audio.default_host, settings.audio.default_device)
+	else
+		print("Audio already set up")
+	end
 
-	audiolib.userdata:test()
+	if backend:running() then
+		audio_status = "running"
+	else
+		print("Audio setup failed")
+		return
+	end
 
 	midilib.load(settings.midi.inputs)
 
@@ -48,11 +59,24 @@ local function audioSetup()
 	local ch = channelHandler:add("wavetable")
 	ch.armed = true
 	channelHandler:add_effect(ch, "gain")
+
 	-- for i = 1, 150 do
 	-- 	local n = channelHandler:add("sine")
 	-- 	n.parameters[2]:setNormalized(math.random())
-	-- 	audiolib.send_note_on(n.index, {math.random()*36+36, 0.5})
+	-- 	backend:send_note_on(n.index, {math.random()*36+36, 0.5})
 	-- end
+end
+
+local function parse_messages()
+	while not backend:rx_is_empty() do
+		local p = backend:rx_pop()
+		if p.tag == "cpu" then
+			workspace.cpu_load = p.cpu_load
+		elseif p.tag == "meter" then
+			workspace.meter.l = util.to_dB(p.l)
+			workspace.meter.r = util.to_dB(p.r)
+		end
+	end
 end
 
 local function render_wav()
@@ -60,27 +84,27 @@ local function render_wav()
 
 	mouse:setCursor("wait")
 
-	audiolib.pause()
+	backend:set_paused(true)
 
 	-- sleep for a bit to make sure the audio thread is done
 	love.timer.sleep(0.01)
 
 	wav.open()
 	for _ = 1, 5000 do
-		local block = audiolib.render_block()
+		local block = backend:render_block()
 		if not block then
 			print("failed to get block. try again")
 			wav.close()
-			audiolib.play()
+			backend:play()
 			return
 		end
 
 		wav.append(block)
 
-		audiolib.parse_messages()
+		parse_messages()
 	end
 	wav.close()
-	audiolib.play()
+	backend:set_paused(false)
 
 	mouse:setCursor("default")
 end
@@ -137,19 +161,18 @@ function love.update(dt)
 	time = time + dt
 
 	midilib.update()
-	if audiolib.status == "running" then
-		audiolib.parse_messages()
-
+	if backend:running() then
+		parse_messages()
 		channelHandler:update()
 	end
 end
 
 function love.draw()
 	--- update ---
-	if audiolib.status == "request" then
+	if audio_status == "request" then
 		audioSetup()
-	elseif audiolib.status == "wait" then
-		audiolib.status = "request"
+	elseif audio_status == "waiting" then
+		audio_status = "request"
 	end
 	if not release and lurker then
 		lurker.update()
@@ -203,18 +226,15 @@ function love.keypressed(key, isrepeat)
 	if key == "escape" then
 		love.event.quit()
 	elseif key == "k" then
-		if audiolib.status == "running" then
+		if backend:running() then
 			midilib.quit()
-			audiolib.quit()
-		elseif audiolib.status == "offline" then
-			audiolib.status = "request"
+			backend:quit()
+		else
+			audio_status = "request"
 		end
 	elseif key == "b" then
-		if audiolib.paused then
-			audiolib.play()
-		else
-			audiolib.pause()
-		end
+		print(backend:paused())
+		backend:set_paused(not backend:paused())
 	elseif key == "s" then
 		render_wav()
 	elseif key == "a" then
@@ -242,5 +262,5 @@ function love.quit()
 	-- settingsHandler.save(settings)
 
 	midilib.quit()
-	audiolib.quit()
+	backend:quit()
 end

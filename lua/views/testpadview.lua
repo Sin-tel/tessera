@@ -1,5 +1,5 @@
 local View = require("view")
-local audiolib = require("audiolib")
+local backend = require("backend")
 
 local testPadView = View:derive("TestPad")
 
@@ -56,22 +56,22 @@ function testPadView:draw()
 
 		self.v = 1.0 - myy
 
-		if mouse.button == 1 or mouse.button == 2 then
-			audiolib.send_cv(selection.channel.index, self.f, self.v)
+		if (mouse.button == 1 or mouse.button == 2) and selection.channel then
+			backend:send_cv(selection.channel.index, self.f, self.v)
 		end
 	end
 end
 
 function testPadView:mousepressed()
-	if mouse.button == 1 or mouse.button == 2 and selection.channel then
-		audiolib.send_note_on(selection.channel.index, self.f, self.v)
+	if (mouse.button == 1 or mouse.button == 2) and selection.channel then
+		backend:send_note_on(selection.channel.index, self.f, self.v, 0)
 		self.note = true
 	end
 end
 
 function testPadView:mousereleased()
 	if mouse.button == 1 and selection.channel then
-		audiolib.send_cv(selection.channel.index, self.f, 0)
+		backend:send_cv(selection.channel.index, self.f, 0)
 		self.note = false
 	end
 end

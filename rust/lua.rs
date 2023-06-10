@@ -9,159 +9,192 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
-impl<'lua> ToLua<'lua> for LuaMessage {
-	fn to_lua(self, lua: &'lua Lua) -> LuaResult<Value<'lua>> {
-		let table = Lua::create_table(lua)?;
+struct LuaData(Option<Rc<RefCell<AudioContext>>>);
 
-		use LuaMessage::*;
-
-		match self {
-			Cpu(cpu_load) => {
-				table.set("tag", "cpu")?;
-				table.set("cpu_load", cpu_load)?;
-			}
-			Meter(l, r) => {
-				table.set("tag", "meter")?;
-				table.set("l", l)?;
-				table.set("r", r)?;
-			}
-		}
-
-		Ok(Value::Table(table))
-	}
-}
-
-// big struct that lua side holds ptr to
-pub struct StreamUserData {
+pub struct AudioContext {
 	pub stream: cpal::Stream,
 	pub audio_tx: Producer<AudioMessage>,
 	pub stream_tx: Producer<bool>,
 	pub lua_rx: Consumer<LuaMessage>,
 	pub m_render: Arc<Mutex<render::Render>>,
 	pub scope: Scope,
+	pub paused: bool,
 }
 
-impl Drop for StreamUserData {
+impl Drop for AudioContext {
 	fn drop(&mut self) {
 		println!("Stream dropped")
 	}
 }
 
-fn stream_new(
-	_: &Lua,
-	(host_name, device_name): (String, String),
-) -> LuaResult<Option<Rc<RefCell<StreamUserData>>>> {
-	match audio::run(&host_name, &device_name) {
-		Ok(ud) => Ok(Some(Rc::new(RefCell::new(ud)))),
-		Err(e) => {
-			println!("{:}", e.to_string());
-			Ok(None)
-		}
-	}
+fn init(_: &Lua, _: ()) -> LuaResult<LuaData> {
+	println!("test");
+	Ok(LuaData(None))
 }
 
-impl UserData for StreamUserData {
-	// fn add_fields<'lua, F: UserDataFields<'lua, Self>>(fields: &mut F) {
-	// 	fields.add_field_method_get("paused", |_, this| Ok(this.paused));
-	// }
-
+impl UserData for LuaData {
 	fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
-		methods.add_method("test", |_, _, _: ()| {
-			println!("hello!");
+		methods.add_method_mut(
+			"setup",
+			|_, data, (host_name, device_name): (String, String)| match audio::run(
+				&host_name,
+				&device_name,
+			) {
+				Ok(ud) => {
+					*data = LuaData(Some(Rc::new(RefCell::new(ud))));
+					Ok(())
+				}
+				Err(e) => {
+					println!("{:}", e.to_string());
+					*data = LuaData(None);
+					Ok(())
+				}
+			},
+		);
+
+		methods.add_method_mut("quit", |_, data, _: ()| {
+			*data = LuaData(None);
 			Ok(())
 		});
 
-		methods.add_method_mut("send_cv", |_, ud, (ch, pitch, vel): (usize, f32, f32)| {
-			send_message(ud, AudioMessage::CV(ch, pitch, vel));
+		methods.add_method_mut("running", |_, LuaData(ud), _: ()| Ok(ud.is_some()));
+
+		methods.add_method_mut("send_cv", |_, data, (ch, pitch, vel): (usize, f32, f32)| {
+			if let LuaData(Some(ud)) = data {
+				send_message(&mut ud.borrow_mut(), AudioMessage::CV(ch, pitch, vel));
+			}
 			Ok(())
 		});
 
 		methods.add_method_mut(
 			"send_note_on",
-			|_, ud, (ch, pitch, vel, id): (usize, f32, f32, usize)| {
-				send_message(ud, AudioMessage::Note(ch, pitch, vel, id));
+			|_, data, (ch, pitch, vel, id): (usize, f32, f32, usize)| {
+				if let LuaData(Some(ud)) = data {
+					send_message(&mut ud.borrow_mut(), AudioMessage::Note(ch, pitch, vel, id));
+				}
 				Ok(())
 			},
 		);
 
-		methods.add_method_mut("send_pan", |_, ud, (ch, gain, pan): (usize, f32, f32)| {
-			send_message(ud, AudioMessage::Pan(ch, gain, pan));
+		methods.add_method_mut("send_pan", |_, data, (ch, gain, pan): (usize, f32, f32)| {
+			if let LuaData(Some(ud)) = data {
+				send_message(&mut ud.borrow_mut(), AudioMessage::Pan(ch, gain, pan));
+			}
 			Ok(())
 		});
 
-		methods.add_method_mut("send_mute", |_, ud, (ch, mute): (usize, bool)| {
-			send_message(ud, AudioMessage::Mute(ch, mute));
+		methods.add_method_mut("send_mute", |_, data, (ch, mute): (usize, bool)| {
+			if let LuaData(Some(ud)) = data {
+				send_message(&mut ud.borrow_mut(), AudioMessage::Mute(ch, mute));
+			}
 			Ok(())
 		});
 
 		methods.add_method_mut(
 			"send_param",
-			|_, ud, (ch_index, device_index, index, value): (usize, usize, usize, f32)| {
-				send_message(
-					ud,
-					AudioMessage::SetParam(ch_index, device_index, index, value),
-				);
+			|_, data, (ch_index, device_index, index, value): (usize, usize, usize, f32)| {
+				if let LuaData(Some(ud)) = data {
+					send_message(
+						&mut ud.borrow_mut(),
+						AudioMessage::SetParam(ch_index, device_index, index, value),
+					);
+				}
 				Ok(())
 			},
 		);
 
-		methods.add_method_mut("play", |_, ud, _: ()| {
-			send_paused(ud, false);
+		methods.add_method_mut("set_paused", |_, data, paused: bool| {
+			if let LuaData(Some(ud)) = data {
+				let ud_inner = &mut ud.borrow_mut();
+				ud_inner.paused = paused;
+				send_paused(ud_inner, paused);
+			}
 			Ok(())
 		});
 
-		methods.add_method_mut("pause", |_, ud, _: ()| {
-			send_paused(ud, true);
-			Ok(())
+		methods.add_method_mut("paused", |_, data, _: ()| {
+			if let LuaData(Some(ud)) = data {
+				Ok(ud.borrow().paused)
+			} else {
+				Ok(true)
+			}
 		});
 
-		methods.add_method_mut("add_channel", |_, ud, instrument_number: usize| {
-			let mut render = ud.m_render.lock().expect("Failed to get lock.");
-			render.add_channel(instrument_number);
+		methods.add_method_mut("add_channel", |_, data, instrument_number: usize| {
+			if let LuaData(Some(ud)) = data {
+				let ud_inner = &mut ud.borrow_mut();
+				let mut render = ud_inner.m_render.lock().expect("Failed to get lock.");
+				render.add_channel(instrument_number);
+			}
 			Ok(())
 		});
 
 		methods.add_method_mut(
 			"add_effect",
-			|_, ud, (channel_index, effect_number): (usize, usize)| {
-				let mut render = ud.m_render.lock().expect("Failed to get lock.");
-				render.add_effect(channel_index, effect_number);
+			|_, data, (channel_index, effect_number): (usize, usize)| {
+				if let LuaData(Some(ud)) = data {
+					let ud_inner = &mut ud.borrow_mut();
+					let mut render = ud_inner.m_render.lock().expect("Failed to get lock.");
+					render.add_effect(channel_index, effect_number);
+				}
 				Ok(())
 			},
 		);
 
-		methods.add_method_mut("render_block", |_, ud, _: ()| {
-			let mut render = ud.m_render.lock().expect("Failed to get lock.");
+		methods.add_method_mut("render_block", |_, data, _: ()| {
 			let len = 64;
 			let buffer: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
 			let mut out_buffer = vec![0.0f64; len * 2];
-			render.parse_messages();
-			render.process(buffer);
-			// interlace and convert to i16 as f64 (lua wants doubles anyway)
-			for (i, outsample) in out_buffer.chunks_exact_mut(2).enumerate() {
-				outsample[0] = convert_sample_wav(buffer[0][i]);
-				outsample[1] = convert_sample_wav(buffer[1][i]);
+
+			if let LuaData(Some(ud)) = data {
+				let ud_inner = &mut ud.borrow_mut();
+				let mut render = ud_inner.m_render.lock().expect("Failed to get lock.");
+
+				render.parse_messages();
+				render.process(buffer);
+				// interlace and convert to i16 as f64 (lua wants doubles anyway)
+				for (i, outsample) in out_buffer.chunks_exact_mut(2).enumerate() {
+					outsample[0] = convert_sample_wav(buffer[0][i]);
+					outsample[1] = convert_sample_wav(buffer[1][i]);
+				}
 			}
 			Ok(out_buffer)
 		});
 
-		methods.add_method_mut("get_spectrum", |_, ud, _: ()| {
-			ud.scope.update();
+		methods.add_method_mut("get_spectrum", |_, data, _: ()| {
+			if let LuaData(Some(ud)) = data {
+				let ud_inner = &mut ud.borrow_mut();
+				ud_inner.scope.update();
 
-			let spectrum = ud.scope.get_spectrum();
-			Ok(spectrum)
+				let spectrum = ud_inner.scope.get_spectrum();
+				Ok(Some(spectrum))
+			} else {
+				Ok(None)
+			}
 		});
 
-		methods.add_method_mut("rx_is_empty", |_, ud, _: ()| Ok(ud.lua_rx.is_empty()));
+		methods.add_method_mut("rx_is_empty", |_, data, _: ()| {
+			if let LuaData(Some(ud)) = data {
+				Ok(ud.borrow_mut().lua_rx.is_empty())
+			} else {
+				Ok(true)
+			}
+		});
 
-		methods.add_method_mut("rx_pop", |_, ud, _: ()| Ok(ud.lua_rx.pop()));
+		methods.add_method_mut("rx_pop", |_, data, _: ()| {
+			if let LuaData(Some(ud)) = data {
+				Ok(ud.borrow_mut().lua_rx.pop())
+			} else {
+				Ok(None)
+			}
+		});
 	}
 }
 
 #[mlua::lua_module]
 fn rust_backend(lua: &Lua) -> LuaResult<LuaTable> {
 	let exports = lua.create_table()?;
-	exports.set("stream_new", lua.create_function(stream_new)?)?;
+	exports.set("init", lua.create_function(init)?)?;
 	Ok(exports)
 }
 
@@ -182,14 +215,36 @@ fn convert_sample_wav(x: f32) -> f64 {
 	}
 }
 
-fn send_message(ud: &mut StreamUserData, m: AudioMessage) {
+fn send_message(ud: &mut AudioContext, m: AudioMessage) {
 	if ud.audio_tx.push(m).is_err() {
 		println!("Queue full. Dropped message!");
 	}
 }
 
-fn send_paused(ud: &mut StreamUserData, paused: bool) {
+fn send_paused(ud: &mut AudioContext, paused: bool) {
 	if ud.stream_tx.push(paused).is_err() {
 		println!("Stream queue full. Dropped message!");
+	}
+}
+
+impl<'lua> ToLua<'lua> for LuaMessage {
+	fn to_lua(self, lua: &'lua Lua) -> LuaResult<Value<'lua>> {
+		let table = Lua::create_table(lua)?;
+
+		use LuaMessage::*;
+
+		match self {
+			Cpu(cpu_load) => {
+				table.set("tag", "cpu")?;
+				table.set("cpu_load", cpu_load)?;
+			}
+			Meter(l, r) => {
+				table.set("tag", "meter")?;
+				table.set("l", l)?;
+				table.set("r", r)?;
+			}
+		}
+
+		Ok(Value::Table(table))
 	}
 }
