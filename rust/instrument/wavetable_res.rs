@@ -4,6 +4,7 @@ const WT_SIZE: usize = 1024;
 const WT_MASK: usize = 1023;
 const WT_NUM: usize = 16;
 #[rustfmt::skip] // Prevents rustfmt from hanging.
+#[allow(clippy::all)]
 const WAVETABLE: [f32; 16384] = [
 	-0.559514449018, -0.559493321591, -0.559429940442, -0.559324308972, 
 	-0.559176432847, -0.558986320000, -0.558753980629, -0.558479427197, 

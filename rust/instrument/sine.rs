@@ -73,7 +73,7 @@ impl Param for Sine {
 	fn set_param(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.feedback = value,
-			_ => eprintln!("Parameter with index {} not found", index),
+			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}
 }

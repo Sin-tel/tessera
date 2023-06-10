@@ -42,14 +42,14 @@ impl Scope {
 		let scale = 1.0 / (SPECTRUM_SIZE as f32).sqrt();
 		spectrum
 			.iter()
-			.map(|&e| (e.norm() * scale) as f64)
+			.map(|&e| f64::from(e.norm() * scale))
 			.collect()
 	}
 
 	pub fn get_oscilloscope(&self) -> Vec<f64> {
 		let (a, b) = self.buf.as_slices(self.pos);
 
-		[a, b].concat().iter().map(|&e| e as f64).collect()
+		[a, b].concat().iter().map(|&e| f64::from(e)).collect()
 	}
 
 	pub fn update(&mut self) {

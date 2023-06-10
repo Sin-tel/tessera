@@ -90,7 +90,7 @@ impl Render {
 				if !ch.mute {
 					ch.instrument.process(buf_slice);
 
-					for fx in ch.effects.iter_mut() {
+					for fx in &mut ch.effects {
 						fx.process(buf_slice);
 					}
 
@@ -115,10 +115,7 @@ impl Render {
 			// Calculate peak
 			let mut sum = [0.0; 2];
 			for (i, track) in buffer.iter().enumerate() {
-				sum[i] = track
-					.iter()
-					.map(|x| x.abs())
-					.fold(std::f32::MIN, |a, b| a.max(b));
+				sum[i] = track.iter().map(|x| x.abs()).fold(std::f32::MIN, f32::max);
 			}
 
 			self.peakl.set(sum[0]);
@@ -137,7 +134,7 @@ impl Render {
 			for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
 				*s = s.clamp(-1.0, 1.0);
 			}
-		})
+		});
 	}
 
 	pub fn parse_messages(&mut self) {

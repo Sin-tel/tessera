@@ -24,7 +24,7 @@ impl Param for Gain {
 	fn set_param(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.gain = value,
-			_ => eprintln!("Parameter with index {} not found", index),
+			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}
 }

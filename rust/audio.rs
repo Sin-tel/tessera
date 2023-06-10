@@ -26,8 +26,8 @@ pub fn run(host_name: &str, output_device_name: &str) -> Result<AudioContext, Bo
 	// config2.buffer_size = cpal::BufferSize::Default; // wasapi
 
 	// Build streams.
-	println!("{:?}", config);
-	println!("{:?}", config2);
+	println!("{config:?}");
+	println!("{config2:?}");
 
 	let userdata = match config.sample_format() {
 		cpal::SampleFormat::F64 => build_stream::<f64>(&output_device, &config2),
@@ -122,7 +122,7 @@ where
 					if !start {
 						start = true;
 
-						println!("Buffer size: {:?}", buf_size);
+						println!("Buffer size: {buf_size:?}");
 					}
 					let time = std::time::Instant::now();
 
@@ -176,7 +176,7 @@ fn find_output_device(
 	output_device_name: &str,
 ) -> Result<cpal::Device, Box<dyn Error>> {
 	let available_hosts = cpal::available_hosts();
-	println!("Available hosts:\n  {:?}", available_hosts);
+	println!("Available hosts:\n  {available_hosts:?}");
 
 	let mut host = None;
 	if host_name == "default" {
@@ -196,7 +196,7 @@ fn find_output_device(
 	let host = match host {
 		Some(h) => h,
 		None => {
-			println!("Couldn't find {}. Using default instead", host_name);
+			println!("Couldn't find {host_name}. Using default instead");
 			cpal::default_host()
 		}
 	};
@@ -228,10 +228,7 @@ fn find_output_device(
 	let output_device = match output_device {
 		Some(d) => d,
 		None => {
-			println!(
-				"Couldn't find {}. Using default instead",
-				output_device_name
-			);
+			println!("Couldn't find {output_device_name}. Using default instead");
 			host.default_output_device()
 				.expect("No default output device found.")
 		}
@@ -242,6 +239,7 @@ fn find_output_device(
 	Ok(output_device)
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn err_fn(err: cpal::StreamError) {
-	eprintln!("an error occurred on stream: {}", err);
+	eprintln!("an error occurred on stream: {err}");
 }

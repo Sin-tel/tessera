@@ -23,7 +23,7 @@ pub struct AudioContext {
 
 impl Drop for AudioContext {
 	fn drop(&mut self) {
-		println!("Stream dropped")
+		println!("Stream dropped");
 	}
 }
 
@@ -45,7 +45,7 @@ impl UserData for LuaData {
 					Ok(())
 				}
 				Err(e) => {
-					println!("{:}", e.to_string());
+					println!("{e}");
 					*data = LuaData(None);
 					Ok(())
 				}
@@ -57,16 +57,16 @@ impl UserData for LuaData {
 			Ok(())
 		});
 
-		methods.add_method_mut("running", |_, LuaData(ud), _: ()| Ok(ud.is_some()));
+		methods.add_method("running", |_, LuaData(ud), _: ()| Ok(ud.is_some()));
 
-		methods.add_method_mut("send_cv", |_, data, (ch, pitch, vel): (usize, f32, f32)| {
+		methods.add_method("send_cv", |_, data, (ch, pitch, vel): (usize, f32, f32)| {
 			if let LuaData(Some(ud)) = data {
 				send_message(&mut ud.borrow_mut(), AudioMessage::CV(ch, pitch, vel));
 			}
 			Ok(())
 		});
 
-		methods.add_method_mut(
+		methods.add_method(
 			"send_note_on",
 			|_, data, (ch, pitch, vel, id): (usize, f32, f32, usize)| {
 				if let LuaData(Some(ud)) = data {
@@ -76,21 +76,21 @@ impl UserData for LuaData {
 			},
 		);
 
-		methods.add_method_mut("send_pan", |_, data, (ch, gain, pan): (usize, f32, f32)| {
+		methods.add_method("send_pan", |_, data, (ch, gain, pan): (usize, f32, f32)| {
 			if let LuaData(Some(ud)) = data {
 				send_message(&mut ud.borrow_mut(), AudioMessage::Pan(ch, gain, pan));
 			}
 			Ok(())
 		});
 
-		methods.add_method_mut("send_mute", |_, data, (ch, mute): (usize, bool)| {
+		methods.add_method("send_mute", |_, data, (ch, mute): (usize, bool)| {
 			if let LuaData(Some(ud)) = data {
 				send_message(&mut ud.borrow_mut(), AudioMessage::Mute(ch, mute));
 			}
 			Ok(())
 		});
 
-		methods.add_method_mut(
+		methods.add_method(
 			"send_param",
 			|_, data, (ch_index, device_index, index, value): (usize, usize, usize, f32)| {
 				if let LuaData(Some(ud)) = data {
@@ -103,7 +103,7 @@ impl UserData for LuaData {
 			},
 		);
 
-		methods.add_method_mut("set_paused", |_, data, paused: bool| {
+		methods.add_method("set_paused", |_, data, paused: bool| {
 			if let LuaData(Some(ud)) = data {
 				let ud_inner = &mut ud.borrow_mut();
 				ud_inner.paused = paused;
@@ -112,7 +112,7 @@ impl UserData for LuaData {
 			Ok(())
 		});
 
-		methods.add_method_mut("paused", |_, data, _: ()| {
+		methods.add_method("paused", |_, data, _: ()| {
 			if let LuaData(Some(ud)) = data {
 				Ok(ud.borrow().paused)
 			} else {
@@ -120,7 +120,7 @@ impl UserData for LuaData {
 			}
 		});
 
-		methods.add_method_mut("add_channel", |_, data, instrument_number: usize| {
+		methods.add_method("add_channel", |_, data, instrument_number: usize| {
 			if let LuaData(Some(ud)) = data {
 				let ud_inner = &mut ud.borrow_mut();
 				let mut render = ud_inner.m_render.lock().expect("Failed to get lock.");
@@ -129,7 +129,7 @@ impl UserData for LuaData {
 			Ok(())
 		});
 
-		methods.add_method_mut(
+		methods.add_method(
 			"add_effect",
 			|_, data, (channel_index, effect_number): (usize, usize)| {
 				if let LuaData(Some(ud)) = data {
@@ -141,7 +141,7 @@ impl UserData for LuaData {
 			},
 		);
 
-		methods.add_method_mut("render_block", |_, data, _: ()| {
+		methods.add_method("render_block", |_, data, _: ()| {
 			let len = 64;
 			let buffer: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
 			let mut out_buffer = vec![0.0f64; len * 2];
@@ -161,7 +161,7 @@ impl UserData for LuaData {
 			Ok(out_buffer)
 		});
 
-		methods.add_method_mut("get_spectrum", |_, data, _: ()| {
+		methods.add_method("get_spectrum", |_, data, _: ()| {
 			if let LuaData(Some(ud)) = data {
 				let ud_inner = &mut ud.borrow_mut();
 				ud_inner.scope.update();
@@ -173,7 +173,7 @@ impl UserData for LuaData {
 			}
 		});
 
-		methods.add_method_mut("rx_is_empty", |_, data, _: ()| {
+		methods.add_method("rx_is_empty", |_, data, _: ()| {
 			if let LuaData(Some(ud)) = data {
 				Ok(ud.borrow_mut().lua_rx.is_empty())
 			} else {
@@ -181,7 +181,7 @@ impl UserData for LuaData {
 			}
 		});
 
-		methods.add_method_mut("rx_pop", |_, data, _: ()| {
+		methods.add_method("rx_pop", |_, data, _: ()| {
 			if let LuaData(Some(ud)) = data {
 				Ok(ud.borrow_mut().lua_rx.pop())
 			} else {
@@ -229,9 +229,9 @@ fn send_paused(ud: &mut AudioContext, paused: bool) {
 
 impl<'lua> ToLua<'lua> for LuaMessage {
 	fn to_lua(self, lua: &'lua Lua) -> LuaResult<Value<'lua>> {
-		let table = Lua::create_table(lua)?;
-
 		use LuaMessage::*;
+
+		let table = Lua::create_table(lua)?;
 
 		match self {
 			Cpu(cpu_load) => {

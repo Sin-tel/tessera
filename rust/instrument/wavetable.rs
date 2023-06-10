@@ -77,7 +77,7 @@ impl Wavetable {
 			.unwrap(); // only panics when passed incorrect buffer sizes
 
 		// normalize
-		for v in self.buffer_a.iter_mut() {
+		for v in &mut self.buffer_a {
 			*v /= WT_SIZE as f32;
 		}
 
@@ -180,7 +180,7 @@ impl Instrument for Wavetable {
 impl Param for Wavetable {
 	fn set_param(&mut self, index: usize, _value: f32) {
 		match index {
-			_ => eprintln!("Parameter with index {} not found", index),
+			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}
 }
