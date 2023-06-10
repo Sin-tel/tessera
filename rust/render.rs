@@ -1,5 +1,5 @@
 use no_denormals::no_denormals;
-use ringbuf::{Consumer, Producer};
+use ringbuf::{HeapConsumer, HeapProducer};
 
 use crate::defs::*;
 use crate::device::*;
@@ -15,9 +15,9 @@ pub struct Channel {
 }
 
 pub struct Render {
-	audio_rx: Consumer<AudioMessage>,
-	lua_tx: Producer<LuaMessage>,
-	scope_tx: Producer<f32>,
+	audio_rx: HeapConsumer<AudioMessage>,
+	lua_tx: HeapProducer<LuaMessage>,
+	scope_tx: HeapProducer<f32>,
 	channels: Vec<Channel>,
 	buffer2: [[f32; MAX_BUF_SIZE]; 2],
 	pub sample_rate: f32,
@@ -29,9 +29,9 @@ pub struct Render {
 impl Render {
 	pub fn new(
 		sample_rate: f32,
-		audio_rx: Consumer<AudioMessage>,
-		lua_tx: Producer<LuaMessage>,
-		scope_tx: Producer<f32>,
+		audio_rx: HeapConsumer<AudioMessage>,
+		lua_tx: HeapProducer<LuaMessage>,
+		scope_tx: HeapProducer<f32>,
 	) -> Render {
 		Render {
 			audio_rx,

@@ -2,7 +2,7 @@ use std::error::Error;
 use std::sync::{Arc, Mutex};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use ringbuf::{Consumer, RingBuffer};
+use ringbuf::{HeapConsumer, HeapRb};
 
 use assert_no_alloc::*;
 #[cfg(debug_assertions)] // required when disable_release is set (default)
@@ -57,13 +57,13 @@ pub fn build_stream<T>(
 where
 	T: 'static + cpal::SizedSample + cpal::FromSample<f32>,
 {
-	let (audio_tx, audio_rx) = RingBuffer::<AudioMessage>::new(256).split();
+	let (audio_tx, audio_rx) = HeapRb::<AudioMessage>::new(256).split();
 
-	let (stream_tx, stream_rx) = RingBuffer::<bool>::new(8).split();
+	let (stream_tx, stream_rx) = HeapRb::<bool>::new(8).split();
 
-	let (lua_tx, lua_rx) = RingBuffer::<LuaMessage>::new(256).split();
+	let (lua_tx, lua_rx) = HeapRb::<LuaMessage>::new(256).split();
 
-	let (scope_tx, scope_rx) = RingBuffer::<f32>::new(2048).split();
+	let (scope_tx, scope_rx) = HeapRb::<f32>::new(2048).split();
 	let scope = Scope::new(scope_rx);
 
 	let sample_rate = config.sample_rate.0 as f32;
@@ -92,7 +92,7 @@ where
 }
 
 fn build_closure<T>(
-	mut stream_rx: Consumer<bool>,
+	mut stream_rx: HeapConsumer<bool>,
 	m_render: Arc<Mutex<Render>>,
 ) -> impl FnMut(&mut [T], &cpal::OutputCallbackInfo)
 where
@@ -127,13 +127,10 @@ where
 					let time = std::time::Instant::now();
 
 					// parse all messages
-					stream_rx.pop_each(
-						|m| {
-							paused = m;
-							true
-						},
-						None,
-					);
+					for m in stream_rx.pop_iter() {
+						paused = m;
+					}
+
 					render.parse_messages();
 
 					render.process(buf_slice);
@@ -152,13 +149,10 @@ where
 				}
 				_ => {
 					// Output silence as a fallback when lock fails.
-					stream_rx.pop_each(
-						|m| {
-							paused = m;
-							true
-						},
-						None,
-					);
+
+					for m in stream_rx.pop_iter() {
+						paused = m;
+					}
 					// println!("Output silent");
 
 					for outsample in buffer.chunks_exact_mut(2) {

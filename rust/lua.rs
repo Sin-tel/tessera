@@ -4,16 +4,16 @@ use crate::render;
 use crate::scope::Scope;
 use mlua::prelude::*;
 use mlua::{UserData, UserDataMethods, Value};
-use ringbuf::{Consumer, Producer};
+use ringbuf::{HeapConsumer, HeapProducer};
 use std::sync::{Arc, Mutex};
 
 struct LuaData(Option<AudioContext>);
 
 pub struct AudioContext {
 	pub stream: cpal::Stream,
-	pub audio_tx: Producer<AudioMessage>,
-	pub stream_tx: Producer<bool>,
-	pub lua_rx: Consumer<LuaMessage>,
+	pub audio_tx: HeapProducer<AudioMessage>,
+	pub stream_tx: HeapProducer<bool>,
+	pub lua_rx: HeapConsumer<LuaMessage>,
 	pub m_render: Arc<Mutex<render::Render>>,
 	pub scope: Scope,
 	pub paused: bool,

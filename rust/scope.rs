@@ -1,18 +1,18 @@
 use crate::defs::*;
 use bit_mask_ring_buf::BMRingBuf;
 use realfft::{RealFftPlanner, RealToComplex};
-use ringbuf::Consumer;
+use ringbuf::HeapConsumer;
 use std::sync::Arc;
 
 pub struct Scope {
 	buf: BMRingBuf<f32>,
 	pos: isize,
 	r2c: Arc<dyn RealToComplex<f32>>,
-	rx: Consumer<f32>,
+	rx: HeapConsumer<f32>,
 }
 
 impl Scope {
-	pub fn new(rx: Consumer<f32>) -> Self {
+	pub fn new(rx: HeapConsumer<f32>) -> Self {
 		let mut real_planner = RealFftPlanner::<f32>::new();
 		let r2c = real_planner.plan_fft_forward(SPECTRUM_SIZE);
 
@@ -53,13 +53,9 @@ impl Scope {
 	}
 
 	pub fn update(&mut self) {
-		self.rx.pop_each(
-			|x| {
-				self.buf[self.pos] = x;
-				self.pos = self.buf.constrain(self.pos + 1);
-				true
-			},
-			None,
-		);
+		for sample in self.rx.pop_iter() {
+			self.buf[self.pos] = sample;
+			self.pos = self.buf.constrain(self.pos + 1);
+		}
 	}
 }
