@@ -28,3 +28,7 @@ stds.justidaw = {
 }
 
 max_cyclomatic_complexity = 15
+
+ignore = { "212" } -- unused function arg
+
+-- allow_defined_top = true

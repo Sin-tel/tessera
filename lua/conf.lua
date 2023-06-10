@@ -1,7 +1,7 @@
 function love.conf(t)
     t.window.title = "Justidaw"
     t.identity = "justidaw"
-    t.version = "11.3"
+    t.version = "11.4"
     -- t.window.icon = "res/icon.ico"
 
     t.gammacorrect = true

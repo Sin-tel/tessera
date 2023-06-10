@@ -32,7 +32,7 @@ impl Scope {
 
 		// Apply Hann window
 		for (i, v) in in_buffer.iter_mut().enumerate() {
-			*v *= 0.5 * (1.0 - ((TWO_PI * (i as f32)) / (SPECTRUM_SIZE as f32)).cos())
+			*v *= 0.5 * (1.0 - ((TWO_PI * (i as f32)) / (SPECTRUM_SIZE as f32)).cos());
 		}
 
 		// Forward fft

@@ -1,4 +1,4 @@
-release = true
+release = false
 local lurker = false
 
 io.stdout:setvbuf("no")
@@ -9,7 +9,6 @@ if not release then
 	require("lib/strict")
 end
 
-util = require("util")
 local settingsHandler = require("settings_handler")
 local backend = require("backend")
 local wav = require("lib/wav_save")

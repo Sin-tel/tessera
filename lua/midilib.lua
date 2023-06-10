@@ -1,3 +1,6 @@
+-- TODO: make this a nicer interface
+-- make some kind of "device" interface
+
 local backend = require("backend")
 local rtmidi = require("./lib/rtmidi_ffi")
 local bit = require("bit")
@@ -7,9 +10,10 @@ local M = {}
 local devices = {}
 
 function M.load(devicelist)
-	local device_handle = rtmidi.createIn()
-	print("available midi input ports:")
-	rtmidi.printPorts(device_handle)
+	-- local device_handle = rtmidi.createIn()
+	-- print("available midi input ports:")
+	-- rtmidi.printPorts(device_handle)
+
 	for _, v in ipairs(devicelist) do
 		M.openDevice(v)
 	end
@@ -93,20 +97,16 @@ function M.parse(msg, s)
 	event.channel = channel
 
 	if status == 9 and c > 0 then
-		-- note on
 		event.name = "note on"
 		event.note = b
 		event.vel = c / 127
 	elseif status == 8 or (status == 9 and c == 0) then
-		-- note off
 		event.name = "note off"
 		event.note = b
 	elseif status == 13 then
-		-- pressure
 		event.name = "pressure"
 		event.vel = b / 127
 	elseif status == 14 then
-		-- pitchbend
 		event.name = "pitchbend"
 		event.offset = (b + c * 128 - 8192) / 8192 -- [-1, 1]
 	elseif status == 11 then

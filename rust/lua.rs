@@ -28,7 +28,6 @@ impl Drop for AudioContext {
 }
 
 fn init(_: &Lua, _: ()) -> LuaResult<LuaData> {
-	println!("test");
 	Ok(LuaData(None))
 }
 
@@ -142,13 +141,14 @@ impl UserData for LuaData {
 		);
 
 		methods.add_method("render_block", |_, data, _: ()| {
-			let len = 64;
-			let buffer: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
-			let mut out_buffer = vec![0.0f64; len * 2];
-
 			if let LuaData(Some(ud)) = data {
+				let len = 64;
+				let buffer: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
+				let mut out_buffer = vec![0.0f64; len * 2];
+
 				let ud_inner = &mut ud.borrow_mut();
 				let mut render = ud_inner.m_render.lock().expect("Failed to get lock.");
+				// TODO: need to check here if the stream is *actually* paused
 
 				render.parse_messages();
 				render.process(buffer);
@@ -157,8 +157,10 @@ impl UserData for LuaData {
 					outsample[0] = convert_sample_wav(buffer[0][i]);
 					outsample[1] = convert_sample_wav(buffer[1][i]);
 				}
+				Ok(Some(out_buffer))
+			} else {
+				Ok(None)
 			}
-			Ok(out_buffer)
 		});
 
 		methods.add_method("get_spectrum", |_, data, _: ()| {
