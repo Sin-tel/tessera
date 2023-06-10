@@ -24,3 +24,17 @@ pub fn softclip_cubic(x: f32) -> f32 {
 	let s = x.clamp(-1.5, 1.5);
 	s * (1.0 - (4. / 27.) * s * s)
 }
+
+#[derive(Debug, Default)]
+pub struct DcKiller {
+	z: f32,
+}
+
+impl DcKiller {
+	pub fn process(&mut self, s: f32) -> f32 {
+		// 10Hz at 44.1kHz sample rate
+		self.z += (s - self.z) * 0.0014;
+
+		s - self.z
+	}
+}

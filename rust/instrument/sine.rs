@@ -15,6 +15,7 @@ pub struct Sine {
 	sample_rate: f32,
 	prev: f32,
 	pub feedback: f32,
+	dc_killer: DcKiller,
 	// rng: Rng,
 }
 
@@ -47,6 +48,7 @@ impl Instrument for Sine {
 			out *= self.vel.get();
 
 			self.prev = out;
+			out = self.dc_killer.process(out);
 
 			*l = out;
 			*r = out;

@@ -24,8 +24,8 @@ no_denormals = { git = "https://github.com/Sin-tel/no_denormals.git" }
 mlua = { version = "0.8", features = ["luajit", "module"] }
 
 [profile.dev]
-opt-level = 1
-overflow-checks = false
+# opt-level = 1
+# overflow-checks = false
 
 [profile.release]
 debug = 1 # for profiling
