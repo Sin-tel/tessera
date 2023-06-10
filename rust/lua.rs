@@ -156,23 +156,24 @@ impl UserData for LuaData {
 			}
 		});
 
+		methods.add_method("update_scope", |_, data, _: ()| {
+			if let LuaData(Some(ud)) = data {
+				ud.borrow_mut().scope.update();
+			}
+			Ok(())
+		});
 		methods.add_method("get_spectrum", |_, data, _: ()| {
 			if let LuaData(Some(ud)) = data {
-				let ud_inner = &mut ud.borrow_mut();
-				ud_inner.scope.update();
-
-				let spectrum = ud_inner.scope.get_spectrum();
-				Ok(Some(spectrum))
+				Ok(Some(ud.borrow_mut().scope.get_spectrum()))
 			} else {
 				Ok(None)
 			}
 		});
-
-		methods.add_method("rx_is_empty", |_, data, _: ()| {
+		methods.add_method("get_scope", |_, data, _: ()| {
 			if let LuaData(Some(ud)) = data {
-				Ok(ud.borrow_mut().lua_rx.is_empty())
+				Ok(Some(ud.borrow_mut().scope.get_oscilloscope()))
 			} else {
-				Ok(true)
+				Ok(None)
 			}
 		});
 

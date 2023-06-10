@@ -66,8 +66,11 @@ local function audioSetup()
 end
 
 local function parse_messages()
-	while not backend:rx_is_empty() do
+	while true do
 		local p = backend:rx_pop()
+		if p == nil then
+			return
+		end
 		if p.tag == "cpu" then
 			workspace.cpu_load = p.cpu_load
 		elseif p.tag == "meter" then
@@ -176,6 +179,7 @@ function love.draw()
 		lurker.update()
 	end
 
+	backend:update_scope()
 	mouse:update()
 	workspace:update()
 	mouse:updateCursor()
@@ -204,16 +208,8 @@ function love.wheelmoved(_, y)
 	workspace:wheelmoved(y)
 end
 
--- function love.focus(f)
--- 	if f then
--- 		print("Window is focused.")
--- 	else
--- 		print("Window is not focused.")
--- 	end
--- end
-
 -- function love.textinput(t)
---     print(t)
+-- 	print(t)
 -- end
 
 function love.keypressed(key, isrepeat)
@@ -231,7 +227,6 @@ function love.keypressed(key, isrepeat)
 			audio_status = "request"
 		end
 	elseif key == "b" then
-		print(backend:paused())
 		backend:set_paused(not backend:paused())
 	elseif key == "s" then
 		render_wav()
