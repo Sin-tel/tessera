@@ -1,4 +1,9 @@
-include!("wavetable_res.rs");
+const WT_SIZE: usize = 1024;
+const WT_MASK: usize = 1023;
+const WT_NUM: usize = 16;
+
+// TODO: we should probably just support the wavetable format used by Surge
+// see: https://github.com/surge-synthesizer/surge/blob/main/resources/data/wavetables/WT%20fileformat.txt
 
 use crate::device::Param;
 use crate::dsp::env::*;
@@ -7,6 +12,8 @@ use crate::instrument::*;
 use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
+use std::fs::File;
+use std::io::{BufReader, Read};
 use std::sync::Arc;
 
 use std::iter::zip;
@@ -28,6 +35,7 @@ pub struct Wavetable {
 	r2c: Arc<dyn RealToComplex<f32>>,
 	c2r_scratch: Vec<Complex<f32>>,
 	c2r: Arc<dyn ComplexToReal<f32>>,
+	table: [f32; 16384],
 }
 
 impl Wavetable {
@@ -40,8 +48,8 @@ impl Wavetable {
 		let wt_idx_frac = wt_idx.fract();
 
 		for (i, v) in self.buffer_in.iter_mut().enumerate() {
-			let w1 = WAVETABLE[wt_idx_int * WT_SIZE + i];
-			let w2 = WAVETABLE[(wt_idx_int + 1) * WT_SIZE + i];
+			let w1 = self.table[wt_idx_int * WT_SIZE + i];
+			let w2 = self.table[(wt_idx_int + 1) * WT_SIZE + i];
 			*v = lerp(w1, w2, wt_idx_frac);
 		}
 
@@ -99,6 +107,16 @@ impl Instrument for Wavetable {
 		let buffer_a = c2r.make_output_vec();
 		let buffer_b = c2r.make_output_vec();
 
+		// read binary file
+		let file = File::open("./res/wavetable.bin").unwrap();
+		let mut reader = BufReader::new(file);
+		let mut table = [0.0f32; WT_SIZE * WT_NUM];
+		let mut buffer = [0u8; 4];
+		for v in table.iter_mut() {
+			reader.read_exact(&mut buffer).unwrap();
+			*v = f32::from_le_bytes(buffer);
+		}
+
 		let mut new = Wavetable {
 			accum: 0.0,
 			interpolate: 1.0,
@@ -114,6 +132,7 @@ impl Instrument for Wavetable {
 			c2r_scratch,
 			r2c,
 			c2r,
+			table,
 		};
 		new.update_fft();
 		new

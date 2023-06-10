@@ -1,9 +1,3 @@
- - proof of concept
- + implemented partially
- x implemented completely
-
-(roughly in order of importance)
-
 lua style
   - classes: PascalCase
   - instances/tables: camelCase, index with : 
@@ -11,6 +5,11 @@ lua style
   - variables: snake_case
   - constants: SCREAMING_SNAKE_CASE
   - singletons: camelCase, index with : 
+
+
+Misc
+midi backend in rust instead of ffi into rtmidi dll
+support surge wavetable format
 
 Lua
 [x] luajit host w love2d
