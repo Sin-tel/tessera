@@ -65,6 +65,7 @@ local function audioSetup()
 	-- end
 end
 
+-- update UI with messages from backend
 local function parse_messages()
 	while true do
 		local p = backend:rx_pop()
@@ -81,7 +82,7 @@ local function parse_messages()
 end
 
 local function render_wav()
-	--@todo: make this into a coroutine so we can yield from it
+	--TODO: make this into a coroutine so we can yield from it
 
 	mouse:setCursor("wait")
 

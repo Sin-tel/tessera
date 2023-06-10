@@ -8,4 +8,6 @@ end
 
 local backend = require("rust_backend").init()
 
+backend:set_working_directory(love.filesystem.getSource())
+
 return backend

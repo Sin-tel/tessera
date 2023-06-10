@@ -7,7 +7,7 @@ there is also 6 extra accidental pairs
 
 base pitch is always 60 = C4 = 261.63Hz
 
-there are seperate accidentals for "double half sherp/flat"
+there are seperate accidentals for "double half sharp/flat"
 when 243/242 is tempered out (rastmic), these should revert to normal sharps/flats
 (this is true for 17, 24, 31, 41, 72)
 
@@ -51,7 +51,7 @@ finetuning w mouse--
 local Pitch = {}
 
 -- default 11-limit JI table
--- gen_table = {
+-- Pitch.generators = {
 -- 	ratio(2/1),
 -- 	ratio(3/2),
 -- 	ratio(81/80),
@@ -65,6 +65,8 @@ Pitch.generators = {
 	6.97049,
 }
 
+-- temperament projection matrix
+-- empty entries are zero
 -- stylua: ignore
 Pitch.table = {
 	{ 1 },
@@ -78,6 +80,7 @@ Pitch.table = {
 
 Pitch.diatonic_names = { "C", "D", "E", "F", "G", "A", "B" }
 
+-- current scale expressed in generator steps
 -- stylua: ignore
 Pitch.diatonic_table = {
 	{  0,  0 },

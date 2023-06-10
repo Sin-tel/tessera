@@ -1,5 +1,3 @@
--- require("main")
-
 function love.run()
 	if love.load then
 		love.load(love.arg.parseGameArguments(arg), arg)
