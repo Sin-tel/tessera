@@ -1,13 +1,22 @@
 // use crate::defs::*;
+use crate::device::Param;
 use crate::dsp::delayline::DelayLine;
 use crate::dsp::env::Smoothed;
 use crate::dsp::simper::Filter;
+use crate::effect::Effect;
 
 // interaural time difference, 660 μs
 const ITD: f32 = 0.00066;
 // head filter at 4 kHz
 const HEAD_CUTOFF: f32 = 4000.0;
 const HEAD_Q: f32 = 0.4;
+
+#[derive(Debug)]
+pub struct Pan {
+	tracks: [Track; 2],
+	gain: f32,
+	pan: f32,
+}
 
 #[derive(Debug)]
 struct Track {
@@ -32,24 +41,13 @@ impl Track {
 	}
 }
 
-#[derive(Debug)]
-pub struct Pan {
-	tracks: [Track; 2],
-}
-
 impl Pan {
-	pub fn new(sample_rate: f32) -> Self {
-		Pan {
-			tracks: [Track::new(sample_rate), Track::new(sample_rate)],
-		}
-	}
+	fn update_params(&mut self) {
+		self.tracks[0].delay.set((ITD * self.pan).max(0.0));
+		self.tracks[1].delay.set((-ITD * self.pan).max(0.0));
 
-	pub fn set(&mut self, gain: f32, pan: f32) {
-		self.tracks[0].delay.set((ITD * pan).max(0.0));
-		self.tracks[1].delay.set((-ITD * pan).max(0.0));
-
-		let lshelf = -1.5 * pan * (pan + 3.0);
-		let rshelf = -1.5 * pan * (pan - 3.0);
+		let lshelf = -1.5 * self.pan * (self.pan + 3.0);
+		let rshelf = -1.5 * self.pan * (self.pan - 3.0);
 		self.tracks[0]
 			.filter
 			.set_highshelf(HEAD_CUTOFF, HEAD_Q, lshelf);
@@ -57,13 +55,23 @@ impl Pan {
 			.filter
 			.set_highshelf(HEAD_CUTOFF, HEAD_Q, rshelf);
 
-		let lgain = -0.084 * pan * (pan + 2.53) + 1.0;
-		let rgain = -0.084 * pan * (pan - 2.53) + 1.0;
-		self.tracks[0].gain.set(lgain * gain);
-		self.tracks[1].gain.set(rgain * gain);
+		let lgain = -0.084 * self.pan * (self.pan + 2.53) + 1.0;
+		let rgain = -0.084 * self.pan * (self.pan - 2.53) + 1.0;
+		self.tracks[0].gain.set(lgain * self.gain);
+		self.tracks[1].gain.set(rgain * self.gain);
+	}
+}
+
+impl Effect for Pan {
+	fn new(sample_rate: f32) -> Self {
+		Pan {
+			tracks: [Track::new(sample_rate), Track::new(sample_rate)],
+			gain: 1.0,
+			pan: 0.0,
+		}
 	}
 
-	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
+	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
 			for sample in s.iter_mut() {
 				track.gain.update();
@@ -82,6 +90,22 @@ impl Pan {
 
 				track.delayline.push(input);
 			}
+		}
+	}
+}
+
+impl Param for Pan {
+	fn set_param(&mut self, index: usize, value: f32) {
+		match index {
+			0 => {
+				self.gain = value;
+				self.update_params();
+			}
+			1 => {
+				self.pan = value;
+				self.update_params();
+			}
+			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}
 }

@@ -7,11 +7,9 @@ use crate::dsp::env::SmoothedEnv;
 use crate::dsp::softclip;
 use crate::effect::*;
 use crate::instrument::*;
-use crate::pan::*;
 
 pub struct Channel {
 	pub instrument: Box<dyn Instrument + Send>,
-	pub pan: Pan,
 	pub effects: Vec<BypassEffect>,
 	pub mute: bool,
 }
@@ -58,7 +56,6 @@ impl Render {
 		let new_instr = new_instrument(self.sample_rate, instrument_index);
 		let newch = Channel {
 			instrument: new_instr,
-			pan: Pan::new(self.sample_rate),
 			effects: Vec::new(),
 			mute: false,
 		};
@@ -93,8 +90,6 @@ impl Render {
 					for fx in &mut ch.effects {
 						fx.process(buf_slice);
 					}
-
-					ch.pan.process(buf_slice);
 
 					for (outsample, insample) in buffer
 						.iter_mut()
@@ -173,10 +168,7 @@ impl Render {
 						None => println!("Channel index out of bounds!"),
 					}
 				}
-				AudioMessage::Pan(ch_index, gain, pan) => match self.channels.get_mut(ch_index) {
-					Some(ch) => ch.pan.set(gain, pan),
-					None => println!("Channel index out of bounds!"),
-				},
+
 				AudioMessage::Mute(ch_index, mute) => match self.channels.get_mut(ch_index) {
 					Some(ch) => ch.mute = mute,
 					None => println!("Channel index out of bounds!"),

@@ -57,7 +57,6 @@ local function audioSetup()
 	channelHandler:load()
 	local ch = channelHandler:add("wavetable")
 	ch.armed = true
-	channelHandler:add_effect(ch, "gain")
 
 	-- for i = 1, 150 do
 	-- 	local n = channelHandler:add("sine")

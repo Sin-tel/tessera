@@ -2,6 +2,7 @@
 use crate::device::*;
 
 pub mod gain;
+pub mod pan;
 
 pub trait Effect: Param {
 	fn new(sample_rate: f32) -> Self

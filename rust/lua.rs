@@ -75,13 +75,6 @@ impl UserData for LuaData {
 			},
 		);
 
-		methods.add_method("send_pan", |_, data, (ch, gain, pan): (usize, f32, f32)| {
-			if let LuaData(Some(ud)) = data {
-				send_message(&mut ud.borrow_mut(), AudioMessage::Pan(ch, gain, pan));
-			}
-			Ok(())
-		});
-
 		methods.add_method("send_mute", |_, data, (ch, mute): (usize, bool)| {
 			if let LuaData(Some(ud)) = data {
 				send_message(&mut ud.borrow_mut(), AudioMessage::Mute(ch, mute));

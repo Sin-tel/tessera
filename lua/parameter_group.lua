@@ -58,7 +58,6 @@ end
 
 function ParameterGroup.makeParameterGroups(channel)
 	channel.parameterGroups = {}
-	table.insert(channel.parameterGroups, ParameterGroup:new("channel", channel.parameters))
 	table.insert(channel.parameterGroups, ParameterGroup:new(channel.instrument.name, channel.instrument.parameters))
 end
 

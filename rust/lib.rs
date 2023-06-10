@@ -23,6 +23,5 @@ pub mod dsp;
 pub mod effect;
 pub mod instrument;
 pub mod lua;
-pub mod pan;
 pub mod render;
 pub mod scope;

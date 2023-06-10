@@ -10,7 +10,6 @@ pub enum AudioMessage {
 	CV(usize, f32, f32),
 	Note(usize, f32, f32, usize),
 	SetParam(usize, usize, usize, f32),
-	Pan(usize, f32, f32),
 	Mute(usize, bool),
 	// Bypass(usize, usize, bool),
 	// Swap(?),

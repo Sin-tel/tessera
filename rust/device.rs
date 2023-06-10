@@ -1,10 +1,9 @@
 // can autogen this
 
-use crate::effect::gain::Gain;
 use crate::effect::Effect;
-use crate::instrument::sine::Sine;
-use crate::instrument::wavetable::Wavetable;
+use crate::effect::{gain::Gain, pan::Pan};
 use crate::instrument::Instrument;
+use crate::instrument::{sine::Sine, wavetable::Wavetable};
 
 // list of instruments
 pub fn new_instrument(sample_rate: f32, instrument_number: usize) -> Box<dyn Instrument + Send> {
@@ -21,7 +20,8 @@ pub fn new_instrument(sample_rate: f32, instrument_number: usize) -> Box<dyn Ins
 // list of effects
 pub fn new_effect(sample_rate: f32, effect_number: usize) -> Box<dyn Effect + Send> {
 	match effect_number {
-		0 => Box::new(Gain::new(sample_rate)),
+		0 => Box::new(Pan::new(sample_rate)),
+		1 => Box::new(Gain::new(sample_rate)),
 		_ => {
 			eprintln!("Effect with number {effect_number} not found. Returning default.");
 			Box::new(Gain::new(sample_rate))

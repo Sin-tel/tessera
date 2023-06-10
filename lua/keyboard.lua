@@ -11,11 +11,9 @@ function keyboard:keypressed(key, _)
 		if v == key then
 			local ch = selection.channel
 
-			-- p = Pitch:new()
 			local p = Pitch:newFromDiatonic(i)
 
 			if ch then
-				print(ch.index, p.pitch, 0.5)
 				backend:send_note_on(ch.index, p.pitch, 0.5, 0)
 			end
 
