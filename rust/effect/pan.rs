@@ -1,5 +1,4 @@
 // use crate::defs::*;
-use crate::device::Param;
 use crate::dsp::delayline::DelayLine;
 use crate::dsp::env::Smoothed;
 use crate::dsp::simper::Filter;
@@ -92,9 +91,6 @@ impl Effect for Pan {
 			}
 		}
 	}
-}
-
-impl Param for Pan {
 	fn set_param(&mut self, index: usize, value: f32) {
 		match index {
 			0 => {

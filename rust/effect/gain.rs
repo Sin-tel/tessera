@@ -1,4 +1,3 @@
-use crate::device::Param;
 use crate::effect::Effect;
 
 #[derive(Debug)]
@@ -18,9 +17,6 @@ impl Effect for Gain {
 			}
 		}
 	}
-}
-
-impl Param for Gain {
 	fn set_param(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.gain = value,

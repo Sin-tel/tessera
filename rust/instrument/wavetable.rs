@@ -5,7 +5,6 @@ const WT_NUM: usize = 16;
 // TODO: we should probably just support the wavetable format used by Surge
 // see: https://github.com/surge-synthesizer/surge/blob/main/resources/data/wavetables/WT%20fileformat.txt
 
-use crate::device::Param;
 use crate::dsp::env::*;
 use crate::dsp::*;
 use crate::instrument::*;
@@ -26,11 +25,9 @@ pub struct Wavetable {
 	vel: SmoothedEnv,
 	sample_rate: f32,
 	interpolate: f32,
-	buffer_in: Vec<f32>,
 	buffer_a: Vec<f32>,
 	buffer_b: Vec<f32>,
 	spectrum: Vec<Complex<f32>>,
-	spectrum2: Vec<Complex<f32>>,
 	r2c_scratch: Vec<Complex<f32>>,
 	r2c: Arc<dyn RealToComplex<f32>>,
 	c2r_scratch: Vec<Complex<f32>>,
@@ -40,14 +37,12 @@ pub struct Wavetable {
 
 impl Wavetable {
 	fn update_fft(&mut self) {
-		// @todo precalculate forward fft and only run inverse with corrected partials
-
 		// linear interpolation between frames
 		let wt_idx = (self.vel.inner() * (WT_NUM as f32)).clamp(0.0, (WT_NUM as f32) - 1.001);
 		let wt_idx_int = wt_idx as usize;
 		let wt_idx_frac = wt_idx.fract();
 
-		for (i, v) in self.buffer_in.iter_mut().enumerate() {
+		for (i, v) in self.buffer_a.iter_mut().enumerate() {
 			let w1 = self.table[wt_idx_int * WT_SIZE + i];
 			let w2 = self.table[(wt_idx_int + 1) * WT_SIZE + i];
 			*v = lerp(w1, w2, wt_idx_frac);
@@ -56,7 +51,7 @@ impl Wavetable {
 		// forward fft
 		self.r2c
 			.process_with_scratch(
-				&mut self.buffer_in,
+				&mut self.buffer_a,
 				&mut self.spectrum,
 				&mut self.r2c_scratch,
 			)
@@ -66,19 +61,16 @@ impl Wavetable {
 		let p_max = (MAX_F / (self.sample_rate * self.freq.get())) as usize;
 
 		// zero out everything above p_max
-		let it = self.spectrum.iter().zip(self.spectrum2.iter_mut());
-		for (i, (x, y)) in it.enumerate() {
-			if i <= p_max {
-				*y = *x;
-			} else {
-				*y = Zero::zero();
+		for (i, x) in self.spectrum.iter_mut().enumerate() {
+			if i > p_max {
+				*x = Zero::zero();
 			}
 		}
 
 		// inverse fft
 		self.c2r
 			.process_with_scratch(
-				&mut self.spectrum2,
+				&mut self.spectrum,
 				&mut self.buffer_a,
 				&mut self.c2r_scratch,
 			)
@@ -99,9 +91,7 @@ impl Instrument for Wavetable {
 		let r2c = real_planner.plan_fft_forward(WT_SIZE);
 		let c2r = real_planner.plan_fft_inverse(WT_SIZE);
 
-		let buffer_in = r2c.make_input_vec();
 		let spectrum = r2c.make_output_vec();
-		let spectrum2 = r2c.make_output_vec();
 		let r2c_scratch = r2c.make_scratch_vec();
 		let c2r_scratch = c2r.make_scratch_vec();
 		let buffer_a = c2r.make_output_vec();
@@ -123,11 +113,9 @@ impl Instrument for Wavetable {
 			freq: Smoothed::new(20.0, sample_rate),
 			vel: SmoothedEnv::new(20.0, 40.0, sample_rate),
 			sample_rate,
-			buffer_in,
 			buffer_a,
 			buffer_b,
 			spectrum,
-			spectrum2,
 			r2c_scratch,
 			c2r_scratch,
 			r2c,
@@ -194,9 +182,6 @@ impl Instrument for Wavetable {
 			self.vel.set(vel);
 		}
 	}
-}
-
-impl Param for Wavetable {
 	fn set_param(&mut self, index: usize, _value: f32) {
 		match index {
 			_ => eprintln!("Parameter with index {index} not found"),

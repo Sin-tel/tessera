@@ -18,6 +18,12 @@ deviceList.instruments.wavetable = {
 	mono = true,
 }
 
+deviceList.instruments.analog = {
+	index = 2,
+	parameters = {},
+	mono = true,
+}
+
 deviceList.effects = {}
 
 deviceList.effects.pan = {

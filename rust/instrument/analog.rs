@@ -7,24 +7,20 @@ use std::iter::zip;
 // TODO: get rid of DC offset
 
 #[derive(Debug, Default)]
-pub struct Sine {
+pub struct Analog {
 	accum: f32,
 	freq: Smoothed,
 	vel: SmoothedEnv,
 	sample_rate: f32,
-	prev: f32,
-	pub feedback: f32,
-	dc_killer: DcKiller,
-	// rng: Rng,
+	z: f32,
 }
 
-impl Instrument for Sine {
+impl Instrument for Analog {
 	fn new(sample_rate: f32) -> Self {
-		Sine {
+		Analog {
 			freq: Smoothed::new(20.0, sample_rate),
 			vel: SmoothedEnv::new(20.0, 50.0, sample_rate),
 			sample_rate,
-			// rng: fastrand::Rng::new(),
 			..Default::default()
 		}
 	}
@@ -43,11 +39,8 @@ impl Instrument for Sine {
 			self.freq.update();
 			self.accum += self.freq.get();
 			self.accum = self.accum.fract();
-			let mut out = (self.accum * TWO_PI + self.feedback * self.prev).sin();
+			let mut out = (self.accum * TWO_PI).sin();
 			out *= self.vel.get();
-
-			self.prev = out;
-			out = self.dc_killer.process(out);
 
 			*l = out;
 			*r = out;
@@ -70,7 +63,6 @@ impl Instrument for Sine {
 	}
 	fn set_param(&mut self, index: usize, value: f32) {
 		match index {
-			0 => self.feedback = value,
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}

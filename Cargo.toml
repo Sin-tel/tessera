@@ -15,12 +15,12 @@ cpal = { version = "0.15"}
 [dependencies]
 ringbuf = "0.3"
 assert_no_alloc = {version = "1.1", features = ["warn_debug"]}
-fastrand = "1.8"
+fastrand = "2.0"
 bit_mask_ring_buf = "0.5"
 bencher = "0.1"
 rustfft = "6.0"
-realfft = "3.0"
-no_denormals = { git = "https://github.com/Sin-tel/no_denormals.git" }
+realfft = "3.3"
+no_denormals = "0.1"
 mlua = { version = "0.8", features = ["luajit", "module"] }
 
 [profile.dev]

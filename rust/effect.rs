@@ -4,11 +4,12 @@ use crate::device::*;
 pub mod gain;
 pub mod pan;
 
-pub trait Effect: Param {
+pub trait Effect {
 	fn new(sample_rate: f32) -> Self
 	where
 		Self: Sized;
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]);
+	fn set_param(&mut self, index: usize, val: f32);
 }
 
 pub struct BypassEffect {
