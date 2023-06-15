@@ -240,7 +240,8 @@ function love.keypressed(key, isrepeat)
 		render_wav()
 	elseif key == "a" then
 		-- channelHandler:add("sine")
-		channelHandler:add("wavetable")
+		-- channelHandler:add("wavetable")
+		channelHandler:add("analog")
 
 		-- local n = channelHandler:add("sine")
 		-- n.parameters[2]:setNormalized(math.random())

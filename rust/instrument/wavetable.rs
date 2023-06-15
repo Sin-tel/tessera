@@ -35,56 +35,6 @@ pub struct Wavetable {
 	table: [f32; 16384],
 }
 
-impl Wavetable {
-	fn update_fft(&mut self) {
-		// linear interpolation between frames
-		let wt_idx = (self.vel.inner() * (WT_NUM as f32)).clamp(0.0, (WT_NUM as f32) - 1.001);
-
-		let (wt_idx_int, wt_idx_frac) = make_usize_frac(wt_idx);
-
-		for (i, v) in self.buffer_a.iter_mut().enumerate() {
-			let w1 = self.table[wt_idx_int * WT_SIZE + i];
-			let w2 = self.table[(wt_idx_int + 1) * WT_SIZE + i];
-			*v = lerp(w1, w2, wt_idx_frac);
-		}
-
-		// forward fft
-		self.r2c
-			.process_with_scratch(
-				&mut self.buffer_a,
-				&mut self.spectrum,
-				&mut self.r2c_scratch,
-			)
-			.unwrap(); // only panics when passed incorrect buffer sizes
-
-		// calculate maximum allowed partial
-		let p_max = (MAX_F / (self.sample_rate * self.freq.get())) as usize;
-
-		// zero out everything above p_max
-		for (i, x) in self.spectrum.iter_mut().enumerate() {
-			if i > p_max {
-				*x = Zero::zero();
-			}
-		}
-
-		// inverse fft
-		self.c2r
-			.process_with_scratch(
-				&mut self.spectrum,
-				&mut self.buffer_a,
-				&mut self.c2r_scratch,
-			)
-			.unwrap(); // only panics when passed incorrect buffer sizes
-
-		// normalize
-		for v in &mut self.buffer_a {
-			*v /= WT_SIZE as f32;
-		}
-
-		std::mem::swap(&mut self.buffer_a, &mut self.buffer_b);
-	}
-}
-
 impl Instrument for Wavetable {
 	fn new(sample_rate: f32) -> Self {
 		let mut real_planner = RealFftPlanner::<f32>::new();
@@ -110,8 +60,8 @@ impl Instrument for Wavetable {
 		let mut new = Wavetable {
 			accum: 0.0,
 			interpolate: 1.0,
-			freq: Smoothed::new(20.0, sample_rate),
-			vel: SmoothedEnv::new(20.0, 40.0, sample_rate),
+			freq: Smoothed::new(10.0, sample_rate),
+			vel: SmoothedEnv::new(10.0, 25.0, sample_rate),
 			sample_rate,
 			buffer_a,
 			buffer_b,
@@ -187,5 +137,55 @@ impl Instrument for Wavetable {
 		match index {
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
+	}
+}
+
+impl Wavetable {
+	fn update_fft(&mut self) {
+		// linear interpolation between frames
+		let wt_idx = (self.vel.inner() * (WT_NUM as f32)).clamp(0.0, (WT_NUM as f32) - 1.001);
+
+		let (wt_idx_int, wt_idx_frac) = make_usize_frac(wt_idx);
+
+		for (i, v) in self.buffer_a.iter_mut().enumerate() {
+			let w1 = self.table[wt_idx_int * WT_SIZE + i];
+			let w2 = self.table[(wt_idx_int + 1) * WT_SIZE + i];
+			*v = lerp(w1, w2, wt_idx_frac);
+		}
+
+		// forward fft
+		self.r2c
+			.process_with_scratch(
+				&mut self.buffer_a,
+				&mut self.spectrum,
+				&mut self.r2c_scratch,
+			)
+			.unwrap(); // only panics when passed incorrect buffer sizes
+
+		// calculate maximum allowed partial
+		let p_max = (MAX_F / (self.sample_rate * self.freq.get())) as usize;
+
+		// zero out everything above p_max
+		for (i, x) in self.spectrum.iter_mut().enumerate() {
+			if i > p_max {
+				*x = Zero::zero();
+			}
+		}
+
+		// inverse fft
+		self.c2r
+			.process_with_scratch(
+				&mut self.spectrum,
+				&mut self.buffer_a,
+				&mut self.c2r_scratch,
+			)
+			.unwrap(); // only panics when passed incorrect buffer sizes
+
+		// normalize
+		for v in &mut self.buffer_a {
+			*v /= WT_SIZE as f32;
+		}
+
+		std::mem::swap(&mut self.buffer_a, &mut self.buffer_b);
 	}
 }

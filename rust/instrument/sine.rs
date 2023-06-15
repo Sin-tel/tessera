@@ -17,8 +17,8 @@ pub struct Sine {
 impl Instrument for Sine {
 	fn new(sample_rate: f32) -> Self {
 		Sine {
-			freq: Smoothed::new(20.0, sample_rate),
-			vel: SmoothedEnv::new(20.0, 50.0, sample_rate),
+			freq: Smoothed::new(10.0, sample_rate),
+			vel: SmoothedEnv::new(10.0, 25.0, sample_rate),
 			sample_rate,
 			..Default::default()
 		}

@@ -14,14 +14,14 @@ fn time_constant(t: f32, sample_rate: f32) -> f32 {
 impl Smoothed {
 	pub fn new(t: f32, sample_rate: f32) -> Self {
 		Smoothed {
-			inner: 1.0,
-			value: 1.0,
+			inner: 0.01,
+			value: 0.01,
 			f: time_constant(t, sample_rate),
 		}
 	}
 	pub fn new_direct(f: f32) -> Self {
 		Smoothed {
-			inner: 1.0,
+			inner: 0.01,
 			value: 1.0,
 			f,
 		}
@@ -50,7 +50,7 @@ impl Smoothed {
 
 impl Default for Smoothed {
 	fn default() -> Self {
-		Smoothed::new_direct(0.5)
+		Smoothed::new_direct(0.001)
 	}
 }
 
@@ -113,6 +113,6 @@ impl SmoothedEnv {
 
 impl Default for SmoothedEnv {
 	fn default() -> Self {
-		SmoothedEnv::new_direct(0.5, 0.1)
+		SmoothedEnv::new_direct(0.005, 0.001)
 	}
 }

@@ -1,3 +1,6 @@
+#![allow(unused_imports)]
+#![allow(dead_code)]
+
 #[macro_use]
 extern crate bencher;
 
@@ -66,19 +69,34 @@ fn rand_bench(bench: &mut Bencher) {
 	run(bench, |_| rng.f32())
 }
 
+fn svf_bench(bench: &mut Bencher) {
+	let mut filter = rust_backend::dsp::simper::Filter::new(44100.0);
+	filter.set_lowpass(500.0, 0.7);
+	let mut i = 0;
+	run(bench, |x| {
+		i += 1;
+		if i >= 64 {
+			i = 0;
+			filter.set_lowpass(x, 0.7);
+		}
+		filter.process(x)
+	})
+}
+
 benchmark_group!(
 	benches,
-	tanh_bench,
-	softclip_bench,
-	softclip_cubic_bench,
-	pitch_to_f_bench,
-	delay_go_back_int_bench,
-	delay_go_back_linear_bench,
-	delay_go_back_cubic_bench,
-	pow2_std_bench,
-	rand_bench,
-	floor_bench,
-	round_bench,
-	trunc_bench,
+	// tanh_bench,
+	// softclip_bench,
+	// softclip_cubic_bench,
+	// pitch_to_f_bench,
+	// delay_go_back_int_bench,
+	// delay_go_back_linear_bench,
+	// delay_go_back_cubic_bench,
+	// pow2_std_bench,
+	// rand_bench,
+	// floor_bench,
+	// round_bench,
+	// trunc_bench,
+	svf_bench,
 );
 benchmark_main!(benches);

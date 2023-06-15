@@ -8,7 +8,7 @@ pub fn pitch_to_f(p: f32, sample_rate: f32) -> f32 {
 }
 
 pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
-	a * (1.0 - t) + b * t
+	a + (b - a) * t
 }
 
 pub fn from_db(x: f32) -> f32 {

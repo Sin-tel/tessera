@@ -1,8 +1,8 @@
 use crate::dsp::env::*;
 use crate::dsp::*;
 use crate::instrument::*;
-use core::f32::consts::PI;
 use fastrand::Rng;
+use std::f32::consts::PI;
 use std::iter::zip;
 
 const MAX_F: f32 = 20_000.0;
@@ -23,7 +23,7 @@ pub struct Analog {
 	mix_saw: f32,
 	mix_sub: f32,
 	mix_noise: f32,
-	vcf_freq: Smoothed,
+	vcf_freq: f32,
 	vcf_res: f32,
 }
 
@@ -40,13 +40,12 @@ fn blit(s: f32, m: f32) -> f32 {
 impl Instrument for Analog {
 	fn new(sample_rate: f32) -> Self {
 		Analog {
-			freq: Smoothed::new(20.0, sample_rate),
-			vel: SmoothedEnv::new(20.0, 50.0, sample_rate),
-			pulse_width: Smoothed::new(20.0, sample_rate),
+			freq: Smoothed::new(10.0, sample_rate),
+			vel: SmoothedEnv::new(10.0, 25.0, sample_rate),
 			sample_rate,
 			rng: fastrand::Rng::new(),
 			filter: simper::Filter::new(sample_rate),
-			vcf_freq: Smoothed::new(20.0, sample_rate),
+			pulse_width: Smoothed::new(5.0, sample_rate),
 
 			..Default::default()
 		}
@@ -65,9 +64,6 @@ impl Instrument for Analog {
 			self.vel.update();
 			self.freq.update();
 			self.pulse_width.update();
-			self.vcf_freq.update();
-
-			self.filter.set_lowpass(self.vcf_freq.get(), self.vcf_res);
 
 			let f_sub = 0.5 * self.freq.get();
 
@@ -129,8 +125,14 @@ impl Instrument for Analog {
 			2 => self.mix_saw = value,
 			3 => self.mix_sub = value,
 			4 => self.mix_noise = value,
-			5 => self.vcf_freq.set(value),
-			6 => self.vcf_res = value,
+			5 => {
+				self.vcf_freq = value;
+				self.filter.set_lowpass(self.vcf_freq, self.vcf_res)
+			}
+			6 => {
+				self.vcf_res = value;
+				self.filter.set_lowpass(self.vcf_freq, self.vcf_res)
+			}
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}
