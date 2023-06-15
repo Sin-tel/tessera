@@ -4,7 +4,7 @@ local backend = require("backend")
 local scopeView = View:derive("Scope")
 
 function scopeView:draw()
-	self.draw_spectrum = true
+	self.draw_spectrum = false
 
 	local w, h = self:getDimensions()
 

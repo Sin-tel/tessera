@@ -20,7 +20,15 @@ deviceList.instruments.wavetable = {
 
 deviceList.instruments.analog = {
 	index = 2,
-	parameters = {},
+	parameters = {
+		Parameter:new("pulse width", { default = 0.5, min = 0.5, max = 0.99, fmt = "%0.2f" }),
+		Parameter:new("mix pulse", { default = -math.huge, t = "dB" }),
+		Parameter:new("mix saw", { default = 0, t = "dB" }),
+		Parameter:new("mix sub", { default = -math.huge, t = "dB" }),
+		Parameter:new("mix noise", { default = -math.huge, t = "dB" }),
+		Parameter:new("vcf freq", { default = 20000, min = 20, max = 20000, fmt = "Hz", t = "log" }),
+		Parameter:new("vcf res", { default = 0.7, min = 0.7, max = 10 }),
+	},
 	mono = true,
 }
 

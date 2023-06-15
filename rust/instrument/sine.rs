@@ -1,10 +1,7 @@
 use crate::dsp::env::*;
 use crate::dsp::*;
 use crate::instrument::*;
-// use fastrand::Rng;
 use std::iter::zip;
-
-// TODO: get rid of DC offset
 
 #[derive(Debug, Default)]
 pub struct Sine {
@@ -13,9 +10,8 @@ pub struct Sine {
 	vel: SmoothedEnv,
 	sample_rate: f32,
 	prev: f32,
-	pub feedback: f32,
+	feedback: f32,
 	dc_killer: DcKiller,
-	// rng: Rng,
 }
 
 impl Instrument for Sine {
@@ -24,7 +20,6 @@ impl Instrument for Sine {
 			freq: Smoothed::new(20.0, sample_rate),
 			vel: SmoothedEnv::new(20.0, 50.0, sample_rate),
 			sample_rate,
-			// rng: fastrand::Rng::new(),
 			..Default::default()
 		}
 	}

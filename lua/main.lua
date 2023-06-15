@@ -41,6 +41,7 @@ audio_status = "waiting"
 local function audioSetup()
 	if not backend:running() then
 		backend:setup(settings.audio.default_host, settings.audio.default_device)
+		-- backend:setup("wasapi", settings.audio.default_device)
 	else
 		print("Audio already set up")
 	end
@@ -238,7 +239,8 @@ function love.keypressed(key, isrepeat)
 	elseif key == "s" then
 		render_wav()
 	elseif key == "a" then
-		channelHandler:add("sine")
+		-- channelHandler:add("sine")
+		channelHandler:add("wavetable")
 
 		-- local n = channelHandler:add("sine")
 		-- n.parameters[2]:setNormalized(math.random())

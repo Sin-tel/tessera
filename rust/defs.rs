@@ -1,5 +1,5 @@
 pub const TWO_PI: f32 = std::f32::consts::TAU;
-pub const MAX_BUF_SIZE: usize = 1024;
+pub const MAX_BUF_SIZE: usize = 2048;
 
 pub const SPECTRUM_SIZE: usize = 4096;
 

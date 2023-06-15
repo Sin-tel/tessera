@@ -111,7 +111,7 @@ where
         assert_no_alloc(|| {
             let buf_size = buffer.len() / 2;
 
-            assert!(buf_size <= MAX_BUF_SIZE);
+            assert!(buf_size <= MAX_BUF_SIZE, "{buf_size} <= {MAX_BUF_SIZE}");
 
             let [mut l, mut r] = audiobuf;
 
@@ -121,7 +121,6 @@ where
                 Ok(mut render) if !paused => {
                     if !start {
                         start = true;
-
                         println!("Buffer size: {buf_size:?}");
                     }
                     let time = std::time::Instant::now();

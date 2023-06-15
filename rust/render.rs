@@ -86,9 +86,14 @@ impl Render {
 			for ch in &mut self.channels {
 				if !ch.mute {
 					ch.instrument.process(buf_slice);
+					#[cfg(debug_assertions)]
+					check_fp(buf_slice);
 
 					for fx in &mut ch.effects {
 						fx.process(buf_slice);
+
+						#[cfg(debug_assertions)]
+						check_fp(buf_slice);
 					}
 
 					for (outsample, insample) in buffer
@@ -174,6 +179,18 @@ impl Render {
 					None => println!("Channel index out of bounds!"),
 				},
 			}
+		}
+	}
+}
+
+#[cfg(debug_assertions)]
+fn check_fp(buffer: &mut [&mut [f32]; 2]) {
+	use std::num::FpCategory::*;
+	for s in buffer.iter().flat_map(|s| s.iter()) {
+		match s.classify() {
+			Normal | Zero => (),
+			Infinite | Nan => panic!("number was {:?}", s),
+			Subnormal => unreachable!(),
 		}
 	}
 }

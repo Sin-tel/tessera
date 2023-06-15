@@ -14,15 +14,15 @@ fn time_constant(t: f32, sample_rate: f32) -> f32 {
 impl Smoothed {
 	pub fn new(t: f32, sample_rate: f32) -> Self {
 		Smoothed {
-			inner: 0.0,
-			value: 0.0,
+			inner: 1.0,
+			value: 1.0,
 			f: time_constant(t, sample_rate),
 		}
 	}
 	pub fn new_direct(f: f32) -> Self {
 		Smoothed {
-			inner: 0.0,
-			value: 0.0,
+			inner: 1.0,
+			value: 1.0,
 			f,
 		}
 	}
