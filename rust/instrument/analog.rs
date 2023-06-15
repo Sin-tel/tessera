@@ -1,10 +1,11 @@
+use fastrand::Rng;
+use std::f32::consts::PI;
+use std::iter::zip;
+
 use crate::dsp::env::*;
 use crate::dsp::skf::Skf;
 use crate::dsp::*;
 use crate::instrument::*;
-use fastrand::Rng;
-use std::f32::consts::PI;
-use std::iter::zip;
 
 const MAX_F: f32 = 20_000.0;
 
@@ -102,6 +103,7 @@ impl Instrument for Analog {
 		self.freq.set_hard(f);
 
 		if self.vel.get() < 0.01 {
+			// TODO: filter set hard?
 			self.vel.set_hard(vel);
 			self.accum = 0.5;
 			self.z = 0.0;

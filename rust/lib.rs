@@ -17,7 +17,6 @@
 // #![allow(clippy::cast_possible_truncation)]
 
 pub mod audio;
-pub mod defs;
 pub mod device;
 pub mod dsp;
 pub mod effect;

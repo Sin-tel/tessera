@@ -45,8 +45,8 @@ impl Skf {
 		let y2 = t2 * g2 * (self.s2 + f * y1);
 
 		// update state
-		self.s1 = self.s1 + 2.0 * f * (y0 - y1);
-		self.s2 = self.s2 + 2.0 * f * (y1 - y2);
+		self.s1 += 2.0 * f * (y0 - y1);
+		self.s2 += 2.0 * f * (y1 - y2);
 
 		// lowpass
 		y2

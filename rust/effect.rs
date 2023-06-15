@@ -1,4 +1,3 @@
-// use crate::defs::*;
 use crate::device::*;
 
 pub mod gain;

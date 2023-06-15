@@ -1,11 +1,11 @@
-use crate::audio;
-use crate::defs::*;
-use crate::render;
-use crate::scope::Scope;
 use mlua::prelude::*;
 use mlua::{UserData, UserDataMethods, Value};
 use ringbuf::{HeapConsumer, HeapProducer};
 use std::sync::{Arc, Mutex};
+
+use crate::audio;
+use crate::render;
+use crate::scope::Scope;
 
 struct LuaData(Option<AudioContext>);
 
@@ -17,6 +17,25 @@ pub struct AudioContext {
 	pub m_render: Arc<Mutex<render::Render>>,
 	pub scope: Scope,
 	pub paused: bool,
+}
+
+// Message struct to pass to audio thread
+// Should not contain any boxed values
+#[derive(Debug)]
+pub enum AudioMessage {
+	CV(usize, f32, f32),
+	Note(usize, f32, f32, usize),
+	SetParam(usize, usize, usize, f32),
+	Mute(usize, bool),
+	// Bypass(usize, usize, bool),
+	// Swap(?),
+	//
+}
+
+#[derive(Debug)]
+pub enum LuaMessage {
+	Cpu(f32),
+	Meter(f32, f32),
 }
 
 impl Drop for AudioContext {

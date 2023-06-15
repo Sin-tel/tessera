@@ -1,8 +1,10 @@
-use crate::defs::*;
 use bit_mask_ring_buf::BMRingBuf;
 use realfft::{RealFftPlanner, RealToComplex};
 use ringbuf::HeapConsumer;
 use std::sync::Arc;
+
+use crate::audio::SPECTRUM_SIZE;
+use crate::dsp::TWO_PI;
 
 pub struct Scope {
 	buf: BMRingBuf<f32>,

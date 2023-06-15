@@ -1,5 +1,3 @@
-use crate::defs::*;
-
 pub mod analog;
 pub mod sine;
 pub mod wavetable;

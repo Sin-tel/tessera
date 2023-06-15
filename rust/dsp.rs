@@ -3,6 +3,8 @@ pub mod env;
 pub mod simper;
 pub mod skf;
 
+pub const TWO_PI: f32 = std::f32::consts::TAU;
+
 const C5_HZ: f32 = 523.2511;
 
 // pitch in semitones to Hz

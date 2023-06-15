@@ -1,12 +1,13 @@
 use no_denormals::no_denormals;
 use ringbuf::{HeapConsumer, HeapProducer};
 
-use crate::defs::*;
+use crate::audio::MAX_BUF_SIZE;
 use crate::device::*;
 use crate::dsp::env::SmoothedEnv;
 use crate::dsp::softclip;
 use crate::effect::*;
 use crate::instrument::*;
+use crate::lua::{AudioMessage, LuaMessage};
 
 pub struct Channel {
 	pub instrument: Box<dyn Instrument + Send>,
@@ -189,7 +190,7 @@ fn check_fp(buffer: &mut [&mut [f32]; 2]) {
 	for s in buffer.iter().flat_map(|s| s.iter()) {
 		match s.classify() {
 			Normal | Zero => (),
-			Infinite | Nan => panic!("number was {:?}", s),
+			Infinite | Nan => panic!("number was {s:?}"),
 			Subnormal => unreachable!(),
 		}
 	}

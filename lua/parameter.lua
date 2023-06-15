@@ -1,5 +1,7 @@
 local Parameter = {}
 
+-- TODO: lists, on/off
+-- TODO: bipolar db scale (rename db to gain or sth)
 function Parameter:new(name, tbl)
 	local new = {}
 	setmetatable(new, self)

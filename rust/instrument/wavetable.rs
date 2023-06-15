@@ -5,17 +5,17 @@ const WT_NUM: usize = 16;
 // TODO: we should probably just support the wavetable format used by Surge
 // see: https://github.com/surge-synthesizer/surge/blob/main/resources/data/wavetables/WT%20fileformat.txt
 
-use crate::dsp::env::*;
-use crate::dsp::*;
-use crate::instrument::*;
 use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 use std::fs::File;
 use std::io::{BufReader, Read};
+use std::iter::zip;
 use std::sync::Arc;
 
-use std::iter::zip;
+use crate::dsp::env::*;
+use crate::dsp::*;
+use crate::instrument::*;
 
 const MAX_F: f32 = 20_000.0;
 
@@ -133,6 +133,8 @@ impl Instrument for Wavetable {
 			self.vel.set(vel);
 		}
 	}
+
+	#[allow(clippy::match_single_binding)]
 	fn set_param(&mut self, index: usize, _value: f32) {
 		match index {
 			_ => eprintln!("Parameter with index {index} not found"),

@@ -1,4 +1,4 @@
-// can autogen this
+// TODO: can autogen this
 
 use crate::effect::Effect;
 use crate::effect::{gain::Gain, pan::Pan};
