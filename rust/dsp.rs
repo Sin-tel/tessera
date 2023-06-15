@@ -25,6 +25,20 @@ pub fn softclip_cubic(x: f32) -> f32 {
 	s * (1.0 - (4. / 27.) * s * s)
 }
 
+pub fn make_usize_frac(x: f32) -> (usize, f32) {
+	let x_int = x.floor();
+	let x_frac = x - x_int;
+
+	(x_int as usize, x_frac)
+}
+
+pub fn make_isize_frac(x: f32) -> (isize, f32) {
+	let x_int = x.floor();
+	let x_frac = x - x_int;
+
+	(x_int as isize, x_frac)
+}
+
 #[derive(Debug, Default)]
 pub struct DcKiller {
 	z: f32,

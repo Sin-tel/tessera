@@ -72,13 +72,18 @@ impl Instrument for Analog {
 			let f_sub = 0.5 * self.freq.get();
 
 			self.accum += f_sub;
-			self.accum = self.accum.fract();
+			if self.accum > 1.0 {
+				self.accum -= 1.0;
+			}
 
-			let a = (self.accum * 2.0).fract();
+			let mut a = self.accum * 2.0;
+			if a > 1.0 {
+				a -= 1.0;
+			}
 
 			// calculate maximum allowed partial
-			let m = 1.0 + 2.0 * (MAX_F / (self.sample_rate * self.freq.get())).round();
-			let m_sub = 1.0 + 2.0 * (MAX_F / (self.sample_rate * f_sub)).round();
+			let m = 1.0 + 2.0 * (MAX_F / (self.sample_rate * self.freq.get())).floor();
+			let m_sub = 1.0 + 2.0 * (MAX_F / (self.sample_rate * f_sub)).floor();
 
 			let s_sub = blit(self.accum, m_sub) - blit(self.accum - 0.5, m_sub);
 

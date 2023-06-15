@@ -39,8 +39,8 @@ impl Wavetable {
 	fn update_fft(&mut self) {
 		// linear interpolation between frames
 		let wt_idx = (self.vel.inner() * (WT_NUM as f32)).clamp(0.0, (WT_NUM as f32) - 1.001);
-		let wt_idx_int = wt_idx as usize;
-		let wt_idx_frac = wt_idx.fract();
+
+		let (wt_idx_int, wt_idx_frac) = make_usize_frac(wt_idx);
 
 		for (i, v) in self.buffer_a.iter_mut().enumerate() {
 			let w1 = self.table[wt_idx_int * WT_SIZE + i];
@@ -146,11 +146,12 @@ impl Instrument for Wavetable {
 			self.vel.update();
 			self.freq.update();
 			self.accum += self.freq.get();
-			self.accum = self.accum.fract();
+			if self.accum > 1.0 {
+				self.accum -= 1.0;
+			}
 
 			let idx = self.accum * (WT_SIZE as f32);
-			let idx_int = idx as usize;
-			let idx_frac = idx.fract();
+			let (idx_int, idx_frac) = make_usize_frac(idx);
 
 			// bilinear interpolation between samples and buffers
 			let w1a = self.buffer_a[idx_int];

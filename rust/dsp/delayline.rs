@@ -1,4 +1,4 @@
-use crate::dsp::lerp;
+use crate::dsp::*;
 use bit_mask_ring_buf::BMRingBuf;
 
 #[derive(Debug)]
@@ -34,7 +34,7 @@ impl DelayLine {
 	}
 
 	pub fn go_back_int(&mut self, time: f32) -> f32 {
-		let dt = (time * self.sample_rate).round() as isize;
+		let dt = (time * self.sample_rate).floor() as isize;
 		self.buf[self.pos - dt]
 	}
 
@@ -44,14 +44,13 @@ impl DelayLine {
 
 	pub fn go_back_linear(&mut self, time: f32) -> f32 {
 		let dt = time * self.sample_rate;
-		let idt = dt as isize;
-		let frac = dt.fract();
+		let (idt, frac) = make_isize_frac(dt);
 
 		lerp(self.buf[self.pos - idt], self.buf[self.pos - idt - 1], frac)
 	}
 
 	fn calc_coeff(&mut self, delay: f32) -> isize {
-		let dm1 = delay.fract();
+		let (d_int, dm1) = make_isize_frac(delay);
 		let d = dm1 + 1.;
 		let dm2 = dm1 - 1.;
 		let dm3 = dm1 - 2.;
@@ -60,7 +59,7 @@ impl DelayLine {
 		self.h[2] = -0.5 * d * dm1 * dm3;
 		self.h[3] = (1. / 6.) * d * dm1 * dm2;
 
-		delay as isize
+		d_int
 	}
 
 	pub fn go_back_cubic(&mut self, time: f32) -> f32 {

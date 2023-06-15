@@ -37,7 +37,9 @@ impl Instrument for Sine {
 			self.vel.update();
 			self.freq.update();
 			self.accum += self.freq.get();
-			self.accum = self.accum.fract();
+			if self.accum > 1.0 {
+				self.accum -= 1.0;
+			}
 			let mut out = (self.accum * TWO_PI + self.feedback * self.prev).sin();
 			out *= self.vel.get();
 
