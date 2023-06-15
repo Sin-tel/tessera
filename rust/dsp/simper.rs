@@ -1,8 +1,6 @@
 // after Andrew Simper, Cytomic, 2013
 // see: https://cytomic.com/files/dsp/SvfLinearTrapOptimised2.pdf
 
-// TODO: benchmark simper vs simper2
-
 use crate::dsp::env::Smoothed;
 use std::f32::consts::PI;
 

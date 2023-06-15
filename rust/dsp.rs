@@ -1,10 +1,19 @@
 pub mod delayline;
 pub mod env;
 pub mod simper;
+pub mod skf;
 
-pub fn pitch_to_f(p: f32, sample_rate: f32) -> f32 {
-	// tuning to C4 = 261.63 instead of A4 = 440
-	(2.0_f32).powf((p - 60.0) / 12.0) * 261.625_58 / sample_rate
+const C5_HZ: f32 = 523.2511;
+
+// pitch in semitones to Hz
+// tuning to C5 = 523.2511 instead of A4 = 440
+pub fn pitch_to_hz(p: f32) -> f32 {
+	(2.0_f32).powf((p - 72.0) / 12.0) * C5_HZ
+}
+
+// inverse of above
+pub fn hz_to_pitch(f: f32) -> f32 {
+	12.0 * (f / C5_HZ).log2() + 72.0
 }
 
 pub fn lerp(a: f32, b: f32, t: f32) -> f32 {

@@ -7,6 +7,7 @@ pub struct Smoothed {
 	f: f32,
 }
 
+// millis to tau (time to reach 1/e)
 fn time_constant(t: f32, sample_rate: f32) -> f32 {
 	1.0 - (-1000.0 / (sample_rate * t)).exp()
 }

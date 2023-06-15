@@ -26,8 +26,10 @@ deviceList.instruments.analog = {
 		Parameter:new("mix saw", { default = 0, t = "dB" }),
 		Parameter:new("mix sub", { default = -math.huge, t = "dB" }),
 		Parameter:new("mix noise", { default = -math.huge, t = "dB" }),
-		Parameter:new("vcf freq", { default = 20000, min = 20, max = 20000, fmt = "Hz", t = "log" }),
-		Parameter:new("vcf res", { default = 0.7, min = 0.7, max = 10 }),
+		Parameter:new("vcf freq", { default = 2000, min = 20, max = 20000, fmt = "Hz", t = "log" }),
+		Parameter:new("vcf res", { default = 0.2, min = 0.0, max = 1.25 }),
+		Parameter:new("vcf env", { default = 0.5 }),
+		Parameter:new("vcf kbd", { default = 0.5 }),
 	},
 	mono = true,
 }

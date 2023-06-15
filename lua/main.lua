@@ -40,8 +40,8 @@ audio_status = "waiting"
 
 local function audioSetup()
 	if not backend:running() then
-		backend:setup(settings.audio.default_host, settings.audio.default_device)
-		-- backend:setup("wasapi", settings.audio.default_device)
+		-- backend:setup(settings.audio.default_host, settings.audio.default_device)
+		backend:setup("wasapi", settings.audio.default_device)
 	else
 		print("Audio already set up")
 	end

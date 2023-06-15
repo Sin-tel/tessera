@@ -1,4 +1,5 @@
 use crate::dsp::env::*;
+use crate::dsp::skf::Skf;
 use crate::dsp::*;
 use crate::instrument::*;
 use fastrand::Rng;
@@ -15,7 +16,7 @@ pub struct Analog {
 	sample_rate: f32,
 	z: f32,
 	rng: Rng,
-	filter: simper::Filter,
+	filter: Skf,
 
 	// parameters
 	pulse_width: Smoothed,
@@ -23,38 +24,24 @@ pub struct Analog {
 	mix_saw: f32,
 	mix_sub: f32,
 	mix_noise: f32,
-	vcf_freq: f32,
+	vcf_pitch: f32,
 	vcf_res: f32,
-}
-
-// analytical band limited impulse train
-// https://www.music.mcgill.ca/~gary/307/week5/node14.html
-fn blit(s: f32, m: f32) -> f32 {
-	if s.abs() < 1e-7 {
-		1.0
-	} else {
-		(s * m * PI).sin() / (m * (s * PI).sin())
-	}
+	vcf_env: f32,
+	vcf_kbd: f32,
 }
 
 impl Instrument for Analog {
 	fn new(sample_rate: f32) -> Self {
 		Analog {
 			freq: Smoothed::new(10.0, sample_rate),
-			vel: SmoothedEnv::new(10.0, 25.0, sample_rate),
+			vel: SmoothedEnv::new(5.0, 50.0, sample_rate),
 			sample_rate,
 			rng: fastrand::Rng::new(),
-			filter: simper::Filter::new(sample_rate),
+			filter: Skf::new(sample_rate),
 			pulse_width: Smoothed::new(5.0, sample_rate),
 
 			..Default::default()
 		}
-	}
-
-	fn cv(&mut self, pitch: f32, vel: f32) {
-		let p = pitch_to_f(pitch, self.sample_rate);
-		self.freq.set(p);
-		self.vel.set(vel);
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
@@ -94,21 +81,25 @@ impl Instrument for Analog {
 
 			let mut out = self.z + self.mix_noise * (self.rng.f32() - 0.5);
 
+			out = 5.0 * self.filter.process(0.2 * out);
 			out *= self.vel.get();
-
-			out = self.filter.process(out);
 
 			*l = out;
 			*r = out;
 		}
 	}
 
-	fn note(&mut self, pitch: f32, vel: f32, _id: usize) {
-		let p = pitch_to_f(pitch, self.sample_rate);
-		self.freq.set_hard(p);
+	fn cv(&mut self, pitch: f32, vel: f32) {
+		let f = pitch_to_hz(pitch) / self.sample_rate;
+		self.freq.set(f);
+		self.vel.set(vel);
 
-		// self.vel.set_hard(vel);
-		// self.accum = 0.0;
+		self.update_filter();
+	}
+
+	fn note(&mut self, pitch: f32, vel: f32, _id: usize) {
+		let f = pitch_to_hz(pitch) / self.sample_rate;
+		self.freq.set_hard(f);
 
 		if self.vel.get() < 0.01 {
 			self.vel.set_hard(vel);
@@ -117,6 +108,8 @@ impl Instrument for Analog {
 		} else {
 			self.vel.set(vel);
 		}
+
+		self.update_filter();
 	}
 	fn set_param(&mut self, index: usize, value: f32) {
 		match index {
@@ -126,14 +119,41 @@ impl Instrument for Analog {
 			3 => self.mix_sub = value,
 			4 => self.mix_noise = value,
 			5 => {
-				self.vcf_freq = value;
-				self.filter.set_lowpass(self.vcf_freq, self.vcf_res)
+				self.vcf_pitch = hz_to_pitch(value);
+				self.update_filter();
 			}
 			6 => {
 				self.vcf_res = value;
-				self.filter.set_lowpass(self.vcf_freq, self.vcf_res)
+				self.update_filter();
 			}
+			7 => self.vcf_env = value,
+			8 => self.vcf_kbd = value,
+
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
+	}
+}
+
+// analytical band limited impulse train
+// https://www.music.mcgill.ca/~gary/307/week5/node14.html
+fn blit(s: f32, m: f32) -> f32 {
+	if s.abs() < 1e-7 {
+		1.0
+	} else {
+		(s * m * PI).sin() / (m * (s * PI).sin())
+	}
+}
+
+impl Analog {
+	fn update_filter(&mut self) {
+		self.filter.set(
+			//TODO: store pitch so we can save hz_to_pitch call?
+			pitch_to_hz(
+				self.vcf_pitch
+					+ self.vcf_kbd * (hz_to_pitch(self.freq.inner() * self.sample_rate) - 60.0)
+					+ self.vcf_env * self.vel.inner() * 84.0,
+			),
+			self.vcf_res,
+		);
 	}
 }
