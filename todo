@@ -30,6 +30,10 @@ Lua
 [ ] Project grid / time division
 [ ] Add note internal vertices
 [ ] Time warping
+[ ] UI checkbox (also in top level)
+[ ] UI selector
+[ ] UI dropdown
+[ ] UI vertical layout nesting
 [ ] Type value in slider
 [ ] Top ribbon menu
 [ ] Tabs/workspaces
@@ -73,7 +77,6 @@ Rust
 [ ] Group channels
 [ ] Master channel
 [ ] Return tracks?
-[ ] global reverb ~ panning
 [ ] Polyphonic instruments (plucked, piano, etc)
 [x] binaural panning 
 [x] Support WASAPI
@@ -81,7 +84,6 @@ Rust
 [ ] Support linux
 [ ] Automation
 [ ] Simple audio flow (parallel)
-[ ] panning pre/post switch
 [ ] Vst hosting (pianoteq)
 [ ] FFT convolver
 

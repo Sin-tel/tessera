@@ -22,19 +22,19 @@ pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
 	a + (b - a) * t
 }
 
-pub fn from_db(x: f32) -> f32 {
-	(10.0f32).powf(x / 20.0)
-}
+// pub fn from_db(x: f32) -> f32 {
+// 	(10.0f32).powf(x / 20.0)
+// }
 
 pub fn softclip(x: f32) -> f32 {
 	let s = x.clamp(-3.0, 3.0);
 	s * (27.0 + s * s) / (27.0 + 9.0 * s * s)
 }
 
-pub fn softclip_cubic(x: f32) -> f32 {
-	let s = x.clamp(-1.5, 1.5);
-	s * (1.0 - (4. / 27.) * s * s)
-}
+// pub fn softclip_cubic(x: f32) -> f32 {
+// 	let s = x.clamp(-1.5, 1.5);
+// 	s * (1.0 - (4. / 27.) * s * s)
+// }
 
 pub fn make_usize_frac(x: f32) -> (usize, f32) {
 	let x_int = x.floor();
@@ -56,6 +56,7 @@ pub struct DcKiller {
 }
 
 impl DcKiller {
+	// TODO: add new with sample_rate
 	pub fn process(&mut self, s: f32) -> f32 {
 		// 10Hz at 44.1kHz sample rate
 		self.z += (s - self.z) * 0.0014;

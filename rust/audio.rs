@@ -23,12 +23,17 @@ pub fn run(host_name: &str, output_device_name: &str) -> Result<AudioContext, Bo
 	let mut config2: cpal::StreamConfig = config.clone().into();
 	config2.channels = 2; // only allow stereo output
 
+	// WASAPI doesn't actually return a buffer this size
+	// it only guarantees it to be at least this size
 	config2.buffer_size = cpal::BufferSize::Fixed(128);
-	// config2.buffer_size = cpal::BufferSize::Default; // wasapi
+
+	// for x in output_device.supported_output_configs().unwrap() {
+	// 	dbg!(x);
+	// }
 
 	// Build streams.
-	println!("{config:?}");
-	println!("{config2:?}");
+	// println!("{config:?}");
+	// println!("{config2:?}");
 
 	let userdata = match config.sample_format() {
 		cpal::SampleFormat::F64 => build_stream::<f64>(&output_device, &config2),
@@ -59,11 +64,8 @@ where
 	T: 'static + cpal::SizedSample + cpal::FromSample<f32>,
 {
 	let (audio_tx, audio_rx) = HeapRb::<AudioMessage>::new(256).split();
-
 	let (stream_tx, stream_rx) = HeapRb::<bool>::new(8).split();
-
 	let (lua_tx, lua_rx) = HeapRb::<LuaMessage>::new(256).split();
-
 	let (scope_tx, scope_rx) = HeapRb::<f32>::new(2048).split();
 	let scope = Scope::new(scope_rx);
 

@@ -16,11 +16,11 @@
 // #![allow(clippy::cast_precision_loss)]
 // #![allow(clippy::cast_possible_truncation)]
 
-pub mod audio;
-pub mod device;
-pub mod dsp;
-pub mod effect;
-pub mod instrument;
-pub mod lua;
-pub mod render;
-pub mod scope;
+mod audio;
+mod device;
+mod dsp;
+mod effect;
+mod instrument;
+mod lua;
+mod render;
+mod scope;

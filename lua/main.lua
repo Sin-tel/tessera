@@ -38,10 +38,12 @@ audio_status = "waiting"
 
 --- temp stuff, to delete ---
 
+-----------------------------
+
 local function audioSetup()
 	if not backend:running() then
-		-- backend:setup(settings.audio.default_host, settings.audio.default_device)
-		backend:setup("wasapi", settings.audio.default_device)
+		backend:setup(settings.audio.default_host, settings.audio.default_device)
+		-- backend:setup("wasapi", settings.audio.default_device)
 	else
 		print("Audio already set up")
 	end
@@ -150,6 +152,9 @@ function love.load()
 	resources.icons.unlock = love.graphics.newImage("res/unlock.png")
 
 	--- setup workspace ---
+
+	-- TODO: make this nicer
+	-- maybe return b1, b2 = workspace:split()
 	workspace:load()
 	workspace.box:split(0.7, true)
 
