@@ -3,6 +3,7 @@
 local mouse = require("mouse")
 local Ui = {}
 
+-- TODO: scrolling
 -- TODO: set background per row
 -- TODO: separators
 -- TODO: option picker

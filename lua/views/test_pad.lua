@@ -1,9 +1,9 @@
 local View = require("view")
 local backend = require("backend")
 
-local testPadView = View:derive("TestPad")
+local TestPadView = View:derive("TestPad")
 
-function testPadView:new()
+function TestPadView:new()
 	local new = {}
 	setmetatable(new, self)
 	self.__index = self
@@ -16,7 +16,7 @@ function testPadView:new()
 	return new
 end
 
-function testPadView:draw()
+function TestPadView:draw()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
@@ -62,18 +62,18 @@ function testPadView:draw()
 	end
 end
 
-function testPadView:mousepressed()
+function TestPadView:mousepressed()
 	if (mouse.button == 1 or mouse.button == 2) and selection.channel then
 		backend:send_note_on(selection.channel.index, self.f, self.v, 0)
 		self.note = true
 	end
 end
 
-function testPadView:mousereleased()
+function TestPadView:mousereleased()
 	if mouse.button == 1 and selection.channel then
 		backend:send_cv(selection.channel.index, self.f, 0)
 		self.note = false
 	end
 end
 
-return testPadView
+return TestPadView

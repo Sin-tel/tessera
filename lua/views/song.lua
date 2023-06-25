@@ -1,8 +1,8 @@
 local View = require("view")
 
-local songView = View:derive("Song")
+local Song = View:derive("Song")
 
-function songView:draw()
+function Song:draw()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
@@ -14,4 +14,4 @@ function songView:draw()
 	util.drawText("5/4  8/7  A4  C5  Dt  Be  Fy  Bev  Fj  Eed", 50, 90, w, 0)
 end
 
-return songView
+return Song

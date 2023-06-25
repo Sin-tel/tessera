@@ -1,9 +1,9 @@
 local View = require("view")
 local backend = require("backend")
 
-local scopeView = View:derive("Scope")
+local Scope = View:derive("Scope")
 
-function scopeView:draw()
+function Scope:draw()
 	self.draw_spectrum = false
 
 	local w, h = self:getDimensions()
@@ -47,4 +47,4 @@ function scopeView:draw()
 	end
 end
 
-return scopeView
+return Scope

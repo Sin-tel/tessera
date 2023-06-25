@@ -1,9 +1,9 @@
 local Ui = require("ui/ui")
 local View = require("view")
 
-local channelView = View:derive("Channels")
+local Channels = View:derive("Channels")
 
-function channelView:new()
+function Channels:new()
 	local new = {}
 	setmetatable(new, self)
 	self.__index = self
@@ -16,7 +16,7 @@ function channelView:new()
 	return new
 end
 
-function channelView:update()
+function Channels:update()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
@@ -33,7 +33,7 @@ function channelView:update()
 	end
 end
 
-function channelView:mousepressed()
+function Channels:mousepressed()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
@@ -83,7 +83,7 @@ function channelView:mousepressed()
 	end
 end
 
-function channelView:draw()
+function Channels:draw()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
@@ -146,15 +146,15 @@ function channelView:draw()
 	end
 end
 
-function channelView:wheelmoved(y)
+function Channels:wheelmoved(y)
 	self.scroll_ = math.floor(self.scroll - y * 2.0 * Ui.ROW_HEIGHT)
 end
 
-function channelView:getMaxScroll()
+function Channels:getMaxScroll()
 	local w, h = self:getDimensions()
 
 	local l = #channelHandler.list
 	return math.max(0, (l * Ui.ROW_HEIGHT) - h)
 end
 
-return channelView
+return Channels

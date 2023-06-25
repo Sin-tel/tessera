@@ -1,8 +1,8 @@
 local View = require("view")
 
-local pannerView = View:derive("Panning")
+local Panner = View:derive("Panning")
 
-function pannerView:draw()
+function Panner:draw()
 	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
@@ -69,4 +69,4 @@ function pannerView:draw()
 	end
 end
 
-return pannerView
+return Panner

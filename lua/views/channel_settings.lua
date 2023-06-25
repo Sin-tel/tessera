@@ -2,9 +2,9 @@ local View = require("view")
 local Ui = require("ui/ui")
 local util = require("util")
 
-local parameterView = View:derive("Parameters")
+local ChannelSettings = View:derive("Channel settings")
 
-function parameterView:new()
+function ChannelSettings:new()
 	local new = {}
 	setmetatable(new, self)
 	self.__index = self
@@ -14,7 +14,7 @@ function parameterView:new()
 	return new
 end
 
-function parameterView:update()
+function ChannelSettings:update()
 	local w, h = self:getDimensions()
 
 	self.ui:startFrame()
@@ -32,8 +32,8 @@ function parameterView:update()
 	end
 end
 
-function parameterView:draw()
+function ChannelSettings:draw()
 	self.ui:draw()
 end
 
-return parameterView
+return ChannelSettings

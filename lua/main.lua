@@ -167,15 +167,14 @@ function love.load()
 	workspace.box.children[1]:split(0.8, false)
 	workspace.box.children[1].children[1]:split(0.2, false)
 
-	workspace.box.children[1].children[2]:setView(views.testpad:new())
+	workspace.box.children[1].children[2]:setView(views.TestPad:new())
 
-	workspace.box.children[1].children[1].children[2]:setView(views.ui_test:new())
-	workspace.box.children[1].children[1].children[1]:setView(views.scope:new())
+	workspace.box.children[1].children[1].children[2]:setView(views.UiTest:new())
+	workspace.box.children[1].children[1].children[1]:setView(views.Scope:new())
 
 	workspace.box.children[2]:split(0.3, false)
-	workspace.box.children[2].children[1]:setView(views.channel:new())
-	-- workspace.box.children[2].children[2]:setView(views.ui_test:new())
-	workspace.box.children[2].children[2]:setView(views.parameter:new())
+	workspace.box.children[2].children[1]:setView(views.Channels:new())
+	workspace.box.children[2].children[2]:setView(views.ChannelSettings:new())
 end
 
 function love.update(dt)
