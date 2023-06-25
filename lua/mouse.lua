@@ -20,6 +20,9 @@ function mouse:load()
 
 	self.button = false
 
+	self.button_pressed = false
+	self.button_released = false
+
 	self.pbutton = false
 
 	self.cursors = {}
@@ -38,6 +41,7 @@ end
 
 function mouse:pressed(x, y, button)
 	self.x, self.y = x, y
+
 	if not self.button then -- ignore buttons while other is pressed
 		self.ix = x
 		self.iy = y
@@ -45,18 +49,10 @@ function mouse:pressed(x, y, button)
 		self.dy = 0
 		self.drag = false
 		self.button = button
-
-		-- double click detect
-		self.double = false
-		local newt = love.timer.getTime()
-		if newt - self.timer < DOUBLE_CLICK_TIME and self.pbutton == button then
-			self.double = true
-		end
-		self.pbutton = button
-		self.timer = newt
+		self.button_pressed = button
 		self.isDown = true
 
-		-- handle press
+		-- TODO: remove
 		workspace:mousepressed()
 	end
 end
@@ -64,17 +60,26 @@ end
 function mouse:released(x, y, button)
 	self.x, self.y = x, y
 	if button == self.button then
+		self.button_released = self.button
 		self.isDown = false
+
+		-- double click detect
+		self.double = false
+		local new_timer = love.timer.getTime()
+		if new_timer - self.timer < DOUBLE_CLICK_TIME and self.pbutton == button then
+			self.double = true
+		end
+		self.pbutton = button
+		self.timer = new_timer
+
+		-- TODO: remove?
 		workspace:mousereleased()
-		self.drag = false
 		self.button = false
 	end
 end
 
 function mouse:update(x, y)
 	self.x, self.y = love.mouse.getPosition()
-	self.x = x or self.x
-	self.y = y or self.y
 
 	if self.button then
 		if math.sqrt((self.x - self.ix) ^ 2 + (self.y - self.iy) ^ 2) > DRAG_DIST then
@@ -85,7 +90,10 @@ function mouse:update(x, y)
 	self.cursor = self.cursors.default
 end
 
-function mouse:updateCursor()
+function mouse:endFrame()
+	self.button_pressed = false
+	self.button_released = false
+
 	if self.cursor then
 		love.mouse.setVisible(true)
 		love.mouse.setCursor(self.cursor)
@@ -96,6 +104,20 @@ end
 
 function mouse:setCursor(c)
 	self.cursor = self.cursors[c]
+end
+
+function mouse:setRelative(r)
+	-- TODO: some weird issue with sliders
+	--   Dragging them and then right clicking does not
+	--   register if the mouse hasn't moved since turning
+	--   off relative mode.
+	love.mouse.setRelativeMode(r)
+end
+
+function mouse:setPosition(x, y)
+	self.x = x
+	self.y = y
+	love.mouse.setPosition(x, y)
 end
 
 function mouse:mousemoved(_, _, dx, dy)

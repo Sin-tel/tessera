@@ -1,4 +1,4 @@
-local ui = require("ui")
+local Ui = require("ui/ui")
 
 local View = {}
 
@@ -26,7 +26,7 @@ function View:drawFull()
 	local w, h = self.box.w, self.box.h
 
 	love.graphics.push()
-	love.graphics.translate(ui.BORDER_SIZE, ui.HEADER + ui.BORDER_SIZE)
+	love.graphics.translate(Ui.BORDER_SIZE, Ui.HEADER + Ui.BORDER_SIZE)
 	self:draw()
 	love.graphics.pop()
 
@@ -34,11 +34,13 @@ function View:drawFull()
 	if self.box.focus then
 		love.graphics.setColor(theme.header_focus)
 	end
-	love.graphics.rectangle("fill", 0, 0, w, ui.HEADER)
+	love.graphics.rectangle("fill", 0, 0, w, Ui.HEADER)
 
 	love.graphics.setFont(resources.fonts.main)
 	love.graphics.setColor(theme.ui_text)
-	util.drawText(self.name, 0, 0, w, ui.HEADER, "left")
+
+	local pad = Ui.DEFAULT_PAD
+	util.drawText(self.name, pad, 0, w - 2 * pad, Ui.HEADER, "left")
 end
 
 function View:mousepressed() end
@@ -47,11 +49,20 @@ function View:update() end
 function View:wheelmoved() end
 
 function View:getDimensions()
-	return self.box.w - 2 * ui.BORDER_SIZE, self.box.h - ui.HEADER - 2 * ui.BORDER_SIZE
+	return self.box.w - 2 * Ui.BORDER_SIZE, self.box.h - Ui.HEADER - 2 * Ui.BORDER_SIZE
 end
 
 function View:getMouse()
-	return mouse.x - (self.box.x + ui.BORDER_SIZE), mouse.y - (self.box.y + ui.HEADER + ui.BORDER_SIZE)
+	return mouse.x - (self.box.x + Ui.BORDER_SIZE), mouse.y - (self.box.y + Ui.HEADER + Ui.BORDER_SIZE)
+end
+
+function View:focus()
+	return self.box.focus
+end
+
+function View:getOrigin()
+	-- TODO: this should be in sync with the translate() calls in both box and view
+	return self.box.x + Ui.BORDER_SIZE, self.box.y + Ui.HEADER + Ui.BORDER_SIZE
 end
 
 return View

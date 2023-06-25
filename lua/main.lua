@@ -1,5 +1,5 @@
 release = false
-local lurker = false
+local lurker = true
 
 io.stdout:setvbuf("no")
 
@@ -44,6 +44,7 @@ local function audioSetup()
 	if not backend:running() then
 		backend:setup(settings.audio.default_host, settings.audio.default_device)
 		-- backend:setup("wasapi", settings.audio.default_device)
+		-- audio_status = "running"
 	else
 		print("Audio already set up")
 	end
@@ -52,7 +53,7 @@ local function audioSetup()
 		audio_status = "running"
 	else
 		print("Audio setup failed")
-		return
+		-- return
 	end
 
 	midilib.load(settings.midi.inputs)
@@ -88,8 +89,13 @@ end
 local function render_wav()
 	--TODO: run this on a new thread in rust?
 
+	if not backend:running() then
+		print("backend offline")
+		return
+	end
+
 	mouse:setCursor("wait")
-	mouse:updateCursor()
+	mouse:endFrame()
 
 	backend:set_paused(true)
 
@@ -163,11 +169,12 @@ function love.load()
 
 	workspace.box.children[1].children[2]:setView(views.testpad:new())
 
-	workspace.box.children[1].children[1].children[2]:setView(views.song:new())
+	workspace.box.children[1].children[1].children[2]:setView(views.ui_test:new())
 	workspace.box.children[1].children[1].children[1]:setView(views.scope:new())
 
-	workspace.box.children[2]:split(0.5, false)
+	workspace.box.children[2]:split(0.3, false)
 	workspace.box.children[2].children[1]:setView(views.channel:new())
+	-- workspace.box.children[2].children[2]:setView(views.ui_test:new())
 	workspace.box.children[2].children[2]:setView(views.parameter:new())
 end
 
@@ -191,11 +198,11 @@ function love.draw()
 	if not release and lurker then
 		lurker.update()
 	end
-
-	backend:update_scope()
 	mouse:update()
+	backend:update_scope()
 	workspace:update()
-	mouse:updateCursor()
+
+	mouse:endFrame()
 
 	--- draw ---
 	love.graphics.clear()
@@ -221,9 +228,11 @@ function love.wheelmoved(_, y)
 	workspace:wheelmoved(y)
 end
 
--- function love.textinput(t)
--- 	print(t)
--- end
+function love.textinput(t)
+	-- should we handle love.textedited? (for IMEs)
+	-- TODO: handle utf-8
+	-- print(t)b
+end
 
 function love.keypressed(key, isrepeat)
 	if keyboard:keypressed(key, isrepeat) then
@@ -244,9 +253,9 @@ function love.keypressed(key, isrepeat)
 	elseif key == "s" then
 		render_wav()
 	elseif key == "a" then
-		-- channelHandler:add("sine")
+		channelHandler:add("sine")
 		-- channelHandler:add("wavetable")
-		channelHandler:add("analog")
+		-- channelHandler:add("analog")
 
 		-- local n = channelHandler:add("sine")
 		-- n.parameters[2]:setNormalized(math.random())

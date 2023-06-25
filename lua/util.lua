@@ -1,4 +1,4 @@
-local ui = require("ui")
+local Ui = require("ui/ui")
 
 local util = {}
 
@@ -67,18 +67,20 @@ function util.drawText(str, x, y, w, h, align)
 	local f = love.graphics.getFont()
 	local str2 = str
 	local fh = f:getHeight()
-	local fo = 0.5 * (ui.HEADER - fh)
+
+	local oy = 0.5 * (h - fh)
+
 	local l = str:len()
 	local strip = false
 	while true do
 		local fw = f:getWidth(str2)
-		if fw + 2 * fo < w then
+		if fw < w then
 			if align == "left" or strip then
-				love.graphics.print(str2, math.floor(x + fo), math.floor(y + fo))
+				love.graphics.print(str2, math.floor(x), math.floor(y + oy))
 			elseif align == "center" then
-				love.graphics.print(str2, math.floor(x + (w - fw) / 2), math.floor(y + fo))
+				love.graphics.print(str2, math.floor(x + 0.5 * (w - fw)), math.floor(y + oy))
 			elseif align == "right" then
-				love.graphics.print(str2, math.floor(x + w - fw - fo), math.floor(y + fo))
+				love.graphics.print(str2, math.floor(x + w - fw), math.floor(y + oy))
 			end
 			break
 		end

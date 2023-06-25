@@ -1,3 +1,6 @@
+-- TODO: just make this emulate a midi input to avoid code duplication
+-- TODO: rename this module, keyboard is confusing
+
 local Pitch = require("pitch")
 local backend = require("backend")
 

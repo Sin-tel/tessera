@@ -1,46 +1,45 @@
-local Parameter = {}
+local SliderValue = {}
 
--- TODO: lists, on/off
 -- TODO: bipolar db scale (rename db to gain or sth)
-function Parameter:new(name, tbl)
+-- TODO: initial value seperate from default value
+function SliderValue:new(options)
 	local new = {}
 	setmetatable(new, self)
 	self.__index = self
 
-	new.t = tbl.t
-	new.name = name or "Value"
-	new.centered = tbl.centered
+	new.t = options.t
+	new.centered = options.centered
 
 	new.dirty = true
 
 	if new.t == "dB" then
-		new.v = util.from_dB(tbl.default)
-		new.default = util.from_dB(tbl.default)
+		new.v = util.from_dB(options.default)
+		new.default = util.from_dB(options.default)
 		new.min = 0
-		new.max = (tbl.max or 0)
-		new.fmt = tbl.fmt or "%0.1f dB"
+		new.max = (options.max or 0)
+		new.fmt = options.fmt or "%0.1f dB"
 
-		assert(tbl.min == nil)
+		assert(options.min == nil)
 		assert(new.default <= util.from_dB(new.max))
 	elseif new.t == "log" then
-		new.min = tbl.min
-		new.max = tbl.max
-		local default = tbl.default or math.sqrt(new.min * new.max)
+		new.min = options.min
+		new.max = options.max
+		local default = options.default or math.sqrt(new.min * new.max)
 		new.v = default
 		new.default = default
-		new.fmt = tbl.fmt or "%0.2f"
+		new.fmt = options.fmt or "%0.2f"
 		assert(new.min < new.max)
 		assert(new.min > 0)
 		assert(new.max > 0)
 		assert(new.min <= new.default)
 		assert(new.default <= new.max)
 	else
-		new.min = tbl.min or 0
-		new.max = tbl.max or 1
-		local default = tbl.default or 0.5 * (new.min + new.max)
+		new.min = options.min or 0
+		new.max = options.max or 1
+		local default = options.default or 0.5 * (new.min + new.max)
 		new.v = default
 		new.default = default
-		new.fmt = tbl.fmt or "%0.2f"
+		new.fmt = options.fmt or "%0.2f"
 		assert(new.min < new.max)
 		assert(new.min <= new.default)
 		assert(new.default <= new.max)
@@ -49,17 +48,12 @@ function Parameter:new(name, tbl)
 	return new
 end
 
--- function Parameter:setRaw(x)
--- 	self.v = x
--- 	self.dirty = true
--- end
-
-function Parameter:reset()
+function SliderValue:reset()
 	self.v = self.default
 	self.dirty = true
 end
 
-function Parameter:setNormalized(value)
+function SliderValue:setNormalized(value)
 	local x = util.clamp(value, 0, 1)
 	if self.t == "dB" then
 		x = util.curve_dB(x, self.max)
@@ -72,7 +66,7 @@ function Parameter:setNormalized(value)
 	self.dirty = true
 end
 
-function Parameter:getNormalized()
+function SliderValue:getNormalized()
 	if self.t == "dB" then
 		return util.curve_dB_inv(self.v, self.max)
 	elseif self.t == "log" then
@@ -82,15 +76,19 @@ function Parameter:getNormalized()
 	end
 end
 
-function Parameter:getDisplay()
+function SliderValue:asString()
 	if self.t == "dB" then
 		return string.format(self.fmt, util.to_dB(self.v))
 	else
 		if self.fmt == "Hz" then
-			if self.v < 1000 then
+			if self.v < 100 then
+				return string.format("%.1f Hz", self.v)
+			elseif self.v < 1000 then
 				return string.format("%.0f Hz", self.v)
-			else
+			elseif self.v < 10000 then
 				return string.format("%.2f kHz", self.v / 1000)
+			else
+				return string.format("%.1f kHz", self.v / 1000)
 			end
 		else
 			return string.format(self.fmt, self.v)
@@ -98,4 +96,4 @@ function Parameter:getDisplay()
 	end
 end
 
-return Parameter
+return SliderValue

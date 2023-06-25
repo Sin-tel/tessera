@@ -28,7 +28,7 @@ function testPadView:draw()
 	love.graphics.setColor(theme.bg_nested)
 	love.graphics.rectangle("fill", x1, y1, x2 - x1, y2 - y1)
 
-	love.graphics.setColor(theme.widget_line)
+	love.graphics.setColor(theme.line)
 	love.graphics.rectangle("line", x1, y1, x2 - x1, y2 - y1)
 
 	local oct = math.floor(w / 200)

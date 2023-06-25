@@ -27,7 +27,7 @@ function pannerView:draw()
 		mx = d * math.cos(a) + cx
 		my = d * math.sin(a) + cy
 
-		love.graphics.setColor(theme.widget_line)
+		love.graphics.setColor(theme.line)
 		-- love.graphics.setColor(White)
 		love.graphics.arc("line", "open", cx, cy, radius, 0, -math.pi)
 		love.graphics.arc("line", "open", cx, cy, radius2, 0, -math.pi)

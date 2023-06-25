@@ -9,5 +9,6 @@ views.parameter = require("views/parameterview")
 views.song = require("views/songview")
 views.testpad = require("views/testpadview")
 views.scope = require("views/scopeview")
+views.ui_test = require("views/uitestview")
 
 return views

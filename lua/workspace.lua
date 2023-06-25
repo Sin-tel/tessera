@@ -1,5 +1,5 @@
 local backend = require("backend")
-local ui = require("ui")
+local ui = require("ui/ui")
 
 local workspace = {}
 
@@ -283,7 +283,7 @@ end
 function workspace:load()
 	self.w = width
 	self.h = height
-	self.box = Box:new(0, ui.RIBBON, width, height - ui.RIBBON)
+	self.box = Box:new(0, ui.RIBBON_HEIGHT, width, height - ui.RIBBON_HEIGHT)
 
 	self.cpu_load = 0
 	self.meter = { l = -math.huge, r = -math.huge }
@@ -293,8 +293,8 @@ function workspace:resize(w, h)
 	self.w = w
 	self.h = h
 
-	self.box:resize(0, ui.RIBBON, w, h - ui.RIBBON)
-	self.box:resize(0, ui.RIBBON, w, h - ui.RIBBON) -- second time to satisfy constraints properly
+	self.box:resize(0, ui.RIBBON_HEIGHT, w, h - ui.RIBBON_HEIGHT)
+	self.box:resize(0, ui.RIBBON_HEIGHT, w, h - ui.RIBBON_HEIGHT) -- second time to satisfy constraints properly
 end
 
 function workspace:draw()
@@ -306,26 +306,26 @@ function workspace:draw()
 
 	local w1 = 64
 	local h1 = 16
-	local y1 = 0.5 * (ui.RIBBON - h1)
+	local y1 = 0.5 * (ui.RIBBON_HEIGHT - h1)
 	local x1 = self.w - 64 - y1
 
 	love.graphics.setColor(theme.widget_bg)
 	love.graphics.rectangle("fill", x1, y1, w1, h1, 2)
 	love.graphics.setColor(hl_col)
 	love.graphics.rectangle("fill", x1, y1, w1 * ll, h1)
-	love.graphics.setColor(theme.widget_line)
+	love.graphics.setColor(theme.line)
 	love.graphics.rectangle("line", x1, y1, w1, h1, 2)
 	love.graphics.setColor(theme.ui_text)
 	if backend:running() then
-		util.drawText(string.format("%d %%", 100 * self.cpu_load), x1, 0, w1, ui.RIBBON, "center")
+		util.drawText(string.format("%d %%", 100 * self.cpu_load), x1, 0, w1, ui.RIBBON_HEIGHT, "center")
 	else
-		util.drawText("offline", x1, 0, w1, ui.RIBBON, "center")
+		util.drawText("offline", x1, 0, w1, ui.RIBBON_HEIGHT, "center")
 	end
-	util.drawText("CPU:", x1 - w1, 0, w1, ui.RIBBON, "right")
+	util.drawText("CPU:", x1 - w1, 0, w1, ui.RIBBON_HEIGHT, "right")
 
 	w1 = 96
 	h1 = 16
-	y1 = 0.5 * (ui.RIBBON - h1)
+	y1 = 0.5 * (ui.RIBBON_HEIGHT - h1)
 	x1 = self.w - 224 - y1
 
 	local ml = util.clamp((self.meter.l + 80) / 80, 0, 1)
@@ -337,7 +337,7 @@ function workspace:draw()
 	love.graphics.rectangle("fill", x1, y1, w1 * ml, 0.5 * h1 - 1)
 	love.graphics.setColor(mr < 1.0 and theme.meter or theme.meter_clip)
 	love.graphics.rectangle("fill", x1, y1 + 0.5 * h1, w1 * mr, 0.5 * h1)
-	love.graphics.setColor(theme.widget_line)
+	love.graphics.setColor(theme.line)
 	love.graphics.rectangle("line", x1, y1, w1, h1, 2)
 	love.graphics.setColor(theme.ui_text)
 
