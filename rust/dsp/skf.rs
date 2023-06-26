@@ -1,7 +1,7 @@
 // Two pole nonlinear Sallen-key filter
 
 use crate::dsp::env::Smoothed;
-use std::f32::consts::PI;
+use crate::dsp::prewarp;
 
 #[derive(Debug, Default)]
 pub struct Skf {
@@ -22,7 +22,9 @@ impl Skf {
 			s2: 0.0,
 		}
 	}
-	pub fn process(&mut self, x: f32) -> f32 {
+
+	// returns lp, bp, hp
+	fn process_all(&mut self, x: f32) -> (f32, f32, f32) {
 		self.f.update();
 		let f = self.f.get();
 
@@ -48,24 +50,28 @@ impl Skf {
 		self.s1 += 2.0 * f * (y0 - y1);
 		self.s2 += 2.0 * f * (y1 - y2);
 
-		// lowpass
-		y2
-
-		// bandpass
-		// y1 - y2
-
-		// highpass
-		// y0 - 2 * y1 + y2
+		(y2, y1 - y2, y0 - 2.0 * y1 + y2)
+	}
+	pub fn process_lowpass(&mut self, x: f32) -> f32 {
+		let (lp, _, _) = self.process_all(x);
+		lp
+	}
+	pub fn process_bandpass(&mut self, x: f32) -> f32 {
+		let (_, bp, _) = self.process_all(x);
+		bp
+	}
+	pub fn process_highpass(&mut self, x: f32) -> f32 {
+		let (_, _, hp) = self.process_all(x);
+		hp
 	}
 
 	pub fn set(&mut self, cutoff: f32, res: f32) {
-		let f = ((cutoff / self.sample_rate).min(0.49) * PI).tan();
-		self.f.set(f);
+		self.f.set(prewarp(cutoff / self.sample_rate));
 		self.r = 2.0 * res;
 	}
 }
 
-// approximate tanh(x)/x
+// Padé approximant of tanh(x)/x
 // WolframAlpha: PadeApproximant[Tanh[x]/x,{x,0,{4,4}}]
 fn tanhdx(x: f32) -> f32 {
 	let a = x * x;

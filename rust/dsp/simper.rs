@@ -1,10 +1,13 @@
 // after Andrew Simper, Cytomic, 2013
 // see: https://cytomic.com/files/dsp/SvfLinearTrapOptimised2.pdf
 
+// TODO: get rid of powf in gain
+// TODO: faster prewarping? https://github.com/pichenettes/stmlib/blob/e3bd7c9cc00e4364166f9905c0509b6ffd0535ec/dsp/atan_approximations.py
+
 #![allow(dead_code)]
 
 use crate::dsp::env::Smoothed;
-use std::f32::consts::PI;
+use crate::dsp::{from_db, prewarp};
 
 #[derive(Debug, Default)]
 pub struct Filter {
@@ -46,7 +49,7 @@ impl Filter {
 	}
 
 	pub fn set_lowpass(&mut self, cutoff: f32, q: f32) {
-		let g = (PI * cutoff / self.sample_rate).tan();
+		let g = prewarp(cutoff / self.sample_rate);
 		let k = 1.0 / q;
 		self.set_coefs(g, k);
 		self.m0.set(0.0);
@@ -54,7 +57,7 @@ impl Filter {
 		self.m2.set(1.0);
 	}
 	pub fn set_bandpass(&mut self, cutoff: f32, q: f32) {
-		let g = (PI * cutoff / self.sample_rate).tan();
+		let g = prewarp(cutoff / self.sample_rate);
 		let k = 1.0 / q;
 		self.set_coefs(g, k);
 		self.m0.set(0.0);
@@ -62,7 +65,7 @@ impl Filter {
 		self.m2.set(0.0);
 	}
 	pub fn set_bandpass_norm(&mut self, cutoff: f32, q: f32) {
-		let g = (PI * cutoff / self.sample_rate).tan();
+		let g = prewarp(cutoff / self.sample_rate);
 		let k = 1.0 / q;
 		self.set_coefs(g, k);
 		self.m0.set(0.0);
@@ -70,7 +73,7 @@ impl Filter {
 		self.m2.set(0.0);
 	}
 	pub fn set_highpass(&mut self, cutoff: f32, q: f32) {
-		let g = (PI * cutoff / self.sample_rate).tan();
+		let g = prewarp(cutoff / self.sample_rate);
 		let k = 1.0 / q;
 		self.set_coefs(g, k);
 		self.m0.set(1.0);
@@ -78,7 +81,7 @@ impl Filter {
 		self.m2.set(-1.0);
 	}
 	pub fn set_notch(&mut self, cutoff: f32, q: f32) {
-		let g = (PI * cutoff / self.sample_rate).tan();
+		let g = prewarp(cutoff / self.sample_rate);
 		let k = 1.0 / q;
 		self.set_coefs(g, k);
 		self.m0.set(1.0);
@@ -86,7 +89,7 @@ impl Filter {
 		self.m2.set(0.0);
 	}
 	pub fn set_allpass(&mut self, cutoff: f32, q: f32) {
-		let g = (PI * cutoff / self.sample_rate).tan();
+		let g = prewarp(cutoff / self.sample_rate);
 		let k = 1.0 / q;
 		self.set_coefs(g, k);
 		self.m0.set(1.0);
@@ -94,8 +97,8 @@ impl Filter {
 		self.m2.set(0.0);
 	}
 	pub fn set_bell(&mut self, cutoff: f32, q: f32, gain: f32) {
-		let a = (10.0f32).powf(gain / 40.0);
-		let g = (PI * cutoff / self.sample_rate).tan();
+		let a = from_db(0.5 * gain);
+		let g = prewarp(cutoff / self.sample_rate);
 		let k = 1.0 / (q * a);
 		self.set_coefs(g, k);
 		self.m0.set(1.0);
@@ -103,27 +106,27 @@ impl Filter {
 		self.m2.set(0.0);
 	}
 	pub fn set_lowshelf(&mut self, cutoff: f32, q: f32, gain: f32) {
-		let a = (10.0f32).powf(gain / 40.0);
-		let g = (PI * cutoff / self.sample_rate).tan() / a.sqrt();
-		let k = 1.0 / (q);
+		let a = from_db(0.5 * gain);
+		let g = prewarp(cutoff / self.sample_rate) / a.sqrt();
+		let k = 1.0 / q;
 		self.set_coefs(g, k);
 		self.m0.set(1.0);
 		self.m1.set(k * (a - 1.0));
 		self.m2.set(a * a - 1.0);
 	}
 	pub fn set_highshelf(&mut self, cutoff: f32, q: f32, gain: f32) {
-		let a = (10.0f32).powf(gain / 40.0);
-		let g = (PI * cutoff / self.sample_rate).tan() * a.sqrt();
-		let k = 1.0 / (q);
+		let a = from_db(0.5 * gain);
+		let g = prewarp(cutoff / self.sample_rate) * a.sqrt();
+		let k = 1.0 / q;
 		self.set_coefs(g, k);
 		self.m0.set(a * a);
 		self.m1.set(k * (1.0 - a) * a);
 		self.m2.set(1.0 - a * a);
 	}
 	pub fn set_tilt(&mut self, cutoff: f32, q: f32, gain: f32) {
-		let a = (10.0f32).powf(gain / 40.0);
-		let g = (PI * cutoff / self.sample_rate).tan() * a.sqrt();
-		let k = 1.0 / (q);
+		let a = from_db(0.5 * gain);
+		let g = prewarp(cutoff / self.sample_rate) * a.sqrt();
+		let k = 1.0 / q;
 		self.set_coefs(g, k);
 		self.m0.set(a);
 		self.m1.set(k * (1.0 - a));

@@ -53,7 +53,6 @@ local function audioSetup()
 		audio_status = "running"
 	else
 		print("Audio setup failed")
-		-- return
 	end
 
 	midilib.load(settings.midi.inputs)
@@ -252,9 +251,9 @@ function love.keypressed(key, isrepeat)
 	elseif key == "s" then
 		render_wav()
 	elseif key == "a" then
-		channelHandler:add("sine")
+		-- channelHandler:add("sine")
 		-- channelHandler:add("wavetable")
-		-- channelHandler:add("analog")
+		channelHandler:add("analog")
 
 		-- local n = channelHandler:add("sine")
 		-- n.parameters[2]:setNormalized(math.random())

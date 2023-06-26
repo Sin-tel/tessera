@@ -13,7 +13,7 @@ use crate::scope::Scope;
 #[global_allocator]
 static A: AllocDisabler = AllocDisabler;
 
-pub const MAX_BUF_SIZE: usize = 2048;
+pub const MAX_BUF_SIZE: usize = 128;
 pub const SPECTRUM_SIZE: usize = 4096;
 
 pub fn run(host_name: &str, output_device_name: &str) -> Result<AudioContext, Box<dyn Error>> {
@@ -106,45 +106,45 @@ where
 
 	let mut paused = false;
 
-	let audiobuf = [[0.0f32; MAX_BUF_SIZE]; 2];
+	let process_buffer = [[0.0f32; MAX_BUF_SIZE]; 2];
 
-	let mut cpu_load = SmoothedEnv::new_direct(0.2, 0.0005);
+	let mut cpu_load = SmoothedEnv::new_direct(0.05, 0.01);
 
-	move |buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
+	move |cpal_buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
 		assert_no_alloc(|| {
-			let buf_size = buffer.len() / 2;
-
-			assert!(buf_size <= MAX_BUF_SIZE, "{buf_size} <= {MAX_BUF_SIZE}");
-
-			let [mut l, mut r] = audiobuf;
-
-			let buf_slice = &mut [&mut l[..buf_size], &mut r[..buf_size]];
-
+			let cpal_buffer_size = cpal_buffer.len() / 2;
 			match m_render.try_lock() {
 				Ok(mut render) if !paused => {
 					if !start {
 						start = true;
-						println!("Buffer size: {buf_size:?}");
+						println!("Buffer size: {cpal_buffer_size:?}");
 					}
+
 					let time = std::time::Instant::now();
 
 					// parse all messages
 					for m in stream_rx.pop_iter() {
 						paused = m;
 					}
-
 					render.parse_messages();
 
-					render.process(buf_slice);
+					for buffer_chunk in cpal_buffer.chunks_mut(MAX_BUF_SIZE) {
+						let chunk_size = buffer_chunk.len() / 2;
+						let [mut l, mut r] = process_buffer;
+						let buf_slice = &mut [&mut l[..chunk_size], &mut r[..chunk_size]];
 
-					// interlace and convert
-					for (i, outsample) in buffer.chunks_exact_mut(2).enumerate() {
-						outsample[0] = T::from_sample(buf_slice[0][i]);
-						outsample[1] = T::from_sample(buf_slice[1][i]);
+						render.process(buf_slice);
+
+						// interlace and convert
+						for (i, outsample) in buffer_chunk.chunks_exact_mut(2).enumerate() {
+							outsample[0] = T::from_sample(buf_slice[0][i]);
+							outsample[1] = T::from_sample(buf_slice[1][i]);
+						}
 					}
 
 					let t = time.elapsed();
-					let p = t.as_secs_f64() / ((buf_size as f64) / f64::from(render.sample_rate));
+					let p =
+						t.as_secs_f64() / (cpal_buffer_size as f64 / f64::from(render.sample_rate));
 					cpu_load.set(p as f32);
 					cpu_load.update();
 					render.send(LuaMessage::Cpu(cpu_load.get()));
@@ -157,7 +157,7 @@ where
 					}
 					// println!("Output silent");
 
-					for outsample in buffer.chunks_exact_mut(2) {
+					for outsample in cpal_buffer.chunks_exact_mut(2) {
 						outsample[0] = T::from_sample(0.0f32);
 						outsample[1] = T::from_sample(0.0f32);
 					}

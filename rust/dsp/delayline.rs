@@ -13,7 +13,8 @@ pub struct DelayLine {
 impl DelayLine {
 	pub fn new(sample_rate: f32, len: f32) -> Self {
 		Self {
-			buf: BMRingBuf::<f32>::from_len((len * sample_rate) as usize),
+			// + 4 is so that we have a bit of room for doing cubic interpolation etc.
+			buf: BMRingBuf::<f32>::from_len((len * sample_rate) as usize + 4),
 			sample_rate,
 			pos: 0,
 			h: [0.0; 4],

@@ -18,7 +18,7 @@
 
 mod audio;
 mod device;
-mod dsp;
+pub mod dsp;
 mod effect;
 mod instrument;
 mod lua;

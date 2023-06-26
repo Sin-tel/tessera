@@ -5,10 +5,10 @@
 extern crate bencher;
 
 use bencher::Bencher;
-
 use fastrand::Rng;
 use rust_backend::dsp::delayline::*;
 use rust_backend::dsp::*;
+use std::f32::consts::PI;
 
 const ITERATIONS: u32 = 1000;
 const SAMPLE_RATE: f32 = 44100.0;
@@ -16,6 +16,16 @@ const SAMPLE_RATE: f32 = 44100.0;
 fn tanhdx(x: f32) -> f32 {
 	let a = x * x;
 	((a + 105.0) * a + 945.0) / ((15.0 * a + 420.0) * a + 945.0)
+}
+
+fn prewarp_cheap(f: f32) -> f32 {
+	let x = f.min(0.49);
+	let a = x * x;
+	x * (PI.powi(3) * a - 15.0 * PI) / (6.0 * PI.powi(2) * a - 15.0)
+}
+
+fn prewarp(x: f32) -> f32 {
+	(x.min(0.49) * PI).tan()
 }
 
 fn distdx(x: f32) -> f32 {
@@ -54,8 +64,16 @@ fn softclip_cubic_bench(bench: &mut Bencher) {
 	run(bench, softclip_cubic)
 }
 
-fn pitch_to_f_bench(bench: &mut Bencher) {
-	run(bench, |p| pitch_to_f(p, 44100.0))
+fn prewarp_bench(bench: &mut Bencher) {
+	run(bench, prewarp)
+}
+
+fn prewarp_cheap_bench(bench: &mut Bencher) {
+	run(bench, prewarp_cheap)
+}
+
+fn pitch_to_hz_bench(bench: &mut Bencher) {
+	run(bench, |p| pitch_to_hz(p))
 }
 
 fn delay_go_back_int_bench(bench: &mut Bencher) {
@@ -118,18 +136,21 @@ fn skf_bench(bench: &mut Bencher) {
 			i = 0;
 			filter.set(x, 0.7);
 		}
-		filter.process(x)
+		filter.process_lowpass(x)
 	})
 }
 
 benchmark_group!(
 	benches,
-	tanh_bench,
-	tanhdx_bench,
-	softclip_bench,
-	dist2dx_bench,
-	distdx_bench,
+	// tanh_bench,
+	// tanhdx_bench,
+	// softclip_bench,
+	// dist2dx_bench,
+	// distdx_bench,
+	// prewarp_bench,
+	// prewarp_cheap_bench,
 	// softclip_cubic_bench,
+
 	// pitch_to_f_bench,
 	// delay_go_back_int_bench,
 	// delay_go_back_linear_bench,
@@ -139,7 +160,6 @@ benchmark_group!(
 	// floor_bench,
 	// round_bench,
 	// trunc_bench,
-	// svf_bench,
-	// skf_bench,
+	svf_bench, skf_bench,
 );
 benchmark_main!(benches);

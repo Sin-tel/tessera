@@ -82,7 +82,7 @@ impl Instrument for Analog {
 
 			let mut out = self.z + self.mix_noise * (self.rng.f32() - 0.5);
 
-			out = 5.0 * self.filter.process(0.2 * out);
+			out = 5.0 * self.filter.process_lowpass(0.2 * out);
 			out *= self.vel.get();
 
 			*l = out;
