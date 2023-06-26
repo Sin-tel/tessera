@@ -2,6 +2,28 @@ local Ui = require("ui/ui")
 
 local util = {}
 
+function util.lerp(a, b, t)
+	return a + (b - a) * util.clamp(t, 0, 1)
+end
+
+function util.towards(a, b, t)
+	if math.abs(b - a) < t then
+		return b
+	else
+		return a + t * util.sign(b - a)
+	end
+end
+
+function util.sign(x)
+	if x > 0 then
+		return 1
+	elseif x < 0 then
+		return -1
+	else
+		return 0
+	end
+end
+
 function util.clamp(x, min, max)
 	return x < min and min or (x > max and max or x)
 end

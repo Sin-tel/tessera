@@ -19,8 +19,6 @@ function ChannelSettings:update()
 
 	self.ui:startFrame()
 
-	self.ui.layout:start()
-
 	-- TODO: should calculate this in device instead
 	local w_label = util.clamp(w * 0.4 - 64, 0, Ui.PARAMETER_LABEL_WIDTH)
 
@@ -30,6 +28,7 @@ function ChannelSettings:update()
 			v:updateUi(self.ui, w, w_label)
 		end
 	end
+	self.ui:endFrame()
 end
 
 function ChannelSettings:draw()

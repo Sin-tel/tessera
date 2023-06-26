@@ -3,9 +3,6 @@ local util = require("util")
 
 local Collapse = {}
 
--- maybe this can share implementation with checkbox?
--- TODO: make a nice vector triangle instead of +/-
-
 function Collapse:new(text)
 	local new = {}
 	setmetatable(new, self)
@@ -13,6 +10,7 @@ function Collapse:new(text)
 
 	new.text = text
 	new.open = true
+	new.angle = 0
 
 	return new
 end
@@ -24,6 +22,13 @@ function Collapse:update(ui, x, y, w, h)
 		self.open = not self.open
 	end
 
+	local goal = 0.0
+	if not self.open then
+		goal = -0.5 * math.pi
+	end
+
+	self.angle = util.towards(self.angle, goal, 0.5)
+
 	ui:pushDraw(self.draw, self, x, y, w, h)
 
 	return self.open
@@ -32,11 +37,19 @@ end
 function Collapse:draw(x, y, w, h)
 	love.graphics.setColor(theme.ui_text)
 	local left_pad = h + Ui.DEFAULT_PAD
-	local text = "+"
-	if self.open then
-		text = "-"
-	end
-	util.drawText(text, x, y, h, h, "center")
+
+	local tw = h * 0.25
+	local cx, cy = x + h * 0.5, y + h * 0.5
+	local x1, y1 = -tw, -tw
+	local x2, y2 = tw, -tw
+	local x3, y3 = 0, tw
+
+	love.graphics.push()
+	love.graphics.translate(cx, cy)
+	love.graphics.rotate(self.angle)
+	love.graphics.polygon("fill", x1, y1, x2, y2, x3, y3)
+	love.graphics.polygon("line", x1, y1, x2, y2, x3, y3)
+	love.graphics.pop()
 	util.drawText(self.text, x + left_pad, y, w - left_pad, h)
 end
 

@@ -146,10 +146,6 @@ function Channels:draw()
 	end
 end
 
-function Channels:wheelmoved(y)
-	self.scroll_ = math.floor(self.scroll - y * 2.0 * Ui.ROW_HEIGHT)
-end
-
 function Channels:getMaxScroll()
 	local w, h = self:getDimensions()
 

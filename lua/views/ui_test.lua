@@ -23,7 +23,6 @@ function UiTest:update()
 	local w, h = self:getDimensions()
 
 	self.ui:startFrame()
-	self.ui.layout:start()
 
 	self.ui:label("centered label", "center")
 
@@ -50,6 +49,8 @@ function UiTest:update()
 	if self.ui:put(self.checkbox) then
 		--
 	end
+
+	self.ui:endFrame()
 end
 
 function UiTest:draw()

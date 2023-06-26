@@ -26,10 +26,10 @@ function Slider:update(ui, x, y, w, h)
 	end
 
 	if ui.active == self then
+		mouse:setRelative(true)
 		if mouse.button_pressed then
 			self.drag_start = v
 			self.active = true
-			mouse:setRelative(true)
 		end
 		if mouse.drag then
 			local scale = 0.7 / w
@@ -44,7 +44,6 @@ function Slider:update(ui, x, y, w, h)
 			local ox, oy = ui.view:getOrigin()
 			mouse:setPosition(ox + x + v * w, oy + y + 0.5 * h)
 		end
-		mouse:setRelative(false)
 	end
 
 	local color_fill = theme.widget_bg

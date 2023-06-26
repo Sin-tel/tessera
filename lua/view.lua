@@ -46,7 +46,6 @@ end
 function View:mousepressed() end
 function View:mousereleased() end
 function View:update() end
-function View:wheelmoved() end
 
 function View:getDimensions()
 	return self.box.w - 2 * Ui.BORDER_SIZE, self.box.h - Ui.HEADER - 2 * Ui.BORDER_SIZE

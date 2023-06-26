@@ -39,6 +39,13 @@ function Ui:new(view)
 	new.clicked = false
 	new.was_active = false
 
+	new.bg_color = nil
+	new.bg_list = {}
+
+	new.scroll = 0
+	new.scroll_goal = 0
+	new.max_scroll = 0
+
 	local Layout = require("ui/layout")
 	new.layout = Layout:new()
 
@@ -56,6 +63,21 @@ function Ui:startFrame()
 		self.was_active = self.active
 		self.active = false
 	end
+
+	if mouse.scroll and self.view:focus() then
+		print(mouse.scroll)
+		self.scroll_goal = self.scroll_goal - 2 * mouse.scroll * self.ROW_HEIGHT
+	end
+	self.scroll_goal = util.clamp(self.scroll_goal, 0, self.max_scroll)
+	self.scroll = util.lerp(self.scroll, self.scroll_goal, 0.3)
+	self.scroll = util.towards(self.scroll, self.scroll_goal, 3.0)
+
+	self.layout:start(0, -self.scroll)
+end
+
+function Ui:endFrame()
+	local w, h = self.view:getDimensions()
+	self.max_scroll = math.max(0, self.layout:totalHeight() - h)
 end
 
 function Ui:next()
@@ -63,6 +85,10 @@ function Ui:next()
 		-- TODO: do col("max") when in column mode
 		local w, h = self.view:getDimensions()
 		self.layout:row(w, Ui.ROW_HEIGHT)
+	end
+
+	if self.bg_color then
+		table.insert(self.bg_list, { self.layout.row_y, self.layout.row_h, self.bg_color })
 	end
 end
 
@@ -99,6 +125,10 @@ function Ui:hitbox(widget, x, y, w, h)
 	return false
 end
 
+function Ui:background(color)
+	self.bg_color = color
+end
+
 function Ui:pushDraw(f, ...)
 	local args = { ... }
 	table.insert(self.draw_queue, function()
@@ -107,10 +137,17 @@ function Ui:pushDraw(f, ...)
 end
 
 function Ui:draw()
+	local w, h = self.view:getDimensions()
+
+	for _, b in ipairs(self.bg_list) do
+		love.graphics.setColor(b[3])
+		love.graphics.rectangle("fill", 0, b[1], w, b[2])
+	end
 	for _, f in ipairs(self.draw_queue) do
 		f()
 	end
 	-- TODO: maybe we can cache these?
+	self.bg_list = {}
 	self.draw_queue = {}
 end
 

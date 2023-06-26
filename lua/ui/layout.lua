@@ -25,7 +25,7 @@ function Layout:new(w, h)
 	return new
 end
 
-function Layout:start(x, y, w, h)
+function Layout:start(x, y)
 	self.x = x or 0
 	self.y = y or 0
 
@@ -39,6 +39,9 @@ function Layout:start(x, y, w, h)
 	self.next_y = 0
 	self.next_w = 0
 	self.next_h = 0
+
+	self.row_y = 0
+	self.row_h = 0
 end
 
 function Layout:newRow()
@@ -58,16 +61,15 @@ function Layout:row(w, h)
 
 	local x, y = self.start_x, self.y
 
-	-- self.x = self.start_x
 	self.y = self.y + self.h
 
-	assert(self.w ~= nil)
-	assert(self.h ~= nil)
-
-	self.next_x = x + self.pad
+	self.next_x = x
 	self.next_y = y + self.pad
 	self.next_w = self.w - 2 * self.pad
 	self.next_h = self.h - 2 * self.pad
+
+	self.row_y = y
+	self.row_h = self.h
 
 	self.column_mode = false
 	self.ok = true
@@ -85,6 +87,9 @@ function Layout:col(w, h)
 	self.next_y = y + self.pad
 	self.next_w = self.w - 2 * self.pad
 	self.next_h = self.h - 2 * self.pad
+
+	self.row_y = y
+	self.row_h = self.h
 
 	self.column_mode = true
 	self.ok = true

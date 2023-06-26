@@ -33,6 +33,7 @@ end
 
 function Device:updateUi(ui, w, w_label)
 	if ui:put(self.collapse) then
+		ui:background(theme.bg_nested)
 		for _, v in ipairs(self.parameters) do
 			ui.layout:col(w_label)
 			ui:label(v.name, "right")
@@ -40,6 +41,7 @@ function Device:updateUi(ui, w, w_label)
 			ui:put(v.widget)
 			ui.layout:newRow()
 		end
+		ui:background()
 	end
 end
 

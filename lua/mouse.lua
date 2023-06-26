@@ -11,6 +11,7 @@ function mouse:load()
 
 	self.double = false
 	self.drag = false
+	self.relative = false
 
 	self.ix = 0
 	self.iy = 0
@@ -24,6 +25,8 @@ function mouse:load()
 	self.button_released = false
 
 	self.pbutton = false
+
+	self.scroll = false
 
 	self.cursors = {}
 
@@ -52,7 +55,7 @@ function mouse:pressed(x, y, button)
 		self.button_pressed = button
 		self.isDown = true
 
-		-- TODO: remove
+		-- TODO: remove?
 		workspace:mousepressed()
 	end
 end
@@ -93,7 +96,10 @@ end
 function mouse:endFrame()
 	self.button_pressed = false
 	self.button_released = false
+	self.scroll = false
 
+	love.mouse.setRelativeMode(self.relative)
+	self.relative = false
 	if self.cursor then
 		love.mouse.setVisible(true)
 		love.mouse.setCursor(self.cursor)
@@ -111,7 +117,7 @@ function mouse:setRelative(r)
 	--   Dragging them and then right clicking does not
 	--   register if the mouse hasn't moved since turning
 	--   off relative mode.
-	love.mouse.setRelativeMode(r)
+	self.relative = true
 end
 
 function mouse:setPosition(x, y)
@@ -128,6 +134,10 @@ function mouse:mousemoved(_, _, dx, dy)
 		self.dx = self.dx + dx
 		self.dy = self.dy + dy
 	end
+end
+
+function mouse:wheelmoved(y)
+	self.scroll = y
 end
 
 return mouse
