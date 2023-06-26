@@ -13,8 +13,10 @@ function UiTest:new()
 	new.ui = Ui:new(new)
 
 	new.button = widgets.Button:new("click me")
-	new.slider = widgets.Slider:new({ default = 2000, min = 20, max = 20000, fmt = "Hz", t = "log" })
+	new.slider = widgets.Slider:new({ default = 700, min = 20, max = 20000, fmt = "Hz", t = "log" })
 	new.checkbox = widgets.Checkbox:new("checkbox")
+	new.selector = widgets.Selector:new({ "one", "two", "three" })
+	new.toggle = widgets.Toggle:new("toggle")
 
 	return new
 end
@@ -49,6 +51,11 @@ function UiTest:update()
 	if self.ui:put(self.checkbox) then
 		--
 	end
+
+	self.ui.layout:col(w * 0.5)
+	self.ui:put(self.toggle)
+	self.ui.layout:col(w * 0.5)
+	self.ui:put(self.selector)
 
 	self.ui:endFrame()
 end

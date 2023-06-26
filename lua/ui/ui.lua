@@ -3,14 +3,7 @@
 local mouse = require("mouse")
 local Ui = {}
 
--- TODO: scrolling
--- TODO: set background per row
--- TODO: separators
--- TODO: option picker
--- TODO: editable labels
--- TODO: context menu
--- TODO: radio buttons
--- TODO: combobox
+
 
 Ui.RESIZE_W = 5
 Ui.MIN_SIZE = 32
@@ -55,8 +48,6 @@ end
 function Ui:startFrame()
 	self.mx, self.my = self.view:getMouse()
 
-	-- TODO: should these be global?
-	-- at least make them static
 	self.hover = false
 	self.clicked = false
 	if mouse.button_released then
@@ -65,7 +56,6 @@ function Ui:startFrame()
 	end
 
 	if mouse.scroll and self.view:focus() then
-		print(mouse.scroll)
 		self.scroll_goal = self.scroll_goal - 2 * mouse.scroll * self.ROW_HEIGHT
 	end
 	self.scroll_goal = util.clamp(self.scroll_goal, 0, self.max_scroll)
@@ -109,7 +99,13 @@ function Ui:label(text, align)
 end
 
 function Ui:hitbox(widget, x, y, w, h)
-	if self.view:focus() and self.mx >= x and self.my >= y and self.mx <= x + w and self.my <= y + h then
+	if
+		self.view:focus()
+		and self.mx >= x - 1
+		and self.my >= y - 1
+		and self.mx <= x + w + 2
+		and self.my <= y + h + 2
+	then
 		if mouse.button_pressed == 1 then
 			self.active = widget
 		end

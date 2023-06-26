@@ -21,8 +21,10 @@ function Device:new(name, options)
 		local widget_options = v[3]
 		if widget_name == "slider" then
 			p.widget = widgets.Slider:new(widget_options)
+		elseif widget_name == "selector" then
+			p.widget = widgets.Selector:new(widget_options)
 		else
-			print(widget_name .. " not supported!")
+			error(widget_name .. " not supported!")
 		end
 
 		table.insert(new.parameters, p)

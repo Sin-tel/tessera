@@ -10,6 +10,14 @@ use crate::instrument::*;
 const MAX_F: f32 = 20_000.0;
 
 #[derive(Debug, Default)]
+enum FilterMode {
+	#[default]
+	Lowpass,
+	Bandpass,
+	Highpass,
+}
+
+#[derive(Debug, Default)]
 pub struct Analog {
 	accum: f32,
 	freq: Smoothed,
@@ -25,6 +33,7 @@ pub struct Analog {
 	mix_saw: f32,
 	mix_sub: f32,
 	mix_noise: f32,
+	vcf_mode: FilterMode,
 	vcf_pitch: f32,
 	vcf_res: f32,
 	vcf_env: f32,
@@ -82,7 +91,15 @@ impl Instrument for Analog {
 
 			let mut out = self.z + self.mix_noise * (self.rng.f32() - 0.5);
 
-			out = 5.0 * self.filter.process_lowpass(0.2 * out);
+			out *= 0.2;
+			// TODO: move match branch outside of inner loop
+			out = match self.vcf_mode {
+				FilterMode::Lowpass => self.filter.process_lowpass(out),
+				FilterMode::Bandpass => self.filter.process_bandpass(out),
+				FilterMode::Highpass => self.filter.process_highpass(out),
+			};
+			out *= 5.0;
+
 			out *= self.vel.get();
 
 			*l = out;
@@ -121,18 +138,26 @@ impl Instrument for Analog {
 			3 => self.mix_sub = value,
 			4 => self.mix_noise = value,
 			5 => {
+				self.vcf_mode = match value as usize {
+					0 => FilterMode::Lowpass,
+					1 => FilterMode::Bandpass,
+					2 => FilterMode::Highpass,
+					_ => unreachable!(),
+				}
+			}
+			6 => {
 				self.vcf_pitch = hz_to_pitch(value);
 				self.update_filter();
 			}
-			6 => {
+			7 => {
 				self.vcf_res = value;
 				self.update_filter();
 			}
-			7 => {
+			8 => {
 				self.vcf_env = value;
 				self.update_filter();
 			}
-			8 => {
+			9 => {
 				self.vcf_kbd = value;
 				self.update_filter();
 			}

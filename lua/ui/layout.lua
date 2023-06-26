@@ -63,7 +63,7 @@ function Layout:row(w, h)
 
 	self.y = self.y + self.h
 
-	self.next_x = x
+	self.next_x = x + self.pad
 	self.next_y = y + self.pad
 	self.next_w = self.w - 2 * self.pad
 	self.next_h = self.h - 2 * self.pad

@@ -1,11 +1,3 @@
-lua style
-  - classes: PascalCase
-  - instances/tables: camelCase, index with : 
-  - methods/functions: camelCase
-  - variables: snake_case
-  - constants: SCREAMING_SNAKE_CASE
-  - singletons: camelCase, index with : 
-
 Lua
 [x] luajit host w love2d
 [x] Simple settings text file
@@ -30,10 +22,11 @@ Lua
 [ ] Project grid / time division
 [ ] Add note internal vertices
 [ ] Time warping
-[ ] UI checkbox (also in top level)
-[ ] UI selector
-[ ] UI dropdown
-[ ] UI vertical layout nesting
+[x] UI checkbox (also in top level)
+[x] UI selector
+[ ] UI separators
+[ ] UI editable labels
+[ ] UI context menu
 [ ] Type value in slider
 [ ] Top ribbon menu
 [ ] Tabs/workspaces
@@ -69,6 +62,7 @@ Rust
 [x] Simple metering (cpu, dB meters, audio engine state)
 [x] channel mute
 [+] Mixing channels
+[ ] Up and down samplers
 [-] Add some effects
 [ ] Poll audio/midi settings
 [x] Reset audio driver to change settings in ASIO panel
