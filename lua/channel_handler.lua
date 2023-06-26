@@ -41,8 +41,6 @@ function channelHandler:add(name)
 			armed = false,
 		}
 
-		-- ParameterGroup.makeParameterGroups(new)
-
 		table.insert(self.list, new)
 		new.index = #self.list - 1 -- Rust backend index starts at zero
 		new.name = name .. " " .. new.index

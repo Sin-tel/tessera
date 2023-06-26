@@ -8,6 +8,7 @@ local Ui = {}
 -- TODO: separators
 -- TODO: option picker
 -- TODO: editable labels
+-- TODO: context menu
 -- TODO: radio buttons
 -- TODO: combobox
 

@@ -66,6 +66,7 @@ impl Skf {
 }
 
 // approximate tanh(x)/x
+// WolframAlpha: PadeApproximant[Tanh[x]/x,{x,0,{4,4}}]
 fn tanhdx(x: f32) -> f32 {
 	let a = x * x;
 	((a + 105.0) * a + 945.0) / ((15.0 * a + 420.0) * a + 945.0)

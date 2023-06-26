@@ -208,13 +208,11 @@ fn rust_backend(lua: &Lua) -> LuaResult<LuaTable> {
 	Ok(exports)
 }
 
-#[inline]
 fn dither() -> f64 {
 	// Don't know if this is the correct scaling for dithering, but it sounds good
 	(fastrand::f64() - fastrand::f64()) / (2.0 * f64::from(i16::MAX))
 }
 
-#[inline]
 fn convert_sample_wav(x: f32) -> f64 {
 	let z = (f64::from(x) + dither()).clamp(-1.0, 1.0);
 

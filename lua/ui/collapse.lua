@@ -36,7 +36,7 @@ function Collapse:draw(x, y, w, h)
 	if self.open then
 		text = "-"
 	end
-	util.drawText(text, x, y, 16, h)
+	util.drawText(text, x, y, h, h, "center")
 	util.drawText(self.text, x + left_pad, y, w - left_pad, h)
 end
 

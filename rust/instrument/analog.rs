@@ -128,8 +128,14 @@ impl Instrument for Analog {
 				self.vcf_res = value;
 				self.update_filter();
 			}
-			7 => self.vcf_env = value,
-			8 => self.vcf_kbd = value,
+			7 => {
+				self.vcf_env = value;
+				self.update_filter();
+			}
+			8 => {
+				self.vcf_kbd = value;
+				self.update_filter();
+			}
 
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
