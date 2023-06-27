@@ -1,16 +1,39 @@
 local View = require("view")
 local backend = require("backend")
-
+local Ui = require("ui/ui")
+local widgets = require("ui/widgets")
 local Scope = View:derive("Scope")
 
-function Scope:draw()
-	self.draw_spectrum = false
+-- TODO: make scope tracking better
+--       zero crossing detection? frequency tracking?
 
+function Scope:new()
+	local new = {}
+	setmetatable(new, self)
+	self.__index = self
+
+	new.ui = Ui:new(new)
+
+	new.selector = widgets.Selector:new({ "scope", "spectrum" })
+
+	return new
+end
+
+function Scope:update()
+	local w, h = self:getDimensions()
+
+	self.ui:startFrame()
+	self.ui.layout:col(200)
+	self.ui:put(self.selector)
+	self.ui:endFrame()
+end
+
+function Scope:draw()
 	local w, h = self:getDimensions()
 
 	love.graphics.setColor(theme.ui_text)
 
-	if self.draw_spectrum then
+	if self.selector.index == 2 then
 		local spectrum = backend:getSpectrum()
 		if spectrum then
 			local n = #spectrum
@@ -45,6 +68,8 @@ function Scope:draw()
 			end
 		end
 	end
+
+	self.ui:draw()
 end
 
 return Scope

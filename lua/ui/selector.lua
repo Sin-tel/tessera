@@ -4,6 +4,58 @@ local util = require("util")
 local CORNER_RADIUS = 4
 local Button = {}
 
+-- TODO: middle mouse reset
+
+local Selector = {}
+function Selector:new(list)
+	local new = {}
+	setmetatable(new, self)
+	self.__index = self
+
+	new.index = 1
+	new.dirty = true
+
+	new.list = {}
+	for _, v in ipairs(list) do
+		table.insert(new.list, Button:new(v))
+	end
+
+	new.list[new.index].checked = true
+	return new
+end
+
+function Selector:update(ui, x, y, w, h)
+	local tx, ty = x, y
+	local tw = w / #self.list
+
+	local new_index = nil
+	for i, v in ipairs(self.list) do
+		if v:update(ui, tx, ty, tw, h) then
+			if i ~= self.index then
+				new_index = i
+			end
+		end
+		tx = tx + tw
+	end
+
+	if new_index then
+		self.index = new_index
+		self.dirty = true
+		for i, v in ipairs(self.list) do
+			v.checked = (i == self.index)
+		end
+	end
+
+	return self.index
+end
+
+function Selector:getFloat()
+	if self.dirty then
+		self.dirty = false
+		return self.index - 1.0
+	end
+end
+
 function Button:new(text)
 	local new = {}
 	setmetatable(new, self)
@@ -46,56 +98,6 @@ function Button:draw(ui, x, y, w, h)
 
 	love.graphics.setColor(theme.ui_text)
 	util.drawText(self.text, x, y, w, h, "center", true)
-end
-
-local Selector = {}
-function Selector:new(list)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
-
-	new.selected = 1
-	new.dirty = true
-
-	new.list = {}
-	for _, v in ipairs(list) do
-		table.insert(new.list, Button:new(v))
-	end
-
-	new.list[new.selected].checked = true
-	return new
-end
-
-function Selector:update(ui, x, y, w, h)
-	local tx, ty = x, y
-	local tw = w / #self.list
-
-	local new_selected = nil
-	for i, v in ipairs(self.list) do
-		if v:update(ui, tx, ty, tw, h) then
-			if i ~= self.selected then
-				new_selected = i
-			end
-		end
-		tx = tx + tw
-	end
-
-	if new_selected then
-		self.selected = new_selected
-		self.dirty = true
-		for i, v in ipairs(self.list) do
-			v.checked = (i == self.selected)
-		end
-	end
-
-	return self.selected
-end
-
-function Selector:getFloat()
-	if self.dirty then
-		self.dirty = false
-		return self.selected - 1.0
-	end
 end
 
 return Selector

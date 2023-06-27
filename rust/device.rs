@@ -3,7 +3,7 @@
 use crate::effect::Effect;
 use crate::effect::{gain::Gain, pan::Pan};
 use crate::instrument::Instrument;
-use crate::instrument::{analog::Analog, sine::Sine, wavetable::Wavetable};
+use crate::instrument::{analog::Analog, fm::Fm, sine::Sine, wavetable::Wavetable};
 
 // list of instruments
 pub fn new_instrument(sample_rate: f32, instrument_number: usize) -> Box<dyn Instrument + Send> {
@@ -11,6 +11,7 @@ pub fn new_instrument(sample_rate: f32, instrument_number: usize) -> Box<dyn Ins
 		0 => Box::new(Sine::new(sample_rate)),
 		1 => Box::new(Wavetable::new(sample_rate)),
 		2 => Box::new(Analog::new(sample_rate)),
+		3 => Box::new(Fm::new(sample_rate)),
 		_ => {
 			eprintln!("Instrument with number {instrument_number} not found. Returning default.");
 			Box::new(Sine::new(sample_rate))

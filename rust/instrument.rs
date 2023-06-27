@@ -1,4 +1,5 @@
 pub mod analog;
+pub mod fm;
 pub mod sine;
 pub mod wavetable;
 

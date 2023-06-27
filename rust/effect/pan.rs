@@ -3,6 +3,10 @@ use crate::dsp::env::Smoothed;
 use crate::dsp::simper::Filter;
 use crate::effect::Effect;
 
+// TODO: This device is used everywhere and
+//       most of the time, parameters don't change,
+//       so we should be able to improve performance a lot
+
 // interaural time difference, 660 μs
 const ITD: f32 = 0.00066;
 // head filter at 4 kHz

@@ -13,6 +13,7 @@ function Toggle:new(text, style)
 	new.text = text
 	new.style = style or "checkbox"
 	new.checked = false
+	new.dirty = true
 
 	return new
 end
@@ -22,6 +23,7 @@ function Toggle:update(ui, x, y, w, h)
 
 	if ui.clicked == self then
 		self.checked = not self.checked
+		self.dirty = true
 	end
 
 	local color_fill = theme.widget_bg
@@ -65,6 +67,17 @@ function Toggle:draw_checkbox(color_fill, color_line, x, y, w, h)
 	love.graphics.setColor(theme.ui_text)
 	local left_pad = h + Ui.DEFAULT_PAD
 	util.drawText(self.text, x + left_pad, y, w - left_pad, h)
+end
+
+function Toggle:getFloat()
+	if self.dirty then
+		self.dirty = false
+		if self.checked then
+			return 1.0
+		else
+			return 0.0
+		end
+	end
 end
 
 return Toggle

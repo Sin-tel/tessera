@@ -44,7 +44,7 @@ impl Instrument for Analog {
 	fn new(sample_rate: f32) -> Self {
 		Analog {
 			freq: Smoothed::new(10.0, sample_rate),
-			vel: SmoothedEnv::new(5.0, 50.0, sample_rate),
+			vel: SmoothedEnv::new(5.0, 120.0, sample_rate),
 			sample_rate,
 			rng: fastrand::Rng::new(),
 			filter: Skf::new(sample_rate),
@@ -119,14 +119,14 @@ impl Instrument for Analog {
 		let f = pitch_to_hz(pitch) / self.sample_rate;
 		self.freq.set_hard(f);
 
-		if self.vel.get() < 0.01 {
-			// TODO: filter set hard?
-			self.vel.set_hard(vel);
-			self.accum = 0.5;
-			self.z = 0.0;
-		} else {
-			self.vel.set(vel);
-		}
+		// if self.vel.get() < 0.01 {
+		// 	// TODO: filter set hard?
+		// 	self.vel.set_hard(vel);
+		// 	self.accum = 0.5;
+		// 	self.z = 0.0;
+		// } else {
+		self.vel.set(vel);
+		// }
 
 		self.update_filter();
 	}
@@ -183,7 +183,7 @@ impl Analog {
 			//TODO: store pitch so we can save hz_to_pitch call?
 			pitch_to_hz(
 				self.vcf_pitch
-					+ self.vcf_kbd * (hz_to_pitch(self.freq.inner() * self.sample_rate) - 60.0)
+					+ self.vcf_kbd * (hz_to_pitch(self.freq.inner() * self.sample_rate) - 72.0)
 					+ self.vcf_env * self.vel.inner() * 84.0,
 			),
 			self.vcf_res,

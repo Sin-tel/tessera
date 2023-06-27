@@ -51,9 +51,7 @@ function TestPadView:draw()
 		local mxx = (mx - x1) / (x2 - x1)
 		local myy = (my - y1) / (y2 - y1)
 
-		-- self.f = 60 - math.floor(oct * 0.5) * 12 + oct * 12 * mxx
 		self.f = 60 - math.floor(oct * 0.5) * 12 + oct * 12 * mxx
-
 		self.v = 1.0 - myy
 
 		if (mouse.button == 1 or mouse.button == 2) and selection.channel then
