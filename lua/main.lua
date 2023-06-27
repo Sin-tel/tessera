@@ -58,8 +58,8 @@ local function audioSetup()
 	midilib.load(settings.midi.inputs)
 
 	channelHandler:load()
-	local ch = channelHandler:add("analog")
-	-- local ch = channelHandler:add("sine")
+	-- local ch = channelHandler:add("analog")
+	local ch = channelHandler:add("sine")
 	ch.armed = true
 
 	-- for i = 1, 150 do
@@ -254,6 +254,7 @@ function love.keypressed(key, isrepeat)
 		channelHandler:add("sine")
 		-- channelHandler:add("wavetable")
 		-- channelHandler:add("analog")
+		print(#channelHandler.list)
 
 		-- local n = channelHandler:add("sine")
 		-- n.parameters[2]:setNormalized(math.random())

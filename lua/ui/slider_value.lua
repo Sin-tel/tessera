@@ -36,6 +36,7 @@ function SliderValue:new(options)
 	else
 		new.min = options.min or 0
 		new.max = options.max or 1
+		new.step = options.step
 		local default = options.default or 0.5 * (new.min + new.max)
 		new.v = default
 		new.default = default
@@ -61,7 +62,11 @@ function SliderValue:setNormalized(value)
 	elseif self.t == "log" then
 		self.v = math.exp(x * math.log(self.max / self.min) + math.log(self.min))
 	else
-		self.v = x * (self.max - self.min) + self.min
+		local v = x * (self.max - self.min) + self.min
+		if self.step then
+			v = math.floor(v / self.step) * self.step
+		end
+		self.v = v
 	end
 	self.dirty = true
 end

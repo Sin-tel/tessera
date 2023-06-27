@@ -9,9 +9,16 @@ use fastrand::Rng;
 use rust_backend::dsp::delayline::*;
 use rust_backend::dsp::*;
 use std::f32::consts::PI;
+use std::f32::consts::TAU;
 
 const ITERATIONS: u32 = 1000;
 const SAMPLE_RATE: f32 = 44100.0;
+
+fn sin_cheap(x: f32) -> f32 {
+	let a = (x > 0.5) as usize as f32;
+	let b = 2.0 * x - 1.0 - 2.0 * a;
+	(2.0 * a - 1.0) * (x * b + a) / (0.25 * x * b + 0.15625 + 0.25 * a)
+}
 
 fn tanhdx(x: f32) -> f32 {
 	let a = x * x;
@@ -62,6 +69,14 @@ fn softclip_bench(bench: &mut Bencher) {
 
 fn softclip_cubic_bench(bench: &mut Bencher) {
 	run(bench, softclip_cubic)
+}
+
+fn sin_bench(bench: &mut Bencher) {
+	run(bench, |b| (TAU * b).sin())
+}
+
+fn sin_cheap_bench(bench: &mut Bencher) {
+	run(bench, |b| sin_cheap(b))
 }
 
 fn prewarp_bench(bench: &mut Bencher) {
@@ -150,7 +165,8 @@ benchmark_group!(
 	// prewarp_bench,
 	// prewarp_cheap_bench,
 	// softclip_cubic_bench,
-
+	sin_bench,
+	sin_cheap_bench,
 	// pitch_to_f_bench,
 	// delay_go_back_int_bench,
 	// delay_go_back_linear_bench,
@@ -160,6 +176,7 @@ benchmark_group!(
 	// floor_bench,
 	// round_bench,
 	// trunc_bench,
-	svf_bench, skf_bench,
+	// svf_bench,
+	// skf_bench,
 );
 benchmark_main!(benches);

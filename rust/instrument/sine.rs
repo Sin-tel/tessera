@@ -41,7 +41,12 @@ impl Instrument for Sine {
 			if self.accum > 1.0 {
 				self.accum -= 1.0;
 			}
-			let mut out = (self.accum * TWO_PI + self.feedback * self.prev).sin();
+			let mut feedback = self.feedback * self.prev;
+			if self.feedback < 0.0 {
+				feedback *= feedback;
+			}
+			let mut out = sin_cheap(self.accum + feedback / TWO_PI);
+			// let mut out = (self.accum * TWO_PI + feedback).sin();
 			out *= self.vel.get();
 
 			self.prev = out;
@@ -72,4 +77,12 @@ impl Instrument for Sine {
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}
+}
+
+// branchless approximation of sin(2*pi*x)
+// only valid in [0, 1]
+fn sin_cheap(x: f32) -> f32 {
+	let a = (x > 0.5) as usize as f32;
+	let b = 2.0 * x - 1.0 - 2.0 * a;
+	(2.0 * a - 1.0) * (x * b + a) / (0.25 * x * b + 0.15625 + 0.25 * a)
 }

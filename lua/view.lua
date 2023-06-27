@@ -39,8 +39,7 @@ function View:drawFull()
 	love.graphics.setFont(resources.fonts.main)
 	love.graphics.setColor(theme.ui_text)
 
-	local pad = Ui.DEFAULT_PAD
-	util.drawText(self.name, pad, 0, w - 2 * pad, Ui.HEADER, "left")
+	util.drawText(self.name, 0, 0, w, Ui.HEADER, "left", true)
 end
 
 function View:mousepressed() end

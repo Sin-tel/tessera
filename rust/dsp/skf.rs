@@ -29,9 +29,16 @@ impl Skf {
 		let f = self.f.get();
 
 		// evaluate the non-linear gains
-		let tk = distdx(self.r * (self.s1 - self.s2)); // feedback
-		let t0 = dist2dx(x + tk * self.r * (self.s1 - self.s2)); // input
-		let t1 = tanhdx(self.s1); // integrators
+
+		// feedback
+		let tk = distdx(self.r * (self.s1 - self.s2));
+		// let tk = 1.0;
+
+		// input distortion
+		let t0 = tanhdx(x + tk * self.r * (self.s1 - self.s2));
+
+		// integrators
+		let t1 = tanhdx(self.s1);
 		let t2 = tanhdx(self.s2);
 
 		// feedback gains
@@ -81,10 +88,10 @@ fn tanhdx(x: f32) -> f32 {
 // diode clipper feedback / x
 fn distdx(x: f32) -> f32 {
 	let a = 0.135;
-	a + (1.0 - a) / (1.0 + 10.0 * x * x).sqrt()
+	a + (1.0 - a) / (1.0 + 5.0 * x * x).sqrt()
 }
 
 // asymmetric input distortion / x
-fn dist2dx(x: f32) -> f32 {
-	1.0 / (1.0 + x.abs() + 0.2 * x)
-}
+// fn dist2dx(x: f32) -> f32 {
+// 	1.0 / (1.0 + x.abs() + 0.2 * x)
+// }

@@ -321,7 +321,7 @@ function workspace:draw()
 	else
 		util.drawText("offline", x1, 0, w1, ui.RIBBON_HEIGHT, "center")
 	end
-	util.drawText("CPU:", x1 - w1, 0, w1, ui.RIBBON_HEIGHT, "right")
+	util.drawText("CPU: ", x1 - w1, 0, w1, ui.RIBBON_HEIGHT, "right")
 
 	w1 = 96
 	h1 = 16

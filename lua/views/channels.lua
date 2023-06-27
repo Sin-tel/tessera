@@ -99,9 +99,8 @@ function Channels:draw()
 		if selection.channel == v then
 			love.graphics.setColor(theme.highlight)
 		end
-		local pad = Ui.DEFAULT_PAD
 
-		util.drawText(v.name, pad, y, w - Ui.BUTTON_SMALL * 5 - 2 * pad, Ui.ROW_HEIGHT, "left")
+		util.drawText(v.name, 0, y, w - Ui.BUTTON_SMALL * 5, Ui.ROW_HEIGHT, "left", true)
 
 		if v.mute then
 			love.graphics.setColor(theme.mute)

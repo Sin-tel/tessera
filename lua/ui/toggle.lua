@@ -5,12 +5,13 @@ local Toggle = {}
 
 local CORNER_RADIUS = 4
 
-function Toggle:new(text)
+function Toggle:new(text, style)
 	local new = {}
 	setmetatable(new, self)
 	self.__index = self
 
 	new.text = text
+	new.style = style or "checkbox"
 	new.checked = false
 
 	return new
@@ -36,20 +37,34 @@ function Toggle:update(ui, x, y, w, h)
 		color_line = theme.line_hover
 	end
 
-	ui:pushDraw(self.draw, self, color_fill, color_line, x, y, w, h)
+	if self.style == "checkbox" then
+		ui:pushDraw(self.draw_checkbox, self, color_fill, color_line, x, y, w, h)
+	else
+		ui:pushDraw(self.draw_toggle, self, color_fill, color_line, x, y, w, h)
+	end
 
 	return self.checked
 end
 
-function Toggle:draw(color_fill, color_line, x, y, w, h)
+function Toggle:draw_toggle(color_fill, color_line, x, y, w, h)
 	if w > 10 then
 		love.graphics.setColor(color_fill)
 		love.graphics.rectangle("fill", x, y, w, h, CORNER_RADIUS)
 		love.graphics.setColor(color_line)
 		love.graphics.rectangle("line", x, y, w, h, CORNER_RADIUS)
 		love.graphics.setColor(theme.ui_text)
-		util.drawText(self.text, x, y, w, h, "center")
+		util.drawText(self.text, x, y, w, h, "center", true)
 	end
+end
+
+function Toggle:draw_checkbox(color_fill, color_line, x, y, w, h)
+	love.graphics.setColor(color_fill)
+	love.graphics.rectangle("fill", x, y, h, h, CORNER_RADIUS)
+	love.graphics.setColor(color_line)
+	love.graphics.rectangle("line", x, y, h, h, CORNER_RADIUS)
+	love.graphics.setColor(theme.ui_text)
+	local left_pad = h + Ui.DEFAULT_PAD
+	util.drawText(self.text, x + left_pad, y, w - left_pad, h)
 end
 
 return Toggle

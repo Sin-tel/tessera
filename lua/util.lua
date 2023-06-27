@@ -83,8 +83,14 @@ end
 
 util.deepcopy = deepcopy
 
-function util.drawText(str, x, y, w, h, align)
+function util.drawText(str, x, y, w, h, align, pad)
 	align = align or "left"
+
+	if pad then
+		local p = Ui.DEFAULT_PAD
+		x = x + p
+		w = w - 2 * p
+	end
 
 	local f = love.graphics.getFont()
 	local str2 = str

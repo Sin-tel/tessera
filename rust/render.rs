@@ -72,7 +72,7 @@ impl Render {
 		}
 	}
 
-	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
+	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) -> Result<(), &'static str> {
 		no_denormals(|| {
 			let [mut l, mut r] = self.buffer2;
 			let len = buffer[0].len();
@@ -88,13 +88,13 @@ impl Render {
 				if !ch.mute {
 					ch.instrument.process(buf_slice);
 					#[cfg(debug_assertions)]
-					check_fp(buf_slice);
+					check_fp(buf_slice)?;
 
 					for fx in &mut ch.effects {
 						fx.process(buf_slice);
 
 						#[cfg(debug_assertions)]
-						check_fp(buf_slice);
+						check_fp(buf_slice)?;
 					}
 
 					for (outsample, insample) in buffer
@@ -135,7 +135,8 @@ impl Render {
 			for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
 				*s = s.clamp(-1.0, 1.0);
 			}
-		});
+			Ok(())
+		})
 	}
 
 	pub fn parse_messages(&mut self) {
@@ -185,13 +186,16 @@ impl Render {
 }
 
 #[cfg(debug_assertions)]
-fn check_fp(buffer: &mut [&mut [f32]; 2]) {
+fn check_fp(buffer: &mut [&mut [f32]; 2]) -> Result<(), &'static str> {
 	use std::num::FpCategory::*;
-	for s in buffer.iter().flat_map(|s| s.iter()) {
-		match s.classify() {
-			Normal | Zero => (),
-			Infinite | Nan => panic!("number was {s:?}"),
+	buffer
+		.iter()
+		.flat_map(|s| s.iter())
+		.map(|s| match s.classify() {
+			Normal | Zero => Ok(()),
+			Nan => Err("number was NaN"),
+			Infinite => Err("number was Inf"),
 			Subnormal => unreachable!(),
-		}
-	}
+		})
+		.collect()
 }

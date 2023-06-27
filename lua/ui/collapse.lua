@@ -26,7 +26,6 @@ function Collapse:update(ui, x, y, w, h)
 	if not self.open then
 		goal = -0.5 * math.pi
 	end
-
 	self.angle = util.towards(self.angle, goal, 0.5)
 
 	ui:pushDraw(self.draw, self, x, y, w, h)

@@ -14,9 +14,9 @@ function UiTest:new()
 
 	new.button = widgets.Button:new("click me")
 	new.slider = widgets.Slider:new({ default = 700, min = 20, max = 20000, fmt = "Hz", t = "log" })
-	new.checkbox = widgets.Checkbox:new("checkbox")
+	new.checkbox = widgets.Toggle:new("checkbox widget", "checkbox")
 	new.selector = widgets.Selector:new({ "one", "two", "three" })
-	new.toggle = widgets.Toggle:new("toggle")
+	new.toggle = widgets.Toggle:new("toggle widget", "toggle")
 
 	return new
 end

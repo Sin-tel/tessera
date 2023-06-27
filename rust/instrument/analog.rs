@@ -91,14 +91,14 @@ impl Instrument for Analog {
 
 			let mut out = self.z + self.mix_noise * (self.rng.f32() - 0.5);
 
-			out *= 0.2;
+			out *= 0.5;
 			// TODO: move match branch outside of inner loop
 			out = match self.vcf_mode {
 				FilterMode::Lowpass => self.filter.process_lowpass(out),
 				FilterMode::Bandpass => self.filter.process_bandpass(out),
 				FilterMode::Highpass => self.filter.process_highpass(out),
 			};
-			out *= 5.0;
+			out *= 2.0;
 
 			out *= self.vel.get();
 

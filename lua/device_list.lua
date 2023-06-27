@@ -13,7 +13,7 @@ deviceList.instruments = {}
 deviceList.instruments.sine = {
 	index = 0,
 	parameters = {
-		{ "feedback", "slider", { default = 1.0, max = 1.5 } },
+		{ "feedback", "slider", { default = 0.0, min = -1.2, max = 1.2, centered = true } },
 	},
 	mono = true,
 }
