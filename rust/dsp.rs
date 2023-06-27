@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 
 pub mod delayline;
 pub mod env;
+pub mod resample;
 pub mod simper;
 pub mod skf;
 

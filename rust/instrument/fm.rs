@@ -131,7 +131,7 @@ impl Fm {
 // only valid in [0, 1]
 fn sin_cheap(x: f32) -> f32 {
 	let x = x - x.floor();
-	let a = (x > 0.5) as usize as f32;
+	let a = f32::from(x > 0.5);
 	let b = 2.0 * x - 1.0 - 2.0 * a;
 	(2.0 * a - 1.0) * (x * b + a) / (0.25 * x * b + 0.15625 + 0.25 * a)
 	// (TWO_PI * x).sin()

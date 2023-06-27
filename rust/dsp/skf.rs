@@ -73,7 +73,7 @@ impl Skf {
 	}
 
 	pub fn set(&mut self, cutoff: f32, res: f32) {
-		self.f.set(prewarp(cutoff / self.sample_rate));
+		self.f.set(prewarp(cutoff.min(20_000.0) / self.sample_rate));
 		self.r = 2.0 * res;
 	}
 }

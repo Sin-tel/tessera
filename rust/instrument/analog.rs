@@ -3,6 +3,7 @@ use std::f32::consts::PI;
 use std::iter::zip;
 
 use crate::dsp::env::*;
+use crate::dsp::resample::{Downsampler, Upsampler};
 use crate::dsp::skf::Skf;
 use crate::dsp::*;
 use crate::instrument::*;
@@ -26,6 +27,8 @@ pub struct Analog {
 	z: f32,
 	rng: Rng,
 	filter: Skf,
+	upsampler: Upsampler,
+	downsampler: Downsampler,
 
 	// parameters
 	pulse_width: Smoothed,
@@ -47,9 +50,9 @@ impl Instrument for Analog {
 			vel: SmoothedEnv::new(5.0, 120.0, sample_rate),
 			sample_rate,
 			rng: fastrand::Rng::new(),
-			filter: Skf::new(sample_rate),
-			pulse_width: Smoothed::new(5.0, sample_rate),
+			filter: Skf::new(2.0 * sample_rate),
 
+			pulse_width: Smoothed::new(5.0, sample_rate),
 			..Default::default()
 		}
 	}
@@ -89,18 +92,27 @@ impl Instrument for Analog {
 				+ self.mix_pulse * (s1 - s2)
 				+ self.mix_sub * s_sub;
 
-			let mut out = self.z + self.mix_noise * (self.rng.f32() - 0.5);
+			let mix = self.z + self.mix_noise * (self.rng.f32() - 0.5);
 
-			out *= 0.5;
+			let (mut s1, mut s2) = self.upsampler.process_19(mix * 0.5);
+
 			// TODO: move match branch outside of inner loop
-			out = match self.vcf_mode {
-				FilterMode::Lowpass => self.filter.process_lowpass(out),
-				FilterMode::Bandpass => self.filter.process_bandpass(out),
-				FilterMode::Highpass => self.filter.process_highpass(out),
+			(s1, s2) = match self.vcf_mode {
+				FilterMode::Lowpass => (
+					self.filter.process_lowpass(s1),
+					self.filter.process_lowpass(s2),
+				),
+				FilterMode::Bandpass => (
+					self.filter.process_bandpass(s1),
+					self.filter.process_bandpass(s2),
+				),
+				FilterMode::Highpass => (
+					self.filter.process_highpass(s1),
+					self.filter.process_highpass(s2),
+				),
 			};
-			out *= 2.0;
-
-			out *= self.vel.get();
+			let s = self.downsampler.process_19(s1, s2);
+			let out = s * 2.0 * self.vel.get();
 
 			*l = out;
 			*r = out;
