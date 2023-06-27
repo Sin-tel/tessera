@@ -9,7 +9,7 @@ function channelHandler:load()
 	self.list = {}
 end
 
-function channelHandler:update()
+function channelHandler:sendParameters()
 	for k, ch in ipairs(self.list) do
 		for l, par in ipairs(ch.instrument.parameters) do
 			local value = par.widget:getFloat()

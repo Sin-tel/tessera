@@ -1,4 +1,3 @@
-use no_denormals::no_denormals;
 use ringbuf::{HeapConsumer, HeapProducer};
 
 use crate::audio::MAX_BUF_SIZE;
@@ -189,11 +188,10 @@ fn check_fp(buffer: &mut [&mut [f32]; 2]) -> Result<(), &'static str> {
 	buffer
 		.iter()
 		.flat_map(|s| s.iter())
-		.map(|s| match s.classify() {
+		.try_for_each(|s| match s.classify() {
 			Normal | Zero => Ok(()),
 			Nan => Err("number was NaN"),
 			Infinite => Err("number was Inf"),
 			Subnormal => unreachable!(),
 		})
-		.collect()
 }

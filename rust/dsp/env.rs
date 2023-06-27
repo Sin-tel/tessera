@@ -40,6 +40,10 @@ impl Smoothed {
 		self.value = v;
 	}
 
+	pub fn instant(&mut self) {
+		self.value = self.inner;
+	}
+
 	pub fn get(&self) -> f32 {
 		self.value
 	}

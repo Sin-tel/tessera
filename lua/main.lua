@@ -1,5 +1,5 @@
-release = true
-local lurker = false
+release = false
+local lurker = true
 
 io.stdout:setvbuf("no")
 
@@ -58,15 +58,10 @@ local function audioSetup()
 	midilib.load(settings.midi.inputs)
 
 	channelHandler:load()
-	local ch = channelHandler:add("analog")
 	-- local ch = channelHandler:add("sine")
+	-- local ch = channelHandler:add("analog")
+	local ch = channelHandler:add("fm")
 	ch.armed = true
-
-	-- for i = 1, 150 do
-	-- 	local n = channelHandler:add("sine")
-	-- 	n.parameters[2]:setNormalized(math.random())
-	-- 	backend:sendNoteOn(n.index, {math.random()*36+36, 0.5})
-	-- end
 end
 
 -- update UI with messages from backend
@@ -164,11 +159,11 @@ function love.load()
 	workspace.box:split(0.7, true)
 
 	workspace.box.children[1]:split(0.8, false)
-	workspace.box.children[1].children[1]:split(0.2, false)
+	workspace.box.children[1].children[1]:split(0.3, false)
 
 	workspace.box.children[1].children[2]:setView(views.TestPad:new())
 
-	workspace.box.children[1].children[1].children[2]:setView(views.UiTest:new())
+	workspace.box.children[1].children[1].children[2]:setView(views.Scope:new())
 	workspace.box.children[1].children[1].children[1]:setView(views.Scope:new())
 
 	workspace.box.children[2]:split(0.3, false)
@@ -182,7 +177,6 @@ function love.update(dt)
 	midilib.update()
 	if backend:running() then
 		parseMessages()
-		channelHandler:update()
 	end
 end
 
@@ -201,6 +195,10 @@ function love.draw()
 	workspace:update()
 
 	mouse:endFrame()
+
+	if backend:running() then
+		channelHandler:sendParameters()
+	end
 
 	--- draw ---
 	love.graphics.clear()
@@ -251,13 +249,11 @@ function love.keypressed(key, isrepeat)
 	elseif key == "s" then
 		renderWav()
 	elseif key == "a" then
-		channelHandler:add("sine")
-		channelHandler:add("wavetable")
-		channelHandler:add("analog")
-		print(#channelHandler.list)
-
-		-- local n = channelHandler:add("sine")
-		-- n.parameters[2]:setNormalized(math.random())
+		-- channelHandler:add("sine")
+		-- channelHandler:add("wavetable")
+		-- channelHandler:add("analog")
+		channelHandler:add("fm")
+		-- print(#channelHandler.list)
 	end
 end
 

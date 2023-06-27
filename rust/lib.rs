@@ -2,6 +2,7 @@
 #![warn(clippy::cast_lossless)]
 #![warn(clippy::uninlined_format_args)]
 #![warn(clippy::semicolon_if_nothing_returned)]
+#![deny(unreachable_patterns)]
 //
 // #![deny(clippy::pedantic)]
 // #![allow(clippy::similar_names)]
