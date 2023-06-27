@@ -1,5 +1,5 @@
 release = false
-local lurker = true
+local lurker = false
 
 io.stdout:setvbuf("no")
 
@@ -65,14 +65,14 @@ local function audioSetup()
 	-- for i = 1, 150 do
 	-- 	local n = channelHandler:add("sine")
 	-- 	n.parameters[2]:setNormalized(math.random())
-	-- 	backend:send_note_on(n.index, {math.random()*36+36, 0.5})
+	-- 	backend:sendNoteOn(n.index, {math.random()*36+36, 0.5})
 	-- end
 end
 
 -- update UI with messages from backend
-local function parse_messages()
+local function parseMessages()
 	while true do
-		local p = backend:rx_pop()
+		local p = backend:pop()
 		if p == nil then
 			return
 		end
@@ -85,7 +85,7 @@ local function parse_messages()
 	end
 end
 
-local function render_wav()
+local function renderWav()
 	--TODO: run this on a new thread in rust?
 
 	if not backend:running() then
@@ -96,14 +96,14 @@ local function render_wav()
 	mouse:setCursor("wait")
 	mouse:endFrame()
 
-	backend:set_paused(true)
+	backend:setPaused(true)
 
 	-- sleep for a bit to make sure the audio thread is done
 	love.timer.sleep(0.01)
 
 	wav.open()
 	for _ = 1, 5000 do
-		local block = backend:render_block()
+		local block = backend:renderBlock()
 		if not block then
 			print("failed to get block. try again")
 			wav.close()
@@ -113,10 +113,10 @@ local function render_wav()
 
 		wav.append(block)
 
-		parse_messages()
+		parseMessages()
 	end
 	wav.close()
-	backend:set_paused(false)
+	backend:setPaused(false)
 
 	mouse:setCursor("default")
 end
@@ -181,7 +181,7 @@ function love.update(dt)
 
 	midilib.update()
 	if backend:running() then
-		parse_messages()
+		parseMessages()
 		channelHandler:update()
 	end
 end
@@ -197,7 +197,7 @@ function love.draw()
 		lurker.update()
 	end
 	mouse:update()
-	backend:update_scope()
+	backend:updateScope()
 	workspace:update()
 
 	mouse:endFrame()
@@ -247,9 +247,9 @@ function love.keypressed(key, isrepeat)
 			audio_status = "request"
 		end
 	elseif key == "b" then
-		backend:set_paused(not backend:paused())
+		backend:setPaused(not backend:paused())
 	elseif key == "s" then
-		render_wav()
+		renderWav()
 	elseif key == "a" then
 		channelHandler:add("sine")
 		-- channelHandler:add("wavetable")

@@ -14,7 +14,7 @@ function channelHandler:update()
 		for l, par in ipairs(ch.instrument.parameters) do
 			local value = par.widget:getFloat()
 			if value then
-				backend:send_param(k - 1, 0, l - 1, value)
+				backend:sendParam(k - 1, 0, l - 1, value)
 			end
 		end
 
@@ -22,7 +22,7 @@ function channelHandler:update()
 			for l, par in ipairs(fx.parameters) do
 				local value = par.widget:getFloat()
 				if value then
-					backend:send_param(k - 1, e, l - 1, value)
+					backend:sendParam(k - 1, e, l - 1, value)
 				end
 			end
 		end
@@ -45,10 +45,10 @@ function channelHandler:add(name)
 		new.index = #self.list - 1 -- Rust backend index starts at zero
 		new.name = name .. " " .. new.index
 
-		backend:add_channel(new.instrument.index)
+		backend:addChannel(new.instrument.index)
 		selection.channel = new
 
-		channelHandler:add_effect(new, "pan")
+		channelHandler:addEffect(new, "pan")
 
 		return new
 	else
@@ -56,13 +56,13 @@ function channelHandler:add(name)
 	end
 end
 
-function channelHandler:add_effect(ch, name)
+function channelHandler:addEffect(ch, name)
 	if deviceList.effects[name] then
 		local effect = Device:new(name, deviceList.effects[name])
 
 		table.insert(ch.effects, effect)
 
-		backend:add_effect(ch.index, effect.index)
+		backend:addEffect(ch.index, effect.index)
 
 		return effect
 	else
@@ -73,7 +73,7 @@ end
 function channelHandler:mute(ch, mute)
 	if ch.mute ~= mute then
 		ch.mute = mute
-		backend:send_mute(ch.index, mute)
+		backend:sendMute(ch.index, mute)
 	end
 end
 

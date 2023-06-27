@@ -4,9 +4,6 @@ local deviceList = {}
 -- put spacers or subroupings etc
 -- should this just define a UI instead of a parameter list?
 -- parameters need to have a correct index though
--- for now, this should just be a list of widgets that we can layout automatically
--- should be simple flat list without objects!
--- channelHandler should deal with instantiation (?)
 
 deviceList.instruments = {}
 

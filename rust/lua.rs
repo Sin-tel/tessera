@@ -73,14 +73,14 @@ impl UserData for LuaData {
 			Ok(())
 		});
 
-		methods.add_method_mut("set_working_directory", |_, _, path: String| {
+		methods.add_method_mut("setWorkingDirectory", |_, _, path: String| {
 			std::env::set_current_dir(std::path::Path::new(&path))?;
 			Ok(())
 		});
 
 		methods.add_method("running", |_, LuaData(ud), _: ()| Ok(ud.is_some()));
 
-		methods.add_method_mut("send_cv", |_, data, (ch, pitch, vel): (usize, f32, f32)| {
+		methods.add_method_mut("sendCv", |_, data, (ch, pitch, vel): (usize, f32, f32)| {
 			if let LuaData(Some(ud)) = data {
 				ud.send_message(AudioMessage::CV(ch, pitch, vel));
 			}
@@ -88,7 +88,7 @@ impl UserData for LuaData {
 		});
 
 		methods.add_method_mut(
-			"send_note_on",
+			"sendNoteOn",
 			|_, data, (ch, pitch, vel, id): (usize, f32, f32, Option<usize>)| {
 				if let LuaData(Some(ud)) = data {
 					ud.send_message(AudioMessage::Note(ch, pitch, vel, id.unwrap_or(0)));
@@ -97,7 +97,7 @@ impl UserData for LuaData {
 			},
 		);
 
-		methods.add_method_mut("send_mute", |_, data, (ch, mute): (usize, bool)| {
+		methods.add_method_mut("sendMute", |_, data, (ch, mute): (usize, bool)| {
 			if let LuaData(Some(ud)) = data {
 				ud.send_message(AudioMessage::Mute(ch, mute));
 			}
@@ -105,7 +105,7 @@ impl UserData for LuaData {
 		});
 
 		methods.add_method_mut(
-			"send_param",
+			"sendParam",
 			|_, data, (ch_index, device_index, index, value): (usize, usize, usize, f32)| {
 				if let LuaData(Some(ud)) = data {
 					ud.send_message(AudioMessage::SetParam(ch_index, device_index, index, value));
@@ -114,7 +114,7 @@ impl UserData for LuaData {
 			},
 		);
 
-		methods.add_method_mut("set_paused", |_, data, paused: bool| {
+		methods.add_method_mut("setPaused", |_, data, paused: bool| {
 			if let LuaData(Some(ud)) = data {
 				ud.send_paused(paused);
 			}
@@ -129,7 +129,7 @@ impl UserData for LuaData {
 			}
 		});
 
-		methods.add_method("add_channel", |_, data, instrument_number: usize| {
+		methods.add_method("addChannel", |_, data, instrument_number: usize| {
 			if let LuaData(Some(ud)) = data {
 				let mut render = ud.m_render.lock().expect("Failed to get lock.");
 				render.add_channel(instrument_number);
@@ -138,7 +138,7 @@ impl UserData for LuaData {
 		});
 
 		methods.add_method(
-			"add_effect",
+			"addEffect",
 			|_, data, (channel_index, effect_number): (usize, usize)| {
 				if let LuaData(Some(ud)) = data {
 					let mut render = ud.m_render.lock().expect("Failed to get lock.");
@@ -148,7 +148,7 @@ impl UserData for LuaData {
 			},
 		);
 
-		methods.add_method("render_block", |_, data, _: ()| {
+		methods.add_method("renderBlock", |_, data, _: ()| {
 			if let LuaData(Some(ud)) = data {
 				let len = 64;
 				let buffer: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
@@ -175,20 +175,20 @@ impl UserData for LuaData {
 			}
 		});
 
-		methods.add_method_mut("update_scope", |_, data, _: ()| {
+		methods.add_method_mut("updateScope", |_, data, _: ()| {
 			if let LuaData(Some(ud)) = data {
 				ud.scope.update();
 			}
 			Ok(())
 		});
-		methods.add_method("get_spectrum", |_, data, _: ()| {
+		methods.add_method("getSpectrum", |_, data, _: ()| {
 			if let LuaData(Some(ud)) = data {
 				Ok(Some(ud.scope.get_spectrum()))
 			} else {
 				Ok(None)
 			}
 		});
-		methods.add_method("get_scope", |_, data, _: ()| {
+		methods.add_method("getScope", |_, data, _: ()| {
 			if let LuaData(Some(ud)) = data {
 				Ok(Some(ud.scope.get_oscilloscope()))
 			} else {
@@ -196,7 +196,7 @@ impl UserData for LuaData {
 			}
 		});
 
-		methods.add_method_mut("rx_pop", |_, data, _: ()| {
+		methods.add_method_mut("pop", |_, data, _: ()| {
 			if let LuaData(Some(ud)) = data {
 				Ok(ud.lua_rx.pop())
 			} else {

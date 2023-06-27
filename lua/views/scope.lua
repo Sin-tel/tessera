@@ -11,7 +11,7 @@ function Scope:draw()
 	love.graphics.setColor(theme.ui_text)
 
 	if self.draw_spectrum then
-		local spectrum = backend:get_spectrum()
+		local spectrum = backend:getSpectrum()
 		if spectrum then
 			local n = #spectrum
 
@@ -31,7 +31,7 @@ function Scope:draw()
 			end
 		end
 	else
-		local scope = backend:get_scope()
+		local scope = backend:getScope()
 		if scope then
 			local n = #scope
 

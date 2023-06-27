@@ -17,7 +17,7 @@ function keyboard:keypressed(key, _)
 			local p = Pitch:newFromDiatonic(i)
 
 			if ch then
-				backend:send_note_on(ch.index, p.pitch, 0.5)
+				backend:sendNoteOn(ch.index, p.pitch, 0.5)
 			end
 
 			handled = true
@@ -37,7 +37,7 @@ function keyboard:keyreleased(key)
 			local p = Pitch:newFromDiatonic(i)
 
 			if ch then
-				backend:send_cv(ch.index, p.pitch, 0.0)
+				backend:sendCv(ch.index, p.pitch, 0.0)
 			end
 
 			handled = true
