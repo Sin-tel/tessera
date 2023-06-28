@@ -14,7 +14,7 @@ function channelHandler:sendParameters()
 		for l, par in ipairs(ch.instrument.parameters) do
 			local value = par.widget:getFloat()
 			if value then
-				backend:sendParam(k - 1, 0, l - 1, value)
+				backend:sendParameter(k - 1, 0, l - 1, value)
 			end
 		end
 
@@ -22,7 +22,7 @@ function channelHandler:sendParameters()
 			for l, par in ipairs(fx.parameters) do
 				local value = par.widget:getFloat()
 				if value then
-					backend:sendParam(k - 1, e, l - 1, value)
+					backend:sendParameter(k - 1, e, l - 1, value)
 				end
 			end
 		end

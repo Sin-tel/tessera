@@ -80,15 +80,15 @@ impl UserData for LuaData {
 
 		methods.add_method("running", |_, LuaData(ud), _: ()| Ok(ud.is_some()));
 
-		methods.add_method_mut("sendCv", |_, data, (ch, pitch, vel): (usize, f32, f32)| {
+		methods.add_method_mut("sendCv", |_, data, (ch, pitch, pres): (usize, f32, f32)| {
 			if let LuaData(Some(ud)) = data {
-				ud.send_message(AudioMessage::CV(ch, pitch, vel));
+				ud.send_message(AudioMessage::CV(ch, pitch, pres));
 			}
 			Ok(())
 		});
 
 		methods.add_method_mut(
-			"sendNoteOn",
+			"sendNote",
 			|_, data, (ch, pitch, vel, id): (usize, f32, f32, Option<usize>)| {
 				if let LuaData(Some(ud)) = data {
 					ud.send_message(AudioMessage::Note(ch, pitch, vel, id.unwrap_or(0)));
@@ -105,7 +105,7 @@ impl UserData for LuaData {
 		});
 
 		methods.add_method_mut(
-			"sendParam",
+			"sendParameter",
 			|_, data, (ch_index, device_index, index, value): (usize, usize, usize, f32)| {
 				if let LuaData(Some(ud)) = data {
 					ud.send_message(AudioMessage::SetParam(ch_index, device_index, index, value));

@@ -5,21 +5,41 @@
 // 31 taps:
 // kaiser window, beta = 8
 
+// TODO: add 51 down
+
 use bit_mask_ring_buf::BMRingBuf;
 
 #[derive(Debug)]
-pub struct Downsampler {
+pub struct Downsampler19 {
 	buf: BMRingBuf<f32>,
 	pos: isize,
 }
 
-impl Default for Downsampler {
-	fn default() -> Self {
-		Self::new()
-	}
+#[derive(Debug)]
+pub struct Downsampler31 {
+	buf: BMRingBuf<f32>,
+	pos: isize,
 }
 
-impl Downsampler {
+// #[derive(Debug)]
+// pub struct Downsampler51 {
+// 	buf: BMRingBuf<f32>,
+// 	pos: isize,
+// }
+
+#[derive(Debug)]
+pub struct Upsampler19 {
+	buf: BMRingBuf<f32>,
+	pos: isize,
+}
+
+#[derive(Debug)]
+pub struct Upsampler31 {
+	buf: BMRingBuf<f32>,
+	pos: isize,
+}
+
+impl Downsampler19 {
 	pub fn new() -> Self {
 		Self {
 			buf: BMRingBuf::<f32>::from_len(32),
@@ -28,7 +48,7 @@ impl Downsampler {
 	}
 
 	#[rustfmt::skip]
-	pub fn process_19(&mut self, s1: f32, s2: f32) -> f32 {
+	pub fn process(&mut self, s1: f32, s2: f32) -> f32 {
 		self.pos = self.buf.constrain(self.pos + 1);
 		self.buf[self.pos] = s1;
 		self.pos = self.buf.constrain(self.pos + 1);
@@ -43,9 +63,18 @@ impl Downsampler {
 
 		s + 0.5 * self.buf[self.pos - 9]
 	}
+}
+
+impl Downsampler31 {
+	pub fn new() -> Self {
+		Self {
+			buf: BMRingBuf::<f32>::from_len(32),
+			pos: 0,
+		}
+	}
 
 	#[rustfmt::skip]
-	pub fn process_31(&mut self, s1: f32, s2: f32) -> f32 {
+	pub fn process(&mut self, s1: f32, s2: f32) -> f32 {
 		self.pos = self.buf.constrain(self.pos + 1);
 		self.buf[self.pos] = s1;
 		self.pos = self.buf.constrain(self.pos + 1);
@@ -65,28 +94,16 @@ impl Downsampler {
 	}
 }
 
-#[derive(Debug)]
-pub struct Upsampler {
-	buf: BMRingBuf<f32>,
-	pos: isize,
-}
-
-impl Default for Upsampler {
-	fn default() -> Self {
-		Self::new()
-	}
-}
-
-impl Upsampler {
+impl Upsampler19 {
 	pub fn new() -> Self {
 		Self {
-			buf: BMRingBuf::<f32>::from_len(32),
+			buf: BMRingBuf::<f32>::from_len(16),
 			pos: 0,
 		}
 	}
 
 	#[rustfmt::skip]
-	pub fn process_19(&mut self, s: f32) -> (f32, f32) {
+	pub fn process(&mut self, s: f32) -> (f32, f32) {
 		self.pos = self.buf.constrain(self.pos + 1);
 		self.buf[self.pos] = s;
 
@@ -101,9 +118,18 @@ impl Upsampler {
 
 		(s1, s2)
 	}
+}
+
+impl Upsampler31 {
+	pub fn new() -> Self {
+		Self {
+			buf: BMRingBuf::<f32>::from_len(16),
+			pos: 0,
+		}
+	}
 
 	#[rustfmt::skip]
-	pub fn process_31(&mut self, s: f32) -> (f32, f32) {
+	pub fn process(&mut self, s: f32) -> (f32, f32) {
 		self.pos = self.buf.constrain(self.pos + 1);
 		self.buf[self.pos] = s;
 
@@ -120,5 +146,31 @@ impl Upsampler {
 		let s2 = 0.5 * self.buf[self.pos - 7];
 
 		(s1, s2)
+	}
+}
+
+impl Default for Downsampler19 {
+	fn default() -> Self {
+		Self::new()
+	}
+}
+impl Default for Downsampler31 {
+	fn default() -> Self {
+		Self::new()
+	}
+}
+// impl Default for Downsampler51 {
+// 	fn default() -> Self {
+// 		Self::new()
+// 	}
+// }
+impl Default for Upsampler19 {
+	fn default() -> Self {
+		Self::new()
+	}
+}
+impl Default for Upsampler31 {
+	fn default() -> Self {
+		Self::new()
 	}
 }

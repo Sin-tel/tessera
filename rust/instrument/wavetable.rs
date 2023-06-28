@@ -5,6 +5,10 @@ const WT_NUM: usize = 16;
 // TODO: we should probably just support the wavetable format used by Surge
 // see: https://github.com/surge-synthesizer/surge/blob/main/resources/data/wavetables/WT%20fileformat.txt
 
+// TODO: simd? https://docs.rs/rustfft/6.1.0/rustfft/struct.FftPlannerAvx.html
+
+// TODO: probably faster to store all of the wavetables in frequency domain and then mix those (only requires fwd fft)
+
 use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
@@ -19,10 +23,13 @@ use crate::instrument::*;
 
 const MAX_F: f32 = 20_000.0;
 
+// TODO: Default would be nice to have
+// #[derive(Default)]
 pub struct Wavetable {
 	accum: f32,
 	freq: Smoothed,
 	vel: SmoothedEnv,
+	pres: SmoothedEnv,
 	sample_rate: f32,
 	interpolate: f32,
 	buffer_a: Vec<f32>,
@@ -33,6 +40,9 @@ pub struct Wavetable {
 	c2r_scratch: Vec<Complex<f32>>,
 	c2r: Arc<dyn ComplexToReal<f32>>,
 	table: [f32; 16384],
+
+	depth_vel: f32,
+	depth_pres: f32,
 }
 
 impl Instrument for Wavetable {
@@ -62,6 +72,7 @@ impl Instrument for Wavetable {
 			interpolate: 1.0,
 			freq: Smoothed::new(10.0, sample_rate),
 			vel: SmoothedEnv::new(10.0, 25.0, sample_rate),
+			pres: SmoothedEnv::new(25.0, 120.0, sample_rate),
 			sample_rate,
 			buffer_a,
 			buffer_b,
@@ -71,15 +82,12 @@ impl Instrument for Wavetable {
 			r2c,
 			c2r,
 			table,
+
+			depth_vel: 0.0,
+			depth_pres: 0.0,
 		};
 		new.update_fft();
 		new
-	}
-
-	fn cv(&mut self, pitch: f32, vel: f32) {
-		let p = pitch_to_hz(pitch) / self.sample_rate;
-		self.freq.set(p);
-		self.vel.set(vel);
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
@@ -94,9 +102,10 @@ impl Instrument for Wavetable {
 			self.interpolate += 1.0 / (0.05 * self.sample_rate); // update every 50ms
 
 			self.vel.update();
+			self.pres.update();
 			self.freq.update();
 			self.accum += self.freq.get();
-			if self.accum > 1.0 {
+			if self.accum >= 1.0 {
 				self.accum -= 1.0;
 			}
 
@@ -121,22 +130,34 @@ impl Instrument for Wavetable {
 		}
 	}
 
-	fn note(&mut self, pitch: f32, vel: f32, _id: usize) {
+	fn cv(&mut self, pitch: f32, pres: f32) {
 		let p = pitch_to_hz(pitch) / self.sample_rate;
-		self.freq.set_hard(p);
+		self.freq.set(p);
+		self.pres.set(pres);
+	}
 
-		if self.vel.get() < 0.01 {
-			self.vel.set_hard(vel);
-			self.accum = 0.0;
-			self.interpolate = 1.0;
+	fn note(&mut self, pitch: f32, vel: f32, _id: usize) {
+		if vel == 0.0 {
+			self.vel.set(0.0);
 		} else {
+			let p = pitch_to_hz(pitch) / self.sample_rate;
+			self.freq.set_hard(p);
+
+			// if self.vel.get() < 0.01 {
+			// self.vel.set_hard(vel);
+			// self.accum = 0.0;
+			self.interpolate = 1.0;
+			// } else {
 			self.vel.set(vel);
+			// }
 		}
 	}
 
 	#[allow(clippy::match_single_binding)]
-	fn set_param(&mut self, index: usize, _value: f32) {
+	fn set_param(&mut self, index: usize, value: f32) {
 		match index {
+			0 => self.depth_vel = value,
+			1 => self.depth_pres = value,
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}
@@ -145,7 +166,8 @@ impl Instrument for Wavetable {
 impl Wavetable {
 	fn update_fft(&mut self) {
 		// linear interpolation between frames
-		let wt_idx = (self.vel.inner() * (WT_NUM as f32)).clamp(0.0, (WT_NUM as f32) - 1.001);
+		let wdepth = self.depth_vel * self.vel.get() + self.depth_pres * self.pres.get();
+		let wt_idx = (wdepth * (WT_NUM as f32)).clamp(0.0, (WT_NUM as f32) - 1.001);
 
 		let (wt_idx_int, wt_idx_frac) = make_usize_frac(wt_idx);
 

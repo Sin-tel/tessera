@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use std::iter::zip;
 
 use crate::dsp::env::*;
-use crate::dsp::resample::{Downsampler, Upsampler};
+use crate::dsp::resample::{Downsampler31, Upsampler19};
 use crate::dsp::skf::Skf;
 use crate::dsp::*;
 use crate::instrument::*;
@@ -20,15 +20,17 @@ enum FilterMode {
 
 #[derive(Debug, Default)]
 pub struct Analog {
-	accum: f32,
 	freq: Smoothed,
 	vel: SmoothedEnv,
+	pres: SmoothedEnv,
 	sample_rate: f32,
+	accum: f32,
 	z: f32,
 	rng: Rng,
 	filter: Skf,
-	upsampler: Upsampler,
-	downsampler: Downsampler,
+	upsampler: Upsampler19,
+	downsampler: Downsampler31,
+	update_counter: usize,
 
 	// parameters
 	pulse_width: Smoothed,
@@ -47,9 +49,9 @@ impl Instrument for Analog {
 	fn new(sample_rate: f32) -> Self {
 		Analog {
 			freq: Smoothed::new(10.0, sample_rate),
-			vel: SmoothedEnv::new(5.0, 120.0, sample_rate),
+			vel: SmoothedEnv::new(5.0, 400.0, sample_rate),
+			pres: SmoothedEnv::new(50.0, 120.0, sample_rate),
 			sample_rate,
-			rng: fastrand::Rng::new(),
 			filter: Skf::new(2.0 * sample_rate),
 
 			pulse_width: Smoothed::new(5.0, sample_rate),
@@ -61,19 +63,26 @@ impl Instrument for Analog {
 		let [bl, br] = buffer;
 
 		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
+			self.update_counter += 1;
+			if self.update_counter >= 64 {
+				self.update_filter();
+				self.update_counter = 0;
+			}
+
 			self.vel.update();
+			self.pres.update();
 			self.freq.update();
 			self.pulse_width.update();
 
 			let f_sub = 0.5 * self.freq.get();
 
 			self.accum += f_sub;
-			if self.accum > 1.0 {
+			if self.accum >= 1.0 {
 				self.accum -= 1.0;
 			}
 
 			let mut a = self.accum * 2.0;
-			if a > 1.0 {
+			if a >= 1.0 {
 				a -= 1.0;
 			}
 
@@ -94,7 +103,7 @@ impl Instrument for Analog {
 
 			let mix = self.z + self.mix_noise * (self.rng.f32() - 0.5);
 
-			let (mut s1, mut s2) = self.upsampler.process_19(mix * 0.5);
+			let (mut s1, mut s2) = self.upsampler.process(mix * 0.5);
 
 			// TODO: move match branch outside of inner loop
 			(s1, s2) = match self.vcf_mode {
@@ -111,7 +120,7 @@ impl Instrument for Analog {
 					self.filter.process_highpass(s2),
 				),
 			};
-			let s = self.downsampler.process_19(s1, s2);
+			let s = self.downsampler.process(s1, s2);
 			let out = s * 2.0 * self.vel.get();
 
 			*l = out;
@@ -119,28 +128,22 @@ impl Instrument for Analog {
 		}
 	}
 
-	fn cv(&mut self, pitch: f32, vel: f32) {
+	fn cv(&mut self, pitch: f32, pres: f32) {
 		let f = pitch_to_hz(pitch) / self.sample_rate;
 		self.freq.set(f);
-		self.vel.set(vel);
-
+		self.pres.set(pres);
 		self.update_filter();
 	}
 
 	fn note(&mut self, pitch: f32, vel: f32, _id: usize) {
-		let f = pitch_to_hz(pitch) / self.sample_rate;
-		self.freq.set_hard(f);
-
-		// if self.vel.get() < 0.01 {
-		// 	// TODO: filter set hard?
-		// 	self.vel.set_hard(vel);
-		// 	self.accum = 0.5;
-		// 	self.z = 0.0;
-		// } else {
-		self.vel.set(vel);
-		// }
-
-		self.update_filter();
+		if vel == 0.0 {
+			self.vel.set(0.0);
+		} else {
+			let f = pitch_to_hz(pitch) / self.sample_rate;
+			self.freq.set_hard(f);
+			self.vel.set(vel);
+			self.update_filter();
+		}
 	}
 	fn set_param(&mut self, index: usize, value: f32) {
 		match index {
@@ -195,8 +198,8 @@ impl Analog {
 			//TODO: store pitch so we can save hz_to_pitch call?
 			pitch_to_hz(
 				self.vcf_pitch
-					+ self.vcf_kbd * (hz_to_pitch(self.freq.inner() * self.sample_rate) - 72.0)
-					+ self.vcf_env * self.vel.inner() * 84.0,
+					+ self.vcf_kbd * (hz_to_pitch(self.freq.get() * self.sample_rate) - 72.0)
+					+ self.vcf_env * self.pres.get() * 84.0,
 			),
 			self.vcf_res,
 		);

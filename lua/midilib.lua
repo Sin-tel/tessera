@@ -105,7 +105,7 @@ function M.parse(msg, s)
 		event.note = b
 	elseif status == 13 then
 		event.name = "pressure"
-		event.vel = b / 127
+		event.pres = b / 127
 	elseif status == 14 then
 		event.name = "pitchbend"
 		event.offset = (b + c * 128 - 8192) / 8192 -- [-1, 1]
@@ -123,11 +123,22 @@ function M.handleEventTest(device, event)
 end
 
 function M.handleEvent(device, event)
+	local channel_index = nil
+	for i, ch in ipairs(channelHandler.list) do
+		if ch.armed then
+			channel_index = i - 1
+			break
+		end
+	end
+	if not channel_index then
+		return
+	end
 	if event.name == "note on" then
 		table.insert(device.voices, event.note)
 		device.note = event.note
 		device.vel = event.vel
-		backend:sendNoteOn(0, device.note + device.offset, device.vel, 0)
+		device.pres = 0
+		backend:sendNote(channel_index, device.note + device.offset, device.vel, 0)
 	elseif event.name == "note off" then
 		local get_i
 		for i, v in ipairs(device.voices) do
@@ -137,22 +148,22 @@ function M.handleEvent(device, event)
 			end
 		end
 		if device.note and #device.voices == 1 then
-			backend:sendCv(0, device.note + device.offset, 0)
+			backend:sendNote(channel_index, device.note + device.offset, 0)
 			device.note = nil
 		elseif get_i == #device.voices then
 			device.note = device.voices[get_i - 1]
-			backend:sendNoteOn(0, device.note + device.offset, device.vel)
+			backend:sendNote(channel_index, device.note + device.offset, device.vel)
 		end
 		table.remove(device.voices, get_i)
 	elseif event.name == "pressure" then
-		device.vel = event.vel
+		device.pres = event.pres
 		if device.note then
-			backend:sendCv(0, device.note + device.offset, device.vel)
+			backend:sendCv(channel_index, device.note + device.offset, device.pres)
 		end
 	elseif event.name == "pitchbend" then
 		device.offset = device.pitchbend * event.offset
 		if device.note then
-			backend:sendCv(0, device.note + device.offset, device.vel)
+			backend:sendCv(channel_index, device.note + device.offset, device.pres)
 		end
 	else
 		-- print(event.name)

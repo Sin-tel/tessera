@@ -15,9 +15,20 @@ const ITERATIONS: u32 = 1000;
 const SAMPLE_RATE: f32 = 44100.0;
 
 fn sin_cheap(x: f32) -> f32 {
-	let a = (x > 0.5) as usize as f32;
+	let x = fract(x);
+	let a = f32::from(x > 0.5);
 	let b = 2.0 * x - 1.0 - 2.0 * a;
 	(2.0 * a - 1.0) * (x * b + a) / (0.25 * x * b + 0.15625 + 0.25 * a)
+}
+
+fn my_floor(x: f32) -> f32 {
+	let i = x as isize;
+	i as f32
+}
+
+fn fract(x: f32) -> f32 {
+	let i = x as isize;
+	x - (i as f32)
 }
 
 fn tanhdx(x: f32) -> f32 {
@@ -114,12 +125,20 @@ fn floor_bench(bench: &mut Bencher) {
 	run(bench, |b| b.floor())
 }
 
+fn my_floor_bench(bench: &mut Bencher) {
+	run(bench, |b| my_floor(b))
+}
+
 fn round_bench(bench: &mut Bencher) {
 	run(bench, |b| b.round())
 }
 
 fn trunc_bench(bench: &mut Bencher) {
 	run(bench, |b| b.trunc())
+}
+
+fn fract_bench(bench: &mut Bencher) {
+	run(bench, |b| fract(b))
 }
 
 fn rand_bench(bench: &mut Bencher) {
@@ -165,17 +184,19 @@ benchmark_group!(
 	// prewarp_bench,
 	// prewarp_cheap_bench,
 	// softclip_cubic_bench,
-	sin_bench,
-	sin_cheap_bench,
+	// sin_bench,
+	// sin_cheap_bench,
 	// pitch_to_f_bench,
 	// delay_go_back_int_bench,
 	// delay_go_back_linear_bench,
 	// delay_go_back_cubic_bench,
 	// pow2_std_bench,
 	// rand_bench,
-	// floor_bench,
-	// round_bench,
-	// trunc_bench,
+	floor_bench,
+	my_floor_bench,
+	round_bench,
+	trunc_bench,
+	fract_bench,
 	// svf_bench,
 	// skf_bench,
 );

@@ -139,10 +139,10 @@ impl Render {
 	pub fn parse_messages(&mut self) {
 		while let Some(m) = self.audio_rx.pop() {
 			match m {
-				AudioMessage::CV(ch_index, pitch, vel) => match self.channels.get_mut(ch_index) {
+				AudioMessage::CV(ch_index, pitch, pres) => match self.channels.get_mut(ch_index) {
 					Some(ch) => {
 						if !ch.mute {
-							ch.instrument.cv(pitch, vel);
+							ch.instrument.cv(pitch, pres);
 						}
 					}
 					None => println!("Channel index out of bounds!"),

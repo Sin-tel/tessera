@@ -1,5 +1,5 @@
 release = false
-local lurker = true
+local lurker = false
 
 io.stdout:setvbuf("no")
 
@@ -60,7 +60,8 @@ local function audioSetup()
 	channelHandler:load()
 	-- local ch = channelHandler:add("sine")
 	-- local ch = channelHandler:add("analog")
-	local ch = channelHandler:add("fm")
+	-- local ch = channelHandler:add("fm")
+	local ch = channelHandler:add("wavetable")
 	ch.armed = true
 end
 
