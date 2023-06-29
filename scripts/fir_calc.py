@@ -1,8 +1,8 @@
 import numpy as np
 
-k_taps = 8
+k_taps = 13
 ntaps = k_taps * 4 - 1
-beta = 8  # 6
+beta = 12  # 6
 
 print("n taps", ntaps)
 
