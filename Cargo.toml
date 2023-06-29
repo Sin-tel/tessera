@@ -32,8 +32,6 @@ debug = 1 # for profiling
 # lto = "thin"
 # codegen-units = 1
 # panic = "abort"
-# enabling this flag will increase performance by a lot
-# RUSTFLAGS="-C target-cpu=native" cargo build --release
 
 [[bench]]
 name = "bench"

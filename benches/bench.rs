@@ -121,6 +121,18 @@ fn pow2_std_bench(bench: &mut Bencher) {
 	run(bench, |b| 2.0_f32.powf(b))
 }
 
+fn pow2_fast_bench(bench: &mut Bencher) {
+	run(bench, |b| pow2_cheap(b))
+}
+
+fn log2_std_bench(bench: &mut Bencher) {
+	run(bench, |b| b.log2())
+}
+
+fn log2_fast_bench(bench: &mut Bencher) {
+	run(bench, |b| log2_cheap(b))
+}
+
 fn floor_bench(bench: &mut Bencher) {
 	run(bench, |b| b.floor())
 }
@@ -190,13 +202,16 @@ benchmark_group!(
 	// delay_go_back_int_bench,
 	// delay_go_back_linear_bench,
 	// delay_go_back_cubic_bench,
-	// pow2_std_bench,
+	pow2_std_bench,
+	pow2_fast_bench,
+	log2_std_bench,
+	log2_fast_bench,
 	// rand_bench,
-	floor_bench,
-	my_floor_bench,
-	round_bench,
-	trunc_bench,
-	fract_bench,
+	// floor_bench,
+	// my_floor_bench,
+	// round_bench,
+	// trunc_bench,
+	// fract_bench,
 	// svf_bench,
 	// skf_bench,
 );

@@ -27,6 +27,7 @@ pub struct Fm {
 	feedback: f32,
 	depth: f32,
 	ratio: f32,
+	ratio_fine: f32,
 	offset: f32,
 	noise_mod: f32,
 }
@@ -34,7 +35,7 @@ pub struct Fm {
 impl Instrument for Fm {
 	fn new(sample_rate: f32) -> Self {
 		let mut noise_filter = Filter::new(sample_rate);
-		noise_filter.set_highpass(6.0, 3.0);
+		noise_filter.set_highpass(5.0, 0.7);
 		Fm {
 			freq: Smoothed::new(10.0, sample_rate),
 			freq2: Smoothed::new(10.0, sample_rate),
@@ -75,7 +76,8 @@ impl Instrument for Fm {
 			let feedback = self.feedback.abs();
 			let op2 = sin_cheap(self.accum2 + feedback * prev * vel);
 
-			self.prev = lerp(self.prev, op2, 0.5);
+			self.prev = op2;
+			// self.prev = lerp(self.prev, op2, 0.5);
 
 			// depth and feedback reduction to mitigate aliasing
 			// this stuff is all empirical
@@ -123,17 +125,21 @@ impl Instrument for Fm {
 
 	fn set_param(&mut self, index: usize, value: f32) {
 		match index {
-			0 => self.feedback = value / TWO_PI,
-			1 => self.depth = value / TWO_PI,
+			0 => self.feedback = value * 0.5,
+			1 => self.depth = value,
 			2 => {
 				self.ratio = value;
 				self.set_modulator();
 			}
 			3 => {
+				self.ratio_fine = value;
+				self.set_modulator();
+			}
+			4 => {
 				self.offset = value / self.sample_rate;
 				self.set_modulator();
 			}
-			4 => self.noise_mod = value * 0.01,
+			5 => self.noise_mod = value * 0.01,
 
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
@@ -142,12 +148,12 @@ impl Instrument for Fm {
 
 impl Fm {
 	fn set_modulator(&mut self) {
-		self.freq2.set(self.ratio * self.freq.inner() + self.offset);
+		self.freq2
+			.set((self.ratio + self.ratio_fine) * self.freq.inner() + self.offset);
 	}
 }
 
 // branchless approximation of sin(2*pi*x)
-// only valid in [0, 1]
 fn sin_cheap(x: f32) -> f32 {
 	let x = x - x.floor();
 	let a = f32::from(x > 0.5);

@@ -48,9 +48,10 @@ deviceList.instruments.analog = {
 deviceList.instruments.fm = {
 	index = 3,
 	parameters = {
-		{ "feedback", "slider", { default = 0.0, min = -2.0, max = 2.0, centered = true } },
-		{ "depth", "slider", { default = 0.2, min = 0, max = 4.0 } },
-		{ "ratio", "slider", { default = 1.0, min = 1.0, max = 8.0, step = 1.0 } },
+		{ "feedback", "slider", { default = 0.0, min = -1.0, max = 1.0, centered = true } },
+		{ "depth", "slider", { default = 0.2, min = 0, max = 1.0 } },
+		{ "ratio", "slider", { default = 1.0, min = 0.0, max = 8.0, step = 1.0 } },
+		{ "fine", "slider", { default = 0.0 } },
 		{ "offset", "slider", { default = 0.0, min = 0.0, max = 8.0, fmt = "Hz" } },
 		{ "noise", "slider", { default = 0.0, min = 0.0, max = 1.0 } },
 	},

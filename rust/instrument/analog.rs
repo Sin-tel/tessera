@@ -8,6 +8,9 @@ use crate::dsp::skf::Skf;
 use crate::dsp::*;
 use crate::instrument::*;
 
+// TODO: investigate BLIT sometimes being janky
+//       usually happens when frequency is changing and at high frequencies
+
 const MAX_F: f32 = 20_000.0;
 
 #[derive(Debug, Default)]
@@ -120,7 +123,9 @@ impl Instrument for Analog {
 					self.filter.process_highpass(s2),
 				),
 			};
+
 			let s = self.downsampler.process(s1, s2);
+
 			let out = s * 2.0 * self.vel.get();
 
 			*l = out;

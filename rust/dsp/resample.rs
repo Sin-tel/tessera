@@ -1,23 +1,28 @@
 // FIR 2x resamplers, windowed sinc
+// coefficients obtained from fir_calc.py
+// upsamplers have a gain of 2 to compensate average power
 //
 // 19 taps:
-// kaiser window, beta = 6
+// kaiser window, beta = 8
 // 31 taps:
 // kaiser window, beta = 8
 
 // TODO: add 51 down
+// TODO: simd?
 
 use bit_mask_ring_buf::BMRingBuf;
 
 #[derive(Debug)]
 pub struct Downsampler19 {
-	buf: BMRingBuf<f32>,
+	buf1: BMRingBuf<f32>,
+	buf2: BMRingBuf<f32>,
 	pos: isize,
 }
 
 #[derive(Debug)]
 pub struct Downsampler31 {
-	buf: BMRingBuf<f32>,
+	buf1: BMRingBuf<f32>,
+	buf2: BMRingBuf<f32>,
 	pos: isize,
 }
 
@@ -42,55 +47,55 @@ pub struct Upsampler31 {
 impl Downsampler19 {
 	pub fn new() -> Self {
 		Self {
-			buf: BMRingBuf::<f32>::from_len(32),
+			buf1: BMRingBuf::<f32>::from_len(16),
+			buf2: BMRingBuf::<f32>::from_len(16),
 			pos: 0,
 		}
 	}
 
 	#[rustfmt::skip]
 	pub fn process(&mut self, s1: f32, s2: f32) -> f32 {
-		self.pos = self.buf.constrain(self.pos + 1);
-		self.buf[self.pos] = s1;
-		self.pos = self.buf.constrain(self.pos + 1);
-		self.buf[self.pos] = s2;
+		self.pos = self.buf1.constrain(self.pos + 1);
+		self.buf1[self.pos] = s1;
+		self.buf2[self.pos] = s2;
 
 		let mut s = 0.0;
-		s += 0.0005260367 * (self.buf[self.pos    ] + self.buf[self.pos - 18]);
-		s -= 0.0062802667 * (self.buf[self.pos - 2] + self.buf[self.pos - 16]);
-		s += 0.025537502  * (self.buf[self.pos - 4] + self.buf[self.pos - 14]);
-		s -= 0.077656515  * (self.buf[self.pos - 6] + self.buf[self.pos - 12]);
-		s += 0.30770457   * (self.buf[self.pos - 8] + self.buf[self.pos - 10]);
+		s += 8.2719205e-5 * (self.buf2[self.pos    ] + self.buf2[self.pos - 9]);
+		s -= 2.9712955e-3 * (self.buf2[self.pos - 1] + self.buf2[self.pos - 8]);
+		s += 1.8200343e-2 * (self.buf2[self.pos - 2] + self.buf2[self.pos - 7]);
+		s -= 6.923014e-2  * (self.buf2[self.pos - 3] + self.buf2[self.pos - 6]);
+		s += 3.039028e-1  * (self.buf2[self.pos - 4] + self.buf2[self.pos - 5]);
 
-		s + 0.5 * self.buf[self.pos - 9]
+		s + 0.5 * self.buf1[self.pos - 4]
 	}
 }
 
 impl Downsampler31 {
 	pub fn new() -> Self {
 		Self {
-			buf: BMRingBuf::<f32>::from_len(32),
+			buf1: BMRingBuf::<f32>::from_len(32),
+			buf2: BMRingBuf::<f32>::from_len(32),
 			pos: 0,
 		}
 	}
 
 	#[rustfmt::skip]
 	pub fn process(&mut self, s1: f32, s2: f32) -> f32 {
-		self.pos = self.buf.constrain(self.pos + 1);
-		self.buf[self.pos] = s1;
-		self.pos = self.buf.constrain(self.pos + 1);
-		self.buf[self.pos] = s2;
+		self.pos = self.buf1.constrain(self.pos + 1);
+		self.buf1[self.pos] = s1;
+		self.buf2[self.pos] = s2;
 
 		let mut s = 0.0;
-		s -= 4.9631526e-5 * (self.buf[self.pos     ] + self.buf[self.pos - 30]);
-		s += 6.422753e-4  * (self.buf[self.pos -  2] + self.buf[self.pos - 28]);
-		s -= 2.734532e-3  * (self.buf[self.pos -  4] + self.buf[self.pos - 26]);
-		s += 8.02059e-3   * (self.buf[self.pos -  6] + self.buf[self.pos - 24]);
-		s -= 1.9228276e-2 * (self.buf[self.pos -  8] + self.buf[self.pos - 22]);
-		s += 4.1538082e-2 * (self.buf[self.pos - 10] + self.buf[self.pos - 20]);
-		s -= 9.122784e-2  * (self.buf[self.pos - 12] + self.buf[self.pos - 18]);
-		s += 3.130559e-1  * (self.buf[self.pos - 14] + self.buf[self.pos - 16]);
+		s -= 4.9631526e-5 * (self.buf2[self.pos    ] + self.buf2[self.pos - 15]);
+		s += 6.422753e-4  * (self.buf2[self.pos - 1] + self.buf2[self.pos - 14]);
+		s -= 2.734532e-3  * (self.buf2[self.pos - 2] + self.buf2[self.pos - 13]);
+		s += 8.02059e-3   * (self.buf2[self.pos - 3] + self.buf2[self.pos - 12]);
+		s -= 1.9228276e-2 * (self.buf2[self.pos - 4] + self.buf2[self.pos - 11]);
+		s += 4.1538082e-2 * (self.buf2[self.pos - 5] + self.buf2[self.pos - 10]);
+		s -= 9.122784e-2  * (self.buf2[self.pos - 6] + self.buf2[self.pos -  9]);
+		s += 3.130559e-1  * (self.buf2[self.pos - 7] + self.buf2[self.pos -  8]);
 
-		s + 0.5 * self.buf[self.pos - 15]
+		s + 0.5 * self.buf1[self.pos - 7]
 	}
 }
 
@@ -108,13 +113,13 @@ impl Upsampler19 {
 		self.buf[self.pos] = s;
 
 		let mut s1 = 0.0;
-		s1 += 0.0005260367 * (self.buf[self.pos    ] + self.buf[self.pos - 9]);
-		s1 -= 0.0062802667 * (self.buf[self.pos - 1] + self.buf[self.pos - 8]);
-		s1 += 0.025537502  * (self.buf[self.pos - 2] + self.buf[self.pos - 7]);
-		s1 -= 0.077656515  * (self.buf[self.pos - 3] + self.buf[self.pos - 6]);
-		s1 += 0.30770457   * (self.buf[self.pos - 4] + self.buf[self.pos - 5]);
+		s1 += 1.6543841e-4 * (self.buf[self.pos    ] + self.buf[self.pos - 9]);
+		s1 -= 5.942591e-3  * (self.buf[self.pos - 1] + self.buf[self.pos - 8]);
+		s1 += 3.6400687e-2 * (self.buf[self.pos - 2] + self.buf[self.pos - 7]);
+		s1 -= 1.3846028e-1 * (self.buf[self.pos - 3] + self.buf[self.pos - 6]);
+		s1 += 6.078056e-1  * (self.buf[self.pos - 4] + self.buf[self.pos - 5]);
 
-		let s2 = 0.5 * self.buf[self.pos - 4];
+		let s2 = self.buf[self.pos - 4];
 
 		(s1, s2)
 	}
@@ -134,16 +139,16 @@ impl Upsampler31 {
 		self.buf[self.pos] = s;
 
 		let mut s1 = 0.0;
-		s1 -= 4.9631526e-5 * (self.buf[self.pos    ] + self.buf[self.pos - 15]);
-		s1 += 6.422753e-4  * (self.buf[self.pos - 1] + self.buf[self.pos - 14]);
-		s1 -= 2.734532e-3  * (self.buf[self.pos - 2] + self.buf[self.pos - 13]);
-		s1 += 8.02059e-3   * (self.buf[self.pos - 3] + self.buf[self.pos - 12]);
-		s1 -= 1.9228276e-2 * (self.buf[self.pos - 4] + self.buf[self.pos - 11]);
-		s1 += 4.1538082e-2 * (self.buf[self.pos - 5] + self.buf[self.pos - 10]);
-		s1 -= 9.122784e-2  * (self.buf[self.pos - 6] + self.buf[self.pos -  9]);
-		s1 += 3.130559e-1  * (self.buf[self.pos - 7] + self.buf[self.pos -  8]);
+		s1 -= 9.926305e-5  * (self.buf[self.pos    ] + self.buf[self.pos - 15]);
+		s1 += 1.2845506e-3 * (self.buf[self.pos - 1] + self.buf[self.pos - 14]);
+		s1 -= 5.469064e-3  * (self.buf[self.pos - 2] + self.buf[self.pos - 13]);
+		s1 += 1.604118e-2  * (self.buf[self.pos - 3] + self.buf[self.pos - 12]);
+		s1 -= 3.845655e-2  * (self.buf[self.pos - 4] + self.buf[self.pos - 11]);
+		s1 += 8.3076164e-2 * (self.buf[self.pos - 5] + self.buf[self.pos - 10]);
+		s1 -= 1.8245567e-1 * (self.buf[self.pos - 6] + self.buf[self.pos -  9]);
+		s1 += 6.261118e-1  * (self.buf[self.pos - 7] + self.buf[self.pos -  8]);
 
-		let s2 = 0.5 * self.buf[self.pos - 7];
+		let s2 = self.buf[self.pos - 7];
 
 		(s1, s2)
 	}

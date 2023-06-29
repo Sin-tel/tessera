@@ -1,5 +1,10 @@
 use crate::dsp::lerp;
 
+// millis to tau (time to reach 1/e)
+fn time_constant(t: f32, sample_rate: f32) -> f32 {
+	1.0 - (-1000.0 / (sample_rate * t)).exp()
+}
+
 #[derive(Debug)]
 pub struct Smoothed {
 	value: f32,
@@ -7,23 +12,18 @@ pub struct Smoothed {
 	f: f32,
 }
 
-// millis to tau (time to reach 1/e)
-fn time_constant(t: f32, sample_rate: f32) -> f32 {
-	1.0 - (-1000.0 / (sample_rate * t)).exp()
-}
-
 impl Smoothed {
 	pub fn new(t: f32, sample_rate: f32) -> Self {
-		Smoothed {
+		Self {
 			inner: 0.01,
 			value: 0.01,
 			f: time_constant(t, sample_rate),
 		}
 	}
 	pub fn new_direct(f: f32) -> Self {
-		Smoothed {
+		Self {
 			inner: 0.01,
-			value: 1.0,
+			value: 0.01,
 			f,
 		}
 	}
@@ -53,12 +53,6 @@ impl Smoothed {
 	}
 }
 
-impl Default for Smoothed {
-	fn default() -> Self {
-		Smoothed::new_direct(0.001)
-	}
-}
-
 #[derive(Debug)]
 pub struct SmoothedEnv {
 	value: f32,
@@ -69,7 +63,7 @@ pub struct SmoothedEnv {
 
 impl SmoothedEnv {
 	pub fn new(attack: f32, release: f32, sample_rate: f32) -> Self {
-		SmoothedEnv {
+		Self {
 			inner: 0.0,
 			value: 0.0,
 			attack: time_constant(attack, sample_rate),
@@ -78,7 +72,7 @@ impl SmoothedEnv {
 	}
 
 	pub fn new_direct(attack: f32, release: f32) -> Self {
-		SmoothedEnv {
+		Self {
 			inner: 0.0,
 			value: 0.0,
 			attack,
@@ -116,8 +110,14 @@ impl SmoothedEnv {
 	}
 }
 
+impl Default for Smoothed {
+	fn default() -> Self {
+		Self::new_direct(0.001)
+	}
+}
+
 impl Default for SmoothedEnv {
 	fn default() -> Self {
-		SmoothedEnv::new_direct(0.005, 0.001)
+		Self::new_direct(0.005, 0.001)
 	}
 }

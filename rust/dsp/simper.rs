@@ -1,9 +1,6 @@
 // after Andrew Simper, Cytomic, 2013
 // see: https://cytomic.com/files/dsp/SvfLinearTrapOptimised2.pdf
 
-// TODO: get rid of powf in gain
-// TODO: faster prewarping? https://github.com/pichenettes/stmlib/blob/e3bd7c9cc00e4364166f9905c0509b6ffd0535ec/dsp/atan_approximations.py
-
 #![allow(dead_code)]
 
 use crate::dsp::env::Smoothed;
