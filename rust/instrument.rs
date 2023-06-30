@@ -10,5 +10,5 @@ pub trait Instrument {
 	fn cv(&mut self, pitch: f32, pres: f32);
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]);
 	fn note(&mut self, pitch: f32, vel: f32, id: usize);
-	fn set_param(&mut self, index: usize, val: f32);
+	fn set_parameter(&mut self, index: usize, val: f32);
 }

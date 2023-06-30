@@ -1,5 +1,6 @@
 use crate::device::*;
 
+pub mod drive;
 pub mod gain;
 pub mod pan;
 
@@ -8,7 +9,7 @@ pub trait Effect {
 	where
 		Self: Sized;
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]);
-	fn set_param(&mut self, index: usize, val: f32);
+	fn set_parameter(&mut self, index: usize, val: f32);
 }
 
 pub struct BypassEffect {

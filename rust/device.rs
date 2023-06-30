@@ -1,7 +1,7 @@
 // TODO: can autogen this
 
 use crate::effect::Effect;
-use crate::effect::{gain::Gain, pan::Pan};
+use crate::effect::{drive::Drive, gain::Gain, pan::Pan};
 use crate::instrument::Instrument;
 use crate::instrument::{analog::Analog, fm::Fm, sine::Sine, wavetable::Wavetable};
 
@@ -24,6 +24,7 @@ pub fn new_effect(sample_rate: f32, effect_number: usize) -> Box<dyn Effect + Se
 	match effect_number {
 		0 => Box::new(Pan::new(sample_rate)),
 		1 => Box::new(Gain::new(sample_rate)),
+		2 => Box::new(Drive::new(sample_rate)),
 		_ => {
 			eprintln!("Effect with number {effect_number} not found. Returning default.");
 			Box::new(Gain::new(sample_rate))

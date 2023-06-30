@@ -8,8 +8,7 @@ use crate::dsp::skf::Skf;
 use crate::dsp::*;
 use crate::instrument::*;
 
-// TODO: investigate BLIT sometimes being janky
-//       usually happens when frequency is changing and at high frequencies
+// TODO: at high frequencies, the switching between different BLITs causes discontinuities
 
 const MAX_F: f32 = 20_000.0;
 
@@ -150,7 +149,7 @@ impl Instrument for Analog {
 			self.update_filter();
 		}
 	}
-	fn set_param(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.pulse_width.set(value),
 			1 => self.mix_pulse = value,
@@ -190,10 +189,11 @@ impl Instrument for Analog {
 // analytical band limited impulse train
 // https://www.music.mcgill.ca/~gary/307/week5/node14.html
 fn blit(s: f32, m: f32) -> f32 {
-	if s.abs() < 1e-7 {
+	let denom = m * (s * PI).sin();
+	if denom.abs() < 1e-7 {
 		1.0
 	} else {
-		(s * m * PI).sin() / (m * (s * PI).sin())
+		(s * m * PI).sin() / denom
 	}
 }
 

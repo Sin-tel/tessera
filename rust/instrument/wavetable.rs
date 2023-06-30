@@ -154,7 +154,7 @@ impl Instrument for Wavetable {
 	}
 
 	#[allow(clippy::match_single_binding)]
-	fn set_param(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.depth_vel = value,
 			1 => self.depth_pres = value,

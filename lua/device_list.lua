@@ -16,7 +16,6 @@ deviceList.instruments.sine = {
 		{ "freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
 		{ "gain", "slider", { default = 0, t = "dB" } },
 	},
-	mono = true,
 }
 
 deviceList.instruments.wavetable = {
@@ -25,7 +24,6 @@ deviceList.instruments.wavetable = {
 		{ "vel mod", "slider", { default = 0.0 } },
 		{ "pres mod", "slider", { default = 0.25 } },
 	},
-	mono = true,
 }
 
 deviceList.instruments.analog = {
@@ -42,7 +40,6 @@ deviceList.instruments.analog = {
 		{ "vcf env", "slider", { default = 0.5 } },
 		{ "vcf kbd", "slider", { default = 0.5 } },
 	},
-	mono = true,
 }
 
 deviceList.instruments.fm = {
@@ -55,7 +52,6 @@ deviceList.instruments.fm = {
 		{ "offset", "slider", { default = 0.0, min = 0.0, max = 8.0, fmt = "Hz" } },
 		{ "noise", "slider", { default = 0.0, min = 0.0, max = 1.0 } },
 	},
-	mono = true,
 }
 
 deviceList.effects = {}
@@ -71,7 +67,15 @@ deviceList.effects.pan = {
 deviceList.effects.gain = {
 	index = 1,
 	parameters = {
-		{ "gain", "slider", { default = 0, t = "dB" } },
+		{ "gain", "slider", { default = 0, max = 12, t = "dB" } },
+	},
+}
+
+deviceList.effects.drive = {
+	index = 2,
+	parameters = {
+		{ "gain", "slider", { default = 12, max = 12, t = "dB" } },
+		{ "mode", "selector", { "naive", "2x ADAA" } },
 	},
 }
 

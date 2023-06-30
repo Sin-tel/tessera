@@ -1,6 +1,10 @@
 // after Andrew Simper, Cytomic, 2013
 // see: https://cytomic.com/files/dsp/SvfLinearTrapOptimised2.pdf
 
+// use resonance instead of Q?
+// k = 2 - 2*res
+// res = 1 - 0.5 / Q
+
 #![allow(dead_code)]
 
 use crate::dsp::env::Smoothed;

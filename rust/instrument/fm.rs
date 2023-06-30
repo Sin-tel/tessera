@@ -123,7 +123,7 @@ impl Instrument for Fm {
 		}
 	}
 
-	fn set_param(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.feedback = value * 0.5,
 			1 => self.depth = value,

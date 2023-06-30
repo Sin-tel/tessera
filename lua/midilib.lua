@@ -1,5 +1,6 @@
 -- TODO: make this a nicer interface
 -- make some kind of "device" object that you can poll
+-- TODO: handle mono / poly playing
 
 local backend = require("backend")
 local rtmidi = require("./lib/rtmidi_ffi")

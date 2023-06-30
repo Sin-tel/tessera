@@ -8,7 +8,6 @@ function Device:new(name, options)
 	self.__index = self
 
 	new.index = options.index
-	new.mono = options.mono
 	new.name = name
 
 	-- UI stuff and parameter handlers

@@ -1,8 +1,10 @@
-use crate::dsp::lerp;
+use crate::dsp::{lerp, pow2_cheap};
 
 // millis to tau (time to reach 1/e)
 fn time_constant(t: f32, sample_rate: f32) -> f32 {
-	1.0 - (-1000.0 / (sample_rate * t)).exp()
+	// 1.0 - (-1000.0 / (sample_rate * t)).exp())
+	const T_LOG2: f32 = -1442.6951;
+	1.0 - pow2_cheap(T_LOG2 / (sample_rate * t))
 }
 
 #[derive(Debug)]

@@ -66,7 +66,7 @@ impl Instrument for Sine {
 			}
 		}
 	}
-	fn set_param(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
 			0 => {
 				self.fixed = value > 0.5;

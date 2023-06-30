@@ -62,11 +62,15 @@ impl Render {
 		self.channels.push(newch);
 	}
 
+	// TODO: temp fix right inserts the fx in second to last place so the pan is always last
+	//       also update this in channel_handler
 	pub fn add_effect(&mut self, ch_index: usize, effect_number: usize) {
 		match self.channels.get_mut(ch_index) {
-			Some(ch) => ch
-				.effects
-				.push(BypassEffect::new(self.sample_rate, effect_number)),
+			Some(ch) => {
+				let l = ch.effects.len().saturating_sub(1);
+				ch.effects
+					.insert(l, BypassEffect::new(self.sample_rate, effect_number));
+			}
 			None => println!("Channel index out of bounds!"),
 		}
 	}
@@ -157,14 +161,14 @@ impl Render {
 						None => println!("Channel index out of bounds!"),
 					}
 				}
-				AudioMessage::SetParam(ch_index, device_index, index, val) => {
+				AudioMessage::Parameter(ch_index, device_index, index, val) => {
 					match self.channels.get_mut(ch_index) {
 						Some(ch) => {
 							if device_index == 0 {
-								ch.instrument.set_param(index, val);
+								ch.instrument.set_parameter(index, val);
 							} else {
 								match ch.effects.get_mut(device_index - 1) {
-									Some(e) => e.effect.set_param(index, val),
+									Some(e) => e.effect.set_parameter(index, val),
 									None => println!("Device index out of bounds!"),
 								}
 							}

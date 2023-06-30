@@ -60,7 +60,7 @@ function channelHandler:addEffect(ch, name)
 	if deviceList.effects[name] then
 		local effect = Device:new(name, deviceList.effects[name])
 
-		table.insert(ch.effects, effect)
+		table.insert(ch.effects, math.max(1, #ch.effects), effect)
 
 		backend:addEffect(ch.index, effect.index)
 

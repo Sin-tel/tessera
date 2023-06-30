@@ -25,7 +25,7 @@ pub struct AudioContext {
 pub enum AudioMessage {
 	CV(usize, f32, f32),
 	Note(usize, f32, f32, usize),
-	SetParam(usize, usize, usize, f32),
+	Parameter(usize, usize, usize, f32),
 	Mute(usize, bool),
 	// Bypass(usize, usize, bool),
 	// Swap(?),
@@ -108,7 +108,12 @@ impl UserData for LuaData {
 			"sendParameter",
 			|_, data, (ch_index, device_index, index, value): (usize, usize, usize, f32)| {
 				if let LuaData(Some(ud)) = data {
-					ud.send_message(AudioMessage::SetParam(ch_index, device_index, index, value));
+					ud.send_message(AudioMessage::Parameter(
+						ch_index,
+						device_index,
+						index,
+						value,
+					));
 				}
 				Ok(())
 			},

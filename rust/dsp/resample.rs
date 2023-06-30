@@ -9,7 +9,9 @@
 // 51 taps
 // kaiser window, beta = 12
 
-// TODO: simd?
+// TODO: double buffer so there is always a contiguous segment to iterate over
+// TODO: simd
+// see: https://jatinchowdhury18.medium.com/fast-fir-filtering-798d5d773838
 
 use bit_mask_ring_buf::BMRingBuf;
 
