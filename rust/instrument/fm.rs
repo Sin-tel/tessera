@@ -9,6 +9,8 @@ use crate::instrument::*;
 // TODO: phase reset?
 // TODO: ADE env
 // TODO: pitch env
+// TODO: noise env
+// TODO: try ADAA here as well
 
 #[derive(Debug, Default)]
 pub struct Fm {
@@ -18,10 +20,11 @@ pub struct Fm {
 	prev: f32,
 	freq: Smoothed,
 	freq2: Smoothed,
-	vel: SmoothedEnv,
+	vel: Adsr,
 	pres: SmoothedEnv,
 	dc_killer: DcKiller,
-	noise_filter: Filter,
+	noise_level: f32,
+	noise_decay: f32,
 	rng: Rng,
 
 	feedback: f32,
@@ -36,13 +39,14 @@ impl Instrument for Fm {
 	fn new(sample_rate: f32) -> Self {
 		let mut noise_filter = Filter::new(sample_rate);
 		noise_filter.set_highpass(5.0, 0.7);
+		let noise_decay = 1.0 - time_constant(20., sample_rate);
 		Fm {
 			freq: Smoothed::new(10.0, sample_rate),
 			freq2: Smoothed::new(10.0, sample_rate),
-			vel: SmoothedEnv::new(1.0, 200.0, sample_rate),
+			vel: Adsr::new(2.0, 100.0, 0.25, 10., sample_rate),
 			pres: SmoothedEnv::new(20.0, 50.0, sample_rate),
 			sample_rate,
-			noise_filter,
+			noise_decay,
 			..Default::default()
 		}
 	}
@@ -51,33 +55,29 @@ impl Instrument for Fm {
 		let [bl, br] = buffer;
 
 		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
-			self.vel.update();
-			let vel = self.vel.get();
-			self.pres.update();
-			let pres = self.pres.get();
+			let vel = self.vel.process();
+			let pres = self.pres.process();
+			let f = self.freq.process();
+			let f2 = self.freq2.process();
+			self.noise_level = self.noise_level * self.noise_decay;
 
-			self.freq.update();
-			self.freq2.update();
-			let f = self.freq.get();
-			let noise = self.noise_filter.process(self.rng.f32() - 0.5);
-			self.accum += f + self.noise_mod * noise;
-			if self.accum >= 1.0 {
-				self.accum -= 1.0;
-			}
-			self.accum2 += self.freq2.get();
-			if self.accum2 >= 1.0 {
-				self.accum2 -= 1.0;
-			}
+			// let noise = self.noise_filter.process(self.rng.f32() - 0.5);
+			let noise = self.noise_level * (self.rng.f32() - 0.5);
+			self.accum += f + noise;
+			self.accum -= self.accum.floor();
+
+			self.accum2 += f2;
+			self.accum2 -= self.accum2.floor();
 
 			let mut prev = self.prev;
 			if self.feedback < 0.0 {
 				prev *= prev;
 			}
 			let feedback = self.feedback.abs();
-			let op2 = sin_cheap(self.accum2 + feedback * prev * vel);
+			let op2 = sin_cheap(self.accum2 + feedback * prev) /* * mod_env */ ;
 
-			self.prev = op2;
-			// self.prev = lerp(self.prev, op2, 0.5);
+			// self.prev = op2;
+			self.prev = lerp(self.prev, op2, 0.5);
 
 			// depth and feedback reduction to mitigate aliasing
 			// this stuff is all empirical
@@ -104,22 +104,23 @@ impl Instrument for Fm {
 
 	fn note(&mut self, pitch: f32, vel: f32, _id: usize) {
 		if vel == 0.0 {
-			self.vel.set(0.0);
+			self.vel.release();
 		} else {
 			let f = pitch_to_hz(pitch) / self.sample_rate;
-			self.freq.set_hard(f);
+			self.freq.set_immediate(f);
 			self.set_modulator();
-			self.freq2.instant();
-			self.vel.set(vel);
+			self.freq2.immediate();
+			self.vel.trigger(vel);
 
-			self.pres.set_hard(1.0);
-			self.pres.set(0.0);
+			// self.pres.set_immediate(1.0);
+			// self.pres.set(0.0);
 
 			if self.vel.get() < 0.01 {
 				self.accum = 0.0;
 				self.accum2 = 0.0;
-				// self.vel.set_hard(vel);
 			}
+
+			self.noise_level = self.noise_mod;
 		}
 	}
 
@@ -139,7 +140,8 @@ impl Instrument for Fm {
 				self.offset = value / self.sample_rate;
 				self.set_modulator();
 			}
-			5 => self.noise_mod = value * 0.01,
+			5 => self.noise_mod = value * value * 0.05,
+			6 => self.noise_decay = 1.0 - time_constant(value, self.sample_rate),
 
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
@@ -151,13 +153,4 @@ impl Fm {
 		self.freq2
 			.set((self.ratio + self.ratio_fine) * self.freq.inner() + self.offset);
 	}
-}
-
-// branchless approximation of sin(2*pi*x)
-fn sin_cheap(x: f32) -> f32 {
-	let x = x - x.floor();
-	let a = f32::from(x > 0.5);
-	let b = 2.0 * x - 1.0 - 2.0 * a;
-	(2.0 * a - 1.0) * (x * b + a) / (0.25 * x * b + 0.15625 + 0.25 * a)
-	// (TWO_PI * x).sin()
 }

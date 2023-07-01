@@ -7,6 +7,7 @@ pub struct DelayLine {
 	sample_rate: f32,
 	pos: isize,
 	h: [f32; 4],
+	time_prev: f32,
 }
 
 #[allow(dead_code)]
@@ -18,6 +19,7 @@ impl DelayLine {
 			sample_rate,
 			pos: 0,
 			h: [0.0; 4],
+			time_prev: 0.,
 		}
 	}
 
@@ -31,28 +33,34 @@ impl DelayLine {
 	// }
 
 	pub fn push(&mut self, s: f32) {
-		self.pos = self.buf.constrain(self.pos + 1);
-		self.buf[self.pos] = s;
+		self.pos += 1;
+		*self.buf.at_mut(&mut self.pos) = s;
 	}
 
+	#[must_use]
 	pub fn go_back_int(&mut self, time: f32) -> f32 {
-		let dt = (time * self.sample_rate).floor() as isize;
-		self.buf[self.pos - dt]
+		let d_int = (time * self.sample_rate).floor() as isize;
+		self.buf[self.pos - d_int]
 	}
 
 	// pub fn go_back_int_s(&mut self, samples: isize) -> f32 {
 	// 	self.buf[self.pos - samples]
 	// }
 
+	#[must_use]
 	pub fn go_back_linear(&mut self, time: f32) -> f32 {
-		let dt = time * self.sample_rate;
-		let (idt, frac) = make_isize_frac(dt);
+		let delay = time * self.sample_rate;
+		let (d_int, frac) = make_isize_frac(delay);
 
-		lerp(self.buf[self.pos - idt], self.buf[self.pos - idt - 1], frac)
+		lerp(
+			self.buf[self.pos - d_int],
+			self.buf[self.pos - d_int - 1],
+			frac,
+		)
 	}
 
-	fn calc_coeff(&mut self, delay: f32) -> isize {
-		let (d_int, dm1) = make_isize_frac(delay);
+	// lagrange polynomial
+	fn calc_coeff(&mut self, dm1: f32) {
 		let d = dm1 + 1.;
 		let dm2 = dm1 - 1.;
 		let dm3 = dm1 - 2.;
@@ -60,18 +68,21 @@ impl DelayLine {
 		self.h[1] = 0.5 * d * dm2 * dm3;
 		self.h[2] = -0.5 * d * dm1 * dm3;
 		self.h[3] = (1. / 6.) * d * dm1 * dm2;
-
-		d_int
 	}
 
+	#[must_use]
 	pub fn go_back_cubic(&mut self, time: f32) -> f32 {
-		let dt = time * self.sample_rate;
-		let idt = self.calc_coeff(dt);
+		let delay = time * self.sample_rate;
+		let (d_int, dm1) = make_isize_frac(delay);
+		if self.time_prev != dm1 {
+			self.calc_coeff(dm1);
+		}
+		self.time_prev = dm1;
 
 		let mut sum = 0.0f32;
 
 		for (i, h) in self.h.iter().enumerate() {
-			sum += self.buf[self.pos - idt - (i as isize)] * h;
+			sum += self.buf[self.pos - d_int - (i as isize)] * h;
 		}
 
 		sum

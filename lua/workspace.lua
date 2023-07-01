@@ -240,6 +240,8 @@ function Box:split(r, vertical)
 	end
 
 	self:recalc()
+
+	return self.children[1], self.children[2]
 end
 
 function Box:resize(x, y, w, h)

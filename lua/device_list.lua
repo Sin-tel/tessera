@@ -1,9 +1,10 @@
 local deviceList = {}
 
--- TODO: allow for custom UI layouts
--- put spacers or subroupings etc
 -- should this just define a UI instead of a parameter list?
 -- parameters need to have a correct index though
+-- TODO: allow for custom UI layouts
+-- Add toggle groups
+-- Add add headings / separators
 
 local C5_HZ = 523.2511
 
@@ -51,6 +52,7 @@ deviceList.instruments.fm = {
 		{ "fine", "slider", { default = 0.0 } },
 		{ "offset", "slider", { default = 0.0, min = 0.0, max = 8.0, fmt = "Hz" } },
 		{ "noise", "slider", { default = 0.0, min = 0.0, max = 1.0 } },
+		{ "noise env", "slider", { default = 20.0, min = 5.0, max = 1000.0, t = "log", fmt = "ms" } },
 	},
 }
 
@@ -74,8 +76,10 @@ deviceList.effects.gain = {
 deviceList.effects.drive = {
 	index = 2,
 	parameters = {
-		{ "gain", "slider", { default = 12, max = 12, t = "dB" } },
-		{ "mode", "selector", { "naive", "ADAA", "2x", "4x", "2x+ADAA", "ADAA2" } },
+		{ "mode", "selector", { "soft", "hard" } },
+		{ "gain", "slider", { default = 6, max = 24, t = "dB" } },
+		{ "bias", "slider", { default = 0, max = 1.0 } },
+		{ "2x oversample", "toggle" },
 	},
 }
 

@@ -71,12 +71,12 @@ impl Instrument for Analog {
 				self.update_counter = 0;
 			}
 
-			self.vel.update();
-			self.pres.update();
-			self.freq.update();
-			self.pulse_width.update();
+			let _pres = self.pres.process();
+			let vel = self.vel.process();
+			let freq = self.freq.process();
+			let pulse_width = self.pulse_width.process();
 
-			let f_sub = 0.5 * self.freq.get();
+			let f_sub = 0.5 * freq;
 
 			self.accum += f_sub;
 			if self.accum >= 1.0 {
@@ -89,19 +89,20 @@ impl Instrument for Analog {
 			}
 
 			// calculate maximum allowed partial
-			let m = 1.0 + 2.0 * (MAX_F / (self.sample_rate * self.freq.get())).floor();
+			let m = 1.0 + 2.0 * (MAX_F / (self.sample_rate * freq)).floor();
 			let m_sub = 1.0 + 2.0 * (MAX_F / (self.sample_rate * f_sub)).floor();
 
-			let s_sub = blit(self.accum, m_sub) - blit(self.accum - 0.5, m_sub);
+			// let s_sub = blit(self.accum, m_sub) - blit(self.accum - 0.5, m_sub);
 
-			let s1 = blit(a, m);
-			let s2 = blit(a - self.pulse_width.get(), m);
+			let s0 = blit(self.accum, m_sub);
+			let s1 = blit(self.accum - 0.5, m_sub);
+			let s2 = blit(a - pulse_width, m);
 
 			// leaky integrator
 			self.z = self.z * 0.999
-				+ self.mix_saw * (s1 - 1.0 / m)
-				+ self.mix_pulse * (s1 - s2)
-				+ self.mix_sub * s_sub;
+				+ self.mix_saw * (s0 + s1 - 1.0 / m)
+				+ self.mix_pulse * (s0 + s1 - s2)
+				+ self.mix_sub * (s0 - s1);
 
 			let mix = self.z + self.mix_noise * (self.rng.f32() - 0.5);
 
@@ -125,7 +126,7 @@ impl Instrument for Analog {
 
 			let s = self.downsampler.process(s1, s2);
 
-			let out = s * 2.0 * self.vel.get();
+			let out = s * 2.0 * vel;
 
 			*l = out;
 			*r = out;
@@ -144,7 +145,7 @@ impl Instrument for Analog {
 			self.vel.set(0.0);
 		} else {
 			let f = pitch_to_hz(pitch) / self.sample_rate;
-			self.freq.set_hard(f);
+			self.freq.set_immediate(f);
 			self.vel.set(vel);
 			self.update_filter();
 		}

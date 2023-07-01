@@ -42,8 +42,8 @@ audio_status = "waiting"
 
 local function audioSetup()
 	if not backend:running() then
-		backend:setup(settings.audio.default_host, settings.audio.default_device)
-		-- backend:setup("wasapi", settings.audio.default_device)
+		-- backend:setup(settings.audio.default_host, settings.audio.default_device)
+		backend:setup("wasapi", settings.audio.default_device)
 		-- audio_status = "running"
 	else
 		print("Audio already set up")
@@ -58,12 +58,12 @@ local function audioSetup()
 	midilib.load(settings.midi.inputs)
 
 	channelHandler:load()
-	local ch = channelHandler:add("sine")
+	-- local ch = channelHandler:add("sine")
 	-- local ch = channelHandler:add("analog")
-	-- local ch = channelHandler:add("fm")
+	local ch = channelHandler:add("fm")
 	-- local ch = channelHandler:add("wavetable")
 
-	channelHandler:addEffect(ch, "drive")
+	-- channelHandler:addEffect(ch, "drive")
 	ch.armed = true
 end
 
@@ -155,23 +155,19 @@ function love.load()
 	resources.icons.unlock = love.graphics.newImage("res/unlock.png")
 
 	--- setup workspace ---
-
-	-- TODO: make this nicer
-	-- maybe return b1, b2 = workspace:split()
 	workspace:load()
-	workspace.box:split(0.7, true)
+	local left, right = workspace.box:split(0.7, true)
+	local top_left, bottom_left = left:split(0.8, false)
+	local top_left, middle_left = top_left:split(0.3, false)
+	local top_rigth, bottom_rigth = right:split(0.3, false)
 
-	workspace.box.children[1]:split(0.8, false)
-	workspace.box.children[1].children[1]:split(0.3, false)
+	bottom_left:setView(views.TestPad:new())
 
-	workspace.box.children[1].children[2]:setView(views.TestPad:new())
+	top_left:setView(views.Scope:new(false))
+	middle_left:setView(views.Scope:new(true))
 
-	workspace.box.children[1].children[1].children[1]:setView(views.Scope:new(false))
-	workspace.box.children[1].children[1].children[2]:setView(views.Scope:new(true))
-
-	workspace.box.children[2]:split(0.3, false)
-	workspace.box.children[2].children[1]:setView(views.Channels:new())
-	workspace.box.children[2].children[2]:setView(views.ChannelSettings:new())
+	top_rigth:setView(views.Channels:new())
+	bottom_rigth:setView(views.ChannelSettings:new())
 end
 
 function love.update(dt)

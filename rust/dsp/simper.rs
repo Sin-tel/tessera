@@ -134,20 +134,14 @@ impl Filter {
 		self.m2.set(1.0 / a - a);
 	}
 
+	#[must_use]
 	pub fn process(&mut self, v0: f32) -> f32 {
-		self.a1.update();
-		self.a2.update();
-		self.a3.update();
-		self.m0.update();
-		self.m1.update();
-		self.m2.update();
-
-		let a1 = self.a1.get();
-		let a2 = self.a2.get();
-		let a3 = self.a3.get();
-		let m0 = self.m0.get();
-		let m1 = self.m1.get();
-		let m2 = self.m2.get();
+		let a1 = self.a1.process();
+		let a2 = self.a2.process();
+		let a3 = self.a3.process();
+		let m0 = self.m0.process();
+		let m1 = self.m1.process();
+		let m2 = self.m2.process();
 
 		let v3 = v0 - self.s2;
 		let v1 = a1 * self.s1 + a2 * v3;

@@ -1,10 +1,18 @@
 use crate::dsp::{lerp, pow2_cheap};
 
 // millis to tau (time to reach 1/e)
-fn time_constant(t: f32, sample_rate: f32) -> f32 {
+pub fn time_constant(t: f32, sample_rate: f32) -> f32 {
 	// 1.0 - (-1000.0 / (sample_rate * t)).exp())
+	assert!(t > 0.);
+
 	const T_LOG2: f32 = -1442.6951;
 	1.0 - pow2_cheap(T_LOG2 / (sample_rate * t))
+}
+
+pub fn time_constant_linear(t: f32, sample_rate: f32) -> f32 {
+	assert!(t > 0.);
+
+	1000. / (sample_rate * t)
 }
 
 #[derive(Debug)]
@@ -29,23 +37,27 @@ impl Smoothed {
 			f,
 		}
 	}
-	pub fn update(&mut self) {
+
+	#[must_use]
+	pub fn process(&mut self) -> f32 {
 		self.value = lerp(self.value, self.inner, self.f);
+		self.value
 	}
 
 	pub fn set(&mut self, v: f32) {
 		self.inner = v;
 	}
 
-	pub fn set_hard(&mut self, v: f32) {
+	pub fn set_immediate(&mut self, v: f32) {
 		self.inner = v;
 		self.value = v;
 	}
 
-	pub fn instant(&mut self) {
+	pub fn immediate(&mut self) {
 		self.value = self.inner;
 	}
 
+	#[must_use]
 	pub fn get(&self) -> f32 {
 		self.value
 	}
@@ -82,7 +94,8 @@ impl SmoothedEnv {
 		}
 	}
 
-	pub fn update(&mut self) {
+	#[must_use]
+	pub fn process(&mut self) -> f32 {
 		self.value = lerp(
 			self.value,
 			self.inner,
@@ -92,23 +105,94 @@ impl SmoothedEnv {
 				self.release
 			},
 		);
+
+		self.value
 	}
 
 	pub fn set(&mut self, v: f32) {
 		self.inner = v;
 	}
 
-	pub fn set_hard(&mut self, v: f32) {
+	pub fn set_immediate(&mut self, v: f32) {
 		self.inner = v;
 		self.value = v;
 	}
 
+	#[must_use]
 	pub fn get(&self) -> f32 {
 		self.value
 	}
 
 	pub fn inner(&self) -> f32 {
 		self.inner
+	}
+}
+
+#[derive(Debug)]
+enum AdsrStage {
+	Attack,
+	Sustain,
+	Release,
+}
+
+// classic ADSR envelope
+#[derive(Debug)]
+pub struct Adsr {
+	attack: f32,
+	decay: f32,
+	sustain: f32,
+	release: f32,
+	value: f32,
+	stage: AdsrStage,
+}
+
+impl Adsr {
+	pub fn new(attack: f32, decay: f32, sustain: f32, release: f32, sample_rate: f32) -> Self {
+		Self {
+			attack: time_constant_linear(attack, sample_rate),
+			decay: time_constant(decay, sample_rate),
+			sustain,
+			release: time_constant(release, sample_rate),
+			value: 0.,
+			stage: AdsrStage::Release,
+		}
+	}
+
+	#[must_use]
+	pub fn process(&mut self) -> f32 {
+		use AdsrStage::*;
+		match self.stage {
+			Attack => {
+				self.value += self.attack;
+				if self.value >= 1. {
+					self.value = 1.;
+					self.stage = Sustain;
+				}
+			}
+			Sustain => self.value = lerp(self.value, self.sustain, self.decay),
+			Release => self.value = lerp(self.value, 0., self.release),
+		}
+		self.value
+	}
+
+	#[must_use]
+	pub fn get(&self) -> f32 {
+		self.value
+	}
+
+	pub fn trigger(&mut self, _vel: f32) {
+		// TODO: do something with velocity
+		self.stage = AdsrStage::Attack;
+	}
+
+	pub fn release(&mut self) {
+		self.stage = AdsrStage::Release;
+	}
+}
+
+impl Default for Adsr {
+	fn default() -> Self {
+		Self::new(1., 1., 1., 1., 44100.)
 	}
 }
 

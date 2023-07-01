@@ -7,6 +7,7 @@ extern crate bencher;
 use bencher::Bencher;
 use fastrand::Rng;
 use rust_backend::dsp::delayline::*;
+use rust_backend::dsp::resample::*;
 use rust_backend::dsp::*;
 use std::f32::consts::PI;
 use std::f32::consts::TAU;
@@ -14,35 +15,12 @@ use std::f32::consts::TAU;
 const ITERATIONS: u32 = 1000;
 const SAMPLE_RATE: f32 = 44100.0;
 
-fn sin_cheap(x: f32) -> f32 {
-	let x = fract(x);
-	let a = f32::from(x > 0.5);
-	let b = 2.0 * x - 1.0 - 2.0 * a;
-	(2.0 * a - 1.0) * (x * b + a) / (0.25 * x * b + 0.15625 + 0.25 * a)
-}
-
-fn my_floor(x: f32) -> f32 {
-	let i = x as isize;
-	i as f32
-}
-
-fn fract(x: f32) -> f32 {
-	let i = x as isize;
-	x - (i as f32)
-}
-
 fn tanhdx(x: f32) -> f32 {
 	let a = x * x;
 	((a + 105.0) * a + 945.0) / ((15.0 * a + 420.0) * a + 945.0)
 }
 
-fn prewarp_cheap(f: f32) -> f32 {
-	let x = f.min(0.49);
-	let a = x * x;
-	x * (PI.powi(3) * a - 15.0 * PI) / (6.0 * PI.powi(2) * a - 15.0)
-}
-
-fn prewarp(x: f32) -> f32 {
+fn prewarp_tan(x: f32) -> f32 {
 	(x.min(0.49) * PI).tan()
 }
 
@@ -50,6 +28,7 @@ fn distdx(x: f32) -> f32 {
 	let a = 0.135;
 	a + (1.0 - a) / (1.0 + 10.0 * x * x).sqrt()
 }
+
 fn dist2dx(x: f32) -> f32 {
 	1.0 / (1.0 + x.abs() + 0.2 * x)
 }
@@ -91,11 +70,11 @@ fn sin_cheap_bench(bench: &mut Bencher) {
 }
 
 fn prewarp_bench(bench: &mut Bencher) {
-	run(bench, prewarp)
+	run(bench, prewarp_tan)
 }
 
 fn prewarp_cheap_bench(bench: &mut Bencher) {
-	run(bench, prewarp_cheap)
+	run(bench, prewarp)
 }
 
 fn pitch_to_hz_bench(bench: &mut Bencher) {
@@ -137,25 +116,26 @@ fn floor_bench(bench: &mut Bencher) {
 	run(bench, |b| b.floor())
 }
 
-fn my_floor_bench(bench: &mut Bencher) {
-	run(bench, |b| my_floor(b))
-}
-
 fn round_bench(bench: &mut Bencher) {
 	run(bench, |b| b.round())
-}
-
-fn trunc_bench(bench: &mut Bencher) {
-	run(bench, |b| b.trunc())
-}
-
-fn fract_bench(bench: &mut Bencher) {
-	run(bench, |b| fract(b))
 }
 
 fn rand_bench(bench: &mut Bencher) {
 	let mut rng = fastrand::Rng::new();
 	run(bench, |_| rng.f32())
+}
+
+fn upsample_bench(bench: &mut Bencher) {
+	let mut upsampler = Upsampler31::new();
+	run(bench, |b| {
+		let (x1, x2) = upsampler.process(b);
+		x1 * x2
+	})
+}
+
+fn downsample_bench(bench: &mut Bencher) {
+	let mut downsampler = Downsampler51::new();
+	run(bench, |b| downsampler.process(b, b + 0.5))
 }
 
 fn svf_bench(bench: &mut Bencher) {
@@ -198,21 +178,20 @@ benchmark_group!(
 	// softclip_cubic_bench,
 	// sin_bench,
 	// sin_cheap_bench,
-	// pitch_to_f_bench,
-	// delay_go_back_int_bench,
-	// delay_go_back_linear_bench,
-	// delay_go_back_cubic_bench,
-	pow2_std_bench,
-	pow2_fast_bench,
-	log2_std_bench,
-	log2_fast_bench,
+	// pitch_to_hz_bench,
+	delay_go_back_int_bench,
+	delay_go_back_linear_bench,
+	delay_go_back_cubic_bench,
+	// pow2_std_bench,
+	// pow2_fast_bench,
+	// log2_std_bench,
+	// log2_fast_bench,
 	// rand_bench,
 	// floor_bench,
-	// my_floor_bench,
 	// round_bench,
-	// trunc_bench,
-	// fract_bench,
 	// svf_bench,
 	// skf_bench,
+	// upsample_bench,
+	// downsample_bench,
 );
 benchmark_main!(benches);

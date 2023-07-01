@@ -82,6 +82,15 @@ pub fn softclip_cubic(x: f32) -> f32 {
 	s * (1.0 - (4. / 27.) * s * s)
 }
 
+// branchless approximation of sin(2*pi*x)
+pub fn sin_cheap(x: f32) -> f32 {
+	let x = x - x.floor();
+	let a = f32::from(x > 0.5);
+	let b = 2.0 * x - 1.0 - 2.0 * a;
+	(2.0 * a - 1.0) * (x * b + a) / (0.25 * x * b + 0.15625 + 0.25 * a)
+	// (TWO_PI * x).sin()
+}
+
 pub fn make_usize_frac(x: f32) -> (usize, f32) {
 	let x_int = x.floor();
 	let x_frac = x - x_int;

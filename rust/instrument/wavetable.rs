@@ -101,10 +101,11 @@ impl Instrument for Wavetable {
 		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
 			self.interpolate += 1.0 / (0.05 * self.sample_rate); // update every 50ms
 
-			self.vel.update();
-			self.pres.update();
-			self.freq.update();
-			self.accum += self.freq.get();
+			let _pres = self.pres.process();
+			let vel = self.vel.process();
+			let freq = self.freq.process();
+
+			self.accum += freq;
 			if self.accum >= 1.0 {
 				self.accum -= 1.0;
 			}
@@ -123,7 +124,7 @@ impl Instrument for Wavetable {
 
 			let mut out = lerp(wa, wb, self.interpolate.clamp(0.0, 1.0));
 
-			out *= self.vel.get();
+			out *= vel;
 
 			*l = out;
 			*r = out;
@@ -141,10 +142,10 @@ impl Instrument for Wavetable {
 			self.vel.set(0.0);
 		} else {
 			let p = pitch_to_hz(pitch) / self.sample_rate;
-			self.freq.set_hard(p);
+			self.freq.set_immediate(p);
 
 			// if self.vel.get() < 0.01 {
-			// self.vel.set_hard(vel);
+			// self.vel.set_immediate(vel);
 			// self.accum = 0.0;
 			self.interpolate = 1.0;
 			// } else {

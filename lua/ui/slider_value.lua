@@ -28,7 +28,7 @@ function SliderValue:new(options)
 		new.v = default
 		new.default = default
 		new.fmt = options.fmt or "%0.2f"
-		assert(new.min < new.max)
+		assert(new.min <= new.max)
 		assert(new.min > 0)
 		assert(new.max > 0)
 		assert(new.min <= new.default)
@@ -94,6 +94,14 @@ function SliderValue:asString()
 				return string.format("%.2f kHz", self.v / 1000)
 			else
 				return string.format("%.1f kHz", self.v / 1000)
+			end
+		elseif self.fmt == "ms" then
+			if self.v < 1000 then
+				return string.format("%.0f ms", self.v)
+			elseif self.v < 10000 then
+				return string.format("%.2f s", self.v / 1000)
+			else
+				return string.format("%.1f s", self.v / 1000)
 			end
 		else
 			return string.format(self.fmt, self.v)

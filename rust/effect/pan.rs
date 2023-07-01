@@ -33,7 +33,7 @@ impl Track {
 		let mut filter = Filter::new(sample_rate);
 		filter.set_highshelf(HEAD_CUTOFF, HEAD_Q, 0.0);
 		let mut gain = Smoothed::new(10.0, sample_rate);
-		gain.set_hard(1.0);
+		gain.set_immediate(1.0);
 		Track {
 			gain,
 			delay: Smoothed::new(10.0, sample_rate),
@@ -74,23 +74,27 @@ impl Effect for Pan {
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
+		for track in self.tracks.iter_mut() {
+			if track.delay.get() < 1e-5 && track.delay.inner() == 0. {
+				track.delay.set_immediate(0.);
+			}
+		}
+
 		for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
 			for sample in s.iter_mut() {
-				track.gain.update();
-				track.delay.update();
-
+				let gain = track.gain.process();
+				let delay = track.delay.process();
 				let input = *sample;
+				track.delayline.push(input);
 
 				// delay
-				let mut s = track.delayline.go_back_cubic(track.delay.get());
+				let mut s = track.delayline.go_back_cubic(delay);
 				// head shadow filter
 				s = track.filter.process(s);
 				// volume difference
-				s *= track.gain.get();
+				s *= gain;
 
 				*sample = s;
-
-				track.delayline.push(input);
 			}
 		}
 	}

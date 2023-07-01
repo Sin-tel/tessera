@@ -22,8 +22,8 @@ pub struct Render {
 	buffer2: [[f32; MAX_BUF_SIZE]; 2],
 	pub sample_rate: f32,
 
-	peakl: SmoothedEnv,
-	peakr: SmoothedEnv,
+	peak_l: SmoothedEnv,
+	peak_r: SmoothedEnv,
 }
 
 impl Render {
@@ -40,8 +40,8 @@ impl Render {
 			channels: Vec::new(),
 			buffer2: [[0.0f32; MAX_BUF_SIZE]; 2],
 			sample_rate,
-			peakl: SmoothedEnv::new_direct(0.5, 0.1),
-			peakr: SmoothedEnv::new_direct(0.5, 0.1),
+			peak_l: SmoothedEnv::new_direct(0.5, 0.1),
+			peak_r: SmoothedEnv::new_direct(0.5, 0.1),
 		}
 	}
 
@@ -121,11 +121,11 @@ impl Render {
 			sum[i] = track.iter().map(|x| x.abs()).fold(std::f32::MIN, f32::max);
 		}
 
-		self.peakl.set(sum[0]);
-		self.peakr.set(sum[1]);
-		self.peakl.update();
-		self.peakr.update();
-		self.send(LuaMessage::Meter(self.peakl.get(), self.peakr.get()));
+		self.peak_l.set(sum[0]);
+		self.peak_r.set(sum[1]);
+		let peak_l = self.peak_l.process();
+		let peak_r = self.peak_r.process();
+		self.send(LuaMessage::Meter(peak_l, peak_r));
 
 		// Add 6dB headroom and some tanh-like softclip
 		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {

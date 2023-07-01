@@ -33,14 +33,14 @@ impl Instrument for Sine {
 			self.vel.set(self.fixed_gain);
 		}
 		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
-			self.vel.update();
-			self.freq.update();
+			let vel = self.vel.process();
+			let f = self.freq.process();
 
-			self.accum += self.freq.get();
+			self.accum += f;
 			self.accum = self.accum - self.accum.floor();
 
 			let mut out = (self.accum * TWO_PI).sin();
-			out *= self.vel.get();
+			out *= vel;
 
 			*l = out;
 			*r = out;
@@ -60,8 +60,8 @@ impl Instrument for Sine {
 				self.vel.set(0.0);
 			} else {
 				let p = pitch_to_hz(pitch) / self.sample_rate;
-				self.freq.set_hard(p);
-				self.vel.set_hard(vel);
+				self.freq.set_immediate(p);
+				self.vel.set_immediate(vel);
 				self.accum = 0.0;
 			}
 		}

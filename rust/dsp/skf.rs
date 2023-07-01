@@ -24,9 +24,9 @@ impl Skf {
 	}
 
 	// returns lp, bp, hp
+	#[must_use]
 	fn process_all(&mut self, x: f32) -> (f32, f32, f32) {
-		self.f.update();
-		let f = self.f.get();
+		let f = self.f.process();
 
 		// evaluate the non-linear gains
 
@@ -59,14 +59,20 @@ impl Skf {
 
 		(y2, y1 - y2, y0 - 2.0 * y1 + y2)
 	}
+
+	#[must_use]
 	pub fn process_lowpass(&mut self, x: f32) -> f32 {
 		let (lp, _, _) = self.process_all(x);
 		lp
 	}
+
+	#[must_use]
 	pub fn process_bandpass(&mut self, x: f32) -> f32 {
 		let (_, bp, _) = self.process_all(x);
 		bp
 	}
+
+	#[must_use]
 	pub fn process_highpass(&mut self, x: f32) -> f32 {
 		let (_, _, hp) = self.process_all(x);
 		hp

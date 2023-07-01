@@ -1,21 +1,26 @@
-use crate::dsp::resample::{Downsampler19, Downsampler51, Upsampler19};
+use crate::dsp::resample::{Downsampler51, Upsampler19};
+use crate::dsp::DcKiller;
 use crate::effect::Effect;
+
+// TODO: store previous sample eval of antiderivative
+// TODO: add some shelving / lowpass / higpass shaping
+// TODO: dry/wet, delay compensation?
 
 #[derive(Debug, Default)]
 pub struct Drive {
 	tracks: [Track; 2],
 	gain: f32,
-	mode: usize,
+	oversample_mode: usize,
+	bias: f32,
+	hard: bool,
 }
 
 #[derive(Debug, Default)]
 struct Track {
 	prev: f32,
-	prev2: f32,
 	upsampler: Upsampler19,
-	upsampler2: Upsampler19,
 	downsampler: Downsampler51,
-	downsampler2: Downsampler19,
+	dc_killer: DcKiller,
 }
 
 impl Effect for Drive {
@@ -27,87 +32,84 @@ impl Effect for Drive {
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
-		match self.mode {
+		match self.oversample_mode {
 			// 1st order ADAA
-			1 => {
-				for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-					for sample in s.iter_mut() {
-						let x = *sample * self.gain;
+			0 => {
+				if self.hard {
+					for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+						for sample in s.iter_mut() {
+							let x = (*sample + self.bias) * self.gain;
 
-						*sample = adaa(x, track.prev) * 0.5;
-						track.prev = x;
+							let out = adaa_hard(x, track.prev);
+
+							*sample = track.dc_killer.process(out);
+							track.prev = x;
+						}
 					}
-				}
-			}
-			// 2x oversample
-			2 => {
-				for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-					for sample in s.iter_mut() {
-						let x = *sample * self.gain;
+				} else {
+					for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+						for sample in s.iter_mut() {
+							let x = (*sample + self.bias) * self.gain;
 
-						let (u1, u2) = track.upsampler.process(x);
+							let out = adaa_soft(x, track.prev);
 
-						let out = track.downsampler.process(clip(u1), clip(u2));
-
-						*sample = out * 0.5;
-					}
-				}
-			}
-			// 4x oversample
-			3 => {
-				for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-					for sample in s.iter_mut() {
-						let x = *sample * self.gain;
-
-						let (u1, u2) = track.upsampler.process(x);
-						let (t1, t2) = track.upsampler2.process(u1);
-						let (t3, t4) = track.upsampler2.process(u2);
-
-						let out = track.downsampler.process(
-							track.downsampler2.process(clip(t1), clip(t2)),
-							track.downsampler2.process(clip(t3), clip(t4)),
-						);
-
-						*sample = out * 0.5;
+							*sample = track.dc_killer.process(out);
+							track.prev = x;
+						}
 					}
 				}
 			}
 			// 2x oversample + ADAA
-			4 => {
-				for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-					for sample in s.iter_mut() {
-						let x = *sample * self.gain;
+			1 => {
+				if self.hard {
+					for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+						for sample in s.iter_mut() {
+							let x = (*sample + self.bias) * self.gain;
 
-						let (u1, u2) = track.upsampler.process(x);
+							let (u1, u2) = track.upsampler.process(x);
 
-						let res1 = adaa(u1, track.prev);
-						let res2 = adaa(u2, u1);
-						track.prev = u2;
+							let res1 = adaa_hard(u1, track.prev);
+							let res2 = adaa_hard(u2, u1);
+							track.prev = u2;
 
-						let out = track.downsampler.process(res1, res2);
+							let out = track.downsampler.process(res1, res2);
 
-						*sample = out * 0.5;
+							*sample = track.dc_killer.process(out);
+						}
+					}
+				} else {
+					for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+						for sample in s.iter_mut() {
+							let x = (*sample + self.bias) * self.gain;
+
+							let (u1, u2) = track.upsampler.process(x);
+
+							let res1 = adaa_soft(u1, track.prev);
+							let res2 = adaa_soft(u2, u1);
+							track.prev = u2;
+
+							let out = track.downsampler.process(res1, res2);
+
+							*sample = track.dc_killer.process(out);
+						}
 					}
 				}
 			}
-			// 2nd order ADAA
-			5 => {
-				for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-					for sample in s.iter_mut() {
-						let x = *sample * self.gain;
-
-						*sample = adaa2(x, track.prev, track.prev2) * 0.5;
-						track.prev2 = track.prev;
-						track.prev = x;
-					}
-				}
-			}
-			// naive mode
+			// naive (not used)
 			_ => {
-				for (s, _) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-					for sample in s.iter_mut() {
-						let x = *sample * self.gain;
-						*sample = clip(x) * 0.5;
+				if self.hard {
+					for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+						for sample in s.iter_mut() {
+							let x = (*sample + self.bias) * self.gain;
+							*sample = track.dc_killer.process(clip_hard(x));
+						}
+					}
+				} else {
+					for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+						for sample in s.iter_mut() {
+							let x = (*sample + self.bias) * self.gain;
+							*sample = track.dc_killer.process(clip_soft(x));
+						}
 					}
 				}
 			}
@@ -115,66 +117,65 @@ impl Effect for Drive {
 	}
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
-			0 => self.gain = value,
-			1 => self.mode = value as usize,
+			0 => self.hard = value > 0.5,
+			1 => self.gain = value,
+			2 => self.bias = value,
+			3 => self.oversample_mode = value as usize,
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}
 }
 
-// x0 current sample
-// x1 previous sample
-fn adaa(x0: f32, x1: f32) -> f32 {
-	let diff = x0 - x1;
-	if diff.abs() < 1e-3 {
-		clip(0.5 * (x0 + x1))
-	} else {
-		(clip_ad(x0) - clip_ad(x1)) / diff
-	}
-}
+// This is pretty high because we do finite difference on f32
+const ADAA_TOLERANCE: f32 = 1e-3;
 
 // x0 current sample
 // x1 previous sample
-// x2 2 samples before
-fn adaa2(x0: f32, x1: f32, x2: f32) -> f32 {
-	let diff = x0 - x2;
-
-	if diff.abs() < 0.01 {
-		let x_bar = 0.5 * (x0 + x2);
-
-		let delta = x_bar - x1;
-		if delta.abs() < 0.03 {
-			return clip(0.5 * (x_bar + x1));
-		} else {
-			return 2.0 * (clip_ad(x_bar) + (clip_ad2(x1) - clip_ad2(x_bar)) / delta) / delta;
-		}
-	}
-
-	2.0 * (adaa2_diff(x0, x1) - adaa2_diff(x1, x2)) / diff
-}
-
-fn adaa2_diff(x0: f32, x1: f32) -> f32 {
+fn adaa_soft(x0: f32, x1: f32) -> f32 {
 	let diff = x0 - x1;
-	if diff.abs() < 0.03 {
-		clip_ad(0.5 * (x0 + x1))
+	if diff.abs() < ADAA_TOLERANCE {
+		clip_soft(0.5 * (x0 + x1))
 	} else {
-		(clip_ad2(x0) - clip_ad2(x1)) / diff
+		(clip_soft_ad(x0) - clip_soft_ad(x1)) / diff
 	}
 }
 
-fn clip(x: f32) -> f32 {
-	x.clamp(-1.0, 1.0)
+fn adaa_hard(x0: f32, x1: f32) -> f32 {
+	let diff = x0 - x1;
+	if diff.abs() < ADAA_TOLERANCE {
+		clip_hard(0.5 * (x0 + x1))
+	} else {
+		(clip_hard_ad(x0) - clip_hard_ad(x1)) / diff
+	}
 }
 
-// antiderivative
-fn clip_ad(x: f32) -> f32 {
-	let x1 = x + 1.0;
-	let xm1 = x - 1.0;
-	0.25 * (x1.abs() * x1 - xm1.abs() * xm1 - 2.0)
+fn clip_soft(x: f32) -> f32 {
+	let x = x.clamp(-16. / 9., 16. / 9.);
+	(65536. * x) / (256. + 27. * x * x).powi(2)
 }
 
-fn clip_ad2(x: f32) -> f32 {
-	let x1 = x + 1.0;
-	let xm1 = x - 1.0;
-	(1.0 / 12.0) * (x1.abs() * x1 * x1 - xm1.abs() * xm1 * xm1 - 6.0 * x)
+fn clip_hard(x: f32) -> f32 {
+	let x = x.clamp(-5. / 4., 5. / 4.);
+	x - (256. / 3125.) * x.powi(5)
+}
+
+// antiderivatives
+fn clip_soft_ad(x: f32) -> f32 {
+	let x = x.abs();
+	if x < (16. / 9.) {
+		let a = x * x;
+		(128. * a) / (27. * a + 256.)
+	} else {
+		x - (16. / 27.)
+	}
+}
+
+fn clip_hard_ad(x: f32) -> f32 {
+	let x = x.abs();
+	if x < (5. / 4.) {
+		let a = x * x;
+		a * (-256. * a * a + 9375.) / 18750.
+	} else {
+		x - (25. / 48.)
+	}
 }
