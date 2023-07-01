@@ -7,14 +7,19 @@ local Scope = View:derive("Scope")
 -- TODO: make scope tracking better
 --       zero crossing detection? frequency tracking?
 
-function Scope:new()
+function Scope:new(spectrum)
 	local new = {}
 	setmetatable(new, self)
 	self.__index = self
 
+	local index = 1
+	if spectrum then
+		index = 2
+	end
+
 	new.ui = Ui:new(new)
 
-	new.selector = widgets.Selector:new({ "scope", "spectrum" })
+	new.selector = widgets.Selector:new({ "scope", "spectrum" }, index)
 
 	return new
 end

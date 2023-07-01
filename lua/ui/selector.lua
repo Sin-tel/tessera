@@ -7,12 +7,12 @@ local Button = {}
 -- TODO: middle mouse reset
 
 local Selector = {}
-function Selector:new(list)
+function Selector:new(list, index)
 	local new = {}
 	setmetatable(new, self)
 	self.__index = self
 
-	new.index = 1
+	new.index = index or 1
 	new.dirty = true
 
 	new.list = {}

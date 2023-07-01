@@ -75,7 +75,7 @@ deviceList.effects.drive = {
 	index = 2,
 	parameters = {
 		{ "gain", "slider", { default = 12, max = 12, t = "dB" } },
-		{ "mode", "selector", { "naive", "2x ADAA" } },
+		{ "mode", "selector", { "naive", "ADAA", "2x", "4x", "2x+ADAA", "ADAA2" } },
 	},
 }
 

@@ -1,5 +1,6 @@
 use mlua::prelude::*;
 use mlua::{UserData, UserDataMethods, Value};
+use no_denormals::no_denormals;
 use ringbuf::{HeapConsumer, HeapProducer};
 use std::sync::{Arc, Mutex};
 
@@ -163,9 +164,8 @@ impl UserData for LuaData {
 				// TODO: need to check here if the stream is *actually* paused
 
 				render.parse_messages();
-				let res = render.process(buffer);
+				let res = no_denormals(|| render.process(buffer));
 				if let Err(e) = res {
-					// return Err(LuaError::RuntimeError(e));
 					eprintln!("{e:?}");
 					return Ok(None);
 				}

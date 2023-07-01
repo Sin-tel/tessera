@@ -166,8 +166,8 @@ function love.load()
 
 	workspace.box.children[1].children[2]:setView(views.TestPad:new())
 
-	workspace.box.children[1].children[1].children[2]:setView(views.Scope:new())
-	workspace.box.children[1].children[1].children[1]:setView(views.Scope:new())
+	workspace.box.children[1].children[1].children[1]:setView(views.Scope:new(false))
+	workspace.box.children[1].children[1].children[2]:setView(views.Scope:new(true))
 
 	workspace.box.children[2]:split(0.3, false)
 	workspace.box.children[2].children[1]:setView(views.Channels:new())
