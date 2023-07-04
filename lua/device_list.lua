@@ -19,6 +19,11 @@ deviceList.instruments.sine = {
 	},
 }
 
+deviceList.instruments.polysine = {
+	index = 4,
+	parameters = {},
+}
+
 deviceList.instruments.wavetable = {
 	index = 1,
 	parameters = {

@@ -10,7 +10,6 @@ use crate::instrument::*;
 // TODO: phase reset?
 // TODO: ADE env
 // TODO: pitch env
-// TODO: noise env
 // TODO: try ADAA here as well
 
 #[derive(Debug, Default)]
@@ -101,7 +100,7 @@ impl Instrument for Fm {
 		}
 	}
 
-	fn cv(&mut self, pitch: f32, pres: f32) {
+	fn cv(&mut self, pitch: f32, pres: f32, _id: usize) {
 		let f = pitch_to_hz(pitch) / self.sample_rate;
 		self.freq.set(f);
 		self.set_modulator();

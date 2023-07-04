@@ -140,7 +140,7 @@ impl Instrument for Analog {
 		}
 	}
 
-	fn cv(&mut self, pitch: f32, pres: f32) {
+	fn cv(&mut self, pitch: f32, pres: f32, _id: usize) {
 		let f = pitch_to_hz(pitch) / self.sample_rate;
 		self.freq.set(f);
 		self.pres.set(pres);

@@ -8,6 +8,9 @@ use crate::audio;
 use crate::render;
 use crate::scope::Scope;
 
+// TODO: Before ever acquiring a lock on m_render, we should check that it is not poisoned.
+//       If it is, kill the audio stream and restart the engine.
+
 struct LuaData(Option<AudioContext>);
 
 pub struct AudioContext {
@@ -24,7 +27,7 @@ pub struct AudioContext {
 // Should not contain any boxed values
 #[derive(Debug)]
 pub enum AudioMessage {
-	CV(usize, f32, f32),
+	CV(usize, f32, f32, usize),
 	Note(usize, f32, f32, usize),
 	Parameter(usize, usize, usize, f32),
 	Mute(usize, bool),
@@ -81,12 +84,15 @@ impl UserData for LuaData {
 
 		methods.add_method("running", |_, LuaData(ud), _: ()| Ok(ud.is_some()));
 
-		methods.add_method_mut("sendCv", |_, data, (ch, pitch, pres): (usize, f32, f32)| {
-			if let LuaData(Some(ud)) = data {
-				ud.send_message(AudioMessage::CV(ch, pitch, pres));
-			}
-			Ok(())
-		});
+		methods.add_method_mut(
+			"sendCv",
+			|_, data, (ch, pitch, pres, id): (usize, f32, f32, Option<usize>)| {
+				if let LuaData(Some(ud)) = data {
+					ud.send_message(AudioMessage::CV(ch, pitch, pres, id.unwrap_or(0)));
+				}
+				Ok(())
+			},
+		);
 
 		methods.add_method_mut(
 			"sendNote",

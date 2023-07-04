@@ -43,23 +43,36 @@ function M.openDevice(v)
 	print("Couldn't open port: " .. v.name)
 end
 
+local function newVoice()
+	local new = {}
+	new.channel = 0
+	new.note = 0
+	new.offset = 0
+	new.vel = 0
+	new.age = 0
+	new.note_on = false
+	return new
+end
+
 function M.newDevice(handle, mpe, n)
 	local new = {}
 	new.handle = handle
 	new.mpe = mpe
 	new.port = n
-	new.voices = {}
 	new.pitchbend = 2
+
+	new.n_voices = 4
 
 	---temp
 	new.offset = 0
 	new.vel = 0
 
+	new.voices = {}
+	for i = 1, new.n_voices do
+		new.voices[i] = newVoice()
+	end
 	if mpe then
 		new.pitchbend = 48
-		-- for i = 1, 16 do
-		-- 	new.voices[i] = { vel = 0.0, note = 49, offset = 0.0, y = 0, noteOn = false, noteOff = false }
-		-- end
 	end
 	return new
 end
@@ -78,7 +91,7 @@ function M.updateDevice(device)
 		end
 		local event = M.parse(msg, s)
 
-		M.handleEvent(device, event)
+		M.handleEventPoly(device, event)
 	end
 end
 
@@ -121,6 +134,102 @@ end
 
 function M.handleEventTest(device, event)
 	print(event.name)
+end
+
+-- TODO: remove
+local index = 0
+
+function M.handleEventPoly(device, event)
+	local channel_index = nil
+	for i, ch in ipairs(channelHandler.list) do
+		if ch.armed then
+			channel_index = i - 1
+			break
+		end
+	end
+	if not channel_index then
+		return
+	end
+
+	if event.name == "note on" then
+		local playing_age, playing_i = 10000, -1
+		local released_age, released_i = -1, -1
+		for j, b in ipairs(device.voices) do
+			b.age = b.age + 1
+		end
+		for j, b in ipairs(device.voices) do
+			if b.note_on then
+				print(b.age)
+				-- track note is on
+				if b.age < playing_age then
+					playing_i = j
+					playing_age = b.age
+				end
+			else
+				-- track is free
+				if b.age > released_age then
+					released_i = j
+					released_age = b.age
+				end
+			end
+		end
+		print(released_i, playing_i)
+		local new_i
+		if released_i ~= -1 then
+			new_i = released_i
+		else
+			new_i = playing_i
+		end
+
+		local voice = device.voices[new_i]
+		voice.note = event.note
+		voice.vel = event.vel
+		voice.pres = 0
+		voice.note_on = true
+		voice.age = 0
+		backend:sendNote(channel_index, voice.note + voice.offset, voice.vel, new_i - 1)
+	elseif event.name == "note off" then
+		local get_i
+		for i, v in ipairs(device.voices) do
+			if v.note == event.note and v.note_on then
+				get_i = i
+				break
+			end
+		end
+		if get_i == nil then
+			--voice was already dead
+			return
+		end
+		local voice = device.voices[get_i]
+
+		voice.note_on = false
+
+		backend:sendNote(channel_index, voice.note + voice.offset, 0, get_i - 1)
+
+		-- if device.note and #device.voices == 1 then
+		-- 	backend:sendNote(channel_index, device.note + device.offset, 0)
+		-- 	device.note = nil
+		-- elseif get_i == #device.voices then
+		-- 	device.note = device.voices[get_i - 1]
+		-- 	backend:sendNote(channel_index, device.note + device.offset, device.vel)
+		-- end
+		-- table.remove(device.voices, get_i)
+
+		-- elseif event.name == "pressure" then
+		-- 	device.pres = event.pres
+		-- 	if device.note then
+		-- 		backend:sendCv(channel_index, device.note + device.offset, device.pres)
+		-- 	end
+		-- elseif event.name == "pitchbend" then
+		-- 	device.offset = device.pitchbend * event.offset
+		-- 	if device.note then
+		-- 		backend:sendCv(channel_index, device.note + device.offset, device.pres)
+		-- 	end
+		-- else
+		-- print(event.name)
+	end
+
+	-- return signal
 end
 
 function M.handleEvent(device, event)

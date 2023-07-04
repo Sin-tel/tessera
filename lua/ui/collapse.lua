@@ -22,11 +22,15 @@ function Collapse:update(ui, x, y, w, h)
 		self.open = not self.open
 	end
 
-	local goal = 0.0
+	-- local goal = 0.0
+	-- if not self.open then
+	-- 	goal = -0.5 * math.pi
+	-- end
+	-- self.angle = util.towards(self.angle, goal, 0.5)
+	self.angle = 0.0
 	if not self.open then
-		goal = -0.5 * math.pi
+		self.angle = -0.5 * math.pi
 	end
-	self.angle = util.towards(self.angle, goal, 0.5)
 
 	ui:pushDraw(self.draw, self, x, y, w, h)
 
@@ -35,9 +39,9 @@ end
 
 function Collapse:draw(x, y, w, h)
 	love.graphics.setColor(theme.ui_text)
-	local left_pad = h + Ui.DEFAULT_PAD
+	local left_pad = h * 0.8 + Ui.DEFAULT_PAD
 
-	local tw = h * 0.25
+	local tw = h * 0.15
 	local cx, cy = x + h * 0.5, y + h * 0.5
 	local x1, y1 = -tw, -tw
 	local x2, y2 = tw, -tw

@@ -27,13 +27,14 @@ Lua
 [ ] UI separators
 [ ] UI editable labels
 [ ] UI context menu
+[ ] UI dropdown
+[ ] add instrument menu/list
+[ ] add effects menu/list
 [ ] Type value in slider
 [ ] Top ribbon menu
 [ ] Tabs/workspaces
 [ ] Loop
 [ ] Tools
-[ ] add instrument menu/list
-[ ] add effects menu/list
 [ ] Parse tuning files
 [ ] Midi remapping 
 [ ] Remove channel
@@ -71,7 +72,7 @@ Rust
 [ ] Group channels
 [ ] Master channel
 [ ] Return tracks?
-[ ] Polyphonic instruments (plucked, piano, etc)
+[-] Polyphonic instruments
 [x] binaural panning 
 [x] Support WASAPI
 [ ] Support macOS
