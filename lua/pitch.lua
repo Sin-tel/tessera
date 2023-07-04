@@ -117,13 +117,14 @@ function Pitch:new()
 	return new
 end
 
-function Pitch:newFromDiatonic(n)
+function Pitch:fromDiatonic(n, add_octave)
+	local add_octave = add_octave or 5
 	local new = Pitch:new()
 	local s = #Pitch.diatonic_table
 	local oct = math.floor((n - 1) / s)
 	n = n - oct * s
 	local dia = Pitch.diatonic_table[n]
-	new.coord[1] = dia[1] + oct
+	new.coord[1] = dia[1] + oct + add_octave
 	new.coord[2] = dia[2]
 
 	new:recalc()
@@ -132,7 +133,7 @@ function Pitch:newFromDiatonic(n)
 end
 
 function Pitch:recalc()
-	local f = 60
+	local f = 0
 	for i, v in ipairs(self.coord) do
 		f = f + v * (self.generators[i] or 0)
 	end

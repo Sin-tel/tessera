@@ -102,7 +102,7 @@ impl Instrument for Analog {
 
 			// leaky integrator
 			self.z = self.z * 0.998
-				+ self.mix_saw * (s0 + s1 - 1.0 / m)
+				+ self.mix_saw * (s0 + s1)
 				+ self.mix_pulse * (s0 + s1 - s2)
 				+ self.mix_sub * (s0 - s1);
 
@@ -210,12 +210,13 @@ impl Instrument for Analog {
 
 // analytical band limited impulse train
 // https://www.music.mcgill.ca/~gary/307/week5/node14.html
+// the 1/m term is to guarantee the integral is 0
 fn blit(s: f32, m: f32) -> f32 {
 	let denom = m * (s * PI).sin();
 	if denom.abs() < 1e-7 {
-		1.0
+		1. - (1. / m)
 	} else {
-		(s * m * PI).sin() / denom
+		((s * m * PI).sin() / denom) - (1. / m)
 	}
 }
 

@@ -21,7 +21,7 @@ end
 
 workspace = require("workspace")
 mouse = require("mouse")
-keyboard = require("keyboard")
+note_input = require("note_input")
 util = require("util")
 channelHandler = require("channel_handler")
 
@@ -39,7 +39,6 @@ audio_status = "waiting"
 --- temp stuff, to delete ---
 
 -----------------------------
-
 local function audioSetup()
 	if not backend:running() then
 		-- backend:setup(settings.audio.default_host, settings.audio.default_device)
@@ -59,8 +58,8 @@ local function audioSetup()
 
 	channelHandler:load()
 	-- local ch = channelHandler:add("sine")
-	-- local ch = channelHandler:add("analog")
-	local ch = channelHandler:add("fm")
+	local ch = channelHandler:add("analog")
+	-- local ch = channelHandler:add("fm")
 	-- local ch = channelHandler:add("wavetable")
 
 	-- channelHandler:addEffect(ch, "drive")
@@ -159,7 +158,7 @@ function love.load()
 	local left, right = workspace.box:split(0.7, true)
 	local top_left, bottom_left = left:split(0.8, false)
 	local top_left, middle_left = top_left:split(0.3, false)
-	local top_rigth, bottom_rigth = right:split(0.3, false)
+	local top_rigth, bottom_rigth = right:split(0.2, false)
 
 	bottom_left:setView(views.TestPad:new())
 
@@ -230,7 +229,7 @@ function love.textinput(t)
 end
 
 function love.keypressed(key, isrepeat)
-	if keyboard:keypressed(key, isrepeat) then
+	if note_input:keypressed(key, isrepeat) then
 		return
 	end
 
@@ -257,7 +256,7 @@ function love.keypressed(key, isrepeat)
 end
 
 function love.keyreleased(key)
-	if keyboard:keyreleased(key) then
+	if note_input:keyreleased(key) then
 		return
 	end
 end
