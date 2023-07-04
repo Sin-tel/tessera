@@ -2,7 +2,7 @@ use ringbuf::{HeapConsumer, HeapProducer};
 
 use crate::audio::MAX_BUF_SIZE;
 use crate::device::*;
-use crate::dsp::env::SmoothedEnv;
+use crate::dsp::env::AttackRelease;
 use crate::dsp::softclip;
 use crate::effect::*;
 use crate::instrument::*;
@@ -22,8 +22,8 @@ pub struct Render {
 	buffer2: [[f32; MAX_BUF_SIZE]; 2],
 	pub sample_rate: f32,
 
-	peak_l: SmoothedEnv,
-	peak_r: SmoothedEnv,
+	peak_l: AttackRelease,
+	peak_r: AttackRelease,
 }
 
 impl Render {
@@ -40,8 +40,8 @@ impl Render {
 			channels: Vec::new(),
 			buffer2: [[0.0f32; MAX_BUF_SIZE]; 2],
 			sample_rate,
-			peak_l: SmoothedEnv::new_direct(0.5, 0.1),
-			peak_r: SmoothedEnv::new_direct(0.5, 0.1),
+			peak_l: AttackRelease::new_direct(0.5, 0.1),
+			peak_r: AttackRelease::new_direct(0.5, 0.1),
 		}
 	}
 

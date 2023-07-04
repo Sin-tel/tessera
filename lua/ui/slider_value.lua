@@ -96,7 +96,9 @@ function SliderValue:asString()
 				return string.format("%.1f kHz", self.v / 1000)
 			end
 		elseif self.fmt == "ms" then
-			if self.v < 1000 then
+			if self.v < 10 then
+				return string.format("%.1f ms", self.v)
+			elseif self.v < 1000 then
 				return string.format("%.0f ms", self.v)
 			elseif self.v < 10000 then
 				return string.format("%.2f s", self.v / 1000)

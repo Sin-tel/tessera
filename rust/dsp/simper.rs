@@ -5,9 +5,11 @@
 // k = 2 - 2*res
 // res = 1 - 0.5 / Q
 
+// TODO: smoothing should be done by whoever owns the filter, but  this is kind of annoying since theres 6 values
+
 #![allow(dead_code)]
 
-use crate::dsp::env::Smoothed;
+use crate::dsp::env::SmoothLinear;
 use crate::dsp::{from_db, prewarp};
 
 #[derive(Debug, Default)]
@@ -16,25 +18,25 @@ pub struct Filter {
 	s1: f32,
 	s2: f32,
 
-	a1: Smoothed,
-	a2: Smoothed,
-	a3: Smoothed,
+	a1: SmoothLinear,
+	a2: SmoothLinear,
+	a3: SmoothLinear,
 
-	m0: Smoothed,
-	m1: Smoothed,
-	m2: Smoothed,
+	m0: SmoothLinear,
+	m1: SmoothLinear,
+	m2: SmoothLinear,
 }
 
 impl Filter {
 	pub fn new(sample_rate: f32) -> Self {
 		Self {
 			sample_rate,
-			a1: Smoothed::new(5.0, sample_rate),
-			a2: Smoothed::new(5.0, sample_rate),
-			a3: Smoothed::new(5.0, sample_rate),
-			m0: Smoothed::new(5.0, sample_rate),
-			m1: Smoothed::new(5.0, sample_rate),
-			m2: Smoothed::new(5.0, sample_rate),
+			a1: SmoothLinear::new(5.0, sample_rate),
+			a2: SmoothLinear::new(5.0, sample_rate),
+			a3: SmoothLinear::new(5.0, sample_rate),
+			m0: SmoothLinear::new(5.0, sample_rate),
+			m1: SmoothLinear::new(5.0, sample_rate),
+			m2: SmoothLinear::new(5.0, sample_rate),
 			..Default::default()
 		}
 	}
@@ -146,8 +148,8 @@ impl Filter {
 		let v3 = v0 - self.s2;
 		let v1 = a1 * self.s1 + a2 * v3;
 		let v2 = self.s2 + a2 * self.s1 + a3 * v3;
-		self.s1 = 2.0f32 * v1 - self.s1;
-		self.s2 = 2.0f32 * v2 - self.s2;
+		self.s1 = 2. * v1 - self.s1;
+		self.s2 = 2. * v2 - self.s2;
 
 		m0 * v0 + m1 * v1 + m2 * v2
 	}

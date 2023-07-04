@@ -74,13 +74,17 @@ impl DelayLine {
 	pub fn go_back_cubic(&mut self, time: f32) -> f32 {
 		let delay = time * self.sample_rate;
 		let (d_int, dm1) = make_isize_frac(delay);
+
+		// self.calc_coeff(dm1);
+
+		// TODO: check if this actually improves performance
+		//       maybe we should have static hint
 		if self.time_prev != dm1 {
 			self.calc_coeff(dm1);
 		}
 		self.time_prev = dm1;
 
 		let mut sum = 0.0f32;
-
 		for (i, h) in self.h.iter().enumerate() {
 			sum += self.buf[self.pos - d_int - (i as isize)] * h;
 		}

@@ -1,9 +1,12 @@
 // #![allow(dead_code)]
+
 #![warn(clippy::cast_lossless)]
 #![warn(clippy::uninlined_format_args)]
 #![warn(clippy::semicolon_if_nothing_returned)]
+#![warn(clippy::explicit_iter_loop)]
+#![warn(clippy::items_after_statements)]
 #![deny(unreachable_patterns)]
-//
+
 // #![deny(clippy::pedantic)]
 // #![allow(clippy::similar_names)]
 // #![allow(clippy::excessive_precision)]

@@ -1,5 +1,5 @@
 use crate::dsp::delayline::DelayLine;
-use crate::dsp::env::Smoothed;
+use crate::dsp::env::SmoothLinear;
 use crate::dsp::simper::Filter;
 use crate::effect::Effect;
 
@@ -22,8 +22,8 @@ pub struct Pan {
 
 #[derive(Debug)]
 struct Track {
-	gain: Smoothed,
-	delay: Smoothed,
+	gain: SmoothLinear,
+	delay: SmoothLinear,
 	filter: Filter,
 	delayline: DelayLine,
 }
@@ -32,11 +32,11 @@ impl Track {
 	pub fn new(sample_rate: f32) -> Self {
 		let mut filter = Filter::new(sample_rate);
 		filter.set_highshelf(HEAD_CUTOFF, HEAD_Q, 0.0);
-		let mut gain = Smoothed::new(10.0, sample_rate);
+		let mut gain = SmoothLinear::new(17.0, sample_rate);
 		gain.set_immediate(1.0);
 		Track {
 			gain,
-			delay: Smoothed::new(10.0, sample_rate),
+			delay: SmoothLinear::new(17.0, sample_rate),
 			filter,
 			delayline: DelayLine::new(sample_rate, ITD),
 		}
@@ -74,12 +74,6 @@ impl Effect for Pan {
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
-		for track in self.tracks.iter_mut() {
-			if track.delay.get() < 1e-5 && track.delay.inner() == 0. {
-				track.delay.set_immediate(0.);
-			}
-		}
-
 		for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
 			for sample in s.iter_mut() {
 				let gain = track.gain.process();

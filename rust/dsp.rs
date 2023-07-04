@@ -57,6 +57,7 @@ pub fn hz_to_pitch(f: f32) -> f32 {
 	12.0 * log2_cheap(f / C5_HZ) + 72.0
 }
 
+#[inline(always)]
 pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
 	a + (b - a) * t
 }

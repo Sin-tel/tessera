@@ -5,7 +5,7 @@ use ringbuf::{HeapConsumer, HeapRb};
 use std::error::Error;
 use std::sync::{Arc, Mutex};
 
-use crate::dsp::env::SmoothedEnv;
+use crate::dsp::env::AttackRelease;
 use crate::lua::{AudioContext, AudioMessage, LuaMessage};
 use crate::render::Render;
 use crate::scope::Scope;
@@ -109,7 +109,7 @@ where
 
 	let process_buffer = [[0.0f32; MAX_BUF_SIZE]; 2];
 
-	let mut cpu_load = SmoothedEnv::new_direct(0.05, 0.01);
+	let mut cpu_load = AttackRelease::new_direct(0.05, 0.01);
 
 	move |cpal_buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
 		no_denormals(|| {

@@ -37,9 +37,17 @@ deviceList.instruments.analog = {
 		{ "mix noise", "slider", { default = -math.huge, t = "dB" } },
 		{ "vcf mode", "selector", { "lowpass", "bandpass", "highpass" } },
 		{ "vcf freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
-		{ "vcf res", "slider", { default = 0.2, min = 0.0, max = 1.25 } },
+		{ "vcf res", "slider", { default = 0.3, min = 0.0, max = 1.25 } },
 		{ "vcf env", "slider", { default = 0.5 } },
 		{ "vcf kbd", "slider", { default = 0.5 } },
+
+		{ "gate", "toggle" },
+		{ "attack", "slider", { default = 10.0, min = 1.0, max = 20000.0, t = "log", fmt = "ms" } },
+		{ "decay", "slider", { default = 500.0, min = 10.0, max = 20000.0, t = "log", fmt = "ms" } },
+		{ "sustain", "slider", { default = -6, t = "dB" } },
+		{ "release", "slider", { default = 50.0, min = 10.0, max = 20000.0, t = "log", fmt = "ms" } },
+
+		{ "legato", "toggle", { default = true } },
 	},
 }
 
@@ -51,8 +59,14 @@ deviceList.instruments.fm = {
 		{ "ratio", "slider", { default = 1.0, min = 0.0, max = 8.0, step = 1.0 } },
 		{ "fine", "slider", { default = 0.0 } },
 		{ "offset", "slider", { default = 0.0, min = 0.0, max = 8.0, fmt = "Hz" } },
+
+		{ "attack", "slider", { default = 10.0, min = 1.0, max = 20000.0, t = "log", fmt = "ms" } },
+		{ "decay", "slider", { default = 500.0, min = 10.0, max = 20000.0, t = "log", fmt = "ms" } },
+		{ "sustain", "slider", { default = -6, t = "dB" } },
+		{ "release", "slider", { default = 50.0, min = 10.0, max = 20000.0, t = "log", fmt = "ms" } },
+
 		{ "noise", "slider", { default = 0.0, min = 0.0, max = 1.0 } },
-		{ "noise env", "slider", { default = 20.0, min = 5.0, max = 1000.0, t = "log", fmt = "ms" } },
+		{ "noise env", "slider", { default = 20.0, min = 2.0, max = 5000.0, t = "log", fmt = "ms" } },
 	},
 }
 

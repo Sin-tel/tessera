@@ -7,8 +7,8 @@ use crate::instrument::*;
 #[derive(Debug, Default)]
 pub struct Sine {
 	accum: f32,
-	freq: Smoothed,
-	vel: SmoothedEnv,
+	freq: SmoothExp,
+	vel: SmoothExp,
 	sample_rate: f32,
 	fixed: bool,
 	fixed_freq: f32,
@@ -18,8 +18,8 @@ pub struct Sine {
 impl Instrument for Sine {
 	fn new(sample_rate: f32) -> Self {
 		Sine {
-			freq: Smoothed::new(10.0, sample_rate),
-			vel: SmoothedEnv::new(10.0, 10.0, sample_rate),
+			freq: SmoothExp::new(20.0, sample_rate),
+			vel: SmoothExp::new(20.0, sample_rate),
 			sample_rate,
 			..Default::default()
 		}

@@ -18,10 +18,10 @@ pub struct Fm {
 	accum: f32,
 	accum2: f32,
 	prev: f32,
-	freq: Smoothed,
-	freq2: Smoothed,
+	freq: SmoothExp,
+	freq2: SmoothExp,
 	vel: Adsr,
-	pres: SmoothedEnv,
+	pres: AttackRelease,
 	dc_killer: DcKiller,
 	noise_level: f32,
 	noise_decay: f32,
@@ -41,10 +41,10 @@ impl Instrument for Fm {
 		noise_filter.set_highpass(5.0, 0.7);
 		let noise_decay = 1.0 - time_constant(20., sample_rate);
 		Fm {
-			freq: Smoothed::new(10.0, sample_rate),
-			freq2: Smoothed::new(10.0, sample_rate),
+			freq: SmoothExp::new(10.0, sample_rate),
+			freq2: SmoothExp::new(10.0, sample_rate),
 			vel: Adsr::new(2.0, 100.0, 0.25, 10., sample_rate),
-			pres: SmoothedEnv::new(20.0, 50.0, sample_rate),
+			pres: AttackRelease::new(20.0, 50.0, sample_rate),
 			sample_rate,
 			noise_decay,
 			..Default::default()
@@ -54,12 +54,16 @@ impl Instrument for Fm {
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
 
+		// println!("{:?}", self.vel.get());
+		// println!("{:?}", self.noise_level);
+
 		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
 			let vel = self.vel.process();
 			let pres = self.pres.process();
 			let f = self.freq.process();
 			let f2 = self.freq2.process();
-			self.noise_level = self.noise_level * self.noise_decay;
+
+			self.noise_level *= self.noise_decay; // lerp(self.noise_level, 0., self.noise_decay)
 
 			// let noise = self.noise_filter.process(self.rng.f32() - 0.5);
 			let noise = self.noise_level * (self.rng.f32() - 0.5);
@@ -104,13 +108,13 @@ impl Instrument for Fm {
 
 	fn note(&mut self, pitch: f32, vel: f32, _id: usize) {
 		if vel == 0.0 {
-			self.vel.release();
+			self.vel.note_off();
 		} else {
 			let f = pitch_to_hz(pitch) / self.sample_rate;
 			self.freq.set_immediate(f);
 			self.set_modulator();
 			self.freq2.immediate();
-			self.vel.trigger(vel);
+			self.vel.note_on(vel);
 
 			// self.pres.set_immediate(1.0);
 			// self.pres.set(0.0);
@@ -140,8 +144,12 @@ impl Instrument for Fm {
 				self.offset = value / self.sample_rate;
 				self.set_modulator();
 			}
-			5 => self.noise_mod = value * value * 0.05,
-			6 => self.noise_decay = 1.0 - time_constant(value, self.sample_rate),
+			5 => self.vel.set_attack(value),
+			6 => self.vel.set_decay(value),
+			7 => self.vel.set_sustain(value),
+			8 => self.vel.set_release(value),
+			9 => self.noise_mod = value * value * 0.05,
+			10 => self.noise_decay = 1.0 - time_constant(value, self.sample_rate),
 
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
@@ -151,6 +159,6 @@ impl Instrument for Fm {
 impl Fm {
 	fn set_modulator(&mut self) {
 		self.freq2
-			.set((self.ratio + self.ratio_fine) * self.freq.inner() + self.offset);
+			.set((self.ratio + self.ratio_fine) * self.freq.target() + self.offset);
 	}
 }

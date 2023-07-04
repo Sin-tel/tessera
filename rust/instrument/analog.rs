@@ -9,6 +9,8 @@ use crate::dsp::*;
 use crate::instrument::*;
 
 // TODO: at high frequencies, the switching between different BLITs causes discontinuities
+// TODO: LFO (tri, s&h, noise, saw) -> PWM, pitch
+// TODO: env -> PWM, pitch
 
 const MAX_F: f32 = 20_000.0;
 
@@ -22,9 +24,9 @@ enum FilterMode {
 
 #[derive(Debug, Default)]
 pub struct Analog {
-	freq: Smoothed,
-	vel: SmoothedEnv,
-	pres: SmoothedEnv,
+	freq: SmoothExp,
+	vel: AttackRelease,
+	pres: AttackRelease,
 	sample_rate: f32,
 	accum: f32,
 	z: f32,
@@ -33,37 +35,43 @@ pub struct Analog {
 	upsampler: Upsampler19,
 	downsampler: Downsampler31,
 	update_counter: usize,
+	dc_killer: DcKiller,
+	envelope: Adsr,
+	note_on: bool,
 
 	// parameters
-	pulse_width: Smoothed,
+	pulse_width: SmoothLinear,
 	mix_pulse: f32,
 	mix_saw: f32,
 	mix_sub: f32,
 	mix_noise: f32,
 	vcf_mode: FilterMode,
-	vcf_pitch: f32,
+	vcf_cutoff: f32,
 	vcf_res: f32,
 	vcf_env: f32,
 	vcf_kbd: f32,
+	legato: bool,
+	gate: bool,
 }
 
 impl Instrument for Analog {
 	fn new(sample_rate: f32) -> Self {
 		Analog {
-			freq: Smoothed::new(10.0, sample_rate),
-			vel: SmoothedEnv::new(5.0, 400.0, sample_rate),
-			pres: SmoothedEnv::new(50.0, 120.0, sample_rate),
+			freq: SmoothExp::new(50.0, sample_rate),
+			vel: AttackRelease::new(5.0, 5.0, sample_rate),
+			pres: AttackRelease::new(50.0, 120.0, sample_rate),
 			sample_rate,
+			envelope: Adsr::new(2.0, 100.0, 0.25, 10., sample_rate),
 			filter: Skf::new(2.0 * sample_rate),
+			legato: true,
 
-			pulse_width: Smoothed::new(5.0, sample_rate),
+			pulse_width: SmoothLinear::new(20.0, sample_rate),
 			..Default::default()
 		}
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
-
 		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
 			self.update_counter += 1;
 			if self.update_counter >= 64 {
@@ -71,6 +79,7 @@ impl Instrument for Analog {
 				self.update_counter = 0;
 			}
 
+			let env = self.envelope.process();
 			let _pres = self.pres.process();
 			let vel = self.vel.process();
 			let freq = self.freq.process();
@@ -79,34 +88,25 @@ impl Instrument for Analog {
 			let f_sub = 0.5 * freq;
 
 			self.accum += f_sub;
-			if self.accum >= 1.0 {
-				self.accum -= 1.0;
-			}
-
-			let mut a = self.accum * 2.0;
-			if a >= 1.0 {
-				a -= 1.0;
-			}
+			self.accum -= self.accum.floor();
 
 			// calculate maximum allowed partial
 			let m = 1.0 + 2.0 * (MAX_F / (self.sample_rate * freq)).floor();
 			let m_sub = 1.0 + 2.0 * (MAX_F / (self.sample_rate * f_sub)).floor();
 
-			// let s_sub = blit(self.accum, m_sub) - blit(self.accum - 0.5, m_sub);
-
 			let s0 = blit(self.accum, m_sub);
 			let s1 = blit(self.accum - 0.5, m_sub);
-			let s2 = blit(a - pulse_width, m);
+			let s2 = blit(self.accum * 2.0 - pulse_width, m);
 
 			// leaky integrator
-			self.z = self.z * 0.999
+			self.z = self.z * 0.998
 				+ self.mix_saw * (s0 + s1 - 1.0 / m)
 				+ self.mix_pulse * (s0 + s1 - s2)
 				+ self.mix_sub * (s0 - s1);
 
 			let mix = self.z + self.mix_noise * (self.rng.f32() - 0.5);
 
-			let (mut s1, mut s2) = self.upsampler.process(mix * 0.5);
+			let (mut s1, mut s2) = self.upsampler.process(mix * 0.20 + 0.005);
 
 			// TODO: move match branch outside of inner loop
 			(s1, s2) = match self.vcf_mode {
@@ -124,9 +124,14 @@ impl Instrument for Analog {
 				),
 			};
 
-			let s = self.downsampler.process(s1, s2);
-
-			let out = s * 2.0 * vel;
+			let mut out = self.downsampler.process(s1, s2);
+			out *= 10.;
+			if self.gate {
+				out *= vel;
+			} else {
+				out *= env;
+			}
+			out = self.dc_killer.process(out);
 
 			*l = out;
 			*r = out;
@@ -142,12 +147,21 @@ impl Instrument for Analog {
 
 	fn note(&mut self, pitch: f32, vel: f32, _id: usize) {
 		if vel == 0.0 {
+			self.note_on = false;
 			self.vel.set(0.0);
+			self.envelope.note_off();
 		} else {
 			let f = pitch_to_hz(pitch) / self.sample_rate;
-			self.freq.set_immediate(f);
-			self.vel.set(vel);
+			self.freq.set(f);
+			self.vel.set(1.0);
 			self.update_filter();
+			if !(self.legato && self.note_on) {
+				self.envelope.note_on(vel);
+				self.freq.immediate();
+				// TODO: if attack is really fast the filter should be set to max immediately
+				self.filter.immediate();
+			}
+			self.note_on = true;
 		}
 	}
 	fn set_parameter(&mut self, index: usize, value: f32) {
@@ -166,7 +180,7 @@ impl Instrument for Analog {
 				}
 			}
 			6 => {
-				self.vcf_pitch = hz_to_pitch(value);
+				self.vcf_cutoff = hz_to_pitch(value);
 				self.update_filter();
 			}
 			7 => {
@@ -181,6 +195,12 @@ impl Instrument for Analog {
 				self.vcf_kbd = value;
 				self.update_filter();
 			}
+			10 => self.gate = value > 0.5,
+			11 => self.envelope.set_attack(value),
+			12 => self.envelope.set_decay(value),
+			13 => self.envelope.set_sustain(value),
+			14 => self.envelope.set_release(value),
+			15 => self.legato = value > 0.5,
 
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
@@ -203,9 +223,9 @@ impl Analog {
 		self.filter.set(
 			//TODO: store pitch so we can save hz_to_pitch call?
 			pitch_to_hz(
-				self.vcf_pitch
+				self.vcf_cutoff
 					+ self.vcf_kbd * (hz_to_pitch(self.freq.get() * self.sample_rate) - 72.0)
-					+ self.vcf_env * self.pres.get() * 84.0,
+					+ self.vcf_env * self.envelope.get() * 84.0,
 			),
 			self.vcf_res,
 		);

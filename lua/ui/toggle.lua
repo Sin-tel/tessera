@@ -5,14 +5,14 @@ local Toggle = {}
 
 local CORNER_RADIUS = 4
 
-function Toggle:new(text, style)
+function Toggle:new(text, options)
 	local new = {}
 	setmetatable(new, self)
 	self.__index = self
 
 	new.text = text
-	new.style = style or "checkbox"
-	new.checked = false
+	new.style = options.style or "checkbox"
+	new.checked = options.default or false
 	new.dirty = true
 
 	return new

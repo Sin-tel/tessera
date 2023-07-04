@@ -17,13 +17,13 @@ function Device:new(name, options)
 		local p = {}
 		p.name = v[1]
 		local widget_type = v[2]
-		local widget_options = v[3]
+		local widget_options = v[3] or {}
 		if widget_type == "slider" then
 			p.widget = widgets.Slider:new(widget_options)
 		elseif widget_type == "selector" then
 			p.widget = widgets.Selector:new(widget_options)
 		elseif widget_type == "toggle" then
-			p.widget = widgets.Toggle:new(p.name, "checkbox")
+			p.widget = widgets.Toggle:new(p.name, { style = "checkbox", default = widget_options.default })
 			p.name = nil
 		else
 			error(widget_type .. " not supported!")
