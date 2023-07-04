@@ -3,6 +3,8 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use no_denormals::no_denormals;
 use ringbuf::{HeapConsumer, HeapRb};
 use std::error::Error;
+use std::panic;
+use std::panic::AssertUnwindSafe;
 use std::sync::{Arc, Mutex};
 
 use crate::dsp::env::AttackRelease;
@@ -112,69 +114,81 @@ where
 	let mut cpu_load = AttackRelease::new_direct(0.05, 0.01);
 
 	move |cpal_buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
-		no_denormals(|| {
-			assert_no_alloc(|| {
-				let cpal_buffer_size = cpal_buffer.len() / 2;
-				match m_render.try_lock() {
-					Ok(mut render) if !paused => {
-						if !start {
-							start = true;
-							println!("Buffer size: {cpal_buffer_size:?}");
-						}
+		let result = panic::catch_unwind(AssertUnwindSafe(|| {
+			no_denormals(|| {
+				assert_no_alloc(|| {
+					let cpal_buffer_size = cpal_buffer.len() / 2;
+					match m_render.try_lock() {
+						Ok(mut render) if !paused => {
+							if !start {
+								start = true;
+								println!("Buffer size: {cpal_buffer_size:?}");
+							}
 
-						let time = std::time::Instant::now();
+							let time = std::time::Instant::now();
 
-						// parse all messages
-						for m in stream_rx.pop_iter() {
-							paused = m;
-						}
-						render.parse_messages();
+							// parse all messages
+							for m in stream_rx.pop_iter() {
+								paused = m;
+							}
 
-						for buffer_chunk in cpal_buffer.chunks_mut(MAX_BUF_SIZE) {
-							let chunk_size = buffer_chunk.len() / 2;
-							let [mut l, mut r] = process_buffer;
-							let buf_slice = &mut [&mut l[..chunk_size], &mut r[..chunk_size]];
+							render.parse_messages();
 
-							let res = render.process(buf_slice);
-							if let Err(e) = res {
-								eprintln!("{e:?}");
-								paused = true;
-								for outsample in buffer_chunk.chunks_exact_mut(2) {
-									outsample[0] = T::from_sample(0.0f32);
-									outsample[1] = T::from_sample(0.0f32);
-								}
-							} else {
-								// interlace and convert
-								for (i, outsample) in buffer_chunk.chunks_exact_mut(2).enumerate() {
-									outsample[0] = T::from_sample(buf_slice[0][i]);
-									outsample[1] = T::from_sample(buf_slice[1][i]);
+							for buffer_chunk in cpal_buffer.chunks_mut(MAX_BUF_SIZE) {
+								let chunk_size = buffer_chunk.len() / 2;
+								let [mut l, mut r] = process_buffer;
+								let buf_slice = &mut [&mut l[..chunk_size], &mut r[..chunk_size]];
+
+								let res = render.process(buf_slice);
+								if let Err(e) = res {
+									eprintln!("{e:?}");
+									paused = true;
+									for outsample in buffer_chunk.chunks_exact_mut(2) {
+										outsample[0] = T::from_sample(0.0f32);
+										outsample[1] = T::from_sample(0.0f32);
+									}
+								} else {
+									// interlace and convert
+									for (i, outsample) in
+										buffer_chunk.chunks_exact_mut(2).enumerate()
+									{
+										outsample[0] = T::from_sample(buf_slice[0][i]);
+										outsample[1] = T::from_sample(buf_slice[1][i]);
+									}
 								}
 							}
-						}
 
-						let t = time.elapsed();
-						let p = t.as_secs_f64()
-							/ (cpal_buffer_size as f64 / f64::from(render.sample_rate));
-						cpu_load.set(p as f32);
-						let load = cpu_load.process();
-						render.send(LuaMessage::Cpu(load));
+							let t = time.elapsed();
+							let p = t.as_secs_f64()
+								/ (cpal_buffer_size as f64 / f64::from(render.sample_rate));
+							cpu_load.set(p as f32);
+							let load = cpu_load.process();
+							render.send(LuaMessage::Cpu(load));
+						}
+						_ => {
+							// Output silence as a fallback when lock fails.
+
+							for m in stream_rx.pop_iter() {
+								paused = m;
+							}
+							// println!("Output silent");
+
+							for outsample in cpal_buffer.chunks_exact_mut(2) {
+								outsample[0] = T::from_sample(0.0f32);
+								outsample[1] = T::from_sample(0.0f32);
+							}
+						}
 					}
-					_ => {
-						// Output silence as a fallback when lock fails.
-
-						for m in stream_rx.pop_iter() {
-							paused = m;
-						}
-						// println!("Output silent");
-
-						for outsample in cpal_buffer.chunks_exact_mut(2) {
-							outsample[0] = T::from_sample(0.0f32);
-							outsample[1] = T::from_sample(0.0f32);
-						}
-					}
-				}
+				});
 			});
-		});
+		}));
+		if result.is_err() {
+			println!("Task failed succesfully.");
+			for outsample in cpal_buffer.chunks_exact_mut(2) {
+				outsample[0] = T::from_sample(0.0f32);
+				outsample[1] = T::from_sample(0.0f32);
+			}
+		}
 	}
 }
 
