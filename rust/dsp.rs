@@ -5,6 +5,7 @@ pub mod env;
 pub mod resample;
 pub mod simper;
 pub mod skf;
+pub mod smooth;
 
 pub const TWO_PI: f32 = std::f32::consts::TAU;
 
@@ -114,17 +115,52 @@ pub fn prewarp(f: f32) -> f32 {
 	x * (PI.powi(3) * a - 15.0 * PI) / (6.0 * PI.powi(2) * a - 15.0)
 }
 
-#[derive(Debug, Default)]
+// milliseconds (time to reach 10^-2) to time constant
+pub fn time_constant(t: f32, sample_rate: f32) -> f32 {
+	// - 1000 * ln(0.01) / ln(2)
+	const T_LOG2: f32 = 6643.856;
+	// - 1000 * ln(0.01)
+	const T_LN: f32 = 4605.1704;
+
+	assert!(t > 0.);
+
+	let denom = sample_rate * t;
+	if denom < 1000. {
+		1.0 - pow2_cheap(-T_LOG2 / denom)
+	} else {
+		// 1 - exp(-x) ~ x for small values
+		T_LN / denom
+	}
+}
+
+pub fn time_constant_linear(t: f32, sample_rate: f32) -> f32 {
+	assert!(t > 0.);
+	1000. / (sample_rate * t)
+}
+
+#[derive(Debug)]
 pub struct DcKiller {
 	z: f32,
+	f: f32,
 }
 
 impl DcKiller {
-	// TODO: add new with sample_rate
+	pub fn new(sample_rate: f32) -> Self {
+		// fixed highpass as 10Hz
+		// 1 - exp( -2*pi*10 / f_s) ~ 2*pi*10 / f_s
+		Self {
+			z: 0.,
+			f: TWO_PI * 10. / sample_rate,
+		}
+	}
 	pub fn process(&mut self, s: f32) -> f32 {
-		// 10Hz at 44.1kHz sample rate
-		self.z += (s - self.z) * 0.0014;
-
+		self.z += (s - self.z) * self.f;
 		s - self.z
+	}
+}
+
+impl Default for DcKiller {
+	fn default() -> Self {
+		Self::new(44100.)
 	}
 }

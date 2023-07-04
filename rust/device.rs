@@ -1,5 +1,3 @@
-// TODO: can autogen this
-
 use crate::effect::Effect;
 use crate::effect::{drive::Drive, gain::Gain, pan::Pan};
 use crate::instrument::Instrument;

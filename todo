@@ -62,7 +62,7 @@ Rust
 [x] Simple metering (cpu, dB meters, audio engine state)
 [x] channel mute
 [+] Mixing channels
-[ ] Up and down samplers
+[x] Up and down samplers
 [-] Add some effects
 [ ] Poll audio/midi settings
 [x] Reset audio driver to change settings in ASIO panel

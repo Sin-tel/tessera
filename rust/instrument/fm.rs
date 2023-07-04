@@ -3,6 +3,7 @@ use std::iter::zip;
 
 use crate::dsp::env::*;
 use crate::dsp::simper::Filter;
+use crate::dsp::smooth::*;
 use crate::dsp::*;
 use crate::instrument::*;
 
@@ -47,6 +48,7 @@ impl Instrument for Fm {
 			pres: AttackRelease::new(20.0, 50.0, sample_rate),
 			sample_rate,
 			noise_decay,
+			dc_killer: DcKiller::new(sample_rate),
 			..Default::default()
 		}
 	}

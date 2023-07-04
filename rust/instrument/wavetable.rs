@@ -18,6 +18,7 @@ use std::iter::zip;
 use std::sync::Arc;
 
 use crate::dsp::env::*;
+use crate::dsp::smooth::*;
 use crate::dsp::*;
 use crate::instrument::*;
 

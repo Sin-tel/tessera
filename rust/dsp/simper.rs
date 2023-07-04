@@ -9,7 +9,7 @@
 
 #![allow(dead_code)]
 
-use crate::dsp::env::SmoothLinear;
+use crate::dsp::smooth::SmoothLinear;
 use crate::dsp::{from_db, prewarp};
 
 #[derive(Debug, Default)]
@@ -31,12 +31,12 @@ impl Filter {
 	pub fn new(sample_rate: f32) -> Self {
 		Self {
 			sample_rate,
-			a1: SmoothLinear::new(5.0, sample_rate),
-			a2: SmoothLinear::new(5.0, sample_rate),
-			a3: SmoothLinear::new(5.0, sample_rate),
-			m0: SmoothLinear::new(5.0, sample_rate),
-			m1: SmoothLinear::new(5.0, sample_rate),
-			m2: SmoothLinear::new(5.0, sample_rate),
+			a1: SmoothLinear::new_steps(64),
+			a2: SmoothLinear::new_steps(64),
+			a3: SmoothLinear::new_steps(64),
+			m0: SmoothLinear::new_steps(64),
+			m1: SmoothLinear::new_steps(64),
+			m2: SmoothLinear::new_steps(64),
 			..Default::default()
 		}
 	}

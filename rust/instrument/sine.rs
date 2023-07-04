@@ -1,6 +1,6 @@
 use std::iter::zip;
 
-use crate::dsp::env::*;
+use crate::dsp::smooth::*;
 use crate::dsp::*;
 use crate::instrument::*;
 

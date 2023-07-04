@@ -5,6 +5,7 @@ use std::iter::zip;
 use crate::dsp::env::*;
 use crate::dsp::resample::{Downsampler31, Upsampler19};
 use crate::dsp::skf::Skf;
+use crate::dsp::smooth::{SmoothExp, SmoothLinear};
 use crate::dsp::*;
 use crate::instrument::*;
 
@@ -25,7 +26,7 @@ enum FilterMode {
 #[derive(Debug, Default)]
 pub struct Analog {
 	freq: SmoothExp,
-	vel: AttackRelease,
+	gate: SmoothExp,
 	pres: AttackRelease,
 	sample_rate: f32,
 	accum: f32,
@@ -51,18 +52,19 @@ pub struct Analog {
 	vcf_env: f32,
 	vcf_kbd: f32,
 	legato: bool,
-	gate: bool,
+	use_gate: bool,
 }
 
 impl Instrument for Analog {
 	fn new(sample_rate: f32) -> Self {
 		Analog {
-			freq: SmoothExp::new(50.0, sample_rate),
-			vel: AttackRelease::new(5.0, 5.0, sample_rate),
+			freq: SmoothExp::new(20.0, sample_rate),
+			gate: SmoothExp::new(2.0, sample_rate),
 			pres: AttackRelease::new(50.0, 120.0, sample_rate),
 			sample_rate,
 			envelope: Adsr::new(2.0, 100.0, 0.25, 10., sample_rate),
 			filter: Skf::new(2.0 * sample_rate),
+			dc_killer: DcKiller::new(sample_rate),
 			legato: true,
 
 			pulse_width: SmoothLinear::new(20.0, sample_rate),
@@ -81,7 +83,7 @@ impl Instrument for Analog {
 
 			let env = self.envelope.process();
 			let _pres = self.pres.process();
-			let vel = self.vel.process();
+			let gate = self.gate.process();
 			let freq = self.freq.process();
 			let pulse_width = self.pulse_width.process();
 
@@ -126,8 +128,8 @@ impl Instrument for Analog {
 
 			let mut out = self.downsampler.process(s1, s2);
 			out *= 10.;
-			if self.gate {
-				out *= vel;
+			if self.use_gate {
+				out *= gate;
 			} else {
 				out *= env;
 			}
@@ -148,12 +150,12 @@ impl Instrument for Analog {
 	fn note(&mut self, pitch: f32, vel: f32, _id: usize) {
 		if vel == 0.0 {
 			self.note_on = false;
-			self.vel.set(0.0);
+			self.gate.set(0.0);
 			self.envelope.note_off();
 		} else {
 			let f = pitch_to_hz(pitch) / self.sample_rate;
 			self.freq.set(f);
-			self.vel.set(1.0);
+			self.gate.set(vel);
 			self.update_filter();
 			if !(self.legato && self.note_on) {
 				self.envelope.note_on(vel);
@@ -195,13 +197,12 @@ impl Instrument for Analog {
 				self.vcf_kbd = value;
 				self.update_filter();
 			}
-			10 => self.gate = value > 0.5,
+			10 => self.use_gate = value > 0.5,
 			11 => self.envelope.set_attack(value),
 			12 => self.envelope.set_decay(value),
 			13 => self.envelope.set_sustain(value),
 			14 => self.envelope.set_release(value),
 			15 => self.legato = value > 0.5,
-
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}

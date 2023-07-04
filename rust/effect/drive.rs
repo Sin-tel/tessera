@@ -23,10 +23,20 @@ struct Track {
 	dc_killer: DcKiller,
 }
 
+impl Track {
+	fn new(sample_rate: f32) -> Self {
+		Self {
+			dc_killer: DcKiller::new(sample_rate),
+			..Default::default()
+		}
+	}
+}
+
 impl Effect for Drive {
-	fn new(_sample_rate: f32) -> Self {
+	fn new(sample_rate: f32) -> Self {
 		Drive {
 			gain: 1.0,
+			tracks: [Track::new(sample_rate), Track::new(sample_rate)],
 			..Default::default()
 		}
 	}

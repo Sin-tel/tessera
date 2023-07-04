@@ -1,6 +1,6 @@
 use crate::dsp::delayline::DelayLine;
-use crate::dsp::env::SmoothLinear;
 use crate::dsp::simper::Filter;
+use crate::dsp::smooth::SmoothLinear;
 use crate::effect::Effect;
 
 // TODO: This device is used everywhere and
@@ -32,11 +32,11 @@ impl Track {
 	pub fn new(sample_rate: f32) -> Self {
 		let mut filter = Filter::new(sample_rate);
 		filter.set_highshelf(HEAD_CUTOFF, HEAD_Q, 0.0);
-		let mut gain = SmoothLinear::new(17.0, sample_rate);
+		let mut gain = SmoothLinear::new(30.0, sample_rate);
 		gain.set_immediate(1.0);
 		Track {
 			gain,
-			delay: SmoothLinear::new(17.0, sample_rate),
+			delay: SmoothLinear::new(30.0, sample_rate),
 			filter,
 			delayline: DelayLine::new(sample_rate, ITD),
 		}

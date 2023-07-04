@@ -1,152 +1,4 @@
-use crate::dsp::{lerp, pow2_cheap};
-
-// millis to tau (time to reach 10^-2)
-pub fn time_constant(t: f32, sample_rate: f32) -> f32 {
-	// - 1000 * ln(0.01) / ln(2)
-	const T_LOG2: f32 = 6643.856;
-	// - 1000 * ln(0.01)
-	const T_LN: f32 = 4605.1704;
-
-	assert!(t > 0.);
-
-	let denom = sample_rate * t;
-	if denom < 1000. {
-		1.0 - pow2_cheap(-T_LOG2 / denom)
-	} else {
-		// 1 - exp(-x) ~ x for small values
-		T_LN / denom
-	}
-}
-
-pub fn time_constant_linear(t: f32, sample_rate: f32) -> f32 {
-	assert!(t > 0.);
-	1000. / (sample_rate * t)
-}
-
-#[derive(Debug)]
-pub struct SmoothExp {
-	value: f32,
-	target: f32,
-	f: f32,
-}
-
-impl SmoothExp {
-	pub fn new(t: f32, sample_rate: f32) -> Self {
-		Self {
-			target: 0.01,
-			value: 0.01,
-			f: time_constant(t, sample_rate),
-		}
-	}
-	pub fn new_direct(f: f32) -> Self {
-		Self {
-			target: 0.01,
-			value: 0.01,
-			f,
-		}
-	}
-
-	#[must_use]
-	pub fn process(&mut self) -> f32 {
-		self.value += self.f * (self.target - self.value);
-		self.value
-	}
-
-	pub fn set(&mut self, v: f32) {
-		self.target = v;
-	}
-
-	pub fn set_immediate(&mut self, v: f32) {
-		self.target = v;
-		self.value = v;
-	}
-
-	pub fn immediate(&mut self) {
-		self.value = self.target;
-	}
-
-	#[must_use]
-	pub fn get(&self) -> f32 {
-		self.value
-	}
-
-	pub fn target(&self) -> f32 {
-		self.target
-	}
-}
-
-#[derive(Debug)]
-pub struct SmoothLinear {
-	value: f32,
-	target: f32,
-	step: f32,
-	f: f32,
-	timer: usize,
-}
-
-impl SmoothLinear {
-	pub fn new(t: f32, sample_rate: f32) -> Self {
-		Self {
-			target: 0.01,
-			value: 0.01,
-			f: time_constant_linear(t, sample_rate),
-			step: 0.,
-			timer: 0,
-		}
-	}
-	pub fn new_direct(f: f32) -> Self {
-		Self {
-			target: 0.01,
-			value: 0.01,
-			step: 0.,
-			f,
-			timer: 0,
-		}
-	}
-
-	#[must_use]
-	pub fn process(&mut self) -> f32 {
-		if self.timer > 0 {
-			self.timer -= 1;
-			self.value += self.step;
-
-			if self.timer == 0 {
-				self.value = self.target;
-			}
-		}
-		self.value
-	}
-
-	pub fn set(&mut self, v: f32) {
-		self.target = v;
-		if self.target == self.value {
-			self.timer = 0;
-		} else {
-			self.step = (self.target - self.value) * self.f;
-			self.timer = (1. / self.f).floor() as usize;
-		}
-	}
-
-	pub fn set_immediate(&mut self, v: f32) {
-		self.timer = 0;
-		self.target = v;
-		self.value = v;
-	}
-
-	pub fn immediate(&mut self) {
-		self.timer = 0;
-		self.value = self.target;
-	}
-
-	#[must_use]
-	pub fn get(&self) -> f32 {
-		self.value
-	}
-
-	pub fn target(&self) -> f32 {
-		self.target
-	}
-}
+use crate::dsp::*;
 
 #[derive(Debug)]
 pub struct AttackRelease {
@@ -270,8 +122,9 @@ impl Adsr {
 	pub fn note_on(&mut self, vel: f32) {
 		self.stage = AdsrStage::Attack;
 		self.vel = vel;
-		self.attack_step = self.attack * self.vel * (1. + 20. * self.vel * self.vel);
-		println!("{:?}", (1. + 20. * self.vel * self.vel));
+
+		let vel_scale = 1. + 20. * self.vel.powi(2);
+		self.attack_step = self.attack * self.vel * vel_scale;
 	}
 
 	pub fn note_off(&mut self) {
@@ -298,18 +151,6 @@ impl Adsr {
 impl Default for Adsr {
 	fn default() -> Self {
 		Self::new(1., 1., 1., 1., 44100.)
-	}
-}
-
-impl Default for SmoothExp {
-	fn default() -> Self {
-		Self::new_direct(0.001)
-	}
-}
-
-impl Default for SmoothLinear {
-	fn default() -> Self {
-		Self::new_direct(0.001)
 	}
 }
 
