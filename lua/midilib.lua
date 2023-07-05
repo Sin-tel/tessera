@@ -152,15 +152,13 @@ function M.handleEventPoly(device, event)
 	end
 
 	if event.name == "note on" then
-		local playing_age, playing_i = 10000, -1
-		local released_age, released_i = -1, -1
+		local playing_age, playing_i = 10000, nil
+		local released_age, released_i = -1, nil
 		for j, b in ipairs(device.voices) do
 			b.age = b.age + 1
-		end
-		for j, b in ipairs(device.voices) do
 			if b.note_on then
-				print(b.age)
 				-- track note is on
+				-- TODO: find closest instead of newest
 				if b.age < playing_age then
 					playing_i = j
 					playing_age = b.age
@@ -173,13 +171,14 @@ function M.handleEventPoly(device, event)
 				end
 			end
 		end
-		print(released_i, playing_i)
 		local new_i
-		if released_i ~= -1 then
+		if released_i ~= nil then
 			new_i = released_i
 		else
 			new_i = playing_i
 		end
+
+		assert(new_i ~= nil)
 
 		local voice = device.voices[new_i]
 		voice.note = event.note

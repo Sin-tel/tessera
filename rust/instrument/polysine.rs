@@ -51,7 +51,7 @@ impl Instrument for Polysine {
 	fn new(sample_rate: f32) -> Self {
 		let mut voices = Vec::with_capacity(N_VOICES);
 		for _ in 0..N_VOICES {
-			voices.push(Voice::new(sample_rate))
+			voices.push(Voice::new(sample_rate));
 		}
 
 		Polysine {
