@@ -63,7 +63,6 @@ local function audioSetup()
 	-- local ch = channelHandler:add("fm")
 	-- local ch = channelHandler:add("wavetable")
 
-	-- channelHandler:addEffect(ch, "drive")
 	ch.armed = true
 end
 

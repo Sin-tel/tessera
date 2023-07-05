@@ -26,7 +26,7 @@ impl Voice {
 		let mut vel = AttackRelease::new(3.0, 1200., sample_rate);
 		vel.set_immediate(0.);
 		Self {
-			freq: SmoothExp::new(20.0, sample_rate),
+			freq: SmoothExp::new(2.0, sample_rate),
 			vel,
 			..Default::default()
 		}
@@ -78,21 +78,26 @@ impl Instrument for Polysine {
 	}
 
 	fn note(&mut self, pitch: f32, vel: f32, id: usize) {
-		let mut voice = &mut self.voices[id];
-		if vel == 0.0 {
-			voice.vel.set(0.0);
-			voice.note_on = false;
-		} else {
-			let p = pitch_to_hz(pitch) / self.sample_rate;
+		let opt = self.voices.get_mut(id);
+		if let Some(voice) = opt {
+			if vel == 0.0 {
+				voice.vel.set(0.0);
+				voice.note_on = false;
+			} else {
+				let p = pitch_to_hz(pitch) / self.sample_rate;
 
-			voice.freq.set(p);
-			if !voice.note_on {
-				voice.freq.immediate();
+				voice.freq.set(p);
+				if !voice.note_on {
+					voice.freq.immediate();
+				}
+				voice.note_on = true;
+				voice.vel.set(vel * 0.5);
 			}
-			voice.note_on = true;
-			voice.vel.set(vel);
+		} else {
+			eprintln!("Tried to play voice {id}");
 		}
 	}
+	#[allow(clippy::match_single_binding)]
 	fn set_parameter(&mut self, index: usize, _value: f32) {
 		match index {
 			_ => eprintln!("Parameter with index {index} not found"),

@@ -1,6 +1,5 @@
 -- TODO: make this a nicer interface
 -- make some kind of "device" object that you can poll
--- TODO: handle mono / poly playing
 
 local backend = require("backend")
 local rtmidi = require("./lib/rtmidi_ffi")
@@ -60,12 +59,10 @@ function M.newDevice(handle, mpe, n)
 	new.mpe = mpe
 	new.port = n
 	new.pitchbend = 2
-
 	new.n_voices = 4
-
-	---temp
 	new.offset = 0
 	new.vel = 0
+	new.queue = {}
 
 	new.voices = {}
 	for i = 1, new.n_voices do
@@ -136,9 +133,6 @@ function M.handleEventTest(device, event)
 	print(event.name)
 end
 
--- TODO: remove
-local index = 0
-
 function M.handleEventPoly(device, event)
 	local channel_index = nil
 	for i, ch in ipairs(channelHandler.list) do
@@ -152,16 +146,21 @@ function M.handleEventPoly(device, event)
 	end
 
 	if event.name == "note on" then
-		local playing_age, playing_i = 10000, nil
+		-- voice stealing logic.
+		-- if theres are voices free, use the oldest one,
+		-- if not, steal a playing one.
+		-- traditionally, priority is given to the oldest voice,
+		-- instead, we steal the one closest in pitch, which allows for nicer voice leading.
+		local playing_dist, playing_i = 10000, nil
 		local released_age, released_i = -1, nil
 		for j, b in ipairs(device.voices) do
 			b.age = b.age + 1
+			local dist = math.abs(b.note - event.note)
 			if b.note_on then
 				-- track note is on
-				-- TODO: find closest instead of newest
-				if b.age < playing_age then
+				if dist < playing_dist then
 					playing_i = j
-					playing_age = b.age
+					playing_dist = dist
 				end
 			else
 				-- track is free
@@ -181,11 +180,15 @@ function M.handleEventPoly(device, event)
 		assert(new_i ~= nil)
 
 		local voice = device.voices[new_i]
+		if voice.note_on then
+			table.insert(device.queue, voice.note)
+		end
 		voice.note = event.note
 		voice.vel = event.vel
 		voice.pres = 0
 		voice.note_on = true
 		voice.age = 0
+
 		backend:sendNote(channel_index, voice.note + voice.offset, voice.vel, new_i - 1)
 	elseif event.name == "note off" then
 		local get_i
@@ -197,13 +200,23 @@ function M.handleEventPoly(device, event)
 		end
 		if get_i == nil then
 			--voice was already dead
+			for i, v in ipairs(device.queue) do
+				if v == event.note then
+					table.remove(device.queue, i)
+					break
+				end
+			end
 			return
 		end
 		local voice = device.voices[get_i]
 
-		voice.note_on = false
-
-		backend:sendNote(channel_index, voice.note + voice.offset, 0, get_i - 1)
+		if #device.queue == 0 then
+			voice.note_on = false
+			backend:sendNote(channel_index, voice.note + voice.offset, 0, get_i - 1)
+		else
+			voice.note = table.remove(device.queue) -- pop
+			backend:sendNote(channel_index, voice.note + voice.offset, voice.vel, get_i - 1)
+		end
 
 		-- if device.note and #device.voices == 1 then
 		-- 	backend:sendNote(channel_index, device.note + device.offset, 0)
