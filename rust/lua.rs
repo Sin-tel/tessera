@@ -170,11 +170,8 @@ impl UserData for LuaData {
 				// TODO: need to check here if the stream is *actually* paused
 
 				render.parse_messages();
-				let res = no_denormals(|| render.process(buffer));
-				if let Err(e) = res {
-					eprintln!("{e:?}");
-					return Ok(None);
-				}
+				no_denormals(|| render.process(buffer));
+
 				// interlace and convert to i16 as f64 (lua wants doubles anyway)
 				for (i, outsample) in out_buffer.chunks_exact_mut(2).enumerate() {
 					outsample[0] = convert_sample_wav(buffer[0][i]);

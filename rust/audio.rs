@@ -139,22 +139,12 @@ where
 								let [mut l, mut r] = process_buffer;
 								let buf_slice = &mut [&mut l[..chunk_size], &mut r[..chunk_size]];
 
-								let res = render.process(buf_slice);
-								if let Err(e) = res {
-									eprintln!("{e:?}");
-									paused = true;
-									for outsample in buffer_chunk.chunks_exact_mut(2) {
-										outsample[0] = T::from_sample(0.0f32);
-										outsample[1] = T::from_sample(0.0f32);
-									}
-								} else {
-									// interlace and convert
-									for (i, outsample) in
-										buffer_chunk.chunks_exact_mut(2).enumerate()
-									{
-										outsample[0] = T::from_sample(buf_slice[0][i]);
-										outsample[1] = T::from_sample(buf_slice[1][i]);
-									}
+								render.process(buf_slice);
+
+								// interlace and convert
+								for (i, outsample) in buffer_chunk.chunks_exact_mut(2).enumerate() {
+									outsample[0] = T::from_sample(buf_slice[0][i]);
+									outsample[1] = T::from_sample(buf_slice[1][i]);
 								}
 							}
 
@@ -183,7 +173,7 @@ where
 			});
 		}));
 		if result.is_err() {
-			println!("Task failed succesfully.");
+			println!("Audio thread panic");
 			for outsample in cpal_buffer.chunks_exact_mut(2) {
 				outsample[0] = T::from_sample(0.0f32);
 				outsample[1] = T::from_sample(0.0f32);
