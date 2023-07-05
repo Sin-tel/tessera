@@ -59,10 +59,16 @@ local Pitch = {}
 -- 	ratio(33/32),
 -- }
 
--- meantone TE optimal
+-- -- meantone TE optimal
+-- Pitch.generators = {
+-- 	12.01397,
+-- 	6.97049,
+-- }
+
+-- meantone target tuning (5/4, 2)
 Pitch.generators = {
-	12.01397,
-	6.97049,
+	12.0,
+	6.96578,
 }
 
 -- temperament projection matrix
@@ -92,6 +98,25 @@ Pitch.diatonic_table = {
 	{ -2,  5 },
 }
 
+
+
+-- scale used for 12edo input (e.g. midi keyboard)
+-- stylua: ignore
+Pitch.chromatic_table = {
+	{  0,  0 },  -- C
+	{ -4,  7 },  -- C# 
+	{ -1,  2 },  -- D
+	{  2, -3 },  -- Eb
+	{ -2,  4 },  -- E
+	{  1, -1 },  -- F
+	{ -3,  6 },  -- F#
+	{  0,  1 },  -- G
+	{  3, -4 },  -- Ab
+	{ -1,  3 },  -- A
+	{  2, -2 },  -- Bb
+	{ -2,  5 },  -- B
+}
+
 -- for i, v in ipairs(Pitch.table) do
 -- print(i, v)
 -- end
@@ -112,19 +137,33 @@ function Pitch:new()
 		0, -- free / offset (cents)
 	}
 	new.pitch = 60
-	new.name = "C"
-
+	-- new.name = "C"
 	return new
 end
 
+-- diatonic home row, 1 = C5
 function Pitch:fromDiatonic(n, add_octave)
-	local add_octave = add_octave or 5
+	local add_octave = add_octave or 0
 	local new = Pitch:new()
 	local s = #Pitch.diatonic_table
 	local oct = math.floor((n - 1) / s)
 	n = n - oct * s
 	local dia = Pitch.diatonic_table[n]
 	new.coord[1] = dia[1] + oct + add_octave
+	new.coord[2] = dia[2]
+	new:recalc()
+
+	return new
+end
+
+-- indexed by midi number, C5 = 72
+function Pitch:fromMidi(n)
+	local new = Pitch:new()
+	local s = #Pitch.chromatic_table
+	local oct = math.floor(n / s)
+	n = n - oct * s
+	local dia = Pitch.chromatic_table[n + 1]
+	new.coord[1] = dia[1] + oct - 6
 	new.coord[2] = dia[2]
 
 	new:recalc()
@@ -133,7 +172,7 @@ function Pitch:fromDiatonic(n, add_octave)
 end
 
 function Pitch:recalc()
-	local f = 0
+	local f = 72
 	for i, v in ipairs(self.coord) do
 		f = f + v * (self.generators[i] or 0)
 	end

@@ -11,7 +11,7 @@ pub struct Polysine {
 	sample_rate: f32,
 }
 
-const N_VOICES: usize = 4;
+const N_VOICES: usize = 8;
 
 #[derive(Debug, Default)]
 struct Voice {
@@ -19,6 +19,8 @@ struct Voice {
 	freq: SmoothExp,
 	vel: AttackRelease,
 	note_on: bool,
+	prev: f32,
+	feedback: f32,
 }
 
 impl Voice {
@@ -39,10 +41,12 @@ impl Voice {
 			self.accum += f;
 			self.accum = self.accum - self.accum.floor();
 
-			let mut out = (self.accum * TWO_PI).sin();
+			let mut out = (self.accum * TWO_PI + self.prev * self.feedback).sin();
 			out *= vel;
 
-			*sample += out;
+			self.prev = out;
+
+			*sample += out * 0.5;
 		}
 	}
 }
@@ -91,15 +95,16 @@ impl Instrument for Polysine {
 					voice.freq.immediate();
 				}
 				voice.note_on = true;
-				voice.vel.set(vel * 0.5);
+				voice.vel.set(vel);
 			}
 		} else {
 			eprintln!("Tried to play voice {id}");
 		}
 	}
 	#[allow(clippy::match_single_binding)]
-	fn set_parameter(&mut self, index: usize, _value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
+			0 => self.voices.iter_mut().for_each(|v| v.feedback = value),
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}

@@ -7,7 +7,7 @@ local queue = {}
 
 local DEFAULT_VELOCITY = 0.75
 
-local octave = 5
+local octave = 0
 
 noteInput.diatonic_row = { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]" }
 
@@ -67,14 +67,14 @@ function noteInput:keyreleased(key)
 
 	if key == "z" then
 		octave = octave - 1
-		if octave < 1 then
-			octave = 1
+		if octave < -4 then
+			octave = -4
 		end
 		handled = true
 	elseif key == "x" then
 		octave = octave + 1
-		if octave > 9 then
-			octave = 9
+		if octave > 4 then
+			octave = 4
 		end
 		handled = true
 	end

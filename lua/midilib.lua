@@ -1,6 +1,9 @@
 -- TODO: make this a nicer interface
 -- make some kind of "device" object that you can poll
 
+-- TODO: handle MPE
+
+local Pitch = require("pitch")
 local backend = require("backend")
 local rtmidi = require("./lib/rtmidi_ffi")
 local bit = require("bit")
@@ -59,7 +62,7 @@ function M.newDevice(handle, mpe, n)
 	new.mpe = mpe
 	new.port = n
 	new.pitchbend = 2
-	new.n_voices = 4
+	new.n_voices = 8
 	new.offset = 0
 	new.vel = 0
 	new.queue = {}
@@ -88,7 +91,7 @@ function M.updateDevice(device)
 		end
 		local event = M.parse(msg, s)
 
-		M.handleEventPoly(device, event)
+		M.handleEvent(device, event)
 	end
 end
 
@@ -133,7 +136,8 @@ function M.handleEventTest(device, event)
 	print(event.name)
 end
 
-function M.handleEventPoly(device, event)
+-- TODO: add a handler per instrument
+function M.handleEvent(device, event)
 	local channel_index = nil
 	for i, ch in ipairs(channelHandler.list) do
 		if ch.armed then
@@ -188,8 +192,8 @@ function M.handleEventPoly(device, event)
 		voice.pres = 0
 		voice.note_on = true
 		voice.age = 0
-
-		backend:sendNote(channel_index, voice.note + voice.offset, voice.vel, new_i - 1)
+		local p = Pitch:fromMidi(voice.note)
+		backend:sendNote(channel_index, p.pitch + voice.offset, voice.vel, new_i - 1)
 	elseif event.name == "note off" then
 		local get_i
 		for i, v in ipairs(device.voices) do
@@ -199,7 +203,7 @@ function M.handleEventPoly(device, event)
 			end
 		end
 		if get_i == nil then
-			--voice was already dead
+			-- voice was already dead
 			for i, v in ipairs(device.queue) do
 				if v == event.note then
 					table.remove(device.queue, i)
@@ -212,20 +216,17 @@ function M.handleEventPoly(device, event)
 
 		if #device.queue == 0 then
 			voice.note_on = false
-			backend:sendNote(channel_index, voice.note + voice.offset, 0, get_i - 1)
+			local p = Pitch:fromMidi(voice.note)
+			backend:sendNote(channel_index, p.pitch + voice.offset, 0, get_i - 1)
 		else
-			voice.note = table.remove(device.queue) -- pop
-			backend:sendNote(channel_index, voice.note + voice.offset, voice.vel, get_i - 1)
+			-- pop last note in queue
+			voice.note = table.remove(device.queue)
+			local p = Pitch:fromMidi(voice.note)
+			backend:sendNote(channel_index, p.pitch + voice.offset, voice.vel, get_i - 1)
 		end
 
-		-- if device.note and #device.voices == 1 then
-		-- 	backend:sendNote(channel_index, device.note + device.offset, 0)
-		-- 	device.note = nil
-		-- elseif get_i == #device.voices then
-		-- 	device.note = device.voices[get_i - 1]
-		-- 	backend:sendNote(channel_index, device.note + device.offset, device.vel)
-		-- end
-		-- table.remove(device.voices, get_i)
+		-- TODO: handle pressure/pitchbend for polyphonic non-MPE synths
+		--       probably should just send the same message on all active tracks?
 
 		-- elseif event.name == "pressure" then
 		-- 	device.pres = event.pres
@@ -240,58 +241,6 @@ function M.handleEventPoly(device, event)
 		-- else
 		-- print(event.name)
 	end
-
-	-- return signal
-end
-
-function M.handleEvent(device, event)
-	local channel_index = nil
-	for i, ch in ipairs(channelHandler.list) do
-		if ch.armed then
-			channel_index = i - 1
-			break
-		end
-	end
-	if not channel_index then
-		return
-	end
-	if event.name == "note on" then
-		table.insert(device.voices, event.note)
-		device.note = event.note
-		device.vel = event.vel
-		device.pres = 0
-		backend:sendNote(channel_index, device.note + device.offset, device.vel, 0)
-	elseif event.name == "note off" then
-		local get_i
-		for i, v in ipairs(device.voices) do
-			if v == event.note then
-				get_i = i
-				break
-			end
-		end
-		if device.note and #device.voices == 1 then
-			backend:sendNote(channel_index, device.note + device.offset, 0)
-			device.note = nil
-		elseif get_i == #device.voices then
-			device.note = device.voices[get_i - 1]
-			backend:sendNote(channel_index, device.note + device.offset, device.vel)
-		end
-		table.remove(device.voices, get_i)
-	elseif event.name == "pressure" then
-		device.pres = event.pres
-		if device.note then
-			backend:sendCv(channel_index, device.note + device.offset, device.pres)
-		end
-	elseif event.name == "pitchbend" then
-		device.offset = device.pitchbend * event.offset
-		if device.note then
-			backend:sendCv(channel_index, device.note + device.offset, device.pres)
-		end
-	else
-		-- print(event.name)
-	end
-
-	-- return signal
 end
 
 function M.quit()

@@ -21,7 +21,9 @@ deviceList.instruments.sine = {
 
 deviceList.instruments.polysine = {
 	index = 4,
-	parameters = {},
+	parameters = {
+		{ "feedback", "slider", { default = 0.2 } },
+	},
 }
 
 deviceList.instruments.wavetable = {
