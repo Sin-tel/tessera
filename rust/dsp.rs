@@ -146,7 +146,7 @@ pub struct DcKiller {
 
 impl DcKiller {
 	pub fn new(sample_rate: f32) -> Self {
-		// fixed highpass as 10Hz
+		// fixed highpass at 10Hz
 		// 1 - exp( -2*pi*10 / f_s) ~ 2*pi*10 / f_s
 		Self {
 			z: 0.,
