@@ -4,9 +4,6 @@ local Ui = require("ui/ui")
 local widgets = require("ui/widgets")
 local Scope = View:derive("Scope")
 
--- TODO: make scope tracking better
---       zero crossing detection? frequency tracking?
-
 function Scope:new(spectrum)
 	local new = {}
 	setmetatable(new, self)
@@ -65,11 +62,46 @@ function Scope:draw()
 
 			local tx = 0 --w * 0.05
 			local ty = h * 0.5
-			local sx = w / n
-			local sy = h * 0.8
+			local sx = 1 --w / n
+			local sy = h * 2.0
 
+			local n_max = math.min(n, math.floor(w / sx))
+
+			local max = 0
+			for i = 1, n_max do
+				max = math.max(max, scope[i])
+			end
+
+			local threshold = 0.5 * max
+			local x_first = 0
+			local schmitt = true
+			for i = 1, n_max do
+				local trigger = false
+				if schmitt then
+					if scope[i] < -threshold then
+						schmitt = false
+					end
+				else
+					if scope[i] > threshold then
+						schmitt = true
+
+						trigger = true
+					end
+				end
+
+				if trigger then
+					if x_first == 0 then
+						x_first = tx + i * sx
+					end
+				end
+			end
 			for i = 1, n - 1 do
-				love.graphics.line(tx + i * sx, ty - sy * scope[i], tx + (i + 1) * sx, ty - sy * scope[i + 1])
+				love.graphics.line(
+					tx + i * sx - x_first,
+					ty - sy * scope[i],
+					tx + (i + 1) * sx - x_first,
+					ty - sy * scope[i + 1]
+				)
 			end
 		end
 	end
