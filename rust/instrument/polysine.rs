@@ -77,30 +77,27 @@ impl Instrument for Polysine {
 		}
 	}
 
-	fn cv(&mut self, _pitch: f32, _: f32, _id: usize) {
-		// let p = pitch_to_hz(pitch) / self.sample_rate;
-		// self.freq.set(p);
+	fn cv(&mut self, pitch: f32, _: f32, id: usize) {
+		let voice = &mut self.voices[id];
+		let p = pitch_to_hz(pitch) / self.sample_rate;
+		voice.freq.set(p);
 	}
 
 	fn note(&mut self, pitch: f32, vel: f32, id: usize) {
-		let opt = self.voices.get_mut(id);
-		if let Some(voice) = opt {
-			if vel == 0.0 {
-				voice.vel.set(0.0);
-				voice.note_on = false;
-			} else {
-				let p = pitch_to_hz(pitch) / self.sample_rate;
-
-				voice.freq.set(p);
-				if !voice.note_on {
-					voice.freq.immediate();
-				}
-				voice.note_on = true;
-				voice.active = true;
-				voice.vel.set(vel);
-			}
+		let voice = &mut self.voices[id];
+		if vel == 0.0 {
+			voice.vel.set(0.0);
+			voice.note_on = false;
 		} else {
-			eprintln!("Tried to play voice {id}");
+			let p = pitch_to_hz(pitch) / self.sample_rate;
+
+			voice.freq.set(p);
+			if !voice.note_on {
+				voice.freq.immediate();
+			}
+			voice.note_on = true;
+			voice.active = true;
+			voice.vel.set(vel);
 		}
 	}
 	#[allow(clippy::match_single_binding)]

@@ -76,7 +76,7 @@ deviceList.instruments.polysine = {
 	parameters = {
 		{ "feedback", "slider", { default = 0.5 } },
 		{ "attack", "slider", { default = 10.0, min = 1.0, max = 20000.0, t = "log", fmt = "ms" } },
-		{ "release", "slider", { default = 50.0, min = 10.0, max = 20000.0, t = "log", fmt = "ms" } },
+		{ "release", "slider", { default = 250.0, min = 10.0, max = 20000.0, t = "log", fmt = "ms" } },
 	},
 }
 
