@@ -5,9 +5,12 @@ local noteInput = {}
 
 local queue = {}
 
-local DEFAULT_VELOCITY = 0.75
+local DEFAULT_VELOCITY = 0.33
 
 local octave = -1
+
+-- TODO: this should not communicate with backend directly
+--       instead, pass through the selected devices midi handler
 
 noteInput.diatonic_row = { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]" }
 

@@ -12,8 +12,7 @@ Lua
 [x] Scrolling
 [x] outliner buttons (mute, solo, arm, visible)
 [x] channel/outliner view
-[-] Panner view
-[-] Keyboard note playing
+[x] Keyboard note playing
 [-] Harmonic coordinate logic
 [-] handle MPE input
 [ ] Static piano roll setup
@@ -30,6 +29,10 @@ Lua
 [ ] UI dropdown
 [ ] add instrument menu/list
 [ ] add effects menu/list
+[-] Effect bypass
+[ ] Remove effect
+[ ] Reorder effects
+[ ] Remove channel
 [ ] Type value in slider
 [ ] Top ribbon menu
 [ ] Tabs/workspaces
@@ -37,12 +40,8 @@ Lua
 [ ] Tools
 [ ] Parse tuning files
 [ ] Midi remapping 
-[ ] Remove channel
-[-] Effect bypass
-[ ] Reorder effects
-[ ] Rebuild channels from lua data
+[ ] Rebuild backend from lua data
 [ ] Save project
-[ ] Autogenerate devicelist
 [ ] Undo
 [ ] Implement decorators
 [ ] Implement envelopes
@@ -51,6 +50,7 @@ Lua
 [x] Add font
 [x] Render proper accidentals
 [ ] Fuzzy search command palette
+[-] Panner view
 
 Rust
 [x] ASIO support
@@ -67,12 +67,31 @@ Rust
 [-] Add some effects
 [ ] Poll audio/midi settings
 [x] Reset audio driver to change settings in ASIO panel
-[ ] Port over a bunch of protoplug devices
+[ ] Basic delay
+[ ] Basic reverb
+[ ] Phaser
+[ ] Chorus/vibrato
+[ ] Tremolo
+[ ] Tape saturation
+[ ] EQ
+[ ] Compressor
+[ ] Limiter
+[ ] BBD delay
+[ ] Room reverb
+[ ] Diffusor / resonator
+[ ] Multiband comp / OTT
+[ ] Epiano
+[ ] Flute
+[ ] Plcuked string
+[ ] Brass
+[ ] Bowed string
+[ ] Modal synth
 [ ] Prepare for play (reset envs etc)
+[ ] Change sample rate
 [ ] Group channels
 [ ] Master channel
 [ ] Return tracks?
-[-] Polyphonic instruments
+[x] Polyphonic instruments
 [x] binaural panning 
 [x] Support WASAPI
 [ ] Support macOS

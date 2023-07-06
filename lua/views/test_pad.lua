@@ -3,6 +3,9 @@ local backend = require("backend")
 
 local TestPadView = View:derive("TestPad")
 
+-- TODO: this should not communicate with backend directly
+--       instead, pass through the selected devices midi handler
+
 function TestPadView:new()
 	local new = {}
 	setmetatable(new, self)
