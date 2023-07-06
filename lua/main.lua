@@ -12,7 +12,7 @@ end
 local settingsHandler = require("settings_handler")
 local backend = require("backend")
 local wav = require("lib/wav_save")
-local midilib = require("midilib")
+local midi = require("midi")
 local views = require("views")
 
 if not release and lurker then
@@ -54,7 +54,7 @@ local function audioSetup()
 		print("Audio setup failed")
 	end
 
-	midilib.load(settings.midi.inputs)
+	midi.load(settings.midi.inputs)
 
 	channelHandler:load()
 	-- local ch = channelHandler:add("sine")
@@ -172,7 +172,7 @@ end
 function love.update(dt)
 	time = time + dt
 
-	midilib.update()
+	midi.update()
 	if backend:running() then
 		parseMessages()
 	end
@@ -237,7 +237,7 @@ function love.keypressed(key, isrepeat)
 		love.event.quit()
 	elseif key == "k" then
 		if backend:running() then
-			midilib.quit()
+			midi.quit()
 			backend:quit()
 		else
 			audio_status = "request"
@@ -271,6 +271,6 @@ end
 function love.quit()
 	-- settingsHandler.save(settings)
 
-	midilib.quit()
+	midi.quit()
 	backend:quit()
 end
