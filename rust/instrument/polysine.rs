@@ -11,7 +11,7 @@ pub struct Polysine {
 	sample_rate: f32,
 }
 
-const N_VOICES: usize = 8;
+const N_VOICES: usize = 16;
 
 #[derive(Debug, Default)]
 struct Voice {
@@ -19,34 +19,19 @@ struct Voice {
 	freq: SmoothExp,
 	vel: AttackRelease,
 	note_on: bool,
+	active: bool,
 	prev: f32,
 	feedback: f32,
 }
 
 impl Voice {
 	fn new(sample_rate: f32) -> Self {
-		let mut vel = AttackRelease::new(3.0, 1200., sample_rate);
+		let mut vel = AttackRelease::new(3.0, 500., sample_rate);
 		vel.set_immediate(0.);
 		Self {
 			freq: SmoothExp::new(2.0, sample_rate),
 			vel,
 			..Default::default()
-		}
-	}
-	fn process(&mut self, buffer: &mut [f32]) {
-		for sample in buffer {
-			let vel = self.vel.process();
-			let f = self.freq.process();
-
-			self.accum += f;
-			self.accum = self.accum - self.accum.floor();
-
-			let mut out = (self.accum * TWO_PI + self.prev * self.feedback).sin();
-			out *= vel;
-
-			self.prev = out;
-
-			*sample += out * 0.5;
 		}
 	}
 }
@@ -67,8 +52,24 @@ impl Instrument for Polysine {
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
 
-		for voice in &mut self.voices {
-			voice.process(bl);
+		for voice in self.voices.iter_mut().filter(|v| v.active) {
+			for sample in bl.iter_mut() {
+				let vel = voice.vel.process();
+				let f = voice.freq.process();
+
+				voice.accum += f;
+				voice.accum = voice.accum - voice.accum.floor();
+
+				let mut out = (voice.accum * TWO_PI + voice.prev * voice.feedback).sin();
+				out *= vel;
+
+				voice.prev = out;
+
+				*sample += out;
+			}
+			if voice.vel.get() < 1e-4 {
+				voice.active = false;
+			}
 		}
 
 		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
@@ -95,6 +96,7 @@ impl Instrument for Polysine {
 					voice.freq.immediate();
 				}
 				voice.note_on = true;
+				voice.active = true;
 				voice.vel.set(vel);
 			}
 		} else {
@@ -105,6 +107,11 @@ impl Instrument for Polysine {
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.voices.iter_mut().for_each(|v| v.feedback = value),
+			1 => self.voices.iter_mut().for_each(|v| v.vel.set_attack(value)),
+			2 => self
+				.voices
+				.iter_mut()
+				.for_each(|v| v.vel.set_release(value)),
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}

@@ -7,7 +7,7 @@ local queue = {}
 
 local DEFAULT_VELOCITY = 0.75
 
-local octave = 0
+local octave = -1
 
 noteInput.diatonic_row = { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]" }
 

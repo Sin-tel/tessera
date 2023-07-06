@@ -35,7 +35,6 @@ pub struct Analog {
 	filter: Skf,
 	upsampler: Upsampler19,
 	downsampler: Downsampler31,
-	update_counter: usize,
 	dc_killer: DcKiller,
 	envelope: Adsr,
 	note_on: bool,
@@ -74,13 +73,8 @@ impl Instrument for Analog {
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
+		self.update_filter();
 		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
-			self.update_counter += 1;
-			if self.update_counter >= 64 {
-				self.update_filter();
-				self.update_counter = 0;
-			}
-
 			let env = self.envelope.process();
 			let _pres = self.pres.process();
 			let gate = self.gate.process();
@@ -108,7 +102,7 @@ impl Instrument for Analog {
 
 			let mix = self.z + self.mix_noise * (self.rng.f32() - 0.5);
 
-			let (mut s1, mut s2) = self.upsampler.process(mix * 0.20 + 0.005);
+			let (mut s1, mut s2) = self.upsampler.process(mix * 0.20);
 
 			// TODO: move match branch outside of inner loop
 			(s1, s2) = match self.vcf_mode {
@@ -127,7 +121,7 @@ impl Instrument for Analog {
 			};
 
 			let mut out = self.downsampler.process(s1, s2);
-			out *= 10.;
+			out *= 5.;
 			if self.use_gate {
 				out *= gate;
 			} else {

@@ -8,6 +8,17 @@ local backend = require("backend")
 local rtmidi = require("./lib/rtmidi_ffi")
 local bit = require("bit")
 
+-- 0.01 = 40dB dynamic range
+local VEL_MIN = 0.01
+local LOG_RANGE = -math.log(VEL_MIN)
+
+-- [0, 1] -> [0, 1]
+local function velocity_curve(x)
+	local v = x ^ 0.8
+	local out = VEL_MIN * math.exp(LOG_RANGE * v)
+	return out
+end
+
 local M = {}
 
 local devices = {}
@@ -62,7 +73,7 @@ function M.newDevice(handle, mpe, n)
 	new.mpe = mpe
 	new.port = n
 	new.pitchbend = 2
-	new.n_voices = 8
+	new.n_voices = 16
 	new.offset = 0
 	new.vel = 0
 	new.queue = {}
@@ -193,7 +204,7 @@ function M.handleEvent(device, event)
 		voice.note_on = true
 		voice.age = 0
 		local p = Pitch:fromMidi(voice.note)
-		backend:sendNote(channel_index, p.pitch + voice.offset, voice.vel, new_i - 1)
+		backend:sendNote(channel_index, p.pitch + voice.offset, velocity_curve(voice.vel), new_i - 1)
 	elseif event.name == "note off" then
 		local get_i
 		for i, v in ipairs(device.voices) do
@@ -222,7 +233,7 @@ function M.handleEvent(device, event)
 			-- pop last note in queue
 			voice.note = table.remove(device.queue)
 			local p = Pitch:fromMidi(voice.note)
-			backend:sendNote(channel_index, p.pitch + voice.offset, voice.vel, get_i - 1)
+			backend:sendNote(channel_index, p.pitch + voice.offset, velocity_curve(voice.vel), get_i - 1)
 		end
 
 		-- TODO: handle pressure/pitchbend for polyphonic non-MPE synths

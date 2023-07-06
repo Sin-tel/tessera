@@ -6,6 +6,7 @@ pub struct AttackRelease {
 	target: f32,
 	attack: f32,
 	release: f32,
+	sample_rate: f32,
 }
 
 impl AttackRelease {
@@ -15,6 +16,7 @@ impl AttackRelease {
 			value: 0.0,
 			attack: time_constant(attack, sample_rate),
 			release: time_constant(release, sample_rate),
+			sample_rate,
 		}
 	}
 
@@ -24,6 +26,7 @@ impl AttackRelease {
 			value: 0.0,
 			attack,
 			release,
+			sample_rate: 1.0,
 		}
 	}
 
@@ -58,6 +61,14 @@ impl AttackRelease {
 
 	pub fn target(&self) -> f32 {
 		self.target
+	}
+
+	pub fn set_attack(&mut self, attack: f32) {
+		self.attack = time_constant(attack, self.sample_rate);
+	}
+
+	pub fn set_release(&mut self, release: f32) {
+		self.release = time_constant(release, self.sample_rate);
 	}
 }
 

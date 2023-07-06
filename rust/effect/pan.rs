@@ -74,21 +74,30 @@ impl Effect for Pan {
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
-		for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-			for sample in s.iter_mut() {
-				let gain = track.gain.process();
-				let delay = track.delay.process();
-				let input = *sample;
-				track.delayline.push(input);
+		if self.pan == 0. {
+			for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+				for sample in buf.iter_mut() {
+					let gain = track.gain.process();
+					*sample *= gain;
+				}
+			}
+		} else {
+			for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+				for sample in buf.iter_mut() {
+					let gain = track.gain.process();
+					let delay = track.delay.process();
+					let input = *sample;
+					track.delayline.push(input);
 
-				// delay
-				let mut s = track.delayline.go_back_cubic(delay);
-				// head shadow filter
-				s = track.filter.process(s);
-				// volume difference
-				s *= gain;
+					// delay
+					let mut s = track.delayline.go_back_cubic(delay);
+					// head shadow filter
+					s = track.filter.process(s);
+					// volume difference
+					s *= gain;
 
-				*sample = s;
+					*sample = s;
+				}
 			}
 		}
 	}

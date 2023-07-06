@@ -7,6 +7,7 @@ local deviceList = {}
 -- Add add headings / separators
 
 local C5_HZ = 523.2511
+local INF = math.huge
 
 deviceList.instruments = {}
 
@@ -16,13 +17,6 @@ deviceList.instruments.sine = {
 		{ "fixed", "toggle" },
 		{ "freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
 		{ "gain", "slider", { default = 0, t = "dB" } },
-	},
-}
-
-deviceList.instruments.polysine = {
-	index = 4,
-	parameters = {
-		{ "feedback", "slider", { default = 0.2 } },
 	},
 }
 
@@ -38,10 +32,10 @@ deviceList.instruments.analog = {
 	index = 2,
 	parameters = {
 		{ "pulse width", "slider", { default = 0.5, min = 0.5, max = 0.99, fmt = "%0.2f" } },
-		{ "mix pulse", "slider", { default = -math.huge, t = "dB" } },
+		{ "mix pulse", "slider", { default = -INF, t = "dB" } },
 		{ "mix saw", "slider", { default = 0, t = "dB" } },
-		{ "mix sub", "slider", { default = -math.huge, t = "dB" } },
-		{ "mix noise", "slider", { default = -math.huge, t = "dB" } },
+		{ "mix sub", "slider", { default = -INF, t = "dB" } },
+		{ "mix noise", "slider", { default = -INF, t = "dB" } },
 		{ "vcf mode", "selector", { "lowpass", "bandpass", "highpass" } },
 		{ "vcf freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
 		{ "vcf res", "slider", { default = 0.3, min = 0.0, max = 1.25 } },
@@ -74,6 +68,15 @@ deviceList.instruments.fm = {
 
 		{ "noise", "slider", { default = 0.0, min = 0.0, max = 1.0 } },
 		{ "noise env", "slider", { default = 20.0, min = 2.0, max = 5000.0, t = "log", fmt = "ms" } },
+	},
+}
+
+deviceList.instruments.polysine = {
+	index = 4,
+	parameters = {
+		{ "feedback", "slider", { default = 0.5 } },
+		{ "attack", "slider", { default = 10.0, min = 1.0, max = 20000.0, t = "log", fmt = "ms" } },
+		{ "release", "slider", { default = 50.0, min = 10.0, max = 20000.0, t = "log", fmt = "ms" } },
 	},
 }
 

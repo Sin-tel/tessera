@@ -97,8 +97,8 @@ fn tanhdx(x: f32) -> f32 {
 
 // diode clipper feedback / x
 fn distdx(x: f32) -> f32 {
-	let a = 0.135;
-	a + (1.0 - a) / (1.0 + 5.0 * x * x).sqrt()
+	const A: f32 = 0.135;
+	A + (1.0 - A) / (1.0 + x * x)
 }
 
 // asymmetric input distortion / x

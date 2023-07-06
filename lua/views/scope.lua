@@ -46,7 +46,7 @@ function Scope:draw()
 			local tx = w * 0.95
 			local ty = h * 0.1
 			local sx = (w * 0.9) / n
-			local sy = h * 0.4
+			local sy = h * 0.5
 
 			for i = 1, n - 1 do
 				local x1 = 300 * (math.log(i / n))

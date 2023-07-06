@@ -16,7 +16,7 @@ use crate::scope::Scope;
 #[global_allocator]
 static A: AllocDisabler = AllocDisabler;
 
-pub const MAX_BUF_SIZE: usize = 128;
+pub const MAX_BUF_SIZE: usize = 64;
 pub const SPECTRUM_SIZE: usize = 4096;
 
 pub fn run(host_name: &str, output_device_name: &str) -> Result<AudioContext, Box<dyn Error>> {

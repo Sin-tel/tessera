@@ -59,16 +59,22 @@ local Pitch = {}
 -- 	ratio(33/32),
 -- }
 
--- -- meantone TE optimal
+-- meantone TE optimal
 -- Pitch.generators = {
 -- 	12.01397,
 -- 	6.97049,
 -- }
 
--- meantone target tuning (5/4, 2)
+-- -- meantone target tuning (5/4, 2)
+-- Pitch.generators = {
+-- 	12.0,
+-- 	6.96578,
+-- }
+
+-- meantone target tuning (5/4, 6/5)
 Pitch.generators = {
-	12.0,
-	6.96578,
+	12.10753,
+	7.01955,
 }
 
 -- temperament projection matrix
