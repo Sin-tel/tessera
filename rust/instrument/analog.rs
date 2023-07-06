@@ -149,10 +149,12 @@ impl Instrument for Analog {
 		} else {
 			let f = pitch_to_hz(pitch) / self.sample_rate;
 			self.freq.set(f);
-			self.gate.set(vel);
+			self.gate.set(0.3);
 			self.update_filter();
 			if !(self.legato && self.note_on) {
-				self.envelope.note_on(vel);
+				// make it less sensitive to velocity
+				let v = vel * (2. - vel);
+				self.envelope.note_on(v);
 				self.freq.immediate();
 				// TODO: if attack is really fast the filter should be set to max immediately
 				self.filter.immediate();

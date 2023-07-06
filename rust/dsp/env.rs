@@ -134,7 +134,8 @@ impl Adsr {
 		self.stage = AdsrStage::Attack;
 		self.vel = vel;
 
-		let vel_scale = 1. + 20. * self.vel.powi(2);
+		// attack automatically gets faster with velocity
+		let vel_scale = 1. + 6. * self.vel;
 		self.attack_step = self.attack * self.vel * vel_scale;
 	}
 
