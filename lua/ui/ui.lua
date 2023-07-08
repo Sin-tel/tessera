@@ -3,8 +3,6 @@
 local mouse = require("mouse")
 local Ui = {}
 
-
-
 Ui.RESIZE_W = 5
 Ui.MIN_SIZE = 32
 Ui.HEADER = 32
@@ -106,13 +104,13 @@ function Ui:hitbox(widget, x, y, w, h)
 		and self.mx <= x + w + 2
 		and self.my <= y + h + 2
 	then
-		if mouse.button_pressed == 1 then
+		if mouse.button_pressed == 1 and not self.active then
 			self.active = widget
 		end
-		if mouse.button_released == 1 and self.was_active == widget then
+		if (mouse.button_released == 1 and self.was_active == widget) and not self.clicked then
 			self.clicked = widget
 		end
-		if not self.active or self.active == widget then
+		if (not self.active or self.active == widget) and not self.hover then
 			self.hover = widget
 		end
 
@@ -139,9 +137,12 @@ function Ui:draw()
 		love.graphics.setColor(b[3])
 		love.graphics.rectangle("fill", 0, b[1], w, b[2])
 	end
-	for _, f in ipairs(self.draw_queue) do
-		f()
+
+	-- draw in reverse order to handle overlaps
+	for i = #self.draw_queue, 1, -1 do
+		self.draw_queue[i]()
 	end
+
 	-- TODO: maybe we can cache these?
 	self.bg_list = {}
 	self.draw_queue = {}
