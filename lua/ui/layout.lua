@@ -5,6 +5,7 @@ local Layout = {}
 -- TODO: automatic layout for columns
 -- TODO: max layout for columns (fill rest of columns)
 -- TODO: make width and height seperate from row_width for easier auto layouts
+
 function Layout:new(w, h)
 	local new = {}
 	setmetatable(new, self)

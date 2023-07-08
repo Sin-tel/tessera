@@ -66,29 +66,27 @@ end
 
 function Dropdown:draw(ui, x, y, w, h)
 	local color_fill = theme.widget_bg
-	local color_line = theme.widget_fill
+	local color_line = theme.line
+
+	local th = h
 
 	if self.open then
-		color_fill = theme.widget_press
-
 		local p = Ui.DEFAULT_PAD
-		local th = Ui.ROW_HEIGHT - 2 * p
 		local n = #self.list
-
-		love.graphics.setColor(theme.widget_bg)
-		love.graphics.rectangle("fill", x, y, w, h + n * th, CORNER_RADIUS)
+		th = h + n * (Ui.ROW_HEIGHT - 2 * p)
 	end
+
 	if ui.hover == self and ui.active ~= self then
 		color_line = theme.line_hover
 	end
 
 	if color_fill then
 		love.graphics.setColor(color_fill)
-		love.graphics.rectangle("fill", x, y, w, h, CORNER_RADIUS)
+		love.graphics.rectangle("fill", x, y, w, th, CORNER_RADIUS)
 	end
 	if color_line then
 		love.graphics.setColor(color_line)
-		love.graphics.rectangle("line", x, y, w, h, CORNER_RADIUS)
+		love.graphics.rectangle("line", x, y, w, th, CORNER_RADIUS)
 	end
 
 	love.graphics.setColor(theme.ui_text)

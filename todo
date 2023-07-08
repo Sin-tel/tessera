@@ -1,3 +1,5 @@
+[ ] RtMidi alternative
+
 Lua
 [x] luajit host w love2d
 [x] Simple settings text file
