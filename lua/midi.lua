@@ -62,6 +62,7 @@ local function newVoice()
 	new.note = 0
 	new.offset = 0
 	new.vel = 0
+	new.pres = 0
 	new.age = 0
 	new.note_on = false
 	return new
@@ -72,8 +73,8 @@ function M.newDevice(handle, mpe, n)
 	new.handle = handle
 	new.mpe = mpe
 	new.port = n
-	new.pitchbend = 2
-	new.n_voices = 16
+	new.pitchbend_range = 2
+	new.n_voices = 4
 	new.offset = 0
 	new.vel = 0
 	new.queue = {}
@@ -83,7 +84,7 @@ function M.newDevice(handle, mpe, n)
 		new.voices[i] = newVoice()
 	end
 	if mpe then
-		new.pitchbend = 48
+		new.pitchbend_range = 48
 	end
 	return new
 end
@@ -135,7 +136,7 @@ function M.parse(msg, s)
 		event.name = "pitchbend"
 		event.offset = (b + c * 128 - 8192) / 8192 -- [-1, 1]
 	elseif status == 11 then
-		event.name = "CC"
+		event.name = "cc"
 		event.cc = b
 		event.y = c / 127
 	end
@@ -168,20 +169,20 @@ function M.handleEvent(device, event)
 		-- instead, we steal the one closest in pitch, which allows for nicer voice leading.
 		local playing_dist, playing_i = 10000, nil
 		local released_age, released_i = -1, nil
-		for j, b in ipairs(device.voices) do
-			b.age = b.age + 1
-			local dist = math.abs(b.note - event.note)
-			if b.note_on then
+		for i, v in ipairs(device.voices) do
+			v.age = v.age + 1
+			local dist = math.abs(v.note - event.note)
+			if v.note_on then
 				-- track note is on
 				if dist < playing_dist then
-					playing_i = j
+					playing_i = i
 					playing_dist = dist
 				end
 			else
 				-- track is free
-				if b.age > released_age then
-					released_i = j
-					released_age = b.age
+				if v.age > released_age then
+					released_i = i
+					released_age = v.age
 				end
 			end
 		end
@@ -227,30 +228,49 @@ function M.handleEvent(device, event)
 
 		if #device.queue == 0 then
 			voice.note_on = false
-			local p = Pitch:fromMidi(voice.note)
-			backend:sendNote(channel_index, p.pitch + voice.offset, 0, get_i - 1)
+			if not device.sustain then
+				-- note off pitches are ignored but we send the correct one anyway
+				local p = Pitch:fromMidi(voice.note)
+				backend:sendNote(channel_index, p.pitch + voice.offset, 0, get_i - 1)
+			end
 		else
 			-- pop last note in queue
 			voice.note = table.remove(device.queue)
 			local p = Pitch:fromMidi(voice.note)
 			backend:sendNote(channel_index, p.pitch + voice.offset, velocity_curve(voice.vel), get_i - 1)
 		end
+	elseif event.name == "pitchbend" then
+		for i, v in ipairs(device.voices) do
+			v.offset = device.pitchbend_range * event.offset
+			if v.note_on then
+				backend:sendCv(channel_index, v.note + v.offset, v.pres, i - 1)
+			end
+		end
 
-		-- TODO: handle pressure/pitchbend for polyphonic non-MPE synths
-		--       probably should just send the same message on all active tracks?
-
+		-- TODO: handle pressure
 		-- elseif event.name == "pressure" then
 		-- 	device.pres = event.pres
 		-- 	if device.note then
 		-- 		backend:sendCv(channel_index, device.note + device.offset, device.pres)
 		-- 	end
-		-- elseif event.name == "pitchbend" then
-		-- 	device.offset = device.pitchbend * event.offset
-		-- 	if device.note then
-		-- 		backend:sendCv(channel_index, device.note + device.offset, device.pres)
-		-- 	end
-		-- else
-		-- print(event.name)
+	elseif event.name == "cc" then
+		if event.cc == 64 then
+			-- sustain pedal
+			if event.y > 0 then
+				device.sustain = true
+			else
+				device.sustain = false
+				device.queue = {}
+				for i, v in ipairs(device.voices) do
+					if not v.note_on then
+						v.note_on = false
+						-- note off pitches are ignored but we send the correct one anyway
+						local p = Pitch:fromMidi(v.note)
+						backend:sendNote(channel_index, p.pitch + v.offset, 0, i - 1)
+					end
+				end
+			end
+		end
 	end
 end
 
