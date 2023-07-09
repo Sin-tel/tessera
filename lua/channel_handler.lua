@@ -1,6 +1,7 @@
 local backend = require("backend")
 local deviceList = require("device_list")
 local Device = require("device")
+local widgets = require("ui/widgets")
 
 local channelHandler = {}
 channelHandler.list = {}
@@ -44,6 +45,8 @@ function channelHandler:add(name)
 		table.insert(self.list, new)
 		new.index = #self.list - 1 -- Rust backend index starts at zero
 		new.name = name .. " " .. new.index
+
+		new.widget = widgets.Channel:new(new)
 
 		backend:addChannel(new.instrument.index)
 		selection.channel = new

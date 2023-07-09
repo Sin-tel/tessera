@@ -58,10 +58,10 @@ local function audioSetup()
 
 	channelHandler:load()
 	-- local ch = channelHandler:add("sine")
-	-- local ch = channelHandler:add("polysine")
-	local ch = channelHandler:add("analog")
-	local ch = channelHandler:add("fm")
-	local ch = channelHandler:add("wavetable")
+	local ch = channelHandler:add("polysine")
+	-- local ch = channelHandler:add("analog")
+	-- local ch = channelHandler:add("fm")
+	-- local ch = channelHandler:add("wavetable")
 
 	ch.armed = true
 end
@@ -132,12 +132,13 @@ function love.load()
 	local left, right = workspace.box:split(0.7, true)
 	local top_left, bottom_left = left:split(0.8, false)
 	local top_left, middle_left = top_left:split(0.3, false)
-	local top_rigth, bottom_rigth = right:split(0.2, false)
+	local top_rigth, bottom_rigth = right:split(0.3, false)
 
 	bottom_left:setView(views.TestPad:new())
 
 	top_left:setView(views.Scope:new(false))
-	middle_left:setView(views.Scope:new(true))
+	-- middle_left:setView(views.Scope:new(true))
+	middle_left:setView(views.UiTest:new())
 
 	top_rigth:setView(views.Channels:new())
 	bottom_rigth:setView(views.ChannelSettings:new())

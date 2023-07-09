@@ -5,7 +5,7 @@ local noteInput = {}
 
 local queue = {}
 
-local DEFAULT_VELOCITY = 0.33
+local DEFAULT_VELOCITY = 0.2
 
 local octave = -1
 

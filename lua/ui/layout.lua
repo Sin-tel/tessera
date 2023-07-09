@@ -26,6 +26,10 @@ function Layout:new(w, h)
 	return new
 end
 
+function Layout:padding(pad)
+	self.pad = pad or Ui.DEFAULT_PAD
+end
+
 function Layout:start(x, y)
 	self.x = x or 0
 	self.y = y or 0

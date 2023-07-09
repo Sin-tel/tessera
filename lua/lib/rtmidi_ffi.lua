@@ -267,12 +267,14 @@ function M.findPort(device, name)
 
     for i = 0, nPorts - 1 do
         local portName = ffi.string(lib.rtmidi_get_port_name(device, i))
-        if string.match(string.lower(portName), string.lower(name)) then
+
+        -- 4th argument true turns off pattern matching
+        if string.find(string.lower(portName), string.lower(name), 1, true) then
             return i
         end
     end
 
-    print('Midi port "' .. name .. '" not found!')
+    -- print('Midi port "' .. name .. '" not found!')
     return false
 end
 

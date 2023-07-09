@@ -85,7 +85,7 @@ deviceList.effects = {}
 deviceList.effects.pan = {
 	index = 0,
 	parameters = {
-		{ "gain", "slider", { default = -12, t = "dB" } },
+		{ "gain", "slider", { default = 0, t = "dB" } },
 		{ "pan", "slider", { default = 0, min = -1, max = 1, centered = true, fmt = "%0.2f" } },
 	},
 }

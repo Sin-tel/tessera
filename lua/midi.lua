@@ -74,7 +74,7 @@ function M.newDevice(handle, mpe, n)
 	new.mpe = mpe
 	new.port = n
 	new.pitchbend_range = 2
-	new.n_voices = 4
+	new.n_voices = 16
 	new.offset = 0
 	new.vel = 0
 	new.queue = {}
