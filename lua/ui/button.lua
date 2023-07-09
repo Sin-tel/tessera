@@ -3,8 +3,6 @@ local util = require("util")
 
 local Button = {}
 
-local CORNER_RADIUS = 4
-
 function Button:new(text)
 	local new = {}
 	setmetatable(new, self)
@@ -34,9 +32,9 @@ function Button:draw(ui, x, y, w, h)
 			color_line = theme.line_hover
 		end
 		love.graphics.setColor(color_fill)
-		love.graphics.rectangle("fill", x, y, w, h, CORNER_RADIUS)
+		love.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
 		love.graphics.setColor(color_line)
-		love.graphics.rectangle("line", x, y, w, h, CORNER_RADIUS)
+		love.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
 		love.graphics.setColor(theme.ui_text)
 		util.drawText(self.text, x, y, w, h, "center")
 	end

@@ -35,11 +35,11 @@ function channelHandler:add(name)
 		local new = {
 			instrument = Device:new(name, deviceList.instruments[name]),
 			effects = {},
-			visible = true,
 			mute = false,
 			solo = false,
-			lock = false,
 			armed = false,
+			visible = true,
+			lock = false,
 		}
 
 		table.insert(self.list, new)
@@ -74,9 +74,39 @@ function channelHandler:addEffect(ch, name)
 end
 
 function channelHandler:mute(ch, mute)
+	if mute then
+		ch.solo = false
+	end
 	if ch.mute ~= mute then
 		ch.mute = mute
 		backend:sendMute(ch.index, mute)
+	end
+end
+
+function channelHandler:solo(ch)
+	if ch.solo then
+		for _, ch in ipairs(self.list) do
+			ch.solo = false
+			self:mute(ch, false)
+		end
+	else
+		for _, ch in ipairs(self.list) do
+			ch.solo = false
+			self:mute(ch, true)
+		end
+		ch.solo = true
+		self:mute(ch, false)
+	end
+end
+
+function channelHandler:armed(ch)
+	if ch.armed then
+		ch.armed = false
+	else
+		for _, v in ipairs(self.list) do
+			v.armed = false
+		end
+		ch.armed = true
 	end
 end
 

@@ -14,6 +14,7 @@ Ui.ROW_HEIGHT = 28
 Ui.PARAMETER_LABEL_WIDTH = 150 -- max width of parameter labels
 Ui.PARAMETER_PAD = 8 -- padding for parameters
 Ui.BUTTON_SMALL = 18
+Ui.CORNER_RADIUS = 4
 
 Ui.DEFAULT_PAD = 5
 

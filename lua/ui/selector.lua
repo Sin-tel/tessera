@@ -1,7 +1,6 @@
 local Ui = require("ui/ui")
 local util = require("util")
 
-local CORNER_RADIUS = 4
 local Button = {}
 
 -- TODO: middle mouse reset
@@ -89,11 +88,11 @@ function Button:draw(ui, x, y, w, h)
 	end
 	if color_fill then
 		love.graphics.setColor(color_fill)
-		love.graphics.rectangle("fill", x, y, w, h, CORNER_RADIUS)
+		love.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
 	end
 	if color_line then
 		love.graphics.setColor(color_line)
-		love.graphics.rectangle("line", x, y, w, h, CORNER_RADIUS)
+		love.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
 	end
 
 	love.graphics.setColor(theme.ui_text)
