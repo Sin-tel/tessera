@@ -41,8 +41,8 @@ audio_status = "waiting"
 -----------------------------
 local function audioSetup()
 	if not backend:running() then
-		-- backend:setup(settings.audio.default_host, settings.audio.default_device)
-		backend:setup("wasapi", settings.audio.default_device)
+		backend:setup(settings.audio.default_host, settings.audio.default_device)
+		-- backend:setup("wasapi", settings.audio.default_device)
 		-- audio_status = "running"
 	else
 		print("Audio already set up")
@@ -137,8 +137,8 @@ function love.load()
 	bottom_left:setView(views.TestPad:new())
 
 	top_left:setView(views.Scope:new(false))
-	-- middle_left:setView(views.Scope:new(true))
-	middle_left:setView(views.UiTest:new())
+	middle_left:setView(views.Scope:new(true))
+	-- middle_left:setView(views.UiTest:new())
 
 	top_rigth:setView(views.Channels:new())
 	bottom_rigth:setView(views.ChannelSettings:new())

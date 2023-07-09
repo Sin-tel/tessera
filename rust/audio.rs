@@ -28,7 +28,7 @@ pub fn run(host_name: &str, output_device_name: &str) -> Result<AudioContext, Bo
 
 	// WASAPI doesn't actually return a buffer this size
 	// it only guarantees it to be at least this size
-	config2.buffer_size = cpal::BufferSize::Fixed(128);
+	config2.buffer_size = cpal::BufferSize::Fixed(64);
 
 	// for x in output_device.supported_output_configs().unwrap() {
 	// 	dbg!(x);

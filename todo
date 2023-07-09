@@ -28,9 +28,9 @@ Lua
 [ ] UI separators
 [ ] UI editable labels
 [ ] UI context menu
-[ ] UI dropdown
-[ ] add instrument menu/list
-[ ] add effects menu/list
+[-] UI dropdown
+[x] add instrument menu/list
+[x] add effects menu/list
 [-] Effect bypass
 [ ] Remove effect
 [ ] Reorder effects
@@ -84,8 +84,9 @@ Rust
 [ ] Multiband comp / OTT
 [ ] Epiano
 [ ] Flute
-[ ] Plcuked string
+[ ] Plucked string
 [ ] Brass
+[ ] Sampler?
 [ ] Bowed string
 [ ] Modal synth
 [ ] Prepare for play (reset envs etc)

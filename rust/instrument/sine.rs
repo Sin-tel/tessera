@@ -18,8 +18,8 @@ pub struct Sine {
 impl Instrument for Sine {
 	fn new(sample_rate: f32) -> Self {
 		Sine {
-			freq: SmoothExp::new(20.0, sample_rate),
-			vel: SmoothExp::new(20.0, sample_rate),
+			freq: SmoothExp::new(2.0, sample_rate),
+			vel: SmoothExp::new(10.0, sample_rate),
 			sample_rate,
 			..Default::default()
 		}
@@ -60,9 +60,8 @@ impl Instrument for Sine {
 				self.vel.set(0.0);
 			} else {
 				let p = pitch_to_hz(pitch) / self.sample_rate;
-				self.freq.set_immediate(p);
-				self.vel.set_immediate(vel);
-				self.accum = 0.0;
+				self.freq.set(p);
+				self.vel.set(vel);
 			}
 		}
 	}

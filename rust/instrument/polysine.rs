@@ -65,7 +65,7 @@ impl Instrument for Polysine {
 
 				voice.prev = out;
 
-				*sample += out;
+				*sample += out * 0.5;
 			}
 			if voice.vel.get() < 1e-4 {
 				voice.active = false;
