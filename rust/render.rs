@@ -46,9 +46,6 @@ impl Render {
 	}
 
 	pub fn send(&mut self, m: LuaMessage) {
-		// if self.lua_tx.push(m).is_err() {
-		// 	println!("Lua queue full. Dropped message!");
-		// }
 		self.lua_tx.push(m).ok();
 	}
 
@@ -62,16 +59,30 @@ impl Render {
 		self.channels.push(newch);
 	}
 
+	pub fn remove_channel(&mut self, index: usize) {
+		// TODO: may panic
+		self.channels.remove(index);
+	}
+
 	// TODO: temp fix right inserts the fx in second to last place so the pan is always last
 	//       also update this in channel_handler
-	pub fn add_effect(&mut self, ch_index: usize, effect_number: usize) {
-		match self.channels.get_mut(ch_index) {
+	pub fn add_effect(&mut self, channel_index: usize, effect_number: usize) {
+		match self.channels.get_mut(channel_index) {
 			Some(ch) => {
-				let l = ch.effects.len().saturating_sub(1);
 				ch.effects
-					.insert(l, BypassEffect::new(self.sample_rate, effect_number));
+					.insert(0, BypassEffect::new(self.sample_rate, effect_number));
 			}
-			None => println!("Channel index out of bounds!"),
+			None => println!("Channel index out of bounds"),
+		}
+	}
+
+	pub fn remove_effect(&mut self, channel_index: usize, effect_index: usize) {
+		match self.channels.get_mut(channel_index) {
+			Some(ch) => {
+				// TODO: may panic on out of bounds
+				ch.effects.remove(effect_index);
+			}
+			None => println!("Channel index out of bounds"),
 		}
 	}
 
@@ -140,29 +151,26 @@ impl Render {
 	}
 
 	pub fn parse_messages(&mut self) {
+		use AudioMessage::*;
 		while let Some(m) = self.audio_rx.pop() {
 			match m {
-				AudioMessage::CV(ch_index, pitch, pres, id) => {
-					match self.channels.get_mut(ch_index) {
-						Some(ch) => {
-							if !ch.mute {
-								ch.instrument.cv(pitch, pres, id);
-							}
+				CV(ch_index, pitch, pres, id) => match self.channels.get_mut(ch_index) {
+					Some(ch) => {
+						if !ch.mute {
+							ch.instrument.cv(pitch, pres, id);
 						}
-						None => println!("Channel index out of bounds!"),
 					}
-				}
-				AudioMessage::Note(ch_index, pitch, vel, id) => {
-					match self.channels.get_mut(ch_index) {
-						Some(ch) => {
-							if !ch.mute {
-								ch.instrument.note(pitch, vel, id);
-							}
+					None => eprintln!("Channel index out of bounds"),
+				},
+				Note(ch_index, pitch, vel, id) => match self.channels.get_mut(ch_index) {
+					Some(ch) => {
+						if !ch.mute {
+							ch.instrument.note(pitch, vel, id);
 						}
-						None => println!("Channel index out of bounds!"),
 					}
-				}
-				AudioMessage::Parameter(ch_index, device_index, index, val) => {
+					None => eprintln!("Channel index out of bounds"),
+				},
+				Parameter(ch_index, device_index, index, val) => {
 					match self.channels.get_mut(ch_index) {
 						Some(ch) => {
 							if device_index == 0 {
@@ -170,18 +178,45 @@ impl Render {
 							} else {
 								match ch.effects.get_mut(device_index - 1) {
 									Some(e) => e.effect.set_parameter(index, val),
-									None => println!("Device index out of bounds!"),
+									None => eprintln!("Device index out of bounds"),
 								}
 							}
 						}
-						None => println!("Channel index out of bounds!"),
+						None => eprintln!("Channel index out of bounds"),
 					}
 				}
 
-				AudioMessage::Mute(ch_index, mute) => match self.channels.get_mut(ch_index) {
+				Mute(ch_index, mute) => match self.channels.get_mut(ch_index) {
 					Some(ch) => ch.mute = mute,
-					None => println!("Channel index out of bounds!"),
+					None => eprintln!("Channel index out of bounds"),
 				},
+				BypassEffect(ch_index, fx_index, bypass) => match self.channels.get_mut(ch_index) {
+					Some(ch) => {
+						if fx_index == 0 {
+							eprintln!("Bypass instrument is not supported");
+						} else {
+							match ch.effects.get_mut(fx_index - 1) {
+								Some(e) => e.bypassed = bypass,
+								None => eprintln!("Fx index out of bounds"),
+							}
+						}
+					}
+					None => eprintln!("Channel index out of bounds"),
+				},
+				ReorderEffect(ch_index, old_index, new_index) => {
+					match self.channels.get_mut(ch_index) {
+						Some(ch) => {
+							if old_index == 0 || new_index == 0 {
+								eprintln!("Indices must be larger than 0");
+							} else {
+								// TODO: may panic
+								let e = ch.effects.remove(old_index - 1);
+								ch.effects.insert(new_index - 1, e);
+							}
+						}
+						None => eprintln!("Channel index out of bounds"),
+					}
+				}
 			}
 		}
 	}

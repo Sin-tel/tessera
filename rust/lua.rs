@@ -5,11 +5,8 @@ use ringbuf::{HeapConsumer, HeapProducer};
 use std::sync::{Arc, Mutex};
 
 use crate::audio;
-use crate::render;
+use crate::render::Render;
 use crate::scope::Scope;
-
-// TODO: Before ever acquiring a lock on m_render, we should check that it is not poisoned.
-//       If it is, kill the audio stream and restart the engine.
 
 struct LuaData(Option<AudioContext>);
 
@@ -18,7 +15,7 @@ pub struct AudioContext {
 	pub audio_tx: HeapProducer<AudioMessage>,
 	pub stream_tx: HeapProducer<bool>,
 	pub lua_rx: HeapConsumer<LuaMessage>,
-	pub m_render: Arc<Mutex<render::Render>>,
+	pub m_render: Arc<Mutex<Render>>,
 	pub scope: Scope,
 	pub paused: bool,
 }
@@ -31,7 +28,8 @@ pub enum AudioMessage {
 	Note(usize, f32, f32, usize),
 	Parameter(usize, usize, usize, f32),
 	Mute(usize, bool),
-	// Bypass(usize, usize, bool),
+	BypassEffect(usize, usize, bool),
+	ReorderEffect(usize, usize, usize),
 	// Swap(?),
 	//
 }
@@ -113,13 +111,41 @@ impl UserData for LuaData {
 
 		methods.add_method_mut(
 			"sendParameter",
-			|_, data, (ch_index, device_index, index, value): (usize, usize, usize, f32)| {
+			|_, data, (channel_index, device_index, index, value): (usize, usize, usize, f32)| {
 				if let LuaData(Some(ud)) = data {
 					ud.send_message(AudioMessage::Parameter(
-						ch_index,
+						channel_index,
 						device_index,
 						index,
 						value,
+					));
+				}
+				Ok(())
+			},
+		);
+
+		methods.add_method_mut(
+			"bypassEffect",
+			|_, data, (channel_index, effect_index, bypass): (usize, usize, bool)| {
+				if let LuaData(Some(ud)) = data {
+					ud.send_message(AudioMessage::BypassEffect(
+						channel_index,
+						effect_index,
+						bypass,
+					));
+				}
+				Ok(())
+			},
+		);
+
+		methods.add_method_mut(
+			"reorderEffect",
+			|_, data, (channel_index, old_index, new_index): (usize, usize, usize)| {
+				if let LuaData(Some(ud)) = data {
+					ud.send_message(AudioMessage::ReorderEffect(
+						channel_index,
+						old_index,
+						new_index,
 					));
 				}
 				Ok(())
@@ -141,7 +167,8 @@ impl UserData for LuaData {
 			}
 		});
 
-		methods.add_method("addChannel", |_, data, instrument_number: usize| {
+		methods.add_method_mut("addChannel", |_, data, instrument_number: usize| {
+			check_lock_poison(data);
 			if let LuaData(Some(ud)) = data {
 				let mut render = ud.m_render.lock().expect("Failed to get lock.");
 				render.add_channel(instrument_number);
@@ -149,9 +176,19 @@ impl UserData for LuaData {
 			Ok(())
 		});
 
-		methods.add_method(
+		methods.add_method_mut("removeChannel", |_, data, index: usize| {
+			check_lock_poison(data);
+			if let LuaData(Some(ud)) = data {
+				let mut render = ud.m_render.lock().expect("Failed to get lock.");
+				render.remove_channel(index);
+			}
+			Ok(())
+		});
+
+		methods.add_method_mut(
 			"addEffect",
 			|_, data, (channel_index, effect_number): (usize, usize)| {
+				check_lock_poison(data);
 				if let LuaData(Some(ud)) = data {
 					let mut render = ud.m_render.lock().expect("Failed to get lock.");
 					render.add_effect(channel_index, effect_number);
@@ -160,7 +197,20 @@ impl UserData for LuaData {
 			},
 		);
 
-		methods.add_method("renderBlock", |_, data, _: ()| {
+		methods.add_method_mut(
+			"removeEffect",
+			|_, data, (channel_index, effect_index): (usize, usize)| {
+				check_lock_poison(data);
+				if let LuaData(Some(ud)) = data {
+					let mut render = ud.m_render.lock().expect("Failed to get lock.");
+					render.remove_effect(channel_index, effect_index);
+				}
+				Ok(())
+			},
+		);
+
+		methods.add_method_mut("renderBlock", |_, data, _: ()| {
+			check_lock_poison(data);
 			if let LuaData(Some(ud)) = data {
 				let len = 64;
 				let buffer: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
@@ -236,17 +286,26 @@ fn convert_sample_wav(x: f32) -> f64 {
 	}
 }
 
+fn check_lock_poison(data: &mut LuaData) {
+	if let LuaData(Some(ud)) = data {
+		if ud.m_render.is_poisoned() {
+			println!("Lock was poisoned. Killing backend.");
+			*data = LuaData(None);
+		}
+	}
+}
+
 impl AudioContext {
 	fn send_message(&mut self, m: AudioMessage) {
 		if self.audio_tx.push(m).is_err() {
-			println!("Queue full. Dropped message!");
+			eprintln!("Queue full. Dropped message!");
 		}
 	}
 
 	fn send_paused(&mut self, paused: bool) {
 		self.paused = paused;
 		if self.stream_tx.push(paused).is_err() {
-			println!("Stream queue full. Dropped message!");
+			eprintln!("Stream queue full. Dropped message!");
 		}
 	}
 }

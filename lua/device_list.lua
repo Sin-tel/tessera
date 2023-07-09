@@ -16,7 +16,7 @@ deviceList.instruments.sine = {
 	parameters = {
 		{ "fixed", "toggle" },
 		{ "freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
-		{ "gain", "slider", { default = 0, t = "dB" } },
+		{ "gain", "slider", { default = -12, t = "dB" } },
 	},
 }
 
