@@ -1,5 +1,6 @@
 use crate::device::*;
 
+pub mod delay;
 pub mod drive;
 pub mod gain;
 pub mod pan;

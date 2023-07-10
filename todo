@@ -32,9 +32,9 @@ Lua
 [x] add instrument menu/list
 [x] add effects menu/list
 [-] Effect bypass
-[ ] Remove effect
-[ ] Reorder effects
-[ ] Remove channel
+[x] Remove effect
+[x] Reorder effects
+[x] Remove channel
 [ ] Type value in slider
 [ ] Top ribbon menu
 [ ] Tabs/workspaces
@@ -70,7 +70,7 @@ Rust
 [-] Add some effects
 [ ] Poll audio/midi settings
 [x] Reset audio driver to change settings in ASIO panel
-[ ] Basic delay
+[x] Basic delay
 [ ] Basic reverb
 [ ] Phaser
 [ ] Chorus/vibrato

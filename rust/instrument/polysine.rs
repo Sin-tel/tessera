@@ -9,6 +9,7 @@ use crate::instrument::*;
 pub struct Polysine {
 	voices: Vec<Voice>,
 	sample_rate: f32,
+	dc_killer: DcKiller,
 }
 
 const N_VOICES: usize = 16;
@@ -45,6 +46,7 @@ impl Instrument for Polysine {
 
 		Polysine {
 			voices,
+			dc_killer: DcKiller::new(sample_rate),
 			sample_rate,
 		}
 	}
@@ -70,6 +72,10 @@ impl Instrument for Polysine {
 			if voice.vel.get() < 1e-4 {
 				voice.active = false;
 			}
+		}
+
+		for s in bl.iter_mut() {
+			*s = self.dc_killer.process(*s);
 		}
 
 		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {

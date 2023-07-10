@@ -9,7 +9,7 @@ local rtmidi = require("./lib/rtmidi_ffi")
 local bit = require("bit")
 
 -- 0.01 = 40dB dynamic range
-local VEL_MIN = 0.01
+local VEL_MIN = 0.02
 local LOG_RANGE = -math.log(VEL_MIN)
 
 -- [0, 1] -> [0, 1]
@@ -74,7 +74,7 @@ function M.newDevice(handle, mpe, n)
 	new.mpe = mpe
 	new.port = n
 	new.pitchbend_range = 2
-	new.n_voices = 16
+	new.n_voices = 1
 	new.offset = 0
 	new.vel = 0
 	new.queue = {}

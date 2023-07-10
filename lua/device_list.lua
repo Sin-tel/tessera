@@ -74,7 +74,7 @@ deviceList.instruments.fm = {
 deviceList.instruments.polysine = {
 	number = 4,
 	parameters = {
-		{ "feedback", "slider", { default = 0.5 } },
+		{ "feedback", "slider", { default = 0.5, max = 1.3 } },
 		{ "attack", "slider", { default = 10.0, min = 1.0, max = 20000.0, t = "log", fmt = "ms" } },
 		{ "release", "slider", { default = 250.0, min = 10.0, max = 20000.0, t = "log", fmt = "ms" } },
 	},
@@ -104,6 +104,18 @@ deviceList.effects.drive = {
 		{ "gain", "slider", { default = 6, max = 24, t = "dB" } },
 		{ "bias", "slider", { default = 0, max = 1.0 } },
 		{ "2x oversample", "toggle" },
+	},
+}
+
+deviceList.effects.delay = {
+	number = 3,
+	parameters = {
+		{ "dry wet", "slider", { default = 0.33 } },
+		{ "time", "slider", { default = 0.4, min = 0.1, max = 1.0, t = "log" } },
+		{ "offset", "slider", { default = 0.15, min = -1.0, max = 1.0 } },
+		{ "feedback", "slider", { default = 0.66 } },
+		{ "LFO spd", "slider", { default = 1.0, min = 0.2, max = 8.0, t = "Hz" } },
+		{ "LFO mod", "slider", { default = 0.15 } },
 	},
 }
 
