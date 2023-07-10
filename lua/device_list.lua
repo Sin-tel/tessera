@@ -1,7 +1,7 @@
 local deviceList = {}
 
 -- should this just define a UI instead of a parameter list?
--- parameters need to have a correct index though
+-- parameters need to have a correct number though
 -- TODO: allow for custom UI layouts
 -- Add toggle groups
 -- Add add headings / separators
@@ -12,7 +12,7 @@ local INF = math.huge
 deviceList.instruments = {}
 
 deviceList.instruments.sine = {
-	index = 0,
+	number = 0,
 	parameters = {
 		{ "fixed", "toggle" },
 		{ "freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
@@ -21,7 +21,7 @@ deviceList.instruments.sine = {
 }
 
 deviceList.instruments.wavetable = {
-	index = 1,
+	number = 1,
 	parameters = {
 		{ "vel mod", "slider", { default = 0.0 } },
 		{ "pres mod", "slider", { default = 0.25 } },
@@ -29,7 +29,7 @@ deviceList.instruments.wavetable = {
 }
 
 deviceList.instruments.analog = {
-	index = 2,
+	number = 2,
 	parameters = {
 		{ "pulse width", "slider", { default = 0.5, min = 0.5, max = 0.99, fmt = "%0.2f" } },
 		{ "mix pulse", "slider", { default = -INF, t = "dB" } },
@@ -53,7 +53,7 @@ deviceList.instruments.analog = {
 }
 
 deviceList.instruments.fm = {
-	index = 3,
+	number = 3,
 	parameters = {
 		{ "feedback", "slider", { default = 0.0, min = -1.0, max = 1.0, centered = true } },
 		{ "depth", "slider", { default = 0.2, min = 0, max = 1.0 } },
@@ -72,7 +72,7 @@ deviceList.instruments.fm = {
 }
 
 deviceList.instruments.polysine = {
-	index = 4,
+	number = 4,
 	parameters = {
 		{ "feedback", "slider", { default = 0.5 } },
 		{ "attack", "slider", { default = 10.0, min = 1.0, max = 20000.0, t = "log", fmt = "ms" } },
@@ -83,7 +83,7 @@ deviceList.instruments.polysine = {
 deviceList.effects = {}
 
 deviceList.effects.pan = {
-	index = 0,
+	number = 0,
 	parameters = {
 		{ "gain", "slider", { default = 0, t = "dB" } },
 		{ "pan", "slider", { default = 0, min = -1, max = 1, centered = true, fmt = "%0.2f" } },
@@ -91,14 +91,14 @@ deviceList.effects.pan = {
 }
 
 deviceList.effects.gain = {
-	index = 1,
+	number = 1,
 	parameters = {
 		{ "gain", "slider", { default = 0, max = 12, t = "dB" } },
 	},
 }
 
 deviceList.effects.drive = {
-	index = 2,
+	number = 2,
 	parameters = {
 		{ "mode", "selector", { "soft", "hard" } },
 		{ "gain", "slider", { default = 6, max = 24, t = "dB" } },

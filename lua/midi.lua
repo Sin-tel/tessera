@@ -153,7 +153,7 @@ function M.handleEvent(device, event)
 	local channel_index = nil
 	for i, ch in ipairs(channelHandler.list) do
 		if ch.armed then
-			channel_index = i - 1
+			channel_index = i
 			break
 		end
 	end

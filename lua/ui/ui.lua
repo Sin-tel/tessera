@@ -47,6 +47,8 @@ end
 function Ui:startFrame()
 	self.mx, self.my = self.view:getMouse()
 
+	self.bg_color = nil
+
 	self.hover = false
 	self.clicked = false
 	if mouse.button_released then
@@ -118,6 +120,10 @@ function Ui:hitbox(widget, x, y, w, h)
 		return true
 	end
 	return false
+end
+
+function Ui:hitArea(x, y, w, h)
+	return self.view:focus() and self.mx >= x and self.my >= y and self.mx <= x + w and self.my <= y + h
 end
 
 function Ui:background(color)

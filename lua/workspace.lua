@@ -301,7 +301,7 @@ end
 
 function workspace:draw()
 	local ll = util.clamp(self.cpu_load, 0, 1)
-	local hl_col = theme.highlight
+	local hl_col = theme.cpu_meter
 	if self.cpu_load > 1.0 then
 		hl_col = theme.warning
 	end

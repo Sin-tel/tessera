@@ -23,7 +23,8 @@ function noteInput:keypressed(key, _)
 			local p = Pitch:fromDiatonic(i, octave)
 
 			if ch then
-				backend:sendNote(ch.index, p.pitch, DEFAULT_VELOCITY)
+				local ch_index = channelHandler:getChannelIndex(ch)
+				backend:sendNote(ch_index, p.pitch, DEFAULT_VELOCITY)
 			end
 
 			table.insert(queue, i)
@@ -56,11 +57,15 @@ function noteInput:keyreleased(key)
 				if #queue > 0 then
 					if last then
 						local p = Pitch:fromDiatonic(queue[#queue], octave)
-						backend:sendNote(ch.index, p.pitch, DEFAULT_VELOCITY)
+						local ch_index = channelHandler:getChannelIndex(ch)
+
+						backend:sendNote(ch_index, p.pitch, DEFAULT_VELOCITY)
 					end
 				else
 					local p = Pitch:fromDiatonic(i, octave)
-					backend:sendNote(ch.index, p.pitch, 0.0)
+					local ch_index = channelHandler:getChannelIndex(ch)
+
+					backend:sendNote(ch_index, p.pitch, 0.0)
 				end
 			end
 

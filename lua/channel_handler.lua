@@ -17,7 +17,7 @@ function channelHandler:sendParameters()
 		for l, par in ipairs(ch.instrument.parameters) do
 			local value = par.widget:getFloat()
 			if value then
-				backend:sendParameter(k - 1, 0, l - 1, value)
+				backend:sendParameter(k, 0, l, value)
 			end
 		end
 
@@ -25,7 +25,7 @@ function channelHandler:sendParameters()
 			for l, par in ipairs(fx.parameters) do
 				local value = par.widget:getFloat()
 				if value then
-					backend:sendParameter(k - 1, e, l - 1, value)
+					backend:sendParameter(k, e, l, value)
 				end
 			end
 		end
@@ -45,12 +45,11 @@ function channelHandler:add(name)
 		}
 
 		table.insert(self.list, new)
-		new.index = #self.list - 1 -- Rust backend index starts at zero
-		new.name = name .. " " .. new.index
+		new.name = name .. " " .. #self.list
 
 		new.widget = widgets.Channel:new(new)
 
-		backend:addChannel(new.instrument.index)
+		backend:addChannel(new.instrument.number)
 		selection.channel = new
 
 		self:addEffect(new, "pan")
@@ -61,18 +60,40 @@ function channelHandler:add(name)
 	end
 end
 
-function channelHandler:remove(index)
-	table.remove(self.list, index)
-	backend:removeChannel(index)
+function channelHandler:getChannelIndex(ch)
+	for i, v in ipairs(self.list) do
+		if v == ch then
+			return i
+		end
+	end
+
+	error("channel not found" .. ch.name)
+end
+
+function channelHandler:getEffectIndex(ch, effect)
+	for i, v in ipairs(ch.effects) do
+		if v == effect then
+			return i
+		end
+	end
+
+	error("channel not found" .. ch.name)
+end
+
+function channelHandler:remove(ch)
+	local ch_index = self:getChannelIndex(ch)
+	table.remove(self.list, ch_index)
+	backend:removeChannel(ch_index)
 end
 
 function channelHandler:addEffect(ch, name)
 	if deviceList.effects[name] then
+		local ch_index = self:getChannelIndex(ch)
+
 		local effect = Device:new(name, deviceList.effects[name])
 
 		table.insert(ch.effects, 1, effect)
-
-		backend:addEffect(ch.index, effect.index)
+		backend:addEffect(ch_index, effect.number)
 
 		return effect
 	else
@@ -80,20 +101,33 @@ function channelHandler:addEffect(ch, name)
 	end
 end
 
-function channelHandler:removeEffect(ch, index)
-	table.remove(ch.effects, index)
-	backend:removeEffect(index)
+function channelHandler:removeEffect(ch, device)
+	local effect_index = self:getEffectIndex(ch, device)
+	local ch_index = self:getChannelIndex(ch)
+	table.remove(ch.effects, effect_index)
+	backend:removeEffect(ch_index, effect_index)
 end
 
-function channelHandler:bypassEffect(channel_index, effect_index, bypass)
+function channelHandler:bypassEffect(ch, effect, bypass)
 	-- TODO
-	backend:bypassEffect(channel_index, effect_index, bypass)
+	local ch_index = self:getChannelIndex(ch)
+	backend:bypass(ch_index, effect_index, bypass)
 end
 
-function channelHandler:reorderEffect(channel_index, old_index, new_index)
-	local temp = table.remove(ch.effects, old_index)
-	table.insert(ch.effects, new_index)
-	backend:reorderEffect(channel_index, old_index, new_index)
+function channelHandler:reorderEffect(ch, device, offset)
+	local old_index = self:getEffectIndex(ch, device)
+	if old_index then
+		local new_index = old_index + offset
+
+		local n = #ch.effects
+		if old_index >= 1 and old_index <= n and new_index >= 1 and new_index <= n then
+			local temp = table.remove(ch.effects, old_index)
+			table.insert(ch.effects, new_index, temp)
+
+			local ch_index = self:getChannelIndex(ch)
+			backend:reorderEffect(ch_index, old_index, new_index)
+		end
+	end
 end
 
 function channelHandler:mute(ch, mute)
@@ -102,7 +136,8 @@ function channelHandler:mute(ch, mute)
 	end
 	if ch.mute ~= mute then
 		ch.mute = mute
-		backend:sendMute(ch.index, mute)
+		local ch_index = self:getChannelIndex(ch)
+		backend:sendMute(ch_index, mute)
 	end
 end
 

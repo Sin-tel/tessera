@@ -41,6 +41,8 @@ function Channels:update()
 	for _, v in ipairs(channelHandler.list) do
 		self.ui:put(v.widget)
 	end
+
+	self.ui:endFrame()
 end
 
 function Channels:draw()

@@ -39,6 +39,7 @@ function Scope:draw()
 		local spectrum = backend:getSpectrum()
 		if spectrum then
 			local n = #spectrum
+			-- print(n)
 
 			local tx = w * 0.95
 			local ty = h * 0.1
@@ -63,7 +64,7 @@ function Scope:draw()
 			local tx = 0 --w * 0.05
 			local ty = h * 0.5
 			local sx = 1 --w / n
-			local sy = h * 2.0
+			local sy = h * 0.5
 
 			local n_max = math.min(n, math.floor(w / sx))
 

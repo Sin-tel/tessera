@@ -41,6 +41,7 @@ Lua
 [ ] Loop
 [ ] Tools
 [ ] Parse tuning files
+[ ] Keybinding file
 [ ] Midi remapping 
 [ ] Rebuild backend from lua data
 [ ] Save project

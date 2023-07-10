@@ -17,9 +17,11 @@ pub struct Sine {
 
 impl Instrument for Sine {
 	fn new(sample_rate: f32) -> Self {
+		let mut vel = SmoothExp::new(10.0, sample_rate);
+		vel.set_immediate(0.);
 		Sine {
 			freq: SmoothExp::new(2.0, sample_rate),
-			vel: SmoothExp::new(10.0, sample_rate),
+			vel,
 			sample_rate,
 			..Default::default()
 		}

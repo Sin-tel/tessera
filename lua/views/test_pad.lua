@@ -58,21 +58,24 @@ function TestPadView:draw()
 		self.v = 1.0 - myy
 
 		if (mouse.button == 1 or mouse.button == 2) and selection.channel then
-			backend:sendCv(selection.channel.index, self.f, self.v)
+			local ch_index = channelHandler:getChannelIndex(selection.channel)
+			backend:sendCv(ch_index, self.f, self.v)
 		end
 	end
 end
 
 function TestPadView:mousepressed()
 	if (mouse.button == 1 or mouse.button == 2) and selection.channel then
-		backend:sendNote(selection.channel.index, self.f, self.v)
+		local ch_index = channelHandler:getChannelIndex(selection.channel)
+		backend:sendNote(ch_index, self.f, self.v)
 		self.note = true
 	end
 end
 
 function TestPadView:mousereleased()
 	if mouse.button == 1 and selection.channel then
-		backend:sendNote(selection.channel.index, self.f, 0)
+		local ch_index = channelHandler:getChannelIndex(selection.channel)
+		backend:sendNote(ch_index, self.f, 0)
 		self.note = false
 	end
 end

@@ -48,6 +48,7 @@ function Channel:update(ui, x, y, w, h)
 
 	if ui.clicked == self then
 		selection.channel = self.channel
+		selection.device = nil
 	end
 
 	return ui.clicked == self
@@ -55,8 +56,16 @@ end
 
 function Channel:draw(ui, x, y, w, h)
 	local color_fill = nil
-	if ui.hover == self and ui.active ~= self then
-		love.graphics.setColor(theme.bg_highlight)
+	if ui.hover == self then
+		color_fill = theme.bg_highlight
+	end
+
+	if selection.channel == self.channel and selection.device == nil then
+		color_fill = theme.bg_focus
+	end
+
+	if color_fill then
+		love.graphics.setColor(color_fill)
 		love.graphics.rectangle("fill", x, y, w, h)
 	end
 

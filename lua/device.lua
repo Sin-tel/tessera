@@ -7,7 +7,7 @@ function Device:new(name, options)
 	setmetatable(new, self)
 	self.__index = self
 
-	new.index = options.index
+	new.number = options.number
 	new.name = name
 
 	-- UI stuff and parameter handlers
@@ -36,6 +36,12 @@ function Device:new(name, options)
 end
 
 function Device:updateUi(ui, w, w_label)
+	local start_x, start_y = ui.layout.x, ui.layout.y
+
+	ui:background()
+	if selection.device == self then
+		ui:background(theme.bg_focus)
+	end
 	if ui:put(self.collapse) then
 		ui:background(theme.bg_nested)
 		for _, v in ipairs(self.parameters) do
@@ -49,6 +55,10 @@ function Device:updateUi(ui, w, w_label)
 		end
 		ui:background()
 	end
+	local end_x, end_y = ui.layout.x, ui.layout.y
+
+	-- detect hit anywhere inside of the device
+	return ui:hitArea(start_x, start_y, w, end_y - start_y) and mouse.button_released
 end
 
 return Device

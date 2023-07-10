@@ -3,7 +3,6 @@ use ringbuf::{HeapConsumer, HeapProducer};
 use crate::audio::MAX_BUF_SIZE;
 use crate::device::*;
 use crate::dsp::env::AttackRelease;
-use crate::dsp::softclip;
 use crate::effect::*;
 use crate::instrument::*;
 use crate::lua::{AudioMessage, LuaMessage};
@@ -60,12 +59,9 @@ impl Render {
 	}
 
 	pub fn remove_channel(&mut self, index: usize) {
-		// TODO: may panic
 		self.channels.remove(index);
 	}
 
-	// TODO: temp fix right inserts the fx in second to last place so the pan is always last
-	//       also update this in channel_handler
 	pub fn add_effect(&mut self, channel_index: usize, effect_number: usize) {
 		match self.channels.get_mut(channel_index) {
 			Some(ch) => {
@@ -77,13 +73,8 @@ impl Render {
 	}
 
 	pub fn remove_effect(&mut self, channel_index: usize, effect_index: usize) {
-		match self.channels.get_mut(channel_index) {
-			Some(ch) => {
-				// TODO: may panic on out of bounds
-				ch.effects.remove(effect_index);
-			}
-			None => println!("Channel index out of bounds"),
-		}
+		let ch = &mut self.channels[channel_index];
+		ch.effects.remove(effect_index);
 	}
 
 	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
@@ -120,12 +111,6 @@ impl Render {
 			}
 		}
 
-		// Send everything to scope before clipping.
-		// For now, we only send the left channel.
-		for s in buffer[0].iter() {
-			self.scope_tx.push(*s).ok(); // Don't really care if its full
-		}
-
 		// Calculate peak
 		let mut sum = [0.0; 2];
 		for (i, track) in buffer.iter().enumerate() {
@@ -138,15 +123,14 @@ impl Render {
 		let peak_r = self.peak_r.process();
 		self.send(LuaMessage::Meter(peak_l, peak_r));
 
-		// Add 6dB headroom and some tanh-like softclip
-		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
-			*s = softclip(*s * 0.50);
-			// *s *= 0.50;
-		}
-
-		// clipping isn't strictly necessary but we'll do it anyway
+		// hardclip
 		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
 			*s = s.clamp(-1.0, 1.0);
+		}
+
+		// Send everything to scope.
+		for s in buffer[0].iter() {
+			self.scope_tx.push(*s).ok(); // Don't really care if its full
 		}
 	}
 
@@ -154,68 +138,41 @@ impl Render {
 		use AudioMessage::*;
 		while let Some(m) = self.audio_rx.pop() {
 			match m {
-				CV(ch_index, pitch, pres, id) => match self.channels.get_mut(ch_index) {
-					Some(ch) => {
-						if !ch.mute {
-							ch.instrument.cv(pitch, pres, id);
-						}
-					}
-					None => eprintln!("Channel index out of bounds"),
-				},
-				Note(ch_index, pitch, vel, id) => match self.channels.get_mut(ch_index) {
-					Some(ch) => {
-						if !ch.mute {
-							ch.instrument.note(pitch, vel, id);
-						}
-					}
-					None => eprintln!("Channel index out of bounds"),
-				},
-				Parameter(ch_index, device_index, index, val) => {
-					match self.channels.get_mut(ch_index) {
-						Some(ch) => {
-							if device_index == 0 {
-								ch.instrument.set_parameter(index, val);
-							} else {
-								match ch.effects.get_mut(device_index - 1) {
-									Some(e) => e.effect.set_parameter(index, val),
-									None => eprintln!("Device index out of bounds"),
-								}
-							}
-						}
-						None => eprintln!("Channel index out of bounds"),
+				CV(ch_index, pitch, pres, id) => {
+					let ch = &mut self.channels[ch_index];
+					if !ch.mute {
+						ch.instrument.cv(pitch, pres, id);
 					}
 				}
-
-				Mute(ch_index, mute) => match self.channels.get_mut(ch_index) {
-					Some(ch) => ch.mute = mute,
-					None => eprintln!("Channel index out of bounds"),
-				},
-				BypassEffect(ch_index, fx_index, bypass) => match self.channels.get_mut(ch_index) {
-					Some(ch) => {
-						if fx_index == 0 {
-							eprintln!("Bypass instrument is not supported");
-						} else {
-							match ch.effects.get_mut(fx_index - 1) {
-								Some(e) => e.bypassed = bypass,
-								None => eprintln!("Fx index out of bounds"),
-							}
-						}
+				Note(ch_index, pitch, vel, id) => {
+					let ch = &mut self.channels[ch_index];
+					if !ch.mute {
+						ch.instrument.note(pitch, vel, id);
 					}
-					None => eprintln!("Channel index out of bounds"),
-				},
+				}
+				Parameter(ch_index, device_index, index, val) => {
+					let ch = &mut self.channels[ch_index];
+					if device_index == 0 {
+						ch.instrument.set_parameter(index, val);
+					} else {
+						ch.effects[device_index - 1]
+							.effect
+							.set_parameter(index, val);
+					}
+				}
+				Mute(ch_index, mute) => self.channels[ch_index].mute = mute,
+				Bypass(ch_index, device_index, bypass) => {
+					let ch = &mut self.channels[ch_index];
+					if device_index == 0 {
+						eprintln!("Bypass instrument is not supported");
+					} else {
+						ch.effects[device_index - 1].bypassed = bypass;
+					}
+				}
 				ReorderEffect(ch_index, old_index, new_index) => {
-					match self.channels.get_mut(ch_index) {
-						Some(ch) => {
-							if old_index == 0 || new_index == 0 {
-								eprintln!("Indices must be larger than 0");
-							} else {
-								// TODO: may panic
-								let e = ch.effects.remove(old_index - 1);
-								ch.effects.insert(new_index - 1, e);
-							}
-						}
-						None => eprintln!("Channel index out of bounds"),
-					}
+					let ch = &mut self.channels[ch_index];
+					let e = ch.effects.remove(old_index);
+					ch.effects.insert(new_index, e);
 				}
 			}
 		}

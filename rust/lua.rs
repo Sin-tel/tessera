@@ -28,7 +28,7 @@ pub enum AudioMessage {
 	Note(usize, f32, f32, usize),
 	Parameter(usize, usize, usize, f32),
 	Mute(usize, bool),
-	BypassEffect(usize, usize, bool),
+	Bypass(usize, usize, bool),
 	ReorderEffect(usize, usize, usize),
 	// Swap(?),
 	//
@@ -84,9 +84,14 @@ impl UserData for LuaData {
 
 		methods.add_method_mut(
 			"sendCv",
-			|_, data, (ch, pitch, pres, id): (usize, f32, f32, Option<usize>)| {
+			|_, data, (channel_index, pitch, pres, id): (usize, f32, f32, Option<usize>)| {
 				if let LuaData(Some(ud)) = data {
-					ud.send_message(AudioMessage::CV(ch, pitch, pres, id.unwrap_or(0)));
+					ud.send_message(AudioMessage::CV(
+						channel_index - 1,
+						pitch,
+						pres,
+						id.unwrap_or(0),
+					));
 				}
 				Ok(())
 			},
@@ -94,29 +99,37 @@ impl UserData for LuaData {
 
 		methods.add_method_mut(
 			"sendNote",
-			|_, data, (ch, pitch, vel, id): (usize, f32, f32, Option<usize>)| {
+			|_, data, (channel_index, pitch, vel, id): (usize, f32, f32, Option<usize>)| {
 				if let LuaData(Some(ud)) = data {
-					ud.send_message(AudioMessage::Note(ch, pitch, vel, id.unwrap_or(0)));
+					ud.send_message(AudioMessage::Note(
+						channel_index - 1,
+						pitch,
+						vel,
+						id.unwrap_or(0),
+					));
 				}
 				Ok(())
 			},
 		);
 
-		methods.add_method_mut("sendMute", |_, data, (ch, mute): (usize, bool)| {
-			if let LuaData(Some(ud)) = data {
-				ud.send_message(AudioMessage::Mute(ch, mute));
-			}
-			Ok(())
-		});
+		methods.add_method_mut(
+			"sendMute",
+			|_, data, (channel_index, mute): (usize, bool)| {
+				if let LuaData(Some(ud)) = data {
+					ud.send_message(AudioMessage::Mute(channel_index - 1, mute));
+				}
+				Ok(())
+			},
+		);
 
 		methods.add_method_mut(
 			"sendParameter",
 			|_, data, (channel_index, device_index, index, value): (usize, usize, usize, f32)| {
 				if let LuaData(Some(ud)) = data {
 					ud.send_message(AudioMessage::Parameter(
-						channel_index,
-						device_index,
-						index,
+						channel_index - 1,
+						device_index, // don't need -1 here since device index is 0 for instrument and 1.. for fx
+						index - 1,
 						value,
 					));
 				}
@@ -125,14 +138,10 @@ impl UserData for LuaData {
 		);
 
 		methods.add_method_mut(
-			"bypassEffect",
-			|_, data, (channel_index, effect_index, bypass): (usize, usize, bool)| {
+			"bypass",
+			|_, data, (channel_index, device_index, bypass): (usize, usize, bool)| {
 				if let LuaData(Some(ud)) = data {
-					ud.send_message(AudioMessage::BypassEffect(
-						channel_index,
-						effect_index,
-						bypass,
-					));
+					ud.send_message(AudioMessage::Bypass(channel_index, device_index, bypass));
 				}
 				Ok(())
 			},
@@ -143,9 +152,9 @@ impl UserData for LuaData {
 			|_, data, (channel_index, old_index, new_index): (usize, usize, usize)| {
 				if let LuaData(Some(ud)) = data {
 					ud.send_message(AudioMessage::ReorderEffect(
-						channel_index,
-						old_index,
-						new_index,
+						channel_index - 1,
+						old_index - 1,
+						new_index - 1,
 					));
 				}
 				Ok(())
@@ -180,7 +189,7 @@ impl UserData for LuaData {
 			check_lock_poison(data);
 			if let LuaData(Some(ud)) = data {
 				let mut render = ud.m_render.lock().expect("Failed to get lock.");
-				render.remove_channel(index);
+				render.remove_channel(index - 1);
 			}
 			Ok(())
 		});
@@ -191,7 +200,7 @@ impl UserData for LuaData {
 				check_lock_poison(data);
 				if let LuaData(Some(ud)) = data {
 					let mut render = ud.m_render.lock().expect("Failed to get lock.");
-					render.add_effect(channel_index, effect_number);
+					render.add_effect(channel_index - 1, effect_number);
 				}
 				Ok(())
 			},
@@ -203,7 +212,7 @@ impl UserData for LuaData {
 				check_lock_poison(data);
 				if let LuaData(Some(ud)) = data {
 					let mut render = ud.m_render.lock().expect("Failed to get lock.");
-					render.remove_effect(channel_index, effect_index);
+					render.remove_effect(channel_index - 1, effect_index - 1);
 				}
 				Ok(())
 			},

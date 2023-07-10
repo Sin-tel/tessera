@@ -208,6 +208,10 @@ function love.keypressed(key, isrepeat)
 		return
 	end
 
+	local ctrl = love.keyboard.isDown("lctrl", "rctrl")
+	local shift = love.keyboard.isDown("lshift", "rshift")
+	local alt = love.keyboard.isDown("lalt", "ralt")
+
 	if key == "escape" then
 		love.event.quit()
 	elseif key == "k" then
@@ -217,16 +221,35 @@ function love.keypressed(key, isrepeat)
 		else
 			audio_status = "request"
 		end
-	elseif key == "b" then
+	elseif key == "p" then
 		backend:setPaused(not backend:paused())
-	elseif key == "s" then
+	elseif key == "s" and ctrl then
 		renderWav()
-	elseif key == "a" then
-		-- channelHandler:add("sine")
-		-- channelHandler:add("wavetable")
-		-- channelHandler:add("analog")
+	elseif key == "a" and ctrl then
 		channelHandler:add("fm")
-		-- print(#channelHandler.list)
+	elseif key == "down" and shift then
+		local ch = selection.channel
+		local d = selection.device
+		if ch and d then
+			channelHandler:reorderEffect(ch, d, 1)
+		end
+	elseif key == "up" and shift then
+		local ch = selection.channel
+		local device = selection.device
+		if ch and device then
+			channelHandler:reorderEffect(ch, device, -1)
+		end
+	elseif key == "delete" then
+		local ch = selection.channel
+		if ch then
+			if selection.device then
+				channelHandler:removeEffect(ch, selection.device)
+			else
+				channelHandler:remove(ch)
+				selection.channel = nil
+			end
+			selection.device = nil
+		end
 	end
 end
 
