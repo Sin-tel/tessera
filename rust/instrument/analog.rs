@@ -57,7 +57,7 @@ pub struct Analog {
 impl Instrument for Analog {
 	fn new(sample_rate: f32) -> Self {
 		Analog {
-			freq: SmoothExp::new(20.0, sample_rate),
+			freq: SmoothExp::new(8.0, sample_rate),
 			gate: SmoothExp::new(2.0, sample_rate),
 			pres: AttackRelease::new(50.0, 120.0, sample_rate),
 			sample_rate,
@@ -149,11 +149,13 @@ impl Instrument for Analog {
 		} else {
 			let f = pitch_to_hz(pitch) / self.sample_rate;
 			self.freq.set(f);
+			// make it less sensitive to velocity
+			let v = vel * (2. - vel);
+			self.envelope.set_vel(v);
+
 			self.gate.set(0.3);
 			self.update_filter();
 			if !(self.legato && self.note_on) {
-				// make it less sensitive to velocity
-				let v = vel * (2. - vel);
 				self.envelope.note_on(v);
 				self.freq.immediate();
 				// TODO: if attack is really fast the filter should be set to max immediately

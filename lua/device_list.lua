@@ -35,7 +35,7 @@ deviceList.instruments.analog = {
 		{ "mix pulse", "slider", { default = -INF, t = "dB" } },
 		{ "mix saw", "slider", { default = 0, t = "dB" } },
 		{ "mix sub", "slider", { default = -INF, t = "dB" } },
-		{ "mix noise", "slider", { default = -INF, t = "dB" } },
+		{ "mix noise", "slider", { default = -30, t = "dB" } },
 		{ "vcf mode", "selector", { "lowpass", "bandpass", "highpass" } },
 		{ "vcf freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
 		{ "vcf res", "slider", { default = 0.3, min = 0.0, max = 1.25 } },

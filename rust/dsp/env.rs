@@ -143,6 +143,10 @@ impl Adsr {
 		self.stage = AdsrStage::Release;
 	}
 
+	pub fn set_vel(&mut self, vel: f32) {
+		self.vel = vel;
+	}
+
 	pub fn set_attack(&mut self, attack: f32) {
 		self.attack = time_constant_linear(attack, self.sample_rate);
 	}

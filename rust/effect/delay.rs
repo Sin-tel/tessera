@@ -7,6 +7,8 @@ use crate::effect::Effect;
 // max length in seconds
 const MAX_LEN: f32 = 1.0;
 
+// TODO: run LFO at block rate
+
 #[derive(Debug)]
 pub struct Delay {
 	tracks: [Track; 2],
