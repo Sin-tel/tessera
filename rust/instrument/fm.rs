@@ -29,10 +29,8 @@ pub struct Fm {
 
 const N_VOICES: usize = 16;
 
-#[allow(dead_code)] // sample_rate is not read atm
 #[derive(Debug, Default)]
 struct Voice {
-	sample_rate: f32,
 	active: bool,
 	accum: f32,
 	accum2: f32,
@@ -58,7 +56,7 @@ impl Voice {
 
 	fn set_modulator(&mut self, ratio: f32, ratio_fine: f32, offset: f32) {
 		self.freq2
-			.set((ratio + ratio_fine) * self.freq.target() + offset)
+			.set((ratio + ratio_fine) * self.freq.target() + offset);
 	}
 }
 

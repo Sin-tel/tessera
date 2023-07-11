@@ -4,6 +4,7 @@ pub mod delay;
 pub mod drive;
 pub mod gain;
 pub mod pan;
+pub mod reverb;
 
 pub trait Effect {
 	fn new(sample_rate: f32) -> Self

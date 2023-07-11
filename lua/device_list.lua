@@ -119,4 +119,13 @@ deviceList.effects.delay = {
 	},
 }
 
+deviceList.effects.reverb = {
+	number = 4,
+	parameters = {
+		{ "dry wet", "slider", { default = 0.33 } },
+		{ "size", "slider", { default = 0.8, min = 0.3, max = 1.0 } },
+		{ "decay", "slider", { default = 1.3, min = 0.25, max = 16.0, t = "log" } },
+	},
+}
+
 return deviceList

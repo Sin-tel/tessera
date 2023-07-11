@@ -10,7 +10,6 @@ pub struct DelayLine {
 	time_prev: f32,
 }
 
-#[allow(dead_code)]
 impl DelayLine {
 	pub fn new(sample_rate: f32, len: f32) -> Self {
 		Self {
@@ -38,9 +37,17 @@ impl DelayLine {
 	}
 
 	#[must_use]
-	pub fn go_back_int(&mut self, time: f32) -> f32 {
+	pub fn go_back_int(&self, time: f32) -> f32 {
 		let d_int = (time * self.sample_rate).floor() as isize;
 		self.buf[self.pos - d_int]
+	}
+
+	#[must_use]
+	pub fn allpass(&mut self, s: f32, k_ap: f32, time: f32) -> f32 {
+		let d = self.go_back_int(time);
+		let v = s - k_ap * d;
+		self.push(v);
+		k_ap * v + d
 	}
 
 	// pub fn go_back_int_s(&mut self, samples: isize) -> f32 {
@@ -48,7 +55,7 @@ impl DelayLine {
 	// }
 
 	#[must_use]
-	pub fn go_back_linear(&mut self, time: f32) -> f32 {
+	pub fn go_back_linear(&self, time: f32) -> f32 {
 		let delay = time * self.sample_rate;
 		let (d_int, frac) = make_isize_frac(delay);
 
