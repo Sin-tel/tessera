@@ -4,7 +4,7 @@ use crate::dsp::smooth::*;
 use crate::dsp::*;
 use crate::instrument::*;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Sine {
 	accum: f32,
 	freq: SmoothExp,
@@ -23,7 +23,10 @@ impl Instrument for Sine {
 			freq: SmoothExp::new(2.0, sample_rate),
 			vel,
 			sample_rate,
-			..Default::default()
+			fixed: false,
+			accum: 0.,
+			fixed_freq: 0.01,
+			fixed_gain: 1.,
 		}
 	}
 

@@ -24,8 +24,6 @@ use crate::instrument::*;
 
 const MAX_F: f32 = 20_000.0;
 
-// TODO: Default would be nice to have
-// #[derive(Default)]
 pub struct Wavetable {
 	accum: f32,
 	freq: SmoothExp,

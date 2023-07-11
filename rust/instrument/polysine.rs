@@ -16,7 +16,7 @@ pub struct Polysine {
 
 const N_VOICES: usize = 16;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Voice {
 	accum: f32,
 	freq: SmoothExp,
@@ -33,7 +33,10 @@ impl Voice {
 		Self {
 			freq: SmoothExp::new(2.0, sample_rate),
 			vel,
-			..Default::default()
+			accum: 0.,
+			note_on: false,
+			active: false,
+			prev: 0.,
 		}
 	}
 }

@@ -11,7 +11,7 @@ use crate::instrument::*;
 // TODO: pitch env
 // TODO: try ADAA here as well
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Fm {
 	voices: Vec<Voice>,
 	sample_rate: f32,
@@ -29,7 +29,7 @@ pub struct Fm {
 
 const N_VOICES: usize = 16;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Voice {
 	active: bool,
 	accum: f32,
@@ -48,9 +48,14 @@ impl Voice {
 		Self {
 			freq: SmoothExp::new(10.0, sample_rate),
 			freq2: SmoothExp::new(10.0, sample_rate),
-			env: Adsr::new(2.0, 100.0, 0.25, 10., sample_rate),
+			env: Adsr::new(sample_rate),
 			pres: AttackRelease::new(20.0, 50.0, sample_rate),
-			..Default::default()
+			active: false,
+			accum: 0.,
+			accum2: 0.,
+			prev: 0.,
+			vel: 0.,
+			noise_level: 0.,
 		}
 	}
 
@@ -67,15 +72,19 @@ impl Instrument for Fm {
 			voices.push(Voice::new(sample_rate));
 		}
 
-		let noise_decay = 1.0 - time_constant(20., sample_rate);
-
 		Fm {
 			voices,
 			dc_killer: DcKiller::new(sample_rate),
 			sample_rate,
+
+			rng: Rng::new(),
 			feedback: 0.,
-			noise_decay,
-			..Default::default()
+			depth: 0.,
+			ratio: 0.,
+			ratio_fine: 0.,
+			offset: 0.,
+			noise_mod: 0.,
+			noise_decay: 0.,
 		}
 	}
 

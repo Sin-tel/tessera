@@ -3,7 +3,7 @@
 use crate::dsp::prewarp;
 use crate::dsp::smooth::SmoothLinear;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Skf {
 	sample_rate: f32,
 	f: SmoothLinear,

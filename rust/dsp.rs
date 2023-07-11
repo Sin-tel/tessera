@@ -158,9 +158,3 @@ impl DcKiller {
 		s - self.z
 	}
 }
-
-impl Default for DcKiller {
-	fn default() -> Self {
-		Self::new(44100.)
-	}
-}

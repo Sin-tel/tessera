@@ -23,7 +23,7 @@ enum FilterMode {
 	Highpass,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Analog {
 	freq: SmoothExp,
 	gate: SmoothExp,
@@ -56,18 +56,33 @@ pub struct Analog {
 
 impl Instrument for Analog {
 	fn new(sample_rate: f32) -> Self {
-		Analog {
+		Self {
 			freq: SmoothExp::new(8.0, sample_rate),
 			gate: SmoothExp::new(2.0, sample_rate),
 			pres: AttackRelease::new(50.0, 120.0, sample_rate),
 			sample_rate,
-			envelope: Adsr::new(2.0, 100.0, 0.25, 10., sample_rate),
+			envelope: Adsr::new(sample_rate),
 			filter: Skf::new(2.0 * sample_rate),
 			dc_killer: DcKiller::new(sample_rate),
-			legato: true,
+			accum: 0.,
+			upsampler: Default::default(),
+			downsampler: Default::default(),
+			z: 0.,
+			rng: Rng::new(),
+			note_on: false,
 
 			pulse_width: SmoothLinear::new(20.0, sample_rate),
-			..Default::default()
+			mix_pulse: 0.,
+			mix_saw: 0.,
+			mix_sub: 0.,
+			mix_noise: 0.,
+			vcf_mode: Default::default(),
+			vcf_cutoff: 0.,
+			vcf_res: 0.,
+			vcf_env: 0.,
+			vcf_kbd: 0.,
+			legato: true,
+			use_gate: false,
 		}
 	}
 

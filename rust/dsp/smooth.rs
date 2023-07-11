@@ -183,18 +183,6 @@ impl SmoothBuffer {
 	}
 }
 
-impl Default for SmoothExp {
-	fn default() -> Self {
-		Self::new_direct(0.001)
-	}
-}
-
-impl Default for SmoothLinear {
-	fn default() -> Self {
-		Self::new_steps(64)
-	}
-}
-
 impl Default for SmoothBuffer {
 	fn default() -> Self {
 		Self::new()

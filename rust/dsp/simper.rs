@@ -12,7 +12,7 @@
 use crate::dsp::smooth::SmoothLinear;
 use crate::dsp::{from_db, prewarp};
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Filter {
 	sample_rate: f32,
 	s1: f32,
@@ -37,7 +37,9 @@ impl Filter {
 			m0: SmoothLinear::new_steps(64),
 			m1: SmoothLinear::new_steps(64),
 			m2: SmoothLinear::new_steps(64),
-			..Default::default()
+
+			s1: 0.,
+			s2: 0.,
 		}
 	}
 

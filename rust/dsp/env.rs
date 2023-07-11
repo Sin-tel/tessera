@@ -94,13 +94,13 @@ pub struct Adsr {
 }
 
 impl Adsr {
-	pub fn new(attack: f32, decay: f32, sustain: f32, release: f32, sample_rate: f32) -> Self {
+	pub fn new(sample_rate: f32) -> Self {
 		Self {
-			attack: time_constant_linear(attack, sample_rate),
-			attack_step: 1.0,
-			decay: time_constant(decay, sample_rate),
-			sustain,
-			release: 1. - time_constant(release, sample_rate),
+			attack: 1.,
+			attack_step: 1.,
+			decay: 1.,
+			sustain: 1.,
+			release: 0.,
 			value: 0.,
 			vel: 1.,
 			stage: AdsrStage::Release,
@@ -161,17 +161,5 @@ impl Adsr {
 
 	pub fn set_release(&mut self, release: f32) {
 		self.release = 1.0 - time_constant(release, self.sample_rate);
-	}
-}
-
-impl Default for Adsr {
-	fn default() -> Self {
-		Self::new(1., 1., 1., 1., 44100.)
-	}
-}
-
-impl Default for AttackRelease {
-	fn default() -> Self {
-		Self::new_direct(0.005, 0.001)
 	}
 }
