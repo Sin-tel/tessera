@@ -1,33 +1,47 @@
+use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::resample::{Downsampler51, Upsampler19};
-use crate::dsp::DcKiller;
+use crate::dsp::simper::Filter;
+use crate::dsp::*;
 use crate::effect::Effect;
+use std::f32::consts::SQRT_2;
 
 // TODO: store previous sample eval of antiderivative
-// TODO: add some shelving / lowpass / higpass shaping
-// TODO: dry/wet, delay compensation?
+// TODO: dry/wet delay compensation  (half sample)
 
-#[derive(Debug, Default)]
+const Q: f32 = 0.5 * SQRT_2;
+
+#[derive(Debug)]
 pub struct Drive {
 	tracks: [Track; 2],
 	gain: f32,
+	post_gain: f32,
 	oversample_mode: usize,
 	bias: f32,
 	hard: bool,
+	balance: f32,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Track {
 	prev: f32,
 	upsampler: Upsampler19,
 	downsampler: Downsampler51,
 	dc_killer: DcKiller,
+	pre_filter: Filter,
+	post_filter: Filter,
+	buffer: [f32; MAX_BUF_SIZE],
 }
 
 impl Track {
 	fn new(sample_rate: f32) -> Self {
 		Self {
+			prev: 0.,
+			upsampler: Upsampler19::new(),
+			downsampler: Downsampler51::new(),
 			dc_killer: DcKiller::new(sample_rate),
-			..Default::default()
+			pre_filter: Filter::new(sample_rate),
+			post_filter: Filter::new(sample_rate),
+			buffer: [0.; MAX_BUF_SIZE],
 		}
 	}
 }
@@ -35,35 +49,41 @@ impl Track {
 impl Effect for Drive {
 	fn new(sample_rate: f32) -> Self {
 		Drive {
-			gain: 1.0,
 			tracks: [Track::new(sample_rate), Track::new(sample_rate)],
-			..Default::default()
+			gain: 1.,
+			post_gain: 1.,
+			oversample_mode: 0,
+			bias: 0.,
+			hard: false,
+			balance: 0.,
 		}
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
+		for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+			for (sample, dry) in buf.iter_mut().zip(track.buffer.iter_mut()) {
+				*dry = *sample;
+				let s = track.pre_filter.process(*sample);
+				*sample = s * self.gain + self.bias;
+			}
+		}
+
 		match self.oversample_mode {
 			// 1st order ADAA
 			0 => {
 				if self.hard {
-					for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-						for sample in s.iter_mut() {
-							let x = (*sample + self.bias) * self.gain;
-
-							let out = adaa_hard(x, track.prev);
-
-							*sample = track.dc_killer.process(out);
+					for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+						for sample in buf.iter_mut() {
+							let x = *sample;
+							*sample = adaa_hard(x, track.prev);
 							track.prev = x;
 						}
 					}
 				} else {
-					for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-						for sample in s.iter_mut() {
-							let x = (*sample + self.bias) * self.gain;
-
-							let out = adaa_soft(x, track.prev);
-
-							*sample = track.dc_killer.process(out);
+					for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+						for sample in buf.iter_mut() {
+							let x = *sample;
+							*sample = adaa_soft(x, track.prev);
 							track.prev = x;
 						}
 					}
@@ -72,35 +92,27 @@ impl Effect for Drive {
 			// 2x oversample + ADAA
 			1 => {
 				if self.hard {
-					for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-						for sample in s.iter_mut() {
-							let x = (*sample + self.bias) * self.gain;
-
-							let (u1, u2) = track.upsampler.process(x);
+					for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+						for sample in buf.iter_mut() {
+							let (u1, u2) = track.upsampler.process(*sample);
 
 							let res1 = adaa_hard(u1, track.prev);
 							let res2 = adaa_hard(u2, u1);
 							track.prev = u2;
 
-							let out = track.downsampler.process(res1, res2);
-
-							*sample = track.dc_killer.process(out);
+							*sample = track.downsampler.process(res1, res2);
 						}
 					}
 				} else {
-					for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-						for sample in s.iter_mut() {
-							let x = (*sample + self.bias) * self.gain;
-
-							let (u1, u2) = track.upsampler.process(x);
+					for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+						for sample in buf.iter_mut() {
+							let (u1, u2) = track.upsampler.process(*sample);
 
 							let res1 = adaa_soft(u1, track.prev);
 							let res2 = adaa_soft(u2, u1);
 							track.prev = u2;
 
-							let out = track.downsampler.process(res1, res2);
-
-							*sample = track.dc_killer.process(out);
+							*sample = track.downsampler.process(res1, res2);
 						}
 					}
 				}
@@ -108,29 +120,42 @@ impl Effect for Drive {
 			// naive (not used)
 			_ => {
 				if self.hard {
-					for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-						for sample in s.iter_mut() {
-							let x = (*sample + self.bias) * self.gain;
-							*sample = track.dc_killer.process(clip_hard(x));
+					for buf in buffer.iter_mut() {
+						for sample in buf.iter_mut() {
+							*sample = clip_hard(*sample);
 						}
 					}
 				} else {
-					for (s, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-						for sample in s.iter_mut() {
-							let x = (*sample + self.bias) * self.gain;
-							*sample = track.dc_killer.process(clip_soft(x));
+					for buf in buffer.iter_mut() {
+						for sample in buf.iter_mut() {
+							*sample = clip_soft(*sample);
 						}
 					}
 				}
 			}
 		}
+
+		let post_gain = self.post_gain / self.gain;
+
+		for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+			for (sample, dry) in buf.iter_mut().zip(track.buffer) {
+				let s = track.post_filter.process(*sample - self.bias) * post_gain;
+				*sample = track.dc_killer.process(lerp(dry, s, self.balance));
+			}
+		}
 	}
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
-			0 => self.hard = value > 0.5,
-			1 => self.gain = value,
-			2 => self.bias = value,
-			3 => self.oversample_mode = value as usize,
+			0 => self.balance = value,
+			1 => self.hard = value > 0.5,
+			2 => self.gain = from_db(value),
+			3 => self.post_gain = from_db(value),
+			4 => self.bias = value,
+			5 => self.tracks.iter_mut().for_each(|v| {
+				v.pre_filter.set_tilt(700., Q, -value);
+				v.post_filter.set_tilt(700., Q, value);
+			}),
+			6 => self.oversample_mode = value as usize,
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}

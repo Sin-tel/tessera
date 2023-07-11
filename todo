@@ -71,7 +71,7 @@ Rust
 [ ] Poll audio/midi settings
 [x] Reset audio driver to change settings in ASIO panel
 [x] Basic delay
-[ ] Basic reverb
+[x] Basic reverb
 [ ] Phaser
 [ ] Chorus/vibrato
 [ ] Tremolo
