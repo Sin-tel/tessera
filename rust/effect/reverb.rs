@@ -32,6 +32,7 @@ pub struct Reverb {
 	size: SmoothExp,
 	decay: f32,
 	feedback: f32,
+	mod_amount: f32,
 }
 
 impl Effect for Reverb {
@@ -53,6 +54,7 @@ impl Effect for Reverb {
 			size: SmoothExp::new(100., sample_rate),
 			decay: 0.,
 			feedback: 0.,
+			mod_amount: 0.,
 		}
 	}
 
@@ -64,12 +66,14 @@ impl Effect for Reverb {
 		// update LFOs
 		self.accum1 += 0.851 * n as f32 / self.sample_rate;
 		self.accum1 -= self.accum1.floor();
-		self.lfo1.set(1.0 + 0.005 * sin_cheap(self.accum1));
+		self.lfo1
+			.set(1.0 + 0.010 * self.mod_amount * sin_cheap(self.accum1));
 		self.lfo1.process_buffer(n);
 
 		self.accum2 += 0.497 * n as f32 / self.sample_rate;
 		self.accum2 -= self.accum2.floor();
-		self.lfo2.set(1.0 + 0.008 * sin_cheap(self.accum2));
+		self.lfo2
+			.set(1.0 + 0.016 * self.mod_amount * sin_cheap(self.accum2));
 		self.lfo2.process_buffer(n);
 
 		for (j, (l, r)) in zip(bl.iter_mut(), br.iter_mut()).enumerate() {
@@ -108,8 +112,8 @@ impl Effect for Reverb {
 				v.push(s[i] * gain);
 			}
 
-			let out_l = 0.5 * (d[0] + d[2]);
-			let out_r = 0.5 * (d[1] + d[3]);
+			let out_l = d[2];
+			let out_r = d[3];
 
 			*l = lerp(*l, out_l, self.balance);
 			*r = lerp(*r, out_r, self.balance);
@@ -126,6 +130,7 @@ impl Effect for Reverb {
 				self.decay = value;
 				self.update_feedback();
 			}
+			3 => self.mod_amount = value,
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}
