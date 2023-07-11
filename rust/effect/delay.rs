@@ -1,6 +1,5 @@
 use crate::dsp::delayline::DelayLine;
-// use crate::dsp::simper::Filter;
-use crate::dsp::smooth::SmoothLinear;
+use crate::dsp::smooth::{SmoothExp, SmoothLinear};
 use crate::dsp::*;
 use crate::effect::Effect;
 
@@ -23,7 +22,8 @@ pub struct Delay {
 
 #[derive(Debug)]
 struct Track {
-	delay: SmoothLinear,
+	delay: SmoothExp,
+	delay2: SmoothExp,
 	lfo_accum: f32,
 	lfo_phase: f32,
 	lfo_freq: f32,
@@ -34,7 +34,8 @@ struct Track {
 impl Track {
 	pub fn new(sample_rate: f32, lfo_phase: f32) -> Self {
 		Track {
-			delay: SmoothLinear::new(200.0, sample_rate),
+			delay: SmoothExp::new(200.0, sample_rate),
+			delay2: SmoothExp::new(200.0, sample_rate),
 			delayline: DelayLine::new(sample_rate, MAX_LEN),
 			lfo_accum: 0.,
 			lfo_phase,
@@ -54,7 +55,7 @@ impl Delay {
 	fn update_lfo(&mut self) {
 		self.tracks.iter_mut().for_each(|track| {
 			track.lfo_freq = self.lfo_freq / self.sample_rate;
-			track.lfo_mod.set(0.005 * self.lfo_mod / self.lfo_freq);
+			track.lfo_mod.set(0.002 * self.lfo_mod / self.lfo_freq);
 		})
 	}
 }
@@ -83,8 +84,11 @@ impl Effect for Delay {
 
 				let lfo = lfo_mod * sin_cheap(track.lfo_accum + track.lfo_phase);
 
+				// delay is smoothed twice to get a continuous derivative
 				let delay = track.delay.process();
-				let s = track.delayline.go_back_linear(delay + lfo);
+				track.delay2.set(delay);
+				let delay2 = track.delay2.process();
+				let s = track.delayline.go_back_linear(delay2 + lfo);
 
 				track.delayline.push(input + self.feedback * s);
 				*sample = lerp(input, s, self.balance);

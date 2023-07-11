@@ -76,8 +76,6 @@ function channelHandler:getEffectIndex(ch, effect)
 			return i
 		end
 	end
-
-	error("channel not found" .. ch.name)
 end
 
 function channelHandler:remove(ch)

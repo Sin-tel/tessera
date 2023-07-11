@@ -10,6 +10,8 @@ pub struct Polysine {
 	voices: Vec<Voice>,
 	sample_rate: f32,
 	dc_killer: DcKiller,
+
+	feedback: f32,
 }
 
 const N_VOICES: usize = 16;
@@ -22,7 +24,6 @@ struct Voice {
 	note_on: bool,
 	active: bool,
 	prev: f32,
-	feedback: f32,
 }
 
 impl Voice {
@@ -48,6 +49,7 @@ impl Instrument for Polysine {
 			voices,
 			dc_killer: DcKiller::new(sample_rate),
 			sample_rate,
+			feedback: 0.,
 		}
 	}
 
@@ -62,10 +64,10 @@ impl Instrument for Polysine {
 				voice.accum += f;
 				voice.accum = voice.accum - voice.accum.floor();
 
-				let mut out = (voice.accum * TWO_PI + voice.prev * voice.feedback).sin();
+				let mut out = (voice.accum * TWO_PI + voice.prev * self.feedback).sin();
 				out *= vel;
 
-				voice.prev = out;
+				voice.prev = lerp(voice.prev, out, 0.5);
 
 				*sample += out * 0.5;
 			}
@@ -109,7 +111,7 @@ impl Instrument for Polysine {
 	#[allow(clippy::match_single_binding)]
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
-			0 => self.voices.iter_mut().for_each(|v| v.feedback = value),
+			0 => self.feedback = value,
 			1 => self.voices.iter_mut().for_each(|v| v.vel.set_attack(value)),
 			2 => self
 				.voices
