@@ -137,10 +137,26 @@ deviceList.effects.reverb = {
 deviceList.effects.filter = {
 	number = 5,
 	parameters = {
-		{ "vcf freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
+		{ "freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
 		{ "Q", "slider", { default = DEFAULT_Q, min = 0.5, max = 20, t = "log" } },
-		{ "gain", "slider", { default = 0, min = -24, max = 24 } },
+		{ "gain", "slider", { default = 0, min = -24, max = 24, centered = true } },
 		{ "one pole", "toggle" },
+	},
+}
+
+deviceList.effects.eq = {
+	number = 6,
+	parameters = {
+		{ "low gain", "slider", { default = 0, min = -24, max = 24, centered = true } },
+		{ "band 1 gain", "slider", { default = 0, min = -24, max = 24, centered = true } },
+		{ "band 2 gain", "slider", { default = 0, min = -24, max = 24, centered = true } },
+		{ "high gain", "slider", { default = 0, min = -24, max = 24, centered = true } },
+		{ "low f", "slider", { default = 180, min = 20, max = 20000, fmt = "Hz", t = "log" } },
+		{ "band 1 f", "slider", { default = 400, min = 20, max = 20000, fmt = "Hz", t = "log" } },
+		{ "band 2 f", "slider", { default = 2000, min = 20, max = 20000, fmt = "Hz", t = "log" } },
+		{ "high f", "slider", { default = 6500, min = 20, max = 20000, fmt = "Hz", t = "log" } },
+		{ "band 1 Q", "slider", { default = DEFAULT_Q, min = 0.5, max = 5, t = "log" } },
+		{ "band 2 Q", "slider", { default = DEFAULT_Q, min = 0.5, max = 5, t = "log" } },
 	},
 }
 

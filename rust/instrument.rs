@@ -4,6 +4,25 @@ pub mod polysine;
 pub mod sine;
 pub mod wavetable;
 
+use crate::instrument::{
+	analog::Analog, fm::Fm, polysine::Polysine, sine::Sine, wavetable::Wavetable,
+};
+
+// list of instruments
+pub fn new_instrument(sample_rate: f32, instrument_number: usize) -> Box<dyn Instrument + Send> {
+	match instrument_number {
+		0 => Box::new(Sine::new(sample_rate)),
+		1 => Box::new(Wavetable::new(sample_rate)),
+		2 => Box::new(Analog::new(sample_rate)),
+		3 => Box::new(Fm::new(sample_rate)),
+		4 => Box::new(Polysine::new(sample_rate)),
+		_ => {
+			eprintln!("Instrument with number {instrument_number} not found. Returning default.");
+			Box::new(Sine::new(sample_rate))
+		}
+	}
+}
+
 pub trait Instrument {
 	fn new(sample_rate: f32) -> Self
 	where

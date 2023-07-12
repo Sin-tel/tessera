@@ -24,7 +24,7 @@ impl Instrument for Sine {
 		vel.set_immediate(0.);
 		Sine {
 			sample_rate,
-			freq: SmoothExp::new(2.0, sample_rate),
+			freq: SmoothExp::new(50.0, sample_rate),
 			vel,
 			rng: Rng::new(),
 			fixed: false,

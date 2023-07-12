@@ -19,8 +19,13 @@ function Scope:new(spectrum)
 	new.selector = widgets.Selector:new({ "scope", "spectrum" }, index)
 
 	self.lines = {}
-	for i = 1, 5 do
+	for i = 1, 7 do
 		table.insert(self.lines, 4 ^ (1 - i))
+	end
+
+	self.average = {}
+	for i = 1, 4096 do
+		self.average[i] = 0
 	end
 
 	return new
@@ -42,7 +47,10 @@ function Scope:draw()
 		local spectrum = backend:getSpectrum()
 		if spectrum then
 			local n = #spectrum
-			-- print(n)
+
+			for i = 1, n do
+				self.average[i] = self.average[i] + 1.0 * (spectrum[i] - self.average[i])
+			end
 
 			local tx = w * 0.95
 			local ty = h * 0.1
@@ -60,8 +68,8 @@ function Scope:draw()
 				local x1 = 300 * (math.log(i / n))
 				local x2 = 300 * (math.log((i + 1) / n))
 
-				local y1 = 0.2 * (math.log(spectrum[i]))
-				local y2 = 0.2 * (math.log(spectrum[i + 1]))
+				local y1 = 0.2 * (math.log(self.average[i]))
+				local y2 = 0.2 * (math.log(self.average[i + 1]))
 
 				love.graphics.line(tx + x1 * sx, ty - sy * y1, tx + x2 * sx, ty - sy * y2)
 			end
@@ -106,6 +114,7 @@ function Scope:draw()
 					end
 				end
 			end
+			love.graphics.setColor(theme.ui_text)
 			for i = 1, n - 1 do
 				love.graphics.line(
 					tx + i * sx - x_first,

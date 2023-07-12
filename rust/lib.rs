@@ -21,7 +21,6 @@
 // #![allow(clippy::cast_possible_truncation)]
 
 mod audio;
-mod device;
 pub mod dsp;
 mod effect;
 mod instrument;

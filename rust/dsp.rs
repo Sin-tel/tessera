@@ -9,6 +9,8 @@ pub mod skf;
 pub mod smooth;
 
 pub const TWO_PI: f32 = std::f32::consts::TAU;
+// 1 / sqrt(2)
+pub const BUTTERWORTH_Q: f32 = 0.70710678118;
 
 // reference frequency
 // we use C5 instead of A4 = 440

@@ -1,7 +1,6 @@
 use ringbuf::{HeapConsumer, HeapProducer};
 
 use crate::audio::MAX_BUF_SIZE;
-use crate::device::*;
 use crate::dsp::env::AttackRelease;
 use crate::effect::*;
 use crate::instrument::*;
