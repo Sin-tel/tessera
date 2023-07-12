@@ -1,5 +1,7 @@
 use crate::effect::Effect;
-use crate::effect::{delay::Delay, drive::Drive, gain::Gain, pan::Pan, reverb::Reverb};
+use crate::effect::{
+	delay::Delay, drive::Drive, gain::Gain, pan::Pan, reverb::Reverb, testfilter::TestFilter,
+};
 use crate::instrument::Instrument;
 use crate::instrument::{
 	analog::Analog, fm::Fm, polysine::Polysine, sine::Sine, wavetable::Wavetable,
@@ -28,6 +30,7 @@ pub fn new_effect(sample_rate: f32, effect_number: usize) -> Box<dyn Effect + Se
 		2 => Box::new(Drive::new(sample_rate)),
 		3 => Box::new(Delay::new(sample_rate)),
 		4 => Box::new(Reverb::new(sample_rate)),
+		5 => Box::new(TestFilter::new(sample_rate)),
 		_ => {
 			eprintln!("Effect with number {effect_number} not found. Returning default.");
 			Box::new(Gain::new(sample_rate))

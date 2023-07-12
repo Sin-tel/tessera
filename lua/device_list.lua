@@ -8,6 +8,7 @@ local deviceList = {}
 
 local C5_HZ = 523.2511
 local INF = math.huge
+local DEFAULT_Q = 1 / math.sqrt(2)
 
 deviceList.instruments = {}
 
@@ -17,6 +18,7 @@ deviceList.instruments.sine = {
 		{ "fixed", "toggle" },
 		{ "freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
 		{ "gain", "slider", { default = -12, t = "dB" } },
+		{ "noise", "toggle" },
 	},
 }
 
@@ -129,6 +131,16 @@ deviceList.effects.reverb = {
 		{ "size", "slider", { default = 0.8, min = 0.3, max = 1.0 } },
 		{ "decay", "slider", { default = 1.3, min = 0.5, max = 20.0, t = "log" } },
 		{ "modulation", "slider", { default = 0.5 } },
+	},
+}
+
+deviceList.effects.filter = {
+	number = 5,
+	parameters = {
+		{ "vcf freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
+		{ "Q", "slider", { default = DEFAULT_Q, min = 0.5, max = 20, t = "log" } },
+		{ "gain", "slider", { default = 0, min = -24, max = 24 } },
+		{ "one pole", "toggle" },
 	},
 }
 

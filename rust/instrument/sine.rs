@@ -1,3 +1,4 @@
+use fastrand::Rng;
 use std::iter::zip;
 
 use crate::dsp::smooth::*;
@@ -6,13 +7,15 @@ use crate::instrument::*;
 
 #[derive(Debug)]
 pub struct Sine {
+	sample_rate: f32,
 	accum: f32,
 	freq: SmoothExp,
 	vel: SmoothExp,
-	sample_rate: f32,
+	rng: Rng,
 	fixed: bool,
 	fixed_freq: f32,
 	fixed_gain: f32,
+	noise: bool,
 }
 
 impl Instrument for Sine {
@@ -20,19 +23,30 @@ impl Instrument for Sine {
 		let mut vel = SmoothExp::new(10.0, sample_rate);
 		vel.set_immediate(0.);
 		Sine {
+			sample_rate,
 			freq: SmoothExp::new(2.0, sample_rate),
 			vel,
-			sample_rate,
+			rng: Rng::new(),
 			fixed: false,
 			accum: 0.,
 			fixed_freq: 0.01,
 			fixed_gain: 1.,
+			noise: false,
 		}
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
 
+		if self.noise {
+			self.vel.set(self.fixed_gain);
+			for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
+				let vel = self.vel.process();
+				*l = vel * (self.rng.f32() - 0.5);
+				*r = vel * (self.rng.f32() - 0.5);
+			}
+			return;
+		}
 		if self.fixed {
 			self.freq.set(self.fixed_freq);
 			self.vel.set(self.fixed_gain);
@@ -78,12 +92,9 @@ impl Instrument for Sine {
 					self.vel.set(0.0);
 				}
 			}
-			1 => {
-				self.fixed_freq = value / self.sample_rate;
-			}
-			2 => {
-				self.fixed_gain = value;
-			}
+			1 => self.fixed_freq = value / self.sample_rate,
+			2 => self.fixed_gain = value,
+			3 => self.noise = value > 0.5,
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}

@@ -123,14 +123,14 @@ impl Render {
 		let peak_r = self.peak_r.process();
 		self.send(LuaMessage::Meter(peak_l, peak_r));
 
-		// hardclip
-		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
-			*s = s.clamp(-1.0, 1.0);
-		}
-
 		// Send everything to scope.
 		for s in buffer[0].iter() {
 			self.scope_tx.push(*s).ok(); // Don't really care if its full
+		}
+
+		// hardclip
+		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
+			*s = s.clamp(-1.0, 1.0);
 		}
 	}
 
