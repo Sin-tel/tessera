@@ -5,8 +5,6 @@
 // k = 2 - 2*res
 // res = 1 - 0.5 / Q
 
-// TODO: smoothing should be done by whoever owns the filter, but  this is kind of annoying since theres 6 values
-
 #![allow(dead_code)]
 
 use crate::dsp::smooth::SmoothLinear;
@@ -111,31 +109,37 @@ impl Filter {
 		self.m2.set(0.0);
 	}
 	pub fn set_lowshelf(&mut self, cutoff: f32, q: f32, gain: f32) {
-		let a = from_db(0.5 * gain);
-		let g = prewarp(cutoff / self.sample_rate) / a.sqrt();
+		let a = from_db(0.25 * gain);
+		let g = prewarp(cutoff / self.sample_rate) / a;
 		let k = 1.0 / q;
 		self.set_coefs(g, k);
+
+		let a2 = a * a;
 		self.m0.set(1.0);
-		self.m1.set(k * (a - 1.0));
-		self.m2.set(a * a - 1.0);
+		self.m1.set(k * (a2 - 1.0));
+		self.m2.set(a2 * a2 - 1.0);
 	}
 	pub fn set_highshelf(&mut self, cutoff: f32, q: f32, gain: f32) {
-		let a = from_db(0.5 * gain);
-		let g = prewarp(cutoff / self.sample_rate) * a.sqrt();
+		let a = from_db(0.25 * gain);
+		let g = prewarp(cutoff / self.sample_rate) * a;
 		let k = 1.0 / q;
 		self.set_coefs(g, k);
-		self.m0.set(a * a);
-		self.m1.set(k * (1.0 - a) * a);
-		self.m2.set(1.0 - a * a);
+
+		let a2 = a * a;
+		self.m0.set(a2 * a2);
+		self.m1.set(k * (1.0 - a2) * a2);
+		self.m2.set(1.0 - a2 * a2);
 	}
 	pub fn set_tilt(&mut self, cutoff: f32, q: f32, gain: f32) {
-		let a = from_db(0.5 * gain);
-		let g = prewarp(cutoff / self.sample_rate) * a.sqrt();
+		let a = from_db(0.25 * gain);
+		let g = prewarp(cutoff / self.sample_rate) * a;
 		let k = 1.0 / q;
 		self.set_coefs(g, k);
-		self.m0.set(a);
-		self.m1.set(k * (1.0 - a));
-		self.m2.set(1.0 / a - a);
+
+		let a2 = a * a;
+		self.m0.set(a2);
+		self.m1.set(k * (1.0 - a2));
+		self.m2.set(1.0 / a2 - a2);
 	}
 
 	#[must_use]
