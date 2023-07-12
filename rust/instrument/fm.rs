@@ -1,4 +1,3 @@
-use fastrand::Rng;
 use std::iter::zip;
 
 use crate::dsp::env::*;
@@ -17,14 +16,13 @@ pub struct Fm {
 	sample_rate: f32,
 	dc_killer: DcKiller,
 
-	rng: Rng,
 	feedback: f32,
 	depth: f32,
 	ratio: f32,
 	ratio_fine: f32,
 	offset: f32,
-	noise_mod: f32,
-	noise_decay: f32,
+	pitch_mod: f32,
+	pitch_decay: f32,
 }
 
 const N_VOICES: usize = 16;
@@ -40,7 +38,7 @@ struct Voice {
 	env: Adsr,
 	vel: f32,
 	pres: AttackRelease,
-	noise_level: f32,
+	pitch_env: f32,
 }
 
 impl Voice {
@@ -55,7 +53,7 @@ impl Voice {
 			accum2: 0.,
 			prev: 0.,
 			vel: 0.,
-			noise_level: 0.,
+			pitch_env: 0.,
 		}
 	}
 
@@ -77,14 +75,13 @@ impl Instrument for Fm {
 			dc_killer: DcKiller::new(sample_rate),
 			sample_rate,
 
-			rng: Rng::new(),
 			feedback: 0.,
 			depth: 0.,
 			ratio: 0.,
 			ratio_fine: 0.,
 			offset: 0.,
-			noise_mod: 0.,
-			noise_decay: 0.,
+			pitch_mod: 0.,
+			pitch_decay: 0.,
 		}
 	}
 
@@ -98,13 +95,13 @@ impl Instrument for Fm {
 				let f = voice.freq.process();
 				let f2 = voice.freq2.process();
 
-				voice.noise_level *= self.noise_decay;
+				voice.pitch_env *= self.pitch_decay;
+				let pitch_mod = 1.0 + voice.pitch_env;
 
-				let noise = voice.noise_level * (self.rng.f32() - 0.5);
-				voice.accum += f + noise;
+				voice.accum += f * pitch_mod;
 				voice.accum -= voice.accum.floor();
 
-				voice.accum2 += f2;
+				voice.accum2 += f2 * pitch_mod;
 				voice.accum2 -= voice.accum2.floor();
 
 				let mut prev = voice.prev;
@@ -118,7 +115,7 @@ impl Instrument for Fm {
 
 				// depth and feedback reduction to mitigate aliasing
 				// this stuff is all empirical
-				let z = 40.0 * (self.ratio + 20.0 * feedback) * f;
+				let z = 40.0 * (self.ratio + 10.0 * feedback) * f;
 				let max_d = 1.0 / (z * z);
 				let depth = (self.depth * voice.vel).min(max_d);
 
@@ -167,7 +164,7 @@ impl Instrument for Fm {
 			}
 			voice.active = true;
 
-			voice.noise_level = self.noise_mod;
+			voice.pitch_env = self.pitch_mod;
 		}
 	}
 	fn set_parameter(&mut self, index: usize, value: f32) {
@@ -202,8 +199,8 @@ impl Instrument for Fm {
 				.voices
 				.iter_mut()
 				.for_each(|v| v.env.set_release(value)),
-			9 => self.noise_mod = value * value * 0.05,
-			10 => self.noise_decay = 1.0 - time_constant(value, self.sample_rate),
+			9 => self.pitch_mod = value,
+			10 => self.pitch_decay = 1.0 - time_constant(value, self.sample_rate),
 
 			_ => eprintln!("Parameter with index {index} not found"),
 		}

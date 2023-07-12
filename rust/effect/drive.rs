@@ -1,20 +1,22 @@
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::resample::{Downsampler51, Upsampler19};
 use crate::dsp::simper::Filter;
+use crate::dsp::smooth::SmoothBuffer;
 use crate::dsp::*;
 use crate::effect::Effect;
 use std::f32::consts::SQRT_2;
 
 // TODO: store previous sample eval of antiderivative
-// TODO: dry/wet delay compensation  (half sample)
+// TODO: add proper interpolation for gain and bias
 
 const Q: f32 = 0.5 * SQRT_2;
 
 #[derive(Debug)]
 pub struct Drive {
 	tracks: [Track; 2],
-	gain: f32,
-	post_gain: f32,
+	gain: SmoothBuffer,
+	post_gain: SmoothBuffer,
+	gain_comp: f32,
 	oversample_mode: usize,
 	bias: f32,
 	hard: bool,
@@ -50,8 +52,9 @@ impl Effect for Drive {
 	fn new(sample_rate: f32) -> Self {
 		Drive {
 			tracks: [Track::new(sample_rate), Track::new(sample_rate)],
-			gain: 1.,
-			post_gain: 1.,
+			gain: SmoothBuffer::new(),
+			post_gain: SmoothBuffer::new(),
+			gain_comp: 0.,
 			oversample_mode: 0,
 			bias: 0.,
 			hard: false,
@@ -60,11 +63,18 @@ impl Effect for Drive {
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
+		let n = buffer[0].len();
+		self.gain.process_buffer(n);
+		self.post_gain.process_buffer(n);
+
 		for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-			for (sample, dry) in buf.iter_mut().zip(track.buffer.iter_mut()) {
-				*dry = *sample;
+			// track.buffer.clone_from_slice(buf);
+			buf.iter()
+				.zip(track.buffer.iter_mut())
+				.for_each(|(src, dst)| *dst = *src);
+			for (i, sample) in buf.iter_mut().enumerate() {
 				let s = track.pre_filter.process(*sample);
-				*sample = s * self.gain + self.bias;
+				*sample = s * self.gain.get(i) + self.bias;
 			}
 		}
 
@@ -135,11 +145,9 @@ impl Effect for Drive {
 			}
 		}
 
-		let post_gain = self.post_gain / self.gain;
-
 		for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-			for (sample, dry) in buf.iter_mut().zip(track.buffer) {
-				let s = track.post_filter.process(*sample - self.bias) * post_gain;
+			for (i, (sample, dry)) in buf.iter_mut().zip(track.buffer).enumerate() {
+				let s = track.post_filter.process(*sample - self.bias) * self.post_gain.get(i);
 				*sample = track.dc_killer.process(lerp(dry, s, self.balance));
 			}
 		}
@@ -148,8 +156,15 @@ impl Effect for Drive {
 		match index {
 			0 => self.balance = value,
 			1 => self.hard = value > 0.5,
-			2 => self.gain = from_db(value),
-			3 => self.post_gain = from_db(value),
+			2 => {
+				let gain = from_db(value);
+				self.gain.set(gain);
+				self.post_gain.set(self.gain_comp / gain);
+			}
+			3 => {
+				self.gain_comp = from_db(value);
+				self.post_gain.set(self.gain_comp / self.gain.target());
+			}
 			4 => self.bias = value,
 			5 => self.tracks.iter_mut().for_each(|v| {
 				v.pre_filter.set_tilt(700., Q, -value);

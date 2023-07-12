@@ -66,8 +66,8 @@ deviceList.instruments.fm = {
 		{ "sustain", "slider", { default = -6, t = "dB" } },
 		{ "release", "slider", { default = 50.0, min = 10.0, max = 20000.0, t = "log", fmt = "ms" } },
 
-		{ "noise", "slider", { default = 0.0, min = 0.0, max = 1.0 } },
-		{ "noise env", "slider", { default = 20.0, min = 2.0, max = 5000.0, t = "log", fmt = "ms" } },
+		{ "pitch mod", "slider", { default = 0.0, min = -1.0, max = 1.0, centered = true } },
+		{ "pitch env", "slider", { default = 20.0, min = 2.0, max = 300.0, t = "log", fmt = "ms" } },
 	},
 }
 
