@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 
 pub mod delayline;
 pub mod env;
+pub mod onepole;
 pub mod resample;
 pub mod simper;
 pub mod skf;
@@ -138,6 +139,8 @@ pub fn time_constant_linear(t: f32, sample_rate: f32) -> f32 {
 	1000. / (sample_rate * t)
 }
 
+// This is a 'naive' implementation of a one-pole highpass at 10Hz
+// Since cutoff << sample rate it works fine
 #[derive(Debug)]
 pub struct DcKiller {
 	z: f32,
@@ -146,15 +149,17 @@ pub struct DcKiller {
 
 impl DcKiller {
 	pub fn new(sample_rate: f32) -> Self {
-		// fixed highpass at 10Hz
-		// 1 - exp( -2*pi*10 / f_s) ~ 2*pi*10 / f_s
 		Self {
 			z: 0.,
+
+			// approximation:
+			// 1 - exp( -2*pi*10 / f_s) ~ 2*pi*10 / f_s
 			f: TWO_PI * 10. / sample_rate,
 		}
 	}
 	pub fn process(&mut self, s: f32) -> f32 {
-		self.z += (s - self.z) * self.f;
-		s - self.z
+		let y_hp = s - self.z;
+		self.z += y_hp * self.f;
+		y_hp
 	}
 }

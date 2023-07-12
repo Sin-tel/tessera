@@ -82,12 +82,12 @@ fn pitch_to_hz_bench(bench: &mut Bencher) {
 }
 
 fn delay_go_back_int_bench(bench: &mut Bencher) {
-	let mut line = DelayLine::new(SAMPLE_RATE, 512.0);
+	let line = DelayLine::new(SAMPLE_RATE, 512.0);
 	run(bench, |p| line.go_back_int(p))
 }
 
 fn delay_go_back_linear_bench(bench: &mut Bencher) {
-	let mut line = DelayLine::new(SAMPLE_RATE, 512.0);
+	let line = DelayLine::new(SAMPLE_RATE, 512.0);
 	run(bench, |p| line.go_back_linear(p))
 }
 
@@ -152,6 +152,25 @@ fn svf_bench(bench: &mut Bencher) {
 	})
 }
 
+fn onepole_bench(bench: &mut Bencher) {
+	let mut filter = rust_backend::dsp::onepole::OnePole::new(44100.0);
+	filter.set_lowpass(500.0);
+	let mut i = 0;
+	run(bench, |x| {
+		i += 1;
+		if i >= 64 {
+			i = 0;
+			filter.set_lowpass(x);
+		}
+		filter.process(x)
+	})
+}
+
+fn dckiller_bench(bench: &mut Bencher) {
+	let mut filter = rust_backend::dsp::DcKiller::new(44100.0);
+	run(bench, |x| filter.process(x))
+}
+
 fn skf_bench(bench: &mut Bencher) {
 	let mut filter = rust_backend::dsp::skf::Skf::new(44100.0);
 	filter.set(500.0, 0.7);
@@ -190,6 +209,8 @@ benchmark_group!(
 	// floor_bench,
 	// round_bench,
 	svf_bench,
+	onepole_bench,
+	dckiller_bench,
 	// skf_bench,
 	// upsample_bench,
 	// downsample_bench,
