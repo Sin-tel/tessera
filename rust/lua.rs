@@ -90,7 +90,7 @@ impl UserData for LuaData {
 						channel_index - 1,
 						pitch,
 						pres,
-						id.unwrap_or(0),
+						id.unwrap_or(1) - 1,
 					));
 				}
 				Ok(())
@@ -105,7 +105,7 @@ impl UserData for LuaData {
 						channel_index - 1,
 						pitch,
 						vel,
-						id.unwrap_or(0),
+						id.unwrap_or(1) - 1,
 					));
 				}
 				Ok(())

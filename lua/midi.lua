@@ -3,6 +3,8 @@
 
 -- TODO: handle MPE
 
+-- TODO: not stealing on retrigger same note
+
 local Pitch = require("pitch")
 local backend = require("backend")
 local rtmidi = require("./lib/rtmidi_ffi")
@@ -205,7 +207,7 @@ function M.handleEvent(device, event)
 		voice.note_on = true
 		voice.age = 0
 		local p = Pitch:fromMidi(voice.note)
-		backend:sendNote(channel_index, p.pitch + voice.offset, velocity_curve(voice.vel), new_i - 1)
+		backend:sendNote(channel_index, p.pitch + voice.offset, velocity_curve(voice.vel), new_i)
 	elseif event.name == "note off" then
 		local get_i
 		for i, v in ipairs(device.voices) do
@@ -231,28 +233,28 @@ function M.handleEvent(device, event)
 			if not device.sustain then
 				-- note off pitches are ignored but we send the correct one anyway
 				local p = Pitch:fromMidi(voice.note)
-				backend:sendNote(channel_index, p.pitch + voice.offset, 0, get_i - 1)
+				backend:sendNote(channel_index, p.pitch + voice.offset, 0, get_i)
 			end
 		else
 			-- pop last note in queue
 			voice.note = table.remove(device.queue)
 			local p = Pitch:fromMidi(voice.note)
-			backend:sendNote(channel_index, p.pitch + voice.offset, velocity_curve(voice.vel), get_i - 1)
+			backend:sendNote(channel_index, p.pitch + voice.offset, velocity_curve(voice.vel), get_i)
 		end
 	elseif event.name == "pitchbend" then
 		for i, v in ipairs(device.voices) do
 			v.offset = device.pitchbend_range * event.offset
 			if v.note_on then
-				backend:sendCv(channel_index, v.note + v.offset, v.pres, i - 1)
+				backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
 			end
 		end
-
-		-- TODO: handle pressure
-		-- elseif event.name == "pressure" then
-		-- 	device.pres = event.pres
-		-- 	if device.note then
-		-- 		backend:sendCv(channel_index, device.note + device.offset, device.pres)
-		-- 	end
+	elseif event.name == "pressure" then
+		for i, v in ipairs(device.voices) do
+			v.pres = event.pres
+			if v.note_on then
+				backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
+			end
+		end
 	elseif event.name == "cc" then
 		if event.cc == 64 then
 			-- sustain pedal
@@ -266,7 +268,7 @@ function M.handleEvent(device, event)
 						v.note_on = false
 						-- note off pitches are ignored but we send the correct one anyway
 						local p = Pitch:fromMidi(v.note)
-						backend:sendNote(channel_index, p.pitch + v.offset, 0, i - 1)
+						backend:sendNote(channel_index, p.pitch + v.offset, 0, i)
 					end
 				end
 			end

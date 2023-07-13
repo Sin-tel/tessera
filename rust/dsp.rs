@@ -20,6 +20,7 @@ pub const C5_HZ: f32 = 523.2511;
 pub const DECIBEL_FACTOR: f32 = 0.1660964;
 
 // https://stackoverflow.com/questions/65554112/fast-double-exp2-function-in-c
+// -Inf evaluates to 0.0
 pub fn pow2_cheap(x: f32) -> f32 {
 	const A: f32 = (1 << 23) as f32;
 	let w = x.floor();
@@ -32,6 +33,8 @@ pub fn pow2_cheap(x: f32) -> f32 {
 	f32::from_bits(resi)
 }
 
+// 0.0 evaluates to -126.999
+// negative numbers don't evaluate to NaN but return garbage values
 pub fn log2_cheap(x: f32) -> f32 {
 	const MASK: u32 = !(255 << 23);
 	const A: u32 = 127 << 23;
@@ -66,12 +69,13 @@ pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
 	a + (b - a) * t
 }
 
-// TODO: check if these two correctly handle -Inf and 0 respectively
+// -Inf evaluates to 0.0
 pub fn from_db(x: f32) -> f32 {
 	// (10.0f32).powf(x / 20.0)
 	pow2_cheap(x * DECIBEL_FACTOR)
 }
 
+// 0.0 evaluates to -764.61414
 pub fn to_db(x: f32) -> f32 {
 	log2_cheap(x) / DECIBEL_FACTOR
 }
@@ -89,11 +93,11 @@ pub fn softclip_cubic(x: f32) -> f32 {
 
 // branchless approximation of sin(2*pi*x)
 pub fn sin_cheap(x: f32) -> f32 {
+	// (TWO_PI * x).sin()
 	let x = x - x.floor();
 	let a = f32::from(x > 0.5);
 	let b = 2.0 * x - 1.0 - 2.0 * a;
 	(2.0 * a - 1.0) * (x * b + a) / (0.25 * x * b + 0.15625 + 0.25 * a)
-	// (TWO_PI * x).sin()
 }
 
 pub fn make_usize_frac(x: f32) -> (usize, f32) {

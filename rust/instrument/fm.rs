@@ -47,7 +47,7 @@ impl Voice {
 			freq: SmoothExp::new(10.0, sample_rate),
 			freq2: SmoothExp::new(10.0, sample_rate),
 			env: Adsr::new(sample_rate),
-			pres: AttackRelease::new(20.0, 50.0, sample_rate),
+			pres: AttackRelease::new(80.0, 300.0, sample_rate),
 			active: false,
 			accum: 0.,
 			accum2: 0.,
@@ -109,7 +109,7 @@ impl Instrument for Fm {
 					prev *= prev;
 				}
 				let feedback = self.feedback.abs();
-				let op2 = sin_cheap(voice.accum2 + feedback * prev) /* * mod_env */ ;
+				let op2 = sin_cheap(voice.accum2 + feedback * prev);
 
 				voice.prev = lerp(voice.prev, op2, 0.3);
 
@@ -119,7 +119,7 @@ impl Instrument for Fm {
 				let max_d = 1.0 / (z * z);
 				let depth = (self.depth * voice.vel).min(max_d);
 
-				let mut out = sin_cheap(voice.accum + depth * op2 * (pres + 1.0));
+				let mut out = sin_cheap(voice.accum + (depth + pres) * op2);
 				out *= env;
 
 				*sample += 0.5 * out;
@@ -138,11 +138,12 @@ impl Instrument for Fm {
 		}
 	}
 
-	fn cv(&mut self, pitch: f32, _: f32, id: usize) {
+	fn cv(&mut self, pitch: f32, pres: f32, id: usize) {
 		let voice = &mut self.voices[id];
 		let p = pitch_to_hz(pitch) / self.sample_rate;
 		voice.freq.set(p);
 		voice.set_modulator(self.ratio, self.ratio_fine, self.offset);
+		voice.pres.set(pres);
 	}
 
 	fn note(&mut self, pitch: f32, vel: f32, id: usize) {
