@@ -84,6 +84,11 @@ deviceList.instruments.polysine = {
 	},
 }
 
+deviceList.instruments.epiano = {
+	number = 5,
+	parameters = {},
+}
+
 deviceList.effects = {}
 
 deviceList.effects.pan = {

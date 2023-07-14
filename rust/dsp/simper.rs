@@ -41,6 +41,15 @@ impl Filter {
 		}
 	}
 
+	pub fn immediate(&mut self) {
+		self.a1.immediate();
+		self.a2.immediate();
+		self.a3.immediate();
+		self.m0.immediate();
+		self.m1.immediate();
+		self.m2.immediate();
+	}
+
 	fn set_coefs(&mut self, g: f32, k: f32) {
 		let a1 = 1.0 / (1.0 + g * (g + k));
 		let a2 = g * a1;

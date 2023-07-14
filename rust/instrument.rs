@@ -1,11 +1,12 @@
 pub mod analog;
+pub mod epiano;
 pub mod fm;
 pub mod polysine;
 pub mod sine;
 pub mod wavetable;
 
 use crate::instrument::{
-	analog::Analog, fm::Fm, polysine::Polysine, sine::Sine, wavetable::Wavetable,
+	analog::Analog, epiano::Epiano, fm::Fm, polysine::Polysine, sine::Sine, wavetable::Wavetable,
 };
 
 // list of instruments
@@ -16,6 +17,7 @@ pub fn new_instrument(sample_rate: f32, instrument_number: usize) -> Box<dyn Ins
 		2 => Box::new(Analog::new(sample_rate)),
 		3 => Box::new(Fm::new(sample_rate)),
 		4 => Box::new(Polysine::new(sample_rate)),
+		5 => Box::new(Epiano::new(sample_rate)),
 		_ => {
 			eprintln!("Instrument with number {instrument_number} not found. Returning default.");
 			Box::new(Sine::new(sample_rate))
