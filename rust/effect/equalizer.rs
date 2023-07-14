@@ -94,7 +94,7 @@ impl Effect for Equalizer {
 				s = track.bell2.process(s);
 				s = track.high.process(s);
 
-				*sample = s
+				*sample = s;
 			}
 		}
 	}
@@ -103,13 +103,13 @@ impl Effect for Equalizer {
 		match index {
 			0 => {
 				self.low_gain = value;
-				self.low_cut = value < -23.
+				self.low_cut = value < -23.;
 			}
 			1 => self.bell1_gain = value,
 			2 => self.bell2_gain = value,
 			3 => {
 				self.high_gain = value;
-				self.high_cut = value < -23.
+				self.high_cut = value < -23.;
 			}
 			4 => self.low_cutoff = value,
 			5 => self.bell1_cutoff = value,

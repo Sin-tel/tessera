@@ -70,6 +70,8 @@ deviceList.instruments.fm = {
 
 		{ "pitch mod", "slider", { default = 0.0, min = -1.0, max = 1.0, centered = true } },
 		{ "pitch env", "slider", { default = 20.0, min = 2.0, max = 300.0, t = "log", fmt = "ms" } },
+
+		{ "keytrack", "slider", { default = 0.4, min = 0.0, max = 1.0 } },
 	},
 }
 

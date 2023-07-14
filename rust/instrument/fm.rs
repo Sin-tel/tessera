@@ -5,10 +5,7 @@ use crate::dsp::smooth::*;
 use crate::dsp::*;
 use crate::instrument::*;
 
-// TODO: phase reset?
 // TODO: ADE env
-// TODO: pitch env
-// TODO: try ADAA here as well
 
 #[derive(Debug)]
 pub struct Fm {
@@ -23,6 +20,7 @@ pub struct Fm {
 	offset: f32,
 	pitch_mod: f32,
 	pitch_decay: f32,
+	keytrack: f32,
 }
 
 const N_VOICES: usize = 16;
@@ -39,6 +37,7 @@ struct Voice {
 	vel: f32,
 	pres: AttackRelease,
 	pitch_env: f32,
+	bright: f32,
 }
 
 impl Voice {
@@ -54,6 +53,7 @@ impl Voice {
 			prev: 0.,
 			vel: 0.,
 			pitch_env: 0.,
+			bright: 0.,
 		}
 	}
 
@@ -82,6 +82,7 @@ impl Instrument for Fm {
 			offset: 0.,
 			pitch_mod: 0.,
 			pitch_decay: 0.,
+			keytrack: 0.,
 		}
 	}
 
@@ -111,15 +112,12 @@ impl Instrument for Fm {
 				let feedback = self.feedback.abs();
 				let op2 = sin_cheap(voice.accum2 + feedback * prev);
 
+				// filter the modulator to prevent nyquist artifacts
+				// also limits aliasing in the carrier
 				voice.prev = lerp(voice.prev, op2, 0.3);
 
-				// depth and feedback reduction to mitigate aliasing
-				// this stuff is all empirical
-				let z = 40.0 * (self.ratio + 10.0 * feedback) * f;
-				let max_d = 1.0 / (z * z);
-				let depth = (self.depth * voice.vel).min(max_d);
-
-				let mut out = sin_cheap(voice.accum + (depth + pres) * op2);
+				let mut out =
+					sin_cheap(voice.accum + voice.bright * (self.depth + pres) * voice.prev);
 				out *= env;
 
 				*sample += 0.5 * out;
@@ -157,6 +155,9 @@ impl Instrument for Fm {
 			voice.freq2.immediate();
 			voice.env.note_on(vel);
 			voice.vel = vel;
+			voice.bright = 1.0 - ((pitch - 60.) * 0.03 * self.keytrack).clamp(-1., 0.95);
+
+			println!("{:?}", voice.bright);
 
 			// phase reset
 			if !voice.active {
@@ -200,8 +201,9 @@ impl Instrument for Fm {
 				.voices
 				.iter_mut()
 				.for_each(|v| v.env.set_release(value)),
-			9 => self.pitch_mod = value,
+			9 => self.pitch_mod = 0.5 * value + 10. * value.max(0.).powi(3),
 			10 => self.pitch_decay = 1.0 - time_constant(value, self.sample_rate),
+			11 => self.keytrack = value,
 
 			_ => eprintln!("Parameter with index {index} not found"),
 		}

@@ -1,4 +1,4 @@
-use std::f32::consts::PI;
+use std::f32::consts::*;
 
 pub mod delayline;
 pub mod env;
@@ -8,16 +8,10 @@ pub mod simper;
 pub mod skf;
 pub mod smooth;
 
-pub const TWO_PI: f32 = std::f32::consts::TAU;
-// 1 / sqrt(2)
-pub const BUTTERWORTH_Q: f32 = 0.70710678118;
-
-// reference frequency
-// we use C5 instead of A4 = 440
+pub const TWO_PI: f32 = TAU;
+pub const BUTTERWORTH_Q: f32 = FRAC_1_SQRT_2;
+pub const DECIBEL_FACTOR: f32 = LOG2_10 / 20.;
 pub const C5_HZ: f32 = 523.2511;
-
-// log(10) / (20 * log(2))
-pub const DECIBEL_FACTOR: f32 = 0.1660964;
 
 // https://stackoverflow.com/questions/65554112/fast-double-exp2-function-in-c
 // -Inf evaluates to 0.0
@@ -132,12 +126,14 @@ pub fn time_constant(t: f32, sample_rate: f32) -> f32 {
 	assert!(t > 0.);
 
 	let denom = sample_rate * t;
-	if denom < 1000. {
+	let approx = if denom < 2_000_000. {
 		1.0 - pow2_cheap(-T_LOG2 / denom)
 	} else {
 		// 1 - exp(-x) ~ x for small values
 		T_LN / denom
-	}
+	};
+
+	approx
 }
 
 pub fn time_constant_linear(t: f32, sample_rate: f32) -> f32 {
