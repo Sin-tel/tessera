@@ -1,5 +1,4 @@
 release = false
-local lurker = false
 
 io.stdout:setvbuf("no")
 
@@ -14,10 +13,6 @@ local backend = require("backend")
 local wav = require("lib/wav_save")
 local midi = require("midi")
 local views = require("views")
-
-if not release and lurker then
-	lurker = require("lib/lurker")
-end
 
 workspace = require("workspace")
 mouse = require("mouse")
@@ -60,10 +55,11 @@ local function audioSetup()
 	-- local ch = channelHandler:add("sine")
 	-- local ch = channelHandler:add("polysine")
 	-- local ch = channelHandler:add("analog")
-	local ch = channelHandler:add("fm")
+	-- local ch = channelHandler:add("fm")
 	-- local ch = channelHandler:add("wavetable")
+	local ch = channelHandler:add("epiano")
 
-	channelHandler:addEffect(ch, "reverb")
+	-- channelHandler:addEffect(ch, "reverb")
 
 	ch.armed = true
 end
@@ -161,9 +157,6 @@ function love.draw()
 		audioSetup()
 	elseif audio_status == "waiting" then
 		audio_status = "request"
-	end
-	if not release and lurker then
-		lurker.update()
 	end
 	mouse:update()
 	backend:updateScope()
