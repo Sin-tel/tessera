@@ -3,12 +3,13 @@ use ringbuf::{HeapConsumer, HeapProducer};
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::env::AttackRelease;
 use crate::effect::*;
+use crate::instrument;
 use crate::instrument::*;
 use crate::lua::{AudioMessage, LuaMessage};
 
 pub struct Channel {
 	pub instrument: Box<dyn Instrument + Send>,
-	pub effects: Vec<BypassEffect>,
+	pub effects: Vec<Bypass>,
 	pub mute: bool,
 }
 
@@ -48,7 +49,7 @@ impl Render {
 	}
 
 	pub fn add_channel(&mut self, instrument_index: usize) {
-		let new_instr = new_instrument(self.sample_rate, instrument_index);
+		let new_instr = instrument::new(self.sample_rate, instrument_index);
 		let newch = Channel {
 			instrument: new_instr,
 			effects: Vec::new(),
@@ -65,7 +66,7 @@ impl Render {
 		match self.channels.get_mut(channel_index) {
 			Some(ch) => {
 				ch.effects
-					.insert(0, BypassEffect::new(self.sample_rate, effect_number));
+					.insert(0, Bypass::new(self.sample_rate, effect_number));
 			}
 			None => println!("Channel index out of bounds"),
 		}

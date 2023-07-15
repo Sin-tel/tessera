@@ -98,7 +98,7 @@ impl SmoothLinear {
 
 	pub fn set(&mut self, v: f32) {
 		self.target = v;
-		if self.target == self.value {
+		if (self.target - self.value).abs() < 1e-5 {
 			self.timer = 0;
 		} else {
 			self.timer = self.steps;
@@ -145,7 +145,7 @@ impl SmoothBuffer {
 	}
 
 	pub fn process_buffer(&mut self, len: usize) {
-		if self.value == self.target {
+		if (self.value - self.target).abs() < 1e-5 {
 			for i in 0..len {
 				self.buffer[i] = self.value;
 			}

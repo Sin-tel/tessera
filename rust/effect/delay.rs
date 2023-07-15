@@ -37,7 +37,7 @@ impl Track {
 			delayline: DelayLine::new(sample_rate, MAX_LEN),
 			lfo_accum: 0.,
 			left,
-			lfo: Default::default(),
+			lfo: SmoothBuffer::default(),
 			dc_killer: DcKiller::new(sample_rate),
 		}
 	}

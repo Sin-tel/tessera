@@ -58,6 +58,7 @@ pub fn hz_to_pitch(f: f32) -> f32 {
 	12.0 * log2_cheap(f / C5_HZ) + 72.0
 }
 
+#[allow(clippy::inline_always)]
 #[inline(always)]
 pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
 	a + (b - a) * t
@@ -126,14 +127,13 @@ pub fn time_constant(t: f32, sample_rate: f32) -> f32 {
 	assert!(t > 0.);
 
 	let denom = sample_rate * t;
-	let approx = if denom < 2_000_000. {
+
+	if denom < 2_000_000. {
 		1.0 - pow2_cheap(-T_LOG2 / denom)
 	} else {
 		// 1 - exp(-x) ~ x for small values
 		T_LN / denom
-	};
-
-	approx
+	}
 }
 
 pub fn time_constant_linear(t: f32, sample_rate: f32) -> f32 {

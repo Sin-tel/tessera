@@ -38,8 +38,8 @@ impl Track {
 	fn new(sample_rate: f32) -> Self {
 		Self {
 			prev: 0.,
-			upsampler: Default::default(),
-			downsampler: Default::default(),
+			upsampler: Upsampler19::default(),
+			downsampler: Downsampler51::default(),
 			dc_killer: DcKiller::new(sample_rate),
 			pre_filter: Filter::new(sample_rate),
 			post_filter: Filter::new(sample_rate),

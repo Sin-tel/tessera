@@ -6,13 +6,14 @@ pub mod pan;
 pub mod reverb;
 pub mod testfilter;
 
+use crate::effect;
 use crate::effect::{
 	delay::Delay, drive::Drive, equalizer::Equalizer, gain::Gain, pan::Pan, reverb::Reverb,
 	testfilter::TestFilter,
 };
 
 // list of effects
-pub fn new_effect(sample_rate: f32, effect_number: usize) -> Box<dyn Effect + Send> {
+pub fn new(sample_rate: f32, effect_number: usize) -> Box<dyn Effect + Send> {
 	match effect_number {
 		0 => Box::new(Pan::new(sample_rate)),
 		1 => Box::new(Gain::new(sample_rate)),
@@ -36,15 +37,15 @@ pub trait Effect {
 	fn set_parameter(&mut self, index: usize, val: f32);
 }
 
-pub struct BypassEffect {
+pub struct Bypass {
 	pub effect: Box<dyn Effect + Send>,
 	pub bypassed: bool,
 }
 
-impl BypassEffect {
+impl Bypass {
 	pub fn new(sample_rate: f32, index: usize) -> Self {
-		BypassEffect {
-			effect: new_effect(sample_rate, index),
+		Bypass {
+			effect: effect::new(sample_rate, index),
 			bypassed: false,
 		}
 	}

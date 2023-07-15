@@ -83,12 +83,9 @@ impl Instrument for Epiano {
 				}
 
 				let mut s = [0.; 4];
-				for i in 0..4 {
-					s[i] = voice.filter[i].process(hammer);
+				for (i, v) in s.iter_mut().enumerate() {
+					*v = voice.filter[i].process(hammer);
 				}
-
-				// let y = s[0] + 0.6 * (s[2] + s[3]) - self.y0;
-				// let x = 0.5 * s[1] - self.x0;
 
 				let y = 0.08 * s[1] - self.y0;
 				let x = s[0] + 0.13 * s[1] + 0.3 * (s[2] + s[3]) - self.x0;
@@ -151,7 +148,7 @@ impl Instrument for Epiano {
 			voice.filter[2].set_bandpass(voice.freq[2], voice.freq[2] * 0.3);
 			voice.filter[3].set_bandpass(voice.freq[3], voice.freq[3] * 0.2);
 
-			voice.filter.iter_mut().for_each(|v| v.immediate());
+			voice.filter.iter_mut().for_each(Filter::immediate);
 
 			voice.hammer_phase = 0.;
 

@@ -10,7 +10,7 @@ use crate::instrument::{
 };
 
 // list of instruments
-pub fn new_instrument(sample_rate: f32, instrument_number: usize) -> Box<dyn Instrument + Send> {
+pub fn new(sample_rate: f32, instrument_number: usize) -> Box<dyn Instrument + Send> {
 	match instrument_number {
 		0 => Box::new(Sine::new(sample_rate)),
 		1 => Box::new(Wavetable::new(sample_rate)),

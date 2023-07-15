@@ -46,6 +46,7 @@ impl Drop for AudioContext {
 	}
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn init(_: &Lua, _: ()) -> LuaResult<LuaData> {
 	Ok(LuaData(None))
 }

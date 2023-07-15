@@ -8,6 +8,10 @@
 #![deny(unreachable_patterns)]
 
 // #![deny(clippy::pedantic)]
+// #![allow(clippy::cast_precision_loss)]
+// #![allow(clippy::cast_possible_truncation)]
+// #![allow(clippy::cast_sign_loss)]
+// #![allow(clippy::cast_possible_wrap)]
 // #![allow(clippy::similar_names)]
 // #![allow(clippy::excessive_precision)]
 // #![allow(clippy::unreadable_literal)]
@@ -17,8 +21,7 @@
 // #![allow(clippy::missing_errors_doc)]
 // #![allow(clippy::must_use_candidate)]
 // #![allow(clippy::enum_glob_use)]
-// #![allow(clippy::cast_precision_loss)]
-// #![allow(clippy::cast_possible_truncation)]
+// #![allow(clippy::single_match_else)]
 
 mod audio;
 pub mod dsp;
