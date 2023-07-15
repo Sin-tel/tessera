@@ -1,6 +1,9 @@
 use crate::dsp::*;
 use bit_mask_ring_buf::BMRingBuf;
 
+// TODO: we probably want to avoid the multiply by sample_rate in every call
+//       and have the caller take care of that
+
 #[derive(Debug)]
 pub struct DelayLine {
 	buf: BMRingBuf<f32>,

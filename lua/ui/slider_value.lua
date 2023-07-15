@@ -1,6 +1,6 @@
 local SliderValue = {}
 
--- TODO: bipolar db scale (rename db to gain or sth)
+-- TODO: bipolar db scale
 -- TODO: initial value seperate from default value
 function SliderValue:new(options)
 	local new = {}
@@ -82,32 +82,38 @@ function SliderValue:getNormalized()
 end
 
 function SliderValue:asString()
+	local display = self.v
+
 	if self.t == "dB" then
-		return string.format(self.fmt, util.to_dB(self.v))
-	else
-		if self.fmt == "Hz" then
-			if self.v < 100 then
-				return string.format("%.1f Hz", self.v)
-			elseif self.v < 1000 then
-				return string.format("%.0f Hz", self.v)
-			elseif self.v < 10000 then
-				return string.format("%.2f kHz", self.v / 1000)
-			else
-				return string.format("%.1f kHz", self.v / 1000)
-			end
-		elseif self.fmt == "ms" then
-			if self.v < 10 then
-				return string.format("%.1f ms", self.v)
-			elseif self.v < 1000 then
-				return string.format("%.0f ms", self.v)
-			elseif self.v < 10000 then
-				return string.format("%.2f s", self.v / 1000)
-			else
-				return string.format("%.1f s", self.v / 1000)
-			end
+		display = util.to_dB(self.v)
+	end
+
+	if self.fmt == "Hz" then
+		if display < 100 then
+			return string.format("%.1f Hz", display)
+		elseif display < 1000 then
+			return string.format("%.0f Hz", display)
+		elseif display < 10000 then
+			return string.format("%.2f kHz", display / 1000)
 		else
-			return string.format(self.fmt, self.v)
+			return string.format("%.1f kHz", display / 1000)
 		end
+	elseif self.fmt == "ms" or self.fmt == "s" then
+		if self.fmt == "s" then
+			display = display * 1000
+		end
+
+		if display < 10 then
+			return string.format("%.1f ms", display)
+		elseif display < 1000 then
+			return string.format("%.0f ms", display)
+		elseif display < 10000 then
+			return string.format("%.2f s", display / 1000)
+		else
+			return string.format("%.1f s", display / 1000)
+		end
+	else
+		return string.format(self.fmt, display)
 	end
 end
 

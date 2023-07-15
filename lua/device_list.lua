@@ -126,7 +126,7 @@ deviceList.effects.delay = {
 		{ "time", "slider", { default = 0.4, min = 0.1, max = 1.0, t = "log" } },
 		{ "offset", "slider", { default = 0.15, min = -1.0, max = 1.0 } },
 		{ "feedback", "slider", { default = 0.66 } },
-		{ "LFO spd", "slider", { default = 1.0, min = 0.2, max = 8.0, t = "Hz" } },
+		{ "LFO spd", "slider", { default = 1.0, min = 0.2, max = 8.0, fmt = "Hz" } },
 		{ "LFO mod", "slider", { default = 0.15 } },
 	},
 }
@@ -136,7 +136,7 @@ deviceList.effects.reverb = {
 	parameters = {
 		{ "dry wet", "slider", { default = 0.33 } },
 		{ "size", "slider", { default = 0.8, min = 0.3, max = 1.0 } },
-		{ "decay", "slider", { default = 1.3, min = 0.5, max = 20.0, t = "log" } },
+		{ "decay", "slider", { default = 1.3, min = 0.5, max = 20.0, t = "log", fmt = "s" } },
 		{ "modulation", "slider", { default = 0.5 } },
 	},
 }
@@ -145,7 +145,7 @@ deviceList.effects.filter = {
 	number = 5,
 	parameters = {
 		{ "freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
-		{ "Q", "slider", { default = DEFAULT_Q, min = 0.5, max = 20, t = "log" } },
+		{ "Q", "slider", { default = DEFAULT_Q, min = 0.5, max = 10, t = "log" } },
 		{ "gain", "slider", { default = 0, min = -24, max = 24, centered = true } },
 		{ "one pole", "toggle" },
 	},

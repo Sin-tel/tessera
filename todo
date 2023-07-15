@@ -83,7 +83,7 @@ Rust
 [ ] Room reverb
 [ ] Diffusor / resonator
 [ ] Multiband comp / OTT
-[ ] Epiano
+[x] Epiano
 [ ] Flute
 [ ] Plucked string
 [ ] Brass
