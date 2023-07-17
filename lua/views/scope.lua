@@ -49,7 +49,7 @@ function Scope:draw()
 			local n = #spectrum
 
 			for i = 1, n do
-				self.average[i] = self.average[i] + 1.0 * (spectrum[i] - self.average[i])
+				self.average[i] = self.average[i] + 0.05 * (spectrum[i] - self.average[i])
 			end
 
 			local tx = w * 0.95
@@ -61,6 +61,11 @@ function Scope:draw()
 			for i, v in ipairs(self.lines) do
 				local y = 0.2 * (math.log(v))
 				love.graphics.line(0, ty - sy * y, w, ty - sy * y)
+			end
+
+			for i = -9, 0 do
+				local x = 300 * (math.log(2 ^ i))
+				love.graphics.line(tx + x * sx, 0, tx + x * sx, h)
 			end
 
 			love.graphics.setColor(theme.ui_text)
