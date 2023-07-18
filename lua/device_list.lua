@@ -92,7 +92,11 @@ deviceList.instruments.polysine = {
 deviceList.instruments.epiano = {
 	number = 5,
 	n_voices = 16,
-	parameters = {},
+	parameters = {
+		{ "gain", "slider", { default = -6, min = -24, max = 0, fmt = "%0.1f dB" } },
+		{ "wobble", "slider", { default = 0.5 } },
+		{ "bell", "slider", { default = 0.5 } },
+	},
 }
 
 deviceList.effects = {}

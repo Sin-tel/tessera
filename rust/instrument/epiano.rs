@@ -1,18 +1,22 @@
-use std::iter::zip;
-
-// use crate::dsp::env::AttackRelease;
 use crate::dsp::simper::Filter;
-// use crate::dsp::smooth::*;
 use crate::dsp::*;
 use crate::instrument::*;
+use fastrand::Rng;
+use std::iter::zip;
+
+// TODO: replace differentiation with more gentle filter to reduce register difference
 
 #[derive(Debug)]
 pub struct Epiano {
 	voices: Vec<Voice>,
 	sample_rate: f32,
 	dc_killer: DcKiller,
+	rng: Rng,
 	x0: f32,
 	y0: f32,
+	gain: f32,
+	wobble: f32,
+	bell: f32,
 }
 
 const N_VOICES: usize = 16;
@@ -28,6 +32,10 @@ struct Voice {
 	freq: [f32; 4],
 	filter: [Filter; 4],
 	prev: f32,
+	gain: f32,
+	gain_recip: f32,
+	wobble: f32,
+	bell: f32,
 }
 
 impl Voice {
@@ -49,6 +57,10 @@ impl Voice {
 			vel: 0.,
 			freq: [0.; 4],
 			filter,
+			gain: 1.,
+			gain_recip: 1.,
+			wobble: 1.,
+			bell: 1.,
 		}
 	}
 }
@@ -61,11 +73,15 @@ impl Instrument for Epiano {
 		}
 
 		Epiano {
+			sample_rate,
 			voices,
 			dc_killer: DcKiller::new(sample_rate),
-			sample_rate,
+			rng: Rng::new(),
 			x0: 0.5,
 			y0: 1.0,
+			gain: 1.,
+			wobble: 1.,
+			bell: 1.,
 		}
 	}
 
@@ -87,17 +103,23 @@ impl Instrument for Epiano {
 					*v = voice.filter[i].process(hammer);
 				}
 
-				let y = 0.08 * s[1] - self.y0;
-				let x = s[0] + 0.13 * s[1] + 0.3 * (s[2] + s[3]) - self.x0;
+				let mut y = 0.20 * voice.wobble * s[1];
+				let mut x = s[0] + 0.20 * voice.wobble * s[1] + voice.bell * (s[2] + s[3]);
 
-				let mut out = (x * x + y * y).sqrt().recip();
-				out -= (self.x0 * self.x0 + self.y0 * self.y0).sqrt().recip();
+				x = voice.gain * x - self.x0;
+				y = voice.gain * y - self.y0;
 
-				let diff = out - voice.prev;
+				// pickup magnetic field
+				let field = (x * x + y * y).sqrt().recip();
 
-				voice.prev = out;
+				// output voltage is derivative of magnetic field
+				let diff = field - voice.prev;
 
-				*sample += diff * 20.0;
+				voice.prev = field;
+
+				let out = diff * 20.0 * voice.gain_recip + 0.05 * hammer;
+
+				*sample += out;
 			}
 
 			if !voice.note_on {
@@ -118,9 +140,7 @@ impl Instrument for Epiano {
 	}
 
 	fn cv(&mut self, _pitch: f32, _pres: f32, _id: usize) {
-		// let voice = &mut self.voices[id];
-		// let p = pitch_to_hz(pitch) / self.sample_rate;
-		// voice.freq.set(p);
+		// epiano doesn't respond to pitch & pressure
 	}
 
 	fn note(&mut self, pitch: f32, vel: f32, id: usize) {
@@ -139,18 +159,25 @@ impl Instrument for Epiano {
 			voice.hammer_freq *= 1. + vel;
 
 			voice.freq[0] = f;
-			voice.freq[1] = f + 0.6;
+			voice.freq[1] = f + 0.4 + 0.4 * self.rng.f32();
 			voice.freq[2] = f * 4. + 1200.;
 			voice.freq[3] = f * 6. + 1600.;
 
-			voice.filter[0].set_bandpass(voice.freq[0], voice.freq[0] * 5.0);
+			voice.filter[0].set_bandpass(voice.freq[0], voice.freq[0] * 6.0);
 			voice.filter[1].set_bandpass(voice.freq[1], voice.freq[1] * 4.0);
-			voice.filter[2].set_bandpass(voice.freq[2], voice.freq[2] * 0.3);
-			voice.filter[3].set_bandpass(voice.freq[3], voice.freq[3] * 0.2);
+			voice.filter[2].set_bandpass(voice.freq[2], voice.freq[2] * 0.4);
+			voice.filter[3].set_bandpass(voice.freq[3], voice.freq[3] * 0.3);
 
 			voice.filter.iter_mut().for_each(Filter::immediate);
 
 			voice.hammer_phase = 0.;
+
+			voice.prev = (self.x0 * self.x0 + self.y0 * self.y0).sqrt().recip();
+
+			voice.gain = self.gain;
+			voice.gain_recip = self.gain.recip();
+			voice.wobble = self.wobble;
+			voice.bell = self.bell;
 
 			voice.active = true;
 			voice.note_on = true;
@@ -158,8 +185,11 @@ impl Instrument for Epiano {
 		}
 	}
 	#[allow(clippy::match_single_binding)]
-	fn set_parameter(&mut self, index: usize, _value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
+			0 => self.gain = from_db(value),
+			1 => self.wobble = value,
+			2 => self.bell = value * value,
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
 	}

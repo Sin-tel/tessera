@@ -49,7 +49,7 @@ function Scope:draw()
 			local n = #spectrum
 
 			for i = 1, n do
-				self.average[i] = self.average[i] + 0.05 * (spectrum[i] - self.average[i])
+				self.average[i] = self.average[i] + 1.0 * (spectrum[i] - self.average[i])
 			end
 
 			local tx = w * 0.95
