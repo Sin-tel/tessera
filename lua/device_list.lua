@@ -113,7 +113,7 @@ deviceList.effects.drive = {
 		{ "mode", "selector", { "soft", "hard" } },
 		{ "gain", "slider", { default = 6, min = -6, max = 36 } },
 		{ "post gain", "slider", { default = 0, min = 0, max = 12 } },
-		{ "bias", "slider", { default = 0, max = 1.0 } },
+		{ "bias", "slider", { default = 0.2, max = 1.0 } },
 		{ "tilt", "slider", { default = 0, min = -18, max = 18 } },
 		{ "2x oversample", "toggle" },
 	},

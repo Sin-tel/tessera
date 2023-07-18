@@ -1,15 +1,12 @@
 use crate::audio::MAX_BUF_SIZE;
+use crate::dsp::onepole::OnePole;
 use crate::dsp::resample::{Downsampler51, Upsampler19};
-use crate::dsp::simper::Filter;
 use crate::dsp::smooth::SmoothBuffer;
 use crate::dsp::*;
 use crate::effect::Effect;
-use std::f32::consts::SQRT_2;
 
 // TODO: store previous sample eval of antiderivative
 // TODO: add proper interpolation for gain and bias
-
-const Q: f32 = 0.5 * SQRT_2;
 
 #[derive(Debug)]
 pub struct Drive {
@@ -29,8 +26,8 @@ struct Track {
 	upsampler: Upsampler19,
 	downsampler: Downsampler51,
 	dc_killer: DcKiller,
-	pre_filter: Filter,
-	post_filter: Filter,
+	pre_filter: OnePole,
+	post_filter: OnePole,
 	buffer: [f32; MAX_BUF_SIZE],
 }
 
@@ -41,8 +38,8 @@ impl Track {
 			upsampler: Upsampler19::default(),
 			downsampler: Downsampler51::default(),
 			dc_killer: DcKiller::new(sample_rate),
-			pre_filter: Filter::new(sample_rate),
-			post_filter: Filter::new(sample_rate),
+			pre_filter: OnePole::new(sample_rate),
+			post_filter: OnePole::new(sample_rate),
 			buffer: [0.; MAX_BUF_SIZE],
 		}
 	}
@@ -167,8 +164,8 @@ impl Effect for Drive {
 			}
 			4 => self.bias = value,
 			5 => self.tracks.iter_mut().for_each(|v| {
-				v.pre_filter.set_tilt(700., Q, -value);
-				v.post_filter.set_tilt(700., Q, value);
+				v.pre_filter.set_tilt(700., -value);
+				v.post_filter.set_tilt(700., value);
 			}),
 			6 => self.oversample_mode = value as usize,
 			_ => eprintln!("Parameter with index {index} not found"),
