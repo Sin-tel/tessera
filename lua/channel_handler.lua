@@ -2,6 +2,7 @@ local backend = require("backend")
 local deviceList = require("device_list")
 local Device = require("device")
 local widgets = require("ui/widgets")
+local MidiHandler = require("midi_handler")
 
 -- TODO: this should just be a channel struct and then some helper functions
 
@@ -33,9 +34,10 @@ function channelHandler:sendParameters()
 end
 
 function channelHandler:add(name)
-	if deviceList.instruments[name] then
+	local options = deviceList.instruments[name]
+	if options then
 		local new = {
-			instrument = Device:new(name, deviceList.instruments[name]),
+			instrument = Device:new(name, options),
 			effects = {},
 			mute = false,
 			solo = false,
@@ -51,6 +53,8 @@ function channelHandler:add(name)
 
 		backend:addChannel(new.instrument.number)
 		selection.channel = new
+
+		new.midi_handler = MidiHandler:new(options.n_voices, new)
 
 		self:addEffect(new, "pan")
 

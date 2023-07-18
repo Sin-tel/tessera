@@ -48,6 +48,9 @@ tracker-like keyboard nav!
 finetuning w mouse--
 ]]
 
+-- TODO: load tuning info from file
+-- TODO: make pitch into flat table without metatable
+
 local Pitch = {}
 
 -- default 11-limit JI table
@@ -60,10 +63,10 @@ local Pitch = {}
 -- }
 
 -- meantone TE optimal
--- Pitch.generators = {
--- 	12.01397,
--- 	6.97049,
--- }
+Pitch.generators = {
+	12.01397,
+	6.97049,
+}
 
 -- -- meantone target tuning (5/4, 2)
 -- Pitch.generators = {
@@ -71,11 +74,11 @@ local Pitch = {}
 -- 	6.96578,
 -- }
 
--- meantone target tuning (5/4, 6/5)
-Pitch.generators = {
-	12.10753,
-	7.01955,
-}
+-- -- meantone target tuning (5/4, 6/5)
+-- Pitch.generators = {
+-- 	12.10753,
+-- 	7.01955,
+-- }
 
 -- temperament projection matrix
 -- empty entries are zero
@@ -140,7 +143,6 @@ function Pitch:new()
 		0, -- quarter  / halfsharp,halfflat
 		0, -- ups,downs
 		0, -- arrows
-		0, -- free / offset (cents)
 	}
 	new.pitch = 60
 	-- new.name = "C"

@@ -52,14 +52,14 @@ local function audioSetup()
 	midi.load(settings.midi.inputs)
 
 	channelHandler:load()
-	local ch = channelHandler:add("sine")
+	-- local ch = channelHandler:add("sine")
 	-- local ch = channelHandler:add("polysine")
 	-- local ch = channelHandler:add("analog")
 	-- local ch = channelHandler:add("fm")
 	-- local ch = channelHandler:add("wavetable")
-	-- local ch = channelHandler:add("epiano")
+	local ch = channelHandler:add("epiano")
 
-	channelHandler:addEffect(ch, "tilt")
+	-- channelHandler:addEffect(ch, "drive")
 
 	ch.armed = true
 end

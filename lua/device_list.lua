@@ -14,6 +14,7 @@ deviceList.instruments = {}
 
 deviceList.instruments.sine = {
 	number = 0,
+	n_voices = 1,
 	parameters = {
 		{ "fixed", "toggle" },
 		{ "freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
@@ -24,6 +25,7 @@ deviceList.instruments.sine = {
 
 deviceList.instruments.wavetable = {
 	number = 1,
+	n_voices = 1,
 	parameters = {
 		{ "vel mod", "slider", { default = 0.0 } },
 		{ "pres mod", "slider", { default = 0.25 } },
@@ -32,6 +34,7 @@ deviceList.instruments.wavetable = {
 
 deviceList.instruments.analog = {
 	number = 2,
+	n_voices = 1,
 	parameters = {
 		{ "pulse width", "slider", { default = 0.5, min = 0.5, max = 0.99, fmt = "%0.2f" } },
 		{ "mix pulse", "slider", { default = -INF, t = "dB" } },
@@ -56,6 +59,7 @@ deviceList.instruments.analog = {
 
 deviceList.instruments.fm = {
 	number = 3,
+	n_voices = 16,
 	parameters = {
 		{ "feedback", "slider", { default = 0.0, min = -1.0, max = 1.0, centered = true } },
 		{ "depth", "slider", { default = 0.2, min = 0, max = 1.0 } },
@@ -77,6 +81,7 @@ deviceList.instruments.fm = {
 
 deviceList.instruments.polysine = {
 	number = 4,
+	n_voices = 16,
 	parameters = {
 		{ "feedback", "slider", { default = 0.5, max = 2.0 } },
 		{ "attack", "slider", { default = 10.0, min = 1.0, max = 20000.0, t = "log", fmt = "ms" } },
@@ -86,6 +91,7 @@ deviceList.instruments.polysine = {
 
 deviceList.instruments.epiano = {
 	number = 5,
+	n_voices = 16,
 	parameters = {},
 }
 
