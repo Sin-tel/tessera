@@ -157,7 +157,7 @@ impl Instrument for Fm {
 			voice.vel = vel;
 			voice.bright = 1.0 - ((pitch - 60.) * 0.03 * self.keytrack).clamp(-1., 0.95);
 
-			println!("{:?}", voice.bright);
+			// println!("{:?}", voice.bright);
 
 			// phase reset
 			if !voice.active {

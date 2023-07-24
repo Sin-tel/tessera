@@ -5,6 +5,7 @@ use fastrand::Rng;
 use std::iter::zip;
 
 // TODO: replace differentiation with more gentle filter to reduce register difference
+// TODO: same note retrigger logic
 
 #[derive(Debug)]
 pub struct Epiano {
@@ -156,18 +157,20 @@ impl Instrument for Epiano {
 			voice.vel = 0.004 * vel * (self.sample_rate / f);
 
 			voice.hammer_freq = f / self.sample_rate;
+			voice.hammer_freq = voice.hammer_freq.min(0.015);
 			voice.hammer_freq *= 1. + vel;
 
 			voice.freq[0] = f;
 			voice.freq[1] = f + 0.4 + 0.4 * self.rng.f32();
-			voice.freq[2] = f * 4. + 1200.;
-			voice.freq[3] = f * 6. + 1600.;
+			voice.freq[2] = f * 4. + 1200. * self.rng.f32();
+			voice.freq[3] = f * 6. + 1600. * self.rng.f32();
 
 			voice.filter[0].set_bandpass(voice.freq[0], voice.freq[0] * 6.0);
 			voice.filter[1].set_bandpass(voice.freq[1], voice.freq[1] * 4.0);
 			voice.filter[2].set_bandpass(voice.freq[2], voice.freq[2] * 0.4);
 			voice.filter[3].set_bandpass(voice.freq[3], voice.freq[3] * 0.3);
 
+			voice.filter.iter_mut().for_each(Filter::reset_state);
 			voice.filter.iter_mut().for_each(Filter::immediate);
 
 			voice.hammer_phase = 0.;

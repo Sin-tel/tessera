@@ -41,6 +41,11 @@ impl Filter {
 		}
 	}
 
+	pub fn reset_state(&mut self) {
+		self.s1 = 0.;
+		self.s2 = 0.;
+	}
+
 	pub fn immediate(&mut self) {
 		self.a1.immediate();
 		self.a2.immediate();

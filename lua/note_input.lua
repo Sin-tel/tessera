@@ -1,4 +1,4 @@
-local Pitch = require("pitch")
+local tuning = require("tuning")
 local backend = require("backend")
 
 local noteInput = {}
@@ -20,11 +20,11 @@ function noteInput:keypressed(key, _)
 		if v == key then
 			local ch = selection.channel
 
-			local p = Pitch:fromDiatonic(i, octave)
+			local p = tuning:fromDiatonic(i, octave)
 
 			if ch then
 				local ch_index = channelHandler:getChannelIndex(ch)
-				backend:sendNote(ch_index, p.pitch, DEFAULT_VELOCITY)
+				backend:sendNote(ch_index, p, DEFAULT_VELOCITY)
 			end
 
 			table.insert(queue, i)
@@ -56,16 +56,16 @@ function noteInput:keyreleased(key)
 			if ch then
 				if #queue > 0 then
 					if last then
-						local p = Pitch:fromDiatonic(queue[#queue], octave)
+						local p = tuning:fromDiatonic(queue[#queue], octave)
 						local ch_index = channelHandler:getChannelIndex(ch)
 
-						backend:sendNote(ch_index, p.pitch, DEFAULT_VELOCITY)
+						backend:sendNote(ch_index, p, DEFAULT_VELOCITY)
 					end
 				else
-					local p = Pitch:fromDiatonic(i, octave)
+					local p = tuning:fromDiatonic(i, octave)
 					local ch_index = channelHandler:getChannelIndex(ch)
 
-					backend:sendNote(ch_index, p.pitch, 0.0)
+					backend:sendNote(ch_index, p, 0.0)
 				end
 			end
 

@@ -55,11 +55,13 @@ local function audioSetup()
 	-- local ch = channelHandler:add("sine")
 	-- local ch = channelHandler:add("polysine")
 	-- local ch = channelHandler:add("analog")
-	-- local ch = channelHandler:add("fm")
+	local ch = channelHandler:add("fm")
 	-- local ch = channelHandler:add("wavetable")
-	local ch = channelHandler:add("epiano")
+	-- local ch = channelHandler:add("epiano")
 
 	-- channelHandler:addEffect(ch, "drive")
+	-- channelHandler:addEffect(ch, "delay")
+	-- channelHandler:addEffect(ch, "reverb")
 
 	ch.armed = true
 end
