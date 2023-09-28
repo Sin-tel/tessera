@@ -184,4 +184,11 @@ deviceList.effects.tilt = {
 	},
 }
 
+deviceList.effects.convolve = {
+	number = 8,
+	parameters = {
+		{ "dry wet", "slider", { default = 1.0 } },
+	},
+}
+
 return deviceList

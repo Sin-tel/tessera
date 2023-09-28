@@ -22,6 +22,8 @@ rustfft = "6.1"
 realfft = "3.3"
 no_denormals = "0.1"
 mlua = { version = "0.8", features = ["luajit", "module"] }
+fft-convolver = "0.1"
+hound = "3.5"
 
 [profile.dev]
 # opt-level = 1

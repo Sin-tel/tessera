@@ -16,7 +16,7 @@ local views = require("views")
 
 workspace = require("workspace")
 mouse = require("mouse")
-note_input = require("note_input")
+local note_input = require("note_input")
 util = require("util")
 channelHandler = require("channel_handler")
 
@@ -62,6 +62,7 @@ local function audioSetup()
 	-- channelHandler:addEffect(ch, "drive")
 	-- channelHandler:addEffect(ch, "delay")
 	-- channelHandler:addEffect(ch, "reverb")
+	channelHandler:addEffect(ch, "convolve")
 
 	ch.armed = true
 end
@@ -130,8 +131,8 @@ function love.load()
 	--- setup workspace ---
 	workspace:load()
 	local left, right = workspace.box:split(0.7, true)
-	local top_left, bottom_left = left:split(0.8, false)
-	local top_left, middle_left = top_left:split(0.3, false)
+	local top_left1, bottom_left = left:split(0.8, false)
+	local top_left, middle_left = top_left1:split(0.3, false)
 	local top_rigth, bottom_rigth = right:split(0.3, false)
 
 	bottom_left:setView(views.TestPad:new())

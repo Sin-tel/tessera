@@ -1,3 +1,4 @@
+pub mod convolve;
 pub mod delay;
 pub mod drive;
 pub mod equalizer;
@@ -9,8 +10,8 @@ pub mod tilt;
 
 use crate::effect;
 use crate::effect::{
-	delay::Delay, drive::Drive, equalizer::Equalizer, gain::Gain, pan::Pan, reverb::Reverb,
-	testfilter::TestFilter, tilt::Tilt,
+	convolve::Convolve, delay::Delay, drive::Drive, equalizer::Equalizer, gain::Gain, pan::Pan,
+	reverb::Reverb, testfilter::TestFilter, tilt::Tilt,
 };
 
 // list of effects
@@ -24,6 +25,7 @@ pub fn new(sample_rate: f32, effect_number: usize) -> Box<dyn Effect + Send> {
 		5 => Box::new(TestFilter::new(sample_rate)),
 		6 => Box::new(Equalizer::new(sample_rate)),
 		7 => Box::new(Tilt::new(sample_rate)),
+		8 => Box::new(Convolve::new(sample_rate)),
 		_ => {
 			eprintln!("Effect with number {effect_number} not found. Returning default.");
 			Box::new(Gain::new(sample_rate))

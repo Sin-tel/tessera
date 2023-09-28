@@ -165,7 +165,7 @@ function MidiHandler:event(device, event)
 				if v.channel == event.channel then
 					v.pres = event.pres
 					if v.note_on then
-						print("pres", channel_index, v.note + v.offset, v.pres, i)
+						-- print("pres", channel_index, v.note + v.offset, v.pres, i)
 
 						backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
 					end
