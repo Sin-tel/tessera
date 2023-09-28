@@ -31,7 +31,7 @@ impl Voice {
 		let mut vel = AttackRelease::new(3.0, 500., sample_rate);
 		vel.set_immediate(0.);
 		Self {
-			freq: SmoothExp::new(2.0, sample_rate),
+			freq: SmoothExp::new(10.0, sample_rate),
 			vel,
 			accum: 0.,
 			note_on: false,
@@ -88,10 +88,11 @@ impl Instrument for Polysine {
 		}
 	}
 
-	fn cv(&mut self, pitch: f32, _: f32, id: usize) {
+	fn cv(&mut self, pitch: f32, pres: f32, id: usize) {
 		let voice = &mut self.voices[id];
 		let p = pitch_to_hz(pitch) / self.sample_rate;
 		voice.freq.set(p);
+		voice.vel.set(pres);
 	}
 
 	fn note(&mut self, pitch: f32, vel: f32, id: usize) {

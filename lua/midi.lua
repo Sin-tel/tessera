@@ -47,10 +47,10 @@ function midi.newDevice(handle, mpe, n)
 	new.mpe = mpe
 	new.port = n
 	new.pitchbend_range = 2
-
 	if mpe then
 		new.pitchbend_range = 48
 	end
+
 	return new
 end
 

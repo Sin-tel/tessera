@@ -1,5 +1,6 @@
 local tuning = require("tuning")
 local backend = require("backend")
+local util = require("util")
 
 local MidiHandler = {}
 
@@ -46,10 +47,12 @@ function MidiHandler:new(n_voices, channel)
 	return new
 end
 
--- TODO: handle MPE
 -- TODO: always steal when retrigger same midi note
+-- TODO: fix mpe pitch before playing note
 function MidiHandler:event(device, event)
+	local mpe = device.mpe
 	local channel_index = channelHandler:getChannelIndex(self.channel)
+
 	if event.name == "note on" then
 		-- voice stealing logic.
 		-- if theres are voices free, use the oldest one,
@@ -85,15 +88,19 @@ function MidiHandler:event(device, event)
 		assert(new_i ~= nil)
 
 		local voice = self.voices[new_i]
-		if voice.note_on then
-			table.insert(self.queue, voice.note)
-		end
+		-- if voice.note_on then
+		-- 	table.insert(self.queue, util.deepcopy(voice))
+		-- end
 		voice.note = event.note
 		voice.vel = event.vel
+		voice.channel = event.channel
 		voice.pres = 0
 		voice.note_on = true
 		voice.age = 0
+
 		local p = tuning:fromMidi(voice.note)
+		print("noteon", channel_index, p + voice.offset, velocity_curve(voice.vel), new_i)
+
 		backend:sendNote(channel_index, p + voice.offset, velocity_curve(voice.vel), new_i)
 	elseif event.name == "note off" then
 		local get_i
@@ -105,12 +112,12 @@ function MidiHandler:event(device, event)
 		end
 		if get_i == nil then
 			-- voice was already dead
-			for i, v in ipairs(self.queue) do
-				if v == event.note then
-					table.remove(self.queue, i)
-					break
-				end
-			end
+			-- for i, v in ipairs(self.queue) do
+			-- 	if v.note == event.note and v.channel == event.channel then
+			-- 		table.remove(self.queue, i)
+			-- 		break
+			-- 	end
+			-- end
 			return
 		end
 		local voice = self.voices[get_i]
@@ -120,26 +127,56 @@ function MidiHandler:event(device, event)
 			if not self.sustain then
 				-- note off pitches are ignored but we send the correct one anyway
 				local p = tuning:fromMidi(voice.note)
+				print("noteoff", channel_index, p + voice.offset, 0, get_i)
 				backend:sendNote(channel_index, p + voice.offset, 0, get_i)
 			end
 		else
+			print("ERROR")
 			-- pop last note in queue
-			voice.note = table.remove(self.queue)
-			local p = tuning:fromMidi(voice.note)
-			backend:sendNote(channel_index, p + voice.offset, velocity_curve(voice.vel), get_i)
+			-- local old_voice = table.remove(self.queue)
+			-- voice.note = old_voice.note
+			-- voice.channel = old_voice.channel
+			-- voice.vel = old_voice.vel
+			-- voice.pres = old_voice.pres
+			-- local p = tuning:fromMidi(voice.note)
+			-- backend:sendNote(channel_index, p + voice.offset, velocity_curve(voice.vel), get_i)
 		end
 	elseif event.name == "pitchbend" then
-		for i, v in ipairs(self.voices) do
-			v.offset = device.pitchbend_range * event.offset
-			if v.note_on then
-				backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
+		if mpe then
+			for i, v in ipairs(self.voices) do
+				if v.channel == event.channel then
+					v.offset = device.pitchbend_range * event.offset
+					if v.note_on then
+						backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
+					end
+				end
+			end
+		else
+			for i, v in ipairs(self.voices) do
+				v.offset = device.pitchbend_range * event.offset
+				if v.note_on then
+					backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
+				end
 			end
 		end
 	elseif event.name == "pressure" then
-		for i, v in ipairs(self.voices) do
-			v.pres = event.pres
-			if v.note_on then
-				backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
+		if mpe then
+			for i, v in ipairs(self.voices) do
+				if v.channel == event.channel then
+					v.pres = event.pres
+					if v.note_on then
+						print("pres", channel_index, v.note + v.offset, v.pres, i)
+
+						backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
+					end
+				end
+			end
+		else
+			for i, v in ipairs(self.voices) do
+				v.pres = event.pres
+				if v.note_on then
+					backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
+				end
 			end
 		end
 	elseif event.name == "cc" then

@@ -15,7 +15,7 @@ function M.open()
 end
 
 function M.append(samples)
-	w.write_samples_interlaced(samples) -- TODO: are my samples actually interlaced?
+	w.write_samples_interlaced(samples)
 end
 
 function M.close()
