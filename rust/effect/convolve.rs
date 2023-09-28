@@ -16,7 +16,7 @@ impl Effect for Convolve {
 	fn new(_sample_rate: f32) -> Self {
 		// TODO: abstract out wav handling into seperate module
 		// TODO: we can use some kind of shared resource?
-		let reader = hound::WavReader::open("res/noise_burst_3.wav").unwrap();
+		let reader = hound::WavReader::open("res/noise_burst_2.wav").unwrap();
 		let spec = reader.spec();
 
 		// TODO: handle more cases
@@ -32,6 +32,7 @@ impl Effect for Convolve {
 			.collect();
 
 		// for now we only allow short convolution samples
+		dbg!(impulse_response.len());
 		assert!(impulse_response.len() < 2048);
 
 		let sqr_sum = impulse_response
