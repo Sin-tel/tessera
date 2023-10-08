@@ -55,18 +55,17 @@ impl UserData for LuaData {
 	fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
 		methods.add_method_mut(
 			"setup",
-			|_, data, (host_name, device_name): (String, String)| match audio::run(
-				&host_name,
-				&device_name,
-			) {
-				Ok(ud) => {
-					*data = LuaData(Some(ud));
-					Ok(())
-				}
-				Err(e) => {
-					println!("{e}");
-					*data = LuaData(None);
-					Ok(())
+			|_, data, (host_name, device_name, buffer_size): (String, String, Option<u32>)| {
+				match audio::run(&host_name, &device_name, buffer_size) {
+					Ok(ud) => {
+						*data = LuaData(Some(ud));
+						Ok(())
+					}
+					Err(e) => {
+						println!("{e}");
+						*data = LuaData(None);
+						Ok(())
+					}
 				}
 			},
 		);

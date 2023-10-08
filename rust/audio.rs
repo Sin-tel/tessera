@@ -19,7 +19,11 @@ static A: AllocDisabler = AllocDisabler;
 pub const MAX_BUF_SIZE: usize = 64;
 pub const SPECTRUM_SIZE: usize = 4096;
 
-pub fn run(host_name: &str, output_device_name: &str) -> Result<AudioContext, Box<dyn Error>> {
+pub fn run(
+	host_name: &str,
+	output_device_name: &str,
+	buffer_size: Option<u32>,
+) -> Result<AudioContext, Box<dyn Error>> {
 	let output_device = find_output_device(host_name, output_device_name)?;
 
 	let config = output_device.default_output_config()?;
@@ -28,7 +32,7 @@ pub fn run(host_name: &str, output_device_name: &str) -> Result<AudioContext, Bo
 
 	// WASAPI doesn't actually return a buffer this size
 	// it only guarantees it to be at least this size
-	config2.buffer_size = cpal::BufferSize::Fixed(64);
+	config2.buffer_size = cpal::BufferSize::Fixed(buffer_size.unwrap_or(128));
 
 	// for x in output_device.supported_output_configs().unwrap() {
 	// 	dbg!(x);

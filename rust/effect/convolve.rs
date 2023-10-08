@@ -15,20 +15,21 @@ pub struct Convolve {
 impl Effect for Convolve {
 	fn new(_sample_rate: f32) -> Self {
 		// TODO: abstract out wav handling into seperate module
-		// TODO: we can use some kind of shared resource?
-		let reader = hound::WavReader::open("res/noise_burst_2.wav").unwrap();
+		// TODO: share resources (lazy_static?). we dont need to reload the file for every instance.
+		//       can also just include_bytes and not deal with any resource loading
+		let reader = hound::WavReader::open("res/noise_ir.wav").unwrap();
 		let spec = reader.spec();
 
 		// TODO: handle more cases
-		assert!(spec.channels == 2);
+		// TODO: resample to get sample rate independence
 		assert!(spec.sample_rate == 44100);
 		assert!(spec.bits_per_sample == 16);
 		assert!(spec.sample_format == hound::SampleFormat::Int);
 
 		let mut impulse_response: Vec<f32> = reader
 			.into_samples::<i16>()
-			.step_by(2) // stereo samples are interleaved
-			.map(|s| s.unwrap() as f32 / f32::from(i16::MAX))
+			.step_by(spec.channels.into()) // stereo samples are interleaved
+			.map(|s| f32::from(s.unwrap()) / f32::from(i16::MAX))
 			.collect();
 
 		// for now we only allow short convolution samples
@@ -40,8 +41,8 @@ impl Effect for Convolve {
 			.fold(0.0, |sqr_sum, s| sqr_sum + s * s);
 
 		let gain = 1.0 / sqr_sum.sqrt();
-		for s in impulse_response.iter_mut() {
-			*s = *s * gain
+		for s in &mut impulse_response {
+			*s *= gain;
 		}
 
 		let mut convolver = FFTConvolver::default();

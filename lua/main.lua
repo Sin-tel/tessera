@@ -36,9 +36,8 @@ audio_status = "waiting"
 -----------------------------
 local function audioSetup()
 	if not backend:running() then
-		-- backend:setup(settings.audio.default_host, settings.audio.default_device)
-		backend:setup("wasapi", settings.audio.default_device)
-		-- audio_status = "running"
+		backend:setup(settings.audio.default_host, settings.audio.default_device, settings.audio.buffer_size)
+		-- backend:setup("wasapi", settings.audio.default_device)
 	else
 		print("Audio already set up")
 	end
@@ -62,7 +61,7 @@ local function audioSetup()
 	-- channelHandler:addEffect(ch, "drive")
 	-- channelHandler:addEffect(ch, "delay")
 	-- channelHandler:addEffect(ch, "reverb")
-	channelHandler:addEffect(ch, "convolve")
+	-- channelHandler:addEffect(ch, "convolve")
 
 	ch.armed = true
 end

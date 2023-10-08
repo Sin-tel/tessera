@@ -61,13 +61,13 @@ impl Effect for Tilt {
 			0 => {
 				// empirical correction factor
 				let slope = value * 1.58;
-				for track in self.tracks.iter_mut() {
+				for track in &mut self.tracks {
 					track.filter1.set_tilt(FREQ_1, slope);
 					track.filter2.set_tilt(FREQ_2, slope);
 					track.filter3.set_tilt(FREQ_3, slope);
 					track.filter4.set_tilt(FREQ_4, slope);
 				}
-				self.gain = from_db(-1.5 * value.abs())
+				self.gain = from_db(-1.5 * value.abs());
 			}
 			_ => eprintln!("Parameter with index {index} not found"),
 		}
