@@ -9,7 +9,7 @@ use crate::effect::Effect;
 #[derive(Debug)]
 pub struct Convolve {
 	balance: f32,
-	convolver: FFTConvolver,
+	convolver: FFTConvolver<f32>,
 }
 
 impl Effect for Convolve {

@@ -319,8 +319,8 @@ impl AudioContext {
 	}
 }
 
-impl<'lua> ToLua<'lua> for LuaMessage {
-	fn to_lua(self, lua: &'lua Lua) -> LuaResult<Value<'lua>> {
+impl<'lua> IntoLua<'lua> for LuaMessage {
+	fn into_lua(self, lua: &'lua Lua) -> LuaResult<Value<'lua>> {
 		use LuaMessage::*;
 
 		let table = Lua::create_table(lua)?;
