@@ -23,6 +23,7 @@ function M.load()
       setup.audio = {}
       setup.audio.default_host = "default"
       setup.audio.default_device = "default"
+      setup.audio.buffer_size = 128
       setup.midi = {}
       setup.midi.inputs = { { name = "default" } }
 
