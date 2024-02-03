@@ -15,6 +15,6 @@ GUI parts are written in lua with [LÖVE](https://love2d.org/), the audio backen
 * Install [LÖVE](https://love2d.org/).
 * Run "love ." in the lua folder.
 
-A setup file will automatically be generated where yo u can configure your audio/midi device, see lua/settings/example_setup.lua for instructions.
+A setup file will automatically be generated in [lua/settings](lua/settings) where you can configure your audio/midi device, see [example_setup.lua](lua/settings/example_setup.lua) for instructions.
 
 When things stabilize I will provide builds.
