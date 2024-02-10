@@ -1,7 +1,6 @@
 release = false
 
-io.stdout:setvbuf("no")
-
+require("logger")
 require("lib/run")
 
 if not release then
@@ -46,6 +45,7 @@ local function audioSetup()
 		audio_status = "running"
 	else
 		print("Audio setup failed")
+		audio_status = "dead"
 	end
 
 	midi.load(settings.midi.inputs)
@@ -137,8 +137,10 @@ function love.load()
 	bottom_left:setView(views.TestPad:new())
 
 	top_left:setView(views.Scope:new(false))
-	middle_left:setView(views.Scope:new(true))
+	-- middle_left:setView(views.Scope:new(true))
 	-- middle_left:setView(views.UiTest:new())
+	middle_left:setView(views.Debug:new())
+	-- middle_left:setView(views.Song:new())
 
 	top_rigth:setView(views.Channels:new())
 	bottom_rigth:setView(views.ChannelSettings:new())
@@ -200,8 +202,8 @@ function love.textinput(t)
 	-- print(t)b
 end
 
-function love.keypressed(key, isrepeat)
-	if note_input:keypressed(key, isrepeat) then
+function love.keypressed(key, scancode, isrepeat)
+	if note_input:keypressed(key, scancode, isrepeat) then
 		return
 	end
 
@@ -250,8 +252,8 @@ function love.keypressed(key, isrepeat)
 	end
 end
 
-function love.keyreleased(key)
-	if note_input:keyreleased(key) then
+function love.keyreleased(key, scancode)
+	if note_input:keyreleased(key, scancode) then
 		return
 	end
 end

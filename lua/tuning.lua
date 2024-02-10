@@ -67,7 +67,7 @@ tuning.diatonic_table = {
 -- stylua: ignore
 tuning.chromatic_table = {
 	{  0,  0 },  -- C
-	{ -4,  7 },  -- C# 
+	{ -4,  7 },  -- C#
 	{ -1,  2 },  -- D
 	{  2, -3 },  -- Eb
 	{ -2,  4 },  -- E
@@ -82,7 +82,7 @@ tuning.chromatic_table = {
 
 -- diatonic home row, 1 = C5
 function tuning:fromDiatonic(n, add_octave)
-	local add_octave = add_octave or 0
+	add_octave = add_octave or 0
 	local s = #tuning.diatonic_table
 	local oct = math.floor((n - 1) / s)
 	n = n - oct * s

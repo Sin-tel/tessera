@@ -103,5 +103,5 @@ Rust
 [ ] Automation
 [ ] Simple audio flow (parallel)
 [ ] Vst hosting (pianoteq)
-[ ] FFT convolver
+[x] FFT convolver
 

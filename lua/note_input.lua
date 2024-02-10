@@ -14,7 +14,7 @@ local octave = -1
 
 noteInput.diatonic_row = { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]" }
 
-function noteInput:keypressed(key, _)
+function noteInput:keypressed(key, scancode, isrepeat)
 	local handled = false
 	for i, v in ipairs(self.diatonic_row) do
 		if v == key then
@@ -37,7 +37,7 @@ function noteInput:keypressed(key, _)
 	return handled
 end
 
-function noteInput:keyreleased(key)
+function noteInput:keyreleased(key, scancode)
 	local handled = false
 	for i, v in ipairs(self.diatonic_row) do
 		if v == key then
