@@ -228,7 +228,10 @@ fn find_output_device(
 	if output_device_name == "default" {
 		output_device = host.default_output_device();
 	} else {
-		for device in host.output_devices().expect("No output devices found.") {
+		for device in host
+			.output_devices()
+			.map_err(|_| "No output devices found.")?
+		{
 			if let Ok(name) = device.name() {
 				if name
 					.to_lowercase()
@@ -245,7 +248,7 @@ fn find_output_device(
 		None => {
 			println!("Couldn't find {output_device_name}. Using default instead");
 			host.default_output_device()
-				.expect("No default output device found.")
+				.ok_or("No default output device found.")?
 		}
 	};
 
