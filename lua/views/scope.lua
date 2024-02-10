@@ -32,8 +32,6 @@ function Scope:new(spectrum)
 end
 
 function Scope:update()
-	local w, h = self:getDimensions()
-
 	self.ui:startFrame()
 	self.ui.layout:col(200)
 	self.ui:put(self.selector)

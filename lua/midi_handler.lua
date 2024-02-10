@@ -6,6 +6,9 @@ local MidiHandler = {}
 
 -- TODO: make this configurable (per intrument?)
 -- 0.01 = 40dB dynamic range
+-- 0.02 = 34dB dynamic range
+-- 0.05 = 26dB dynamic range
+-- 0.10 = 20dB dynamic range
 local VEL_MIN = 0.02
 local LOG_RANGE = -math.log(VEL_MIN)
 

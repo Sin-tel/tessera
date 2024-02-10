@@ -3,3 +3,4 @@ audiotest.wav
 notes.md
 cargo.lock
 lua/settings/setup.lua
+out/**

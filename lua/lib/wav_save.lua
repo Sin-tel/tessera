@@ -9,7 +9,7 @@ local bitDepth = 16
 local w
 
 function M.open()
-	w = wav.create_context("audiotest.wav", "w")
+	w = wav.create_context("../out/audiotest.wav", "w")
 
 	w.init(channelCount, sampleRate, bitDepth)
 end
