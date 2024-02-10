@@ -44,7 +44,7 @@ function Channel:update(ui, x, y, w, h)
 	if self.button_lock:update(ui, ch.lock, w - b, y + p, b, b) then
 		ch.lock = not ch.lock
 	end
-	ui:pushDraw(self.draw, self, ui, x, y, w, h)
+	ui:pushDraw(self.draw, { self, ui, x, y, w, h })
 
 	if ui.clicked == self then
 		selection.channel = self.channel
@@ -92,7 +92,7 @@ end
 
 function Button:update(ui, checked, x, y, w, h)
 	ui:hitbox(self, x, y, w, h)
-	ui:pushDraw(self.draw, self, ui, checked, x, y, w, h)
+	ui:pushDraw(self.draw, { self, ui, checked, x, y, w, h })
 
 	return ui.clicked == self
 end

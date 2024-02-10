@@ -55,7 +55,7 @@ function Slider:update(ui, x, y, w, h)
 		color_line = theme.line_hover
 	end
 
-	ui:pushDraw(self.draw, self, color_fill, color_line, x, y, w, h)
+	ui:pushDraw(self.draw, { self, color_fill, color_line, x, y, w, h })
 end
 
 local function stencil(x, y, w, h)

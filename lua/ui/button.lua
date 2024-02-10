@@ -16,7 +16,7 @@ end
 function Button:update(ui, x, y, w, h)
 	ui:hitbox(self, x, y, w, h)
 
-	ui:pushDraw(self.draw, self, ui, x, y, w, h)
+	ui:pushDraw(self.draw, { self, ui, x, y, w, h })
 
 	return ui.clicked == self
 end

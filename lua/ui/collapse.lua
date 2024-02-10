@@ -32,7 +32,7 @@ function Collapse:update(ui, x, y, w, h)
 		self.angle = -0.5 * math.pi
 	end
 
-	ui:pushDraw(self.draw, self, x, y, w, h)
+	ui:pushDraw(self.draw, { self, x, y, w, h })
 
 	return self.open
 end
