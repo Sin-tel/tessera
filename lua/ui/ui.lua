@@ -96,7 +96,7 @@ end
 
 function Ui:label(text, align)
 	self:next()
-	self:pushDraw(drawLabel, text, align, self.layout:get())
+	self:pushDraw(drawLabel, { text, align, self.layout:get() })
 end
 
 function Ui:hitbox(widget, x, y, w, h)
@@ -130,8 +130,7 @@ function Ui:background(color)
 	self.bg_color = color
 end
 
-function Ui:pushDraw(f, ...)
-	local args = { ... }
+function Ui:pushDraw(f, args)
 	table.insert(self.draw_queue, function()
 		f(unpack(args))
 	end)

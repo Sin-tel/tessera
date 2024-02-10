@@ -58,7 +58,7 @@ function Dropdown:update(ui, x, y, w, h)
 		end
 	end
 
-	ui:pushDraw(self.draw, self, ui, x, y, w, h)
+	ui:pushDraw(self.draw, { self, ui, x, y, w, h })
 
 	return new_index
 end
@@ -109,7 +109,7 @@ end
 
 function Button:update(ui, x, y, w, h)
 	ui:hitbox(self, x, y, w, h)
-	ui:pushDraw(self.draw, self, ui, x, y, w, h)
+	ui:pushDraw(self.draw, { self, ui, x, y, w, h })
 	return ui.clicked == self
 end
 

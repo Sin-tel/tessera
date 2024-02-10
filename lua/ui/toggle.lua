@@ -38,9 +38,9 @@ function Toggle:update(ui, x, y, w, h)
 	end
 
 	if self.style == "checkbox" then
-		ui:pushDraw(self.draw_checkbox, self, color_fill, color_line, x, y, w, h)
+		ui:pushDraw(self.draw_checkbox, { self, color_fill, color_line, x, y, w, h })
 	else
-		ui:pushDraw(self.draw_toggle, self, color_fill, color_line, x, y, w, h)
+		ui:pushDraw(self.draw_toggle, { self, color_fill, color_line, x, y, w, h })
 	end
 
 	return self.checked
