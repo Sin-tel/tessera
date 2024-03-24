@@ -18,6 +18,7 @@ impl Effect for Gain {
 		}
 	}
 	fn set_parameter(&mut self, index: usize, value: f32) {
+		#[allow(clippy::single_match_else)]
 		match index {
 			0 => self.gain = value,
 			_ => log_warn!("Parameter with index {index} not found"),

@@ -1,11 +1,26 @@
 // #![allow(dead_code)]
 
+#![deny(unreachable_patterns)]
 #![warn(clippy::cast_lossless)]
 #![warn(clippy::uninlined_format_args)]
 #![warn(clippy::semicolon_if_nothing_returned)]
 #![warn(clippy::explicit_iter_loop)]
 #![warn(clippy::items_after_statements)]
-#![deny(unreachable_patterns)]
+#![warn(clippy::ignored_unit_patterns)]
+#![warn(clippy::redundant_else)]
+#![warn(clippy::match_same_arms)]
+#![warn(clippy::single_match_else)]
+#![allow(clippy::match_like_matches_macro)]
+#![allow(clippy::enum_variant_names)]
+#![allow(clippy::new_without_default)]
+#![warn(clippy::unnested_or_patterns)]
+#![warn(clippy::inconsistent_struct_constructor)]
+#![warn(clippy::unused_self)]
+#![warn(clippy::needless_borrow)]
+#![warn(clippy::match_wildcard_for_single_variants)]
+#![warn(clippy::manual_assert)]
+#![warn(clippy::manual_let_else)]
+
 //
 // #![deny(clippy::pedantic)]
 // #![allow(clippy::cast_precision_loss)]
@@ -21,7 +36,8 @@
 // #![allow(clippy::missing_errors_doc)]
 // #![allow(clippy::must_use_candidate)]
 // #![allow(clippy::enum_glob_use)]
-// #![allow(clippy::single_match_else)]
+// #![allow(clippy::struct_field_names)]
+// #![allow(clippy::module_name_repetitions)]
 
 mod audio;
 mod effect;

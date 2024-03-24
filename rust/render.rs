@@ -64,12 +64,11 @@ impl Render {
 	}
 
 	pub fn add_effect(&mut self, channel_index: usize, effect_number: usize) {
-		match self.channels.get_mut(channel_index) {
-			Some(ch) => {
-				ch.effects
-					.insert(0, Bypass::new(self.sample_rate, effect_number));
-			}
-			None => log_warn!("Channel index out of bounds"),
+		if let Some(ch) = self.channels.get_mut(channel_index) {
+			ch.effects
+				.insert(0, Bypass::new(self.sample_rate, effect_number));
+		} else {
+			log_warn!("Channel index out of bounds");
 		}
 	}
 
