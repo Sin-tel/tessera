@@ -36,9 +36,7 @@ impl Effect for Convolve {
 		dbg!(impulse_response.len());
 		assert!(impulse_response.len() < 2048);
 
-		let sqr_sum = impulse_response
-			.iter()
-			.fold(0.0, |sqr_sum, s| sqr_sum + s * s);
+		let sqr_sum = impulse_response.iter().fold(0.0, |sqr_sum, s| sqr_sum + s * s);
 
 		let gain = 1.0 / sqr_sum.sqrt();
 		for s in &mut impulse_response {
@@ -49,10 +47,7 @@ impl Effect for Convolve {
 		let init_result = convolver.init(MAX_BUF_SIZE, &impulse_response);
 		assert!(init_result.is_ok());
 
-		Convolve {
-			balance: 1.0,
-			convolver,
-		}
+		Convolve { balance: 1.0, convolver }
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {

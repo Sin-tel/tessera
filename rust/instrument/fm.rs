@@ -58,8 +58,7 @@ impl Voice {
 	}
 
 	fn set_modulator(&mut self, ratio: f32, ratio_fine: f32, offset: f32) {
-		self.freq2
-			.set((ratio + ratio_fine) * self.freq.target() + offset);
+		self.freq2.set((ratio + ratio_fine) * self.freq.target() + offset);
 	}
 }
 
@@ -176,29 +175,23 @@ impl Instrument for Fm {
 				self.voices
 					.iter_mut()
 					.for_each(|v| v.set_modulator(self.ratio, self.ratio_fine, self.offset));
-			}
+			},
 			3 => {
 				self.ratio_fine = value;
 				self.voices
 					.iter_mut()
 					.for_each(|v| v.set_modulator(self.ratio, self.ratio_fine, self.offset));
-			}
+			},
 			4 => {
 				self.offset = value / self.sample_rate;
 				self.voices
 					.iter_mut()
 					.for_each(|v| v.set_modulator(self.ratio, self.ratio_fine, self.offset));
-			}
+			},
 			5 => self.voices.iter_mut().for_each(|v| v.env.set_attack(value)),
 			6 => self.voices.iter_mut().for_each(|v| v.env.set_decay(value)),
-			7 => self
-				.voices
-				.iter_mut()
-				.for_each(|v| v.env.set_sustain(value)),
-			8 => self
-				.voices
-				.iter_mut()
-				.for_each(|v| v.env.set_release(value)),
+			7 => self.voices.iter_mut().for_each(|v| v.env.set_sustain(value)),
+			8 => self.voices.iter_mut().for_each(|v| v.env.set_release(value)),
 			9 => self.pitch_mod = 0.5 * value + 10. * value.max(0.).powi(3),
 			10 => self.pitch_decay = 1.0 - time_constant(value, self.sample_rate),
 			11 => self.keytrack = value,

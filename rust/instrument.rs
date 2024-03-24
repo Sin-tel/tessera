@@ -22,7 +22,7 @@ pub fn new(sample_rate: f32, instrument_number: usize) -> Box<dyn Instrument + S
 		_ => {
 			log_warn!("Instrument with number {instrument_number} not found. Returning default.");
 			Box::new(Sine::new(sample_rate))
-		}
+		},
 	}
 }
 

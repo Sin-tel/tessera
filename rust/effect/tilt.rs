@@ -37,10 +37,7 @@ impl Track {
 
 impl Effect for Tilt {
 	fn new(sample_rate: f32) -> Self {
-		Tilt {
-			tracks: [Track::new(sample_rate), Track::new(sample_rate)],
-			gain: 1.,
-		}
+		Tilt { tracks: [Track::new(sample_rate), Track::new(sample_rate)], gain: 1. }
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
@@ -69,7 +66,7 @@ impl Effect for Tilt {
 					track.filter4.set_tilt(FREQ_4, slope);
 				}
 				self.gain = from_db(-1.5 * value.abs());
-			}
+			},
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}

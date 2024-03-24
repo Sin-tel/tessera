@@ -18,12 +18,7 @@ impl Scope {
 		let mut real_planner = RealFftPlanner::<f32>::new();
 		let r2c = real_planner.plan_fft_forward(SPECTRUM_SIZE);
 
-		Scope {
-			buf: BMRingBuf::<f32>::from_len(SPECTRUM_SIZE),
-			pos: 0,
-			r2c,
-			rx,
-		}
+		Scope { buf: BMRingBuf::<f32>::from_len(SPECTRUM_SIZE), pos: 0, r2c, rx }
 	}
 
 	pub fn get_spectrum(&self) -> Vec<f64> {
@@ -42,10 +37,7 @@ impl Scope {
 
 		// Normalize and calculate norm
 		let scale = 1.0 / (SPECTRUM_SIZE as f32).sqrt();
-		spectrum
-			.iter()
-			.map(|&e| f64::from(e.norm() * scale))
-			.collect()
+		spectrum.iter().map(|&e| f64::from(e.norm() * scale)).collect()
 	}
 
 	pub fn get_oscilloscope(&self) -> Vec<f64> {

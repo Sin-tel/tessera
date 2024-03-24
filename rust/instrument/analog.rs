@@ -121,18 +121,15 @@ impl Instrument for Analog {
 
 			// TODO: move match branch outside of inner loop
 			(s1, s2) = match self.vcf_mode {
-				FilterMode::Lowpass => (
-					self.filter.process_lowpass(s1),
-					self.filter.process_lowpass(s2),
-				),
-				FilterMode::Bandpass => (
-					self.filter.process_bandpass(s1),
-					self.filter.process_bandpass(s2),
-				),
-				FilterMode::Highpass => (
-					self.filter.process_highpass(s1),
-					self.filter.process_highpass(s2),
-				),
+				FilterMode::Lowpass => {
+					(self.filter.process_lowpass(s1), self.filter.process_lowpass(s2))
+				},
+				FilterMode::Bandpass => {
+					(self.filter.process_bandpass(s1), self.filter.process_bandpass(s2))
+				},
+				FilterMode::Highpass => {
+					(self.filter.process_highpass(s1), self.filter.process_highpass(s2))
+				},
 			};
 
 			let mut out = self.downsampler.process(s1, s2);
@@ -193,23 +190,23 @@ impl Instrument for Analog {
 					2 => FilterMode::Highpass,
 					_ => unreachable!(),
 				}
-			}
+			},
 			6 => {
 				self.vcf_cutoff = hz_to_pitch(value);
 				self.update_filter();
-			}
+			},
 			7 => {
 				self.vcf_res = value;
 				self.update_filter();
-			}
+			},
 			8 => {
 				self.vcf_env = value;
 				self.update_filter();
-			}
+			},
 			9 => {
 				self.vcf_kbd = value;
 				self.update_filter();
-			}
+			},
 			10 => self.use_gate = value > 0.5,
 			11 => self.envelope.set_attack(value),
 			12 => self.envelope.set_decay(value),

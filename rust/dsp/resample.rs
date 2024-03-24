@@ -50,11 +50,7 @@ pub struct Upsampler31 {
 
 impl Downsampler19 {
 	pub fn new() -> Self {
-		Self {
-			buf1: BMRingBuf::<f32>::from_len(16),
-			buf2: BMRingBuf::<f32>::from_len(16),
-			pos: 0,
-		}
+		Self { buf1: BMRingBuf::<f32>::from_len(16), buf2: BMRingBuf::<f32>::from_len(16), pos: 0 }
 	}
 
 	#[rustfmt::skip]
@@ -76,11 +72,7 @@ impl Downsampler19 {
 
 impl Downsampler31 {
 	pub fn new() -> Self {
-		Self {
-			buf1: BMRingBuf::<f32>::from_len(16),
-			buf2: BMRingBuf::<f32>::from_len(16),
-			pos: 0,
-		}
+		Self { buf1: BMRingBuf::<f32>::from_len(16), buf2: BMRingBuf::<f32>::from_len(16), pos: 0 }
 	}
 
 	#[rustfmt::skip]
@@ -105,11 +97,7 @@ impl Downsampler31 {
 
 impl Downsampler51 {
 	pub fn new() -> Self {
-		Self {
-			buf1: BMRingBuf::<f32>::from_len(32),
-			buf2: BMRingBuf::<f32>::from_len(32),
-			pos: 0,
-		}
+		Self { buf1: BMRingBuf::<f32>::from_len(32), buf2: BMRingBuf::<f32>::from_len(32), pos: 0 }
 	}
 
 	#[rustfmt::skip]
@@ -139,10 +127,7 @@ impl Downsampler51 {
 
 impl Upsampler19 {
 	pub fn new() -> Self {
-		Self {
-			buf: BMRingBuf::<f32>::from_len(16),
-			pos: 0,
-		}
+		Self { buf: BMRingBuf::<f32>::from_len(16), pos: 0 }
 	}
 
 	#[rustfmt::skip]
@@ -165,10 +150,7 @@ impl Upsampler19 {
 
 impl Upsampler31 {
 	pub fn new() -> Self {
-		Self {
-			buf: BMRingBuf::<f32>::from_len(16),
-			pos: 0,
-		}
+		Self { buf: BMRingBuf::<f32>::from_len(16), pos: 0 }
 	}
 
 	#[rustfmt::skip]

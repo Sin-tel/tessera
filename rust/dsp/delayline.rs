@@ -62,11 +62,7 @@ impl DelayLine {
 		let delay = time * self.sample_rate;
 		let (d_int, frac) = make_isize_frac(delay);
 
-		lerp(
-			self.buf[self.pos - d_int],
-			self.buf[self.pos - d_int - 1],
-			frac,
-		)
+		lerp(self.buf[self.pos - d_int], self.buf[self.pos - d_int - 1], frac)
 	}
 
 	// lagrange polynomial

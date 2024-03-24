@@ -64,12 +64,12 @@ impl UserData for LuaData {
 					Ok(ud) => {
 						*data = LuaData(Some(ud));
 						Ok(())
-					}
+					},
 					Err(e) => {
 						log_error!("{e}");
 						*data = LuaData(None);
 						Ok(())
-					}
+					},
 				}
 			},
 		);
@@ -116,15 +116,12 @@ impl UserData for LuaData {
 			},
 		);
 
-		methods.add_method_mut(
-			"sendMute",
-			|_, data, (channel_index, mute): (usize, bool)| {
-				if let LuaData(Some(ud)) = data {
-					ud.send_message(AudioMessage::Mute(channel_index - 1, mute));
-				}
-				Ok(())
-			},
-		);
+		methods.add_method_mut("sendMute", |_, data, (channel_index, mute): (usize, bool)| {
+			if let LuaData(Some(ud)) = data {
+				ud.send_message(AudioMessage::Mute(channel_index - 1, mute));
+			}
+			Ok(())
+		});
 
 		methods.add_method_mut(
 			"sendParameter",
@@ -333,12 +330,12 @@ impl<'lua> IntoLua<'lua> for LuaMessage {
 			Cpu(cpu_load) => {
 				table.set("tag", "cpu")?;
 				table.set("cpu_load", cpu_load)?;
-			}
+			},
 			Meter(l, r) => {
 				table.set("tag", "meter")?;
 				table.set("l", l)?;
 				table.set("r", r)?;
-			}
+			},
 		}
 
 		Ok(Value::Table(table))

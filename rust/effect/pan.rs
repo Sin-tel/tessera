@@ -50,12 +50,8 @@ impl Pan {
 
 		let lshelf = -1.5 * self.pan * (self.pan + 3.0);
 		let rshelf = -1.5 * self.pan * (self.pan - 3.0);
-		self.tracks[0]
-			.filter
-			.set_highshelf(HEAD_CUTOFF, HEAD_Q, lshelf);
-		self.tracks[1]
-			.filter
-			.set_highshelf(HEAD_CUTOFF, HEAD_Q, rshelf);
+		self.tracks[0].filter.set_highshelf(HEAD_CUTOFF, HEAD_Q, lshelf);
+		self.tracks[1].filter.set_highshelf(HEAD_CUTOFF, HEAD_Q, rshelf);
 
 		let lgain = -0.084 * self.pan * (self.pan + 2.53) + 1.0;
 		let rgain = -0.084 * self.pan * (self.pan - 2.53) + 1.0;
@@ -66,11 +62,7 @@ impl Pan {
 
 impl Effect for Pan {
 	fn new(sample_rate: f32) -> Self {
-		Pan {
-			tracks: [Track::new(sample_rate), Track::new(sample_rate)],
-			gain: 1.0,
-			pan: 0.0,
-		}
+		Pan { tracks: [Track::new(sample_rate), Track::new(sample_rate)], gain: 1.0, pan: 0.0 }
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
@@ -106,11 +98,11 @@ impl Effect for Pan {
 			0 => {
 				self.gain = value;
 				self.update_params();
-			}
+			},
 			1 => {
 				self.pan = value;
 				self.update_params();
-			}
+			},
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}

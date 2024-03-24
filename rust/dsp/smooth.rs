@@ -11,18 +11,10 @@ pub struct SmoothExp {
 
 impl SmoothExp {
 	pub fn new(t: f32, sample_rate: f32) -> Self {
-		Self {
-			target: 0.01,
-			value: 0.01,
-			f: time_constant(t, sample_rate),
-		}
+		Self { target: 0.01, value: 0.01, f: time_constant(t, sample_rate) }
 	}
 	pub fn new_direct(f: f32) -> Self {
-		Self {
-			target: 0.01,
-			value: 0.01,
-			f,
-		}
+		Self { target: 0.01, value: 0.01, f }
 	}
 
 	#[must_use]
@@ -74,13 +66,7 @@ impl SmoothLinear {
 		}
 	}
 	pub fn new_steps(steps: usize) -> Self {
-		Self {
-			target: 0.01,
-			value: 0.01,
-			step_size: 0.,
-			steps,
-			timer: 0,
-		}
+		Self { target: 0.01, value: 0.01, step_size: 0., steps, timer: 0 }
 	}
 
 	#[must_use]
@@ -137,11 +123,7 @@ pub struct SmoothBuffer {
 impl SmoothBuffer {
 	pub fn new() -> Self {
 		let v = 0.01;
-		Self {
-			target: v,
-			value: v,
-			buffer: [v; MAX_BUF_SIZE],
-		}
+		Self { target: v, value: v, buffer: [v; MAX_BUF_SIZE] }
 	}
 
 	pub fn process_buffer(&mut self, len: usize) {
