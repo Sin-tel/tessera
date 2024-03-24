@@ -69,16 +69,10 @@ impl Effect for Equalizer {
 			if self.low_cut {
 				track.low.set_highpass(self.low_cutoff, BUTTERWORTH_Q);
 			} else {
-				track
-					.low
-					.set_lowshelf(self.low_cutoff, BUTTERWORTH_Q, self.low_gain);
+				track.low.set_lowshelf(self.low_cutoff, BUTTERWORTH_Q, self.low_gain);
 			}
-			track
-				.bell1
-				.set_bell(self.bell1_cutoff, self.bell1_q, self.bell1_gain);
-			track
-				.bell2
-				.set_bell(self.bell2_cutoff, self.bell2_q, self.bell2_gain);
+			track.bell1.set_bell(self.bell1_cutoff, self.bell1_q, self.bell1_gain);
+			track.bell2.set_bell(self.bell2_cutoff, self.bell2_q, self.bell2_gain);
 			if self.high_cut {
 				track.high.set_lowpass(self.high_cutoff, BUTTERWORTH_Q);
 			} else {
@@ -104,13 +98,13 @@ impl Effect for Equalizer {
 			0 => {
 				self.low_gain = value;
 				self.low_cut = value < -23.;
-			}
+			},
 			1 => self.bell1_gain = value,
 			2 => self.bell2_gain = value,
 			3 => {
 				self.high_gain = value;
 				self.high_cut = value < -23.;
-			}
+			},
 			4 => self.low_cutoff = value,
 			5 => self.bell1_cutoff = value,
 			6 => self.bell2_cutoff = value,

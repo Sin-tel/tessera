@@ -91,7 +91,7 @@ impl Instrument for Sine {
 				if !self.fixed {
 					self.vel.set(0.0);
 				}
-			}
+			},
 			1 => self.fixed_freq = value / self.sample_rate,
 			2 => self.fixed_gain = value,
 			3 => self.noise = value > 0.5,

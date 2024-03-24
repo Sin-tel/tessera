@@ -46,10 +46,7 @@ impl Track {
 impl Effect for Delay {
 	fn new(sample_rate: f32) -> Self {
 		Delay {
-			tracks: [
-				Track::new(sample_rate, true),
-				Track::new(sample_rate, false),
-			],
+			tracks: [Track::new(sample_rate, true), Track::new(sample_rate, false)],
 			sample_rate,
 			balance: 0.,
 			time: 0.,
@@ -82,9 +79,9 @@ impl Effect for Delay {
 				let delay = track.delay2.process();
 				let s = track.delayline.go_back_linear(delay + track.lfo.get(i));
 
-				track.delayline.push(softclip_cubic(
-					track.dc_killer.process(input + self.feedback * s),
-				));
+				track
+					.delayline
+					.push(softclip_cubic(track.dc_killer.process(input + self.feedback * s)));
 				*sample = lerp(input, s, self.balance);
 			}
 		}
@@ -95,11 +92,11 @@ impl Effect for Delay {
 			1 => {
 				self.time = value;
 				self.update_delay();
-			}
+			},
 			2 => {
 				self.offset = value;
 				self.update_delay();
-			}
+			},
 			3 => self.feedback = value,
 			4 => self.lfo_freq = value,
 			5 => self.lfo_mod = value,

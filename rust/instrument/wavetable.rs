@@ -179,11 +179,7 @@ impl Wavetable {
 
 		// forward fft
 		self.r2c
-			.process_with_scratch(
-				&mut self.buffer_a,
-				&mut self.spectrum,
-				&mut self.r2c_scratch,
-			)
+			.process_with_scratch(&mut self.buffer_a, &mut self.spectrum, &mut self.r2c_scratch)
 			.unwrap(); // only panics when passed incorrect buffer sizes
 
 		// calculate maximum allowed partial
@@ -198,11 +194,7 @@ impl Wavetable {
 
 		// inverse fft
 		self.c2r
-			.process_with_scratch(
-				&mut self.spectrum,
-				&mut self.buffer_a,
-				&mut self.c2r_scratch,
-			)
+			.process_with_scratch(&mut self.spectrum, &mut self.buffer_a, &mut self.c2r_scratch)
 			.unwrap(); // only panics when passed incorrect buffer sizes
 
 		// normalize

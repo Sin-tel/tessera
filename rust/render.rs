@@ -51,11 +51,7 @@ impl Render {
 
 	pub fn add_channel(&mut self, instrument_index: usize) {
 		let new_instr = instrument::new(self.sample_rate, instrument_index);
-		let newch = Channel {
-			instrument: new_instr,
-			effects: Vec::new(),
-			mute: false,
-		};
+		let newch = Channel { instrument: new_instr, effects: Vec::new(), mute: false };
 		self.channels.push(newch);
 	}
 
@@ -65,8 +61,7 @@ impl Render {
 
 	pub fn add_effect(&mut self, channel_index: usize, effect_number: usize) {
 		if let Some(ch) = self.channels.get_mut(channel_index) {
-			ch.effects
-				.insert(0, Bypass::new(self.sample_rate, effect_number));
+			ch.effects.insert(0, Bypass::new(self.sample_rate, effect_number));
 		} else {
 			log_warn!("Channel index out of bounds");
 		}
@@ -143,23 +138,21 @@ impl Render {
 					if !ch.mute {
 						ch.instrument.cv(pitch, pres, id);
 					}
-				}
+				},
 				Note(ch_index, pitch, vel, id) => {
 					let ch = &mut self.channels[ch_index];
 					if !ch.mute {
 						ch.instrument.note(pitch, vel, id);
 					}
-				}
+				},
 				Parameter(ch_index, device_index, index, val) => {
 					let ch = &mut self.channels[ch_index];
 					if device_index == 0 {
 						ch.instrument.set_parameter(index, val);
 					} else {
-						ch.effects[device_index - 1]
-							.effect
-							.set_parameter(index, val);
+						ch.effects[device_index - 1].effect.set_parameter(index, val);
 					}
-				}
+				},
 				Mute(ch_index, mute) => self.channels[ch_index].mute = mute,
 				Bypass(ch_index, device_index, bypass) => {
 					let ch = &mut self.channels[ch_index];
@@ -168,12 +161,12 @@ impl Render {
 					} else {
 						ch.effects[device_index - 1].bypassed = bypass;
 					}
-				}
+				},
 				ReorderEffect(ch_index, old_index, new_index) => {
 					let ch = &mut self.channels[ch_index];
 					let e = ch.effects.remove(old_index);
 					ch.effects.insert(new_index, e);
-				}
+				},
 			}
 		}
 	}

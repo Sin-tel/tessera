@@ -30,7 +30,7 @@ pub fn new(sample_rate: f32, effect_number: usize) -> Box<dyn Effect + Send> {
 		_ => {
 			log_warn!("Effect with number {effect_number} not found. Returning default.");
 			Box::new(Gain::new(sample_rate))
-		}
+		},
 	}
 }
 
@@ -49,10 +49,7 @@ pub struct Bypass {
 
 impl Bypass {
 	pub fn new(sample_rate: f32, index: usize) -> Self {
-		Bypass {
-			effect: effect::new(sample_rate, index),
-			bypassed: false,
-		}
+		Bypass { effect: effect::new(sample_rate, index), bypassed: false }
 	}
 	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		if !self.bypassed {

@@ -19,10 +19,7 @@ struct Track {
 
 impl Track {
 	fn new(sample_rate: f32) -> Self {
-		Self {
-			filter1: OnePole::new(sample_rate),
-			filter2: Filter::new(sample_rate),
-		}
+		Self { filter1: OnePole::new(sample_rate), filter2: Filter::new(sample_rate) }
 	}
 }
 

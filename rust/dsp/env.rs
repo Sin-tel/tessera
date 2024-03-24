@@ -21,13 +21,7 @@ impl AttackRelease {
 	}
 
 	pub fn new_direct(attack: f32, release: f32) -> Self {
-		Self {
-			target: 0.0,
-			value: 0.0,
-			attack,
-			release,
-			sample_rate: 1.0,
-		}
+		Self { target: 0.0, value: 0.0, attack, release, sample_rate: 1.0 }
 	}
 
 	#[must_use]
@@ -35,11 +29,7 @@ impl AttackRelease {
 		self.value = lerp(
 			self.value,
 			self.target,
-			if self.target > self.value {
-				self.attack
-			} else {
-				self.release
-			},
+			if self.target > self.value { self.attack } else { self.release },
 		);
 
 		self.value
@@ -118,7 +108,7 @@ impl Adsr {
 					self.value = self.vel;
 					self.stage = Sustain;
 				}
-			}
+			},
 			Sustain => self.value = lerp(self.value, self.sustain * self.vel, self.decay),
 			Release => self.value *= self.release,
 		}

@@ -95,7 +95,7 @@ impl Effect for Drive {
 						}
 					}
 				}
-			}
+			},
 			// 2x oversample + ADAA
 			1 => {
 				if self.hard {
@@ -123,7 +123,7 @@ impl Effect for Drive {
 						}
 					}
 				}
-			}
+			},
 			// naive (not used)
 			_ => {
 				if self.hard {
@@ -139,7 +139,7 @@ impl Effect for Drive {
 						}
 					}
 				}
-			}
+			},
 		}
 
 		for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
@@ -157,11 +157,11 @@ impl Effect for Drive {
 				let gain = from_db(value);
 				self.gain.set(gain);
 				self.post_gain.set(self.gain_comp / gain);
-			}
+			},
 			3 => {
 				self.gain_comp = from_db(value);
 				self.post_gain.set(self.gain_comp / self.gain.target());
-			}
+			},
 			4 => self.bias = value,
 			5 => self.tracks.iter_mut().for_each(|v| {
 				v.pre_filter.set_tilt(700., -value);

@@ -79,27 +79,14 @@ where
 
 	let sample_rate = config.sample_rate.0 as f32;
 
-	let m_render = Arc::new(Mutex::new(Render::new(
-		sample_rate,
-		audio_rx,
-		lua_tx,
-		scope_tx,
-	)));
+	let m_render = Arc::new(Mutex::new(Render::new(sample_rate, audio_rx, lua_tx, scope_tx)));
 	let m_render_clone = Arc::clone(&m_render);
 
 	let audio_closure = build_closure::<T>(stream_rx, m_render_clone);
 
 	let stream = device.build_output_stream(config, audio_closure, err_fn, None)?;
 
-	Ok(AudioContext {
-		stream,
-		audio_tx,
-		stream_tx,
-		lua_rx,
-		m_render,
-		scope,
-		paused: false,
-	})
+	Ok(AudioContext { stream, audio_tx, stream_tx, lua_rx, m_render, scope, paused: false })
 }
 
 fn build_closure<T>(
@@ -158,7 +145,7 @@ where
 							cpu_load.set(p as f32);
 							let load = cpu_load.process();
 							render.send(LuaMessage::Cpu(load));
-						}
+						},
 						_ => {
 							// Output silence as a fallback when lock fails.
 
@@ -170,7 +157,7 @@ where
 								outsample[0] = T::from_sample(0.0f32);
 								outsample[1] = T::from_sample(0.0f32);
 							}
-						}
+						},
 					}
 				});
 			});
@@ -204,11 +191,7 @@ fn find_output_device(
 		host = Some(cpal::default_host());
 	} else {
 		for host_id in available_hosts {
-			if host_id
-				.name()
-				.to_lowercase()
-				.contains(&host_name.to_lowercase())
-			{
+			if host_id.name().to_lowercase().contains(&host_name.to_lowercase()) {
 				host = Some(cpal::host_from_id(host_id)?);
 				break;
 			}
@@ -234,15 +217,9 @@ fn find_output_device(
 	if output_device_name == "default" {
 		output_device = host.default_output_device();
 	} else {
-		for device in host
-			.output_devices()
-			.map_err(|_| "No output devices found.")?
-		{
+		for device in host.output_devices().map_err(|_| "No output devices found.")? {
 			if let Ok(name) = device.name() {
-				if name
-					.to_lowercase()
-					.contains(&output_device_name.to_lowercase())
-				{
+				if name.to_lowercase().contains(&output_device_name.to_lowercase()) {
 					output_device = Some(device);
 				}
 			}

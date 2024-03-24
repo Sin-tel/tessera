@@ -47,7 +47,7 @@ mod render;
 mod scope;
 
 #[allow(dead_code)]
-mod dsp;
+pub mod dsp;
 
 #[allow(unused_macros)]
 #[allow(unused_imports)]

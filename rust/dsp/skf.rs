@@ -14,13 +14,7 @@ pub struct Skf {
 
 impl Skf {
 	pub fn new(sample_rate: f32) -> Self {
-		Self {
-			sample_rate,
-			f: SmoothLinear::new_steps(64),
-			r: 0.0,
-			s1: 0.0,
-			s2: 0.0,
-		}
+		Self { sample_rate, f: SmoothLinear::new_steps(64), r: 0.0, s1: 0.0, s2: 0.0 }
 	}
 
 	// returns lp, bp, hp

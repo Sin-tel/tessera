@@ -48,12 +48,7 @@ impl Instrument for Polysine {
 			voices.push(Voice::new(sample_rate));
 		}
 
-		Polysine {
-			voices,
-			dc_killer: DcKiller::new(sample_rate),
-			sample_rate,
-			feedback: 0.,
-		}
+		Polysine { voices, dc_killer: DcKiller::new(sample_rate), sample_rate, feedback: 0. }
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
@@ -117,10 +112,7 @@ impl Instrument for Polysine {
 		match index {
 			0 => self.feedback = value,
 			1 => self.voices.iter_mut().for_each(|v| v.vel.set_attack(value)),
-			2 => self
-				.voices
-				.iter_mut()
-				.for_each(|v| v.vel.set_release(value)),
+			2 => self.voices.iter_mut().for_each(|v| v.vel.set_release(value)),
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
