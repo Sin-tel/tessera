@@ -6,7 +6,7 @@
 #![warn(clippy::explicit_iter_loop)]
 #![warn(clippy::items_after_statements)]
 #![deny(unreachable_patterns)]
-
+//
 // #![deny(clippy::pedantic)]
 // #![allow(clippy::cast_precision_loss)]
 // #![allow(clippy::cast_possible_truncation)]
@@ -24,9 +24,15 @@
 // #![allow(clippy::single_match_else)]
 
 mod audio;
-pub mod dsp;
 mod effect;
 mod instrument;
 mod lua;
 mod render;
 mod scope;
+
+#[allow(dead_code)]
+mod dsp;
+
+#[allow(unused_macros)]
+#[allow(unused_imports)]
+mod log;

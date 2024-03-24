@@ -4,7 +4,7 @@ use std::iter::zip;
 
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::lerp;
-use crate::effect::Effect;
+use crate::effect::*;
 
 #[derive(Debug)]
 pub struct Convolve {
@@ -72,7 +72,7 @@ impl Effect for Convolve {
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.balance = value,
-			_ => eprintln!("Parameter with index {index} not found"),
+			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
 }

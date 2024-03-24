@@ -95,7 +95,7 @@ impl Instrument for Sine {
 			1 => self.fixed_freq = value / self.sample_rate,
 			2 => self.fixed_gain = value,
 			3 => self.noise = value > 0.5,
-			_ => eprintln!("Parameter with index {index} not found"),
+			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
 }

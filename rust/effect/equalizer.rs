@@ -1,6 +1,6 @@
 use crate::dsp::simper::Filter;
 use crate::dsp::*;
-use crate::effect::Effect;
+use crate::effect::*;
 
 #[derive(Debug)]
 pub struct Equalizer {
@@ -117,7 +117,7 @@ impl Effect for Equalizer {
 			7 => self.high_cutoff = value,
 			8 => self.bell1_q = value,
 			9 => self.bell2_q = value,
-			_ => eprintln!("Parameter with index {index} not found"),
+			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
 }

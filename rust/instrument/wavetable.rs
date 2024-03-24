@@ -61,7 +61,7 @@ impl Instrument for Wavetable {
 		let mut reader = BufReader::new(file);
 		let mut table = [0.0f32; WT_SIZE * WT_NUM];
 		let mut buffer = [0u8; 4];
-		for v in table.iter_mut() {
+		for v in &mut table {
 			reader.read_exact(&mut buffer).unwrap();
 			*v = f32::from_le_bytes(buffer);
 		}
@@ -158,7 +158,7 @@ impl Instrument for Wavetable {
 		match index {
 			0 => self.depth_vel = value,
 			1 => self.depth_pres = value,
-			_ => eprintln!("Parameter with index {index} not found"),
+			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
 }

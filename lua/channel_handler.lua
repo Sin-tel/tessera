@@ -3,6 +3,7 @@ local deviceList = require("device_list")
 local Device = require("device")
 local widgets = require("ui/widgets")
 local MidiHandler = require("midi_handler")
+local log = require("log")
 
 -- TODO: this should just be a channel struct and then some helper functions
 
@@ -60,7 +61,7 @@ function channelHandler:add(name)
 
 		return new
 	else
-		print("Instrument not found: " .. name)
+		log.warn("Instrument not found: " .. name)
 	end
 end
 
@@ -99,7 +100,7 @@ function channelHandler:addEffect(ch, name)
 
 		return effect
 	else
-		print("Effect not found: " .. name)
+		log.warn("Effect not found: " .. name)
 	end
 end
 
@@ -112,8 +113,8 @@ end
 
 function channelHandler:bypassEffect(ch, effect, bypass)
 	-- TODO
-	local ch_index = self:getChannelIndex(ch)
-	backend:bypass(ch_index, effect_index, bypass)
+	-- local ch_index = self:getChannelIndex(ch)
+	-- backend:bypass(ch_index, effect_index, bypass)
 end
 
 function channelHandler:reorderEffect(ch, device, offset)

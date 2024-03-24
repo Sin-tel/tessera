@@ -157,8 +157,6 @@ impl Instrument for Fm {
 			voice.vel = vel;
 			voice.bright = 1.0 - ((pitch - 60.) * 0.03 * self.keytrack).clamp(-1., 0.95);
 
-			// println!("{:?}", voice.bright);
-
 			// phase reset
 			if !voice.active {
 				voice.accum = 0.0;
@@ -205,7 +203,7 @@ impl Instrument for Fm {
 			10 => self.pitch_decay = 1.0 - time_constant(value, self.sample_rate),
 			11 => self.keytrack = value,
 
-			_ => eprintln!("Parameter with index {index} not found"),
+			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
 }

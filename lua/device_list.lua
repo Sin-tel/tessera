@@ -81,7 +81,7 @@ deviceList.instruments.fm = {
 
 deviceList.instruments.polysine = {
 	number = 4,
-	n_voices = 16,
+	n_voices = 2,
 	parameters = {
 		{ "feedback", "slider", { default = 0.5, max = 2.0 } },
 		{ "attack", "slider", { default = 40.0, min = 1.0, max = 20000.0, t = "log", fmt = "ms" } },

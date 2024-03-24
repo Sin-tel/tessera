@@ -253,13 +253,14 @@ function M.ignoreTypes(device, midiSysex, midiTime, midiSense)
     lib.rtmidi_in_ignore_types(device, midiSysex, midiTime, midiSense)
 end
 
-function M.printPorts(device)
+function M.portNames(device)
     local nPorts = lib.rtmidi_get_port_count(device)
-
+    local l = {}
     for i = 0, nPorts - 1 do
-        local portName = ffi.string(lib.rtmidi_get_port_name(device, i))
-        print(i, portName)
+        local port_name = ffi.string(lib.rtmidi_get_port_name(device, i))
+        table.insert(l, port_name)
     end
+    return l
 end
 
 function M.findPort(device, name)
@@ -280,8 +281,9 @@ end
 
 function M.openPort(device, p)
     local portName = lib.rtmidi_get_port_name(device, p)
-    print("opening port: " .. ffi.string(portName))
     lib.rtmidi_open_port(device, p, portName)
+
+    return ffi.string(portName)
 end
 
 function M.closePort(device)

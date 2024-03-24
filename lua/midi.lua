@@ -3,6 +3,7 @@
 
 local rtmidi = require("./lib/rtmidi_ffi")
 local bit = require("bit")
+local log = require("log")
 
 local midi = {}
 
@@ -10,8 +11,16 @@ local devices = {}
 
 function midi.load(devicelist)
 	local device_handle = rtmidi.createIn()
-	print("available midi input ports:")
-	rtmidi.printPorts(device_handle)
+	local ports = rtmidi.portNames(device_handle)
+	if #ports > 0 then
+		log.info("available midi input ports:")
+		for _, v in ipairs(ports) do
+			log.info(v)
+		end
+	else
+		log.warn("no midi input ports available")
+		return
+	end
 
 	for _, v in ipairs(devicelist) do
 		midi.openDevice(v)
@@ -29,7 +38,9 @@ function midi.openDevice(v)
 	end
 
 	if port_n then
-		rtmidi.openPort(device_handle, port_n)
+		local p_name = rtmidi.openPort(device_handle, port_n)
+
+		log.info('opening midi port: "' .. p_name .. '"')
 
 		if device_handle.ok then
 			rtmidi.ignoreTypes(device_handle, true, true, true)
@@ -38,7 +49,7 @@ function midi.openDevice(v)
 		end
 	end
 
-	print("Couldn't open port: " .. v.name)
+	log.warn("Couldn't open port: \"" .. v.name .. '"')
 end
 
 function midi.newDevice(handle, mpe, n)
