@@ -57,6 +57,7 @@ impl Effect for Tilt {
 	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {
+		#[allow(clippy::single_match_else)]
 		match index {
 			0 => {
 				// empirical correction factor

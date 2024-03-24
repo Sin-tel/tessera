@@ -70,6 +70,7 @@ impl Effect for Convolve {
 		bl.copy_from_slice(br);
 	}
 	fn set_parameter(&mut self, index: usize, value: f32) {
+		#[allow(clippy::single_match_else)]
 		match index {
 			0 => self.balance = value,
 			_ => log_warn!("Parameter with index {index} not found"),

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 [lib]
 path = "rust/lib.rs"
-crate-type = ["lib","cdylib"]
+crate-type = ["cdylib"]
 
 # ASIO requirements
 [target.'cfg(target_os = "windows")'.dependencies]

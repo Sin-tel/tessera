@@ -214,12 +214,11 @@ fn find_output_device(
 			}
 		}
 	}
-	let host = match host {
-		Some(h) => h,
-		None => {
-			log_warn!("Couldn't find {host_name}. Using default instead");
-			cpal::default_host()
-		}
+	let host = if let Some(h) = host {
+		h
+	} else {
+		log_warn!("Couldn't find {host_name}. Using default instead");
+		cpal::default_host()
 	};
 
 	log_info!("Using host: {}", host.id().name());
@@ -250,13 +249,12 @@ fn find_output_device(
 		}
 	}
 
-	let output_device = match output_device {
-		Some(d) => d,
-		None => {
-			log_warn!("Couldn't find {output_device_name}. Using default instead");
-			host.default_output_device()
-				.ok_or("No default output device found.")?
-		}
+	let output_device = if let Some(d) = output_device {
+		d
+	} else {
+		log_warn!("Couldn't find {output_device_name}. Using default instead");
+		host.default_output_device()
+			.ok_or("No default output device found.")?
 	};
 
 	let name = output_device.name()?;
