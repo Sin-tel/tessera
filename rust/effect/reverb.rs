@@ -1,7 +1,7 @@
 use crate::dsp::delayline::DelayLine;
 use crate::dsp::smooth::{SmoothBuffer, SmoothExp};
 use crate::dsp::*;
-use crate::effect::Effect;
+use crate::effect::*;
 use std::iter::zip;
 
 // max length in seconds
@@ -131,7 +131,7 @@ impl Effect for Reverb {
 				self.update_feedback();
 			}
 			3 => self.mod_amount = value,
-			_ => eprintln!("Parameter with index {index} not found"),
+			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
 }

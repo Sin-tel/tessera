@@ -1,6 +1,6 @@
 use crate::dsp::from_db;
 use crate::dsp::onepole::OnePole;
-use crate::effect::Effect;
+use crate::effect::*;
 
 // TODO: better gain matching
 
@@ -69,7 +69,7 @@ impl Effect for Tilt {
 				}
 				self.gain = from_db(-1.5 * value.abs());
 			}
-			_ => eprintln!("Parameter with index {index} not found"),
+			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
 }

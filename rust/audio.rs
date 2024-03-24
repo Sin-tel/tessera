@@ -8,6 +8,7 @@ use std::panic::AssertUnwindSafe;
 use std::sync::{Arc, Mutex};
 
 use crate::dsp::env::AttackRelease;
+use crate::log::{log_error, log_info, log_warn};
 use crate::lua::{AudioContext, AudioMessage, LuaMessage};
 use crate::render::Render;
 use crate::scope::Scope;
@@ -39,8 +40,8 @@ pub fn run(
 	// }
 
 	// Build streams.
-	// println!("{config:?}");
-	// println!("{config2:?}");
+	// log_info!("{config:?}");
+	// log_info!("{config2:?}");
 
 	let userdata = match config.sample_format() {
 		cpal::SampleFormat::F64 => build_stream::<f64>(&output_device, &config2),
@@ -59,7 +60,7 @@ pub fn run(
 
 	userdata.stream.play()?;
 
-	println!("Stream set up succesfully!");
+	log_info!("Stream set up succesfully!");
 	Ok(userdata)
 }
 
@@ -126,7 +127,7 @@ where
 						Ok(mut render) if !paused => {
 							if !start {
 								start = true;
-								println!("Buffer size: {cpal_buffer_size:?}");
+								log_info!("Buffer size: {cpal_buffer_size:?}");
 							}
 
 							let time = std::time::Instant::now();
@@ -135,7 +136,6 @@ where
 							for m in stream_rx.pop_iter() {
 								paused = m;
 							}
-
 							render.parse_messages();
 
 							for buffer_chunk in cpal_buffer.chunks_mut(MAX_BUF_SIZE) {
@@ -165,8 +165,7 @@ where
 							for m in stream_rx.pop_iter() {
 								paused = m;
 							}
-							// println!("Output silent");
-
+							// log_info!("Output silent");
 							for outsample in cpal_buffer.chunks_exact_mut(2) {
 								outsample[0] = T::from_sample(0.0f32);
 								outsample[1] = T::from_sample(0.0f32);
@@ -176,8 +175,15 @@ where
 				});
 			});
 		}));
-		if result.is_err() {
-			println!("Audio thread panic");
+		if let Err(e) = result {
+			let msg = match e.downcast_ref::<&'static str>() {
+				Some(s) => *s,
+				None => match e.downcast_ref::<String>() {
+					Some(s) => &**s,
+					None => "Box<Any>",
+				},
+			};
+			log_error!("Audio thread panic: {msg}");
 			for outsample in cpal_buffer.chunks_exact_mut(2) {
 				outsample[0] = T::from_sample(0.0f32);
 				outsample[1] = T::from_sample(0.0f32);
@@ -191,7 +197,7 @@ fn find_output_device(
 	output_device_name: &str,
 ) -> Result<cpal::Device, Box<dyn Error>> {
 	let available_hosts = cpal::available_hosts();
-	println!("Available hosts:\n  {available_hosts:?}");
+	log_info!("Available hosts: {available_hosts:?}");
 
 	let mut host = None;
 	if host_name == "default" {
@@ -211,16 +217,17 @@ fn find_output_device(
 	let host = match host {
 		Some(h) => h,
 		None => {
-			println!("Couldn't find {host_name}. Using default instead");
+			log_warn!("Couldn't find {host_name}. Using default instead");
 			cpal::default_host()
 		}
 	};
 
-	println!("Using host: {}", host.id().name());
+	log_info!("Using host: {}", host.id().name());
 
-	println!("Avaliable output devices:");
+	log_info!("Avaliable output devices:");
 	for d in host.output_devices()? {
-		println!(" - \"{}\"", d.name()?);
+		let name = d.name()?;
+		log_info!(" - \"{name}\"");
 	}
 
 	let mut output_device = None;
@@ -246,18 +253,19 @@ fn find_output_device(
 	let output_device = match output_device {
 		Some(d) => d,
 		None => {
-			println!("Couldn't find {output_device_name}. Using default instead");
+			log_warn!("Couldn't find {output_device_name}. Using default instead");
 			host.default_output_device()
 				.ok_or("No default output device found.")?
 		}
 	};
 
-	println!("Using output device: \"{}\"", output_device.name()?);
+	let name = output_device.name()?;
+	log_info!("Using output device: \"{name}\"");
 
 	Ok(output_device)
 }
 
 #[allow(clippy::needless_pass_by_value)]
 fn err_fn(err: cpal::StreamError) {
-	eprintln!("an error occurred on stream: {err}");
+	log_error!("an error occurred on stream: {err}");
 }

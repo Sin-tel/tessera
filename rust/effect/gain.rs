@@ -1,4 +1,4 @@
-use crate::effect::Effect;
+use crate::effect::*;
 
 #[derive(Debug)]
 pub struct Gain {
@@ -20,7 +20,7 @@ impl Effect for Gain {
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.gain = value,
-			_ => eprintln!("Parameter with index {index} not found"),
+			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
 }

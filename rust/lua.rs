@@ -1,3 +1,4 @@
+// use flexi_logger::{Duplicate, FileSpec, Logger, WriteMode};
 use mlua::prelude::*;
 use mlua::{UserData, UserDataMethods, Value};
 use no_denormals::no_denormals;
@@ -5,6 +6,7 @@ use ringbuf::{HeapConsumer, HeapProducer};
 use std::sync::{Arc, Mutex};
 
 use crate::audio;
+use crate::log::{init_logging, log_error, log_info, log_warn};
 use crate::render::Render;
 use crate::scope::Scope;
 
@@ -42,12 +44,14 @@ pub enum LuaMessage {
 
 impl Drop for AudioContext {
 	fn drop(&mut self) {
-		println!("Stream dropped");
+		log_info!("Stream dropped");
 	}
 }
 
 #[allow(clippy::unnecessary_wraps)]
 fn init(_: &Lua, _: ()) -> LuaResult<LuaData> {
+	init_logging();
+	log_info!("Backend initialized");
 	Ok(LuaData(None))
 }
 
@@ -62,7 +66,7 @@ impl UserData for LuaData {
 						Ok(())
 					}
 					Err(e) => {
-						println!("{e}");
+						log_error!("{e}");
 						*data = LuaData(None);
 						Ok(())
 					}
@@ -298,7 +302,7 @@ fn convert_sample_wav(x: f32) -> f64 {
 fn check_lock_poison(data: &mut LuaData) {
 	if let LuaData(Some(ud)) = data {
 		if ud.m_render.is_poisoned() {
-			println!("Lock was poisoned. Killing backend.");
+			log_error!("Lock was poisoned. Killing backend.");
 			*data = LuaData(None);
 		}
 	}
@@ -307,14 +311,14 @@ fn check_lock_poison(data: &mut LuaData) {
 impl AudioContext {
 	fn send_message(&mut self, m: AudioMessage) {
 		if self.audio_tx.push(m).is_err() {
-			eprintln!("Queue full. Dropped message!");
+			log_warn!("Queue full. Dropped message!");
 		}
 	}
 
 	fn send_paused(&mut self, paused: bool) {
 		self.paused = paused;
 		if self.stream_tx.push(paused).is_err() {
-			eprintln!("Stream queue full. Dropped message!");
+			log_warn!("Stream queue full. Dropped message!");
 		}
 	}
 }

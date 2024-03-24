@@ -216,7 +216,7 @@ impl Instrument for Analog {
 			13 => self.envelope.set_sustain(value),
 			14 => self.envelope.set_release(value),
 			15 => self.legato = value > 0.5,
-			_ => eprintln!("Parameter with index {index} not found"),
+			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
 }

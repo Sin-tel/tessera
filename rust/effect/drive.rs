@@ -3,7 +3,7 @@ use crate::dsp::onepole::OnePole;
 use crate::dsp::resample::{Downsampler51, Upsampler19};
 use crate::dsp::smooth::SmoothBuffer;
 use crate::dsp::*;
-use crate::effect::Effect;
+use crate::effect::*;
 
 // TODO: store previous sample eval of antiderivative
 // TODO: add proper interpolation for gain and bias
@@ -168,7 +168,7 @@ impl Effect for Drive {
 				v.post_filter.set_tilt(700., value);
 			}),
 			6 => self.oversample_mode = value as usize,
-			_ => eprintln!("Parameter with index {index} not found"),
+			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
 }

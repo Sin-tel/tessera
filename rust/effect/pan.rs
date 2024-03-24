@@ -1,7 +1,7 @@
 use crate::dsp::delayline::DelayLine;
 use crate::dsp::simper::Filter;
 use crate::dsp::smooth::SmoothLinear;
-use crate::effect::Effect;
+use crate::effect::*;
 
 // TODO: This device is used everywhere and
 //       most of the time, parameters don't change,
@@ -111,7 +111,7 @@ impl Effect for Pan {
 				self.pan = value;
 				self.update_params();
 			}
-			_ => eprintln!("Parameter with index {index} not found"),
+			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
 }

@@ -193,7 +193,7 @@ impl Instrument for Epiano {
 			0 => self.gain = from_db(value),
 			1 => self.wobble = value,
 			2 => self.bell = value * value,
-			_ => eprintln!("Parameter with index {index} not found"),
+			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
 }

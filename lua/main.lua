@@ -1,6 +1,6 @@
 release = false
 
-require("logger")
+local log = require("log")
 require("lib/run")
 
 if not release then
@@ -38,13 +38,13 @@ local function audioSetup()
 		backend:setup(settings.audio.default_host, settings.audio.default_device, settings.audio.buffer_size)
 		-- backend:setup("wasapi", settings.audio.default_device)
 	else
-		print("Audio already set up")
+		log.warn("Audio already set up")
 	end
 
 	if backend:running() then
 		audio_status = "running"
 	else
-		print("Audio setup failed")
+		log.error("Audio setup failed")
 		audio_status = "dead"
 	end
 
@@ -80,42 +80,6 @@ local function parseMessages()
 			workspace.meter.r = util.to_dB(p.r)
 		end
 	end
-end
-
-local function renderWav()
-	--TODO: run this on a new thread in rust?
-
-	if not backend:running() then
-		print("backend offline")
-		return
-	end
-
-	mouse:setCursor("wait")
-	mouse:endFrame()
-
-	backend:setPaused(true)
-
-	-- sleep for a bit to make sure the audio thread is done
-	love.timer.sleep(0.01)
-
-	wav.open()
-	for _ = 1, 5000 do
-		local block = backend:renderBlock()
-		if not block then
-			print("failed to get block. try again")
-			wav.close()
-			backend:play()
-			return
-		end
-
-		wav.append(block)
-
-		parseMessages()
-	end
-	wav.close()
-	backend:setPaused(false)
-
-	mouse:setCursor("default")
 end
 
 function love.load()
@@ -270,4 +234,40 @@ function love.quit()
 
 	midi.quit()
 	backend:quit()
+end
+
+local function renderWav()
+	--TODO: run this on a new thread in rust?
+
+	if not backend:running() then
+		log.error("backend offline")
+		return
+	end
+
+	mouse:setCursor("wait")
+	mouse:endFrame()
+
+	backend:setPaused(true)
+
+	-- sleep for a bit to make sure the audio thread is done
+	love.timer.sleep(0.01)
+
+	wav.open()
+	for _ = 1, 5000 do
+		local block = backend:renderBlock()
+		if not block then
+			log.error("failed to get block. try again")
+			wav.close()
+			backend:play()
+			return
+		end
+
+		wav.append(block)
+
+		parseMessages()
+	end
+	wav.close()
+	backend:setPaused(false)
+
+	mouse:setCursor("default")
 end

@@ -13,6 +13,7 @@ use crate::effect::{
 	convolve::Convolve, delay::Delay, drive::Drive, equalizer::Equalizer, gain::Gain, pan::Pan,
 	reverb::Reverb, testfilter::TestFilter, tilt::Tilt,
 };
+use crate::log::log_warn;
 
 // list of effects
 pub fn new(sample_rate: f32, effect_number: usize) -> Box<dyn Effect + Send> {
@@ -27,7 +28,7 @@ pub fn new(sample_rate: f32, effect_number: usize) -> Box<dyn Effect + Send> {
 		7 => Box::new(Tilt::new(sample_rate)),
 		8 => Box::new(Convolve::new(sample_rate)),
 		_ => {
-			eprintln!("Effect with number {effect_number} not found. Returning default.");
+			log_warn!("Effect with number {effect_number} not found. Returning default.");
 			Box::new(Gain::new(sample_rate))
 		}
 	}

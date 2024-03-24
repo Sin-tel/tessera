@@ -1,6 +1,6 @@
 use crate::dsp::onepole::OnePole;
 use crate::dsp::simper::Filter;
-use crate::effect::Effect;
+use crate::effect::*;
 
 #[derive(Debug)]
 pub struct TestFilter {
@@ -63,7 +63,7 @@ impl Effect for TestFilter {
 			1 => self.q = value,
 			2 => self.gain = value,
 			3 => self.onepole = value > 0.5,
-			_ => eprintln!("Parameter with index {index} not found"),
+			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
 }

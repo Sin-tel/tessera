@@ -121,7 +121,7 @@ impl Instrument for Polysine {
 				.voices
 				.iter_mut()
 				.for_each(|v| v.vel.set_release(value)),
-			_ => eprintln!("Parameter with index {index} not found"),
+			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
 }

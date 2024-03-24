@@ -1,7 +1,7 @@
 use crate::dsp::delayline::DelayLine;
 use crate::dsp::smooth::{SmoothBuffer, SmoothExp};
 use crate::dsp::*;
-use crate::effect::Effect;
+use crate::effect::*;
 
 // max length in seconds
 const MAX_LEN: f32 = 1.0;
@@ -104,7 +104,7 @@ impl Effect for Delay {
 			4 => self.lfo_freq = value,
 			5 => self.lfo_mod = value,
 
-			_ => eprintln!("Parameter with index {index} not found"),
+			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
 }

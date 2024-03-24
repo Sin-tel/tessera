@@ -5,6 +5,7 @@ use crate::dsp::env::AttackRelease;
 use crate::effect::*;
 use crate::instrument;
 use crate::instrument::*;
+use crate::log::log_warn;
 use crate::lua::{AudioMessage, LuaMessage};
 
 pub struct Channel {
@@ -68,7 +69,7 @@ impl Render {
 				ch.effects
 					.insert(0, Bypass::new(self.sample_rate, effect_number));
 			}
-			None => println!("Channel index out of bounds"),
+			None => log_warn!("Channel index out of bounds"),
 		}
 	}
 
@@ -164,7 +165,7 @@ impl Render {
 				Bypass(ch_index, device_index, bypass) => {
 					let ch = &mut self.channels[ch_index];
 					if device_index == 0 {
-						eprintln!("Bypass instrument is not supported");
+						log_warn!("Bypass instrument is not supported");
 					} else {
 						ch.effects[device_index - 1].bypassed = bypass;
 					}
