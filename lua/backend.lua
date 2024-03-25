@@ -6,7 +6,7 @@ else
 	package.cpath = package.cpath .. ";" .. src .. "/../target/debug/?.dll"
 end
 
-local backend = require("rust_backend").init()
+local backend = require("tessera").init()
 
 backend:setWorkingDirectory(love.filesystem.getSource())
 

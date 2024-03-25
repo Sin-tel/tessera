@@ -1,10 +1,10 @@
 [package]
-name = "rust_backend"
+name = "tessera"
 version = "0.1.0"
 edition = "2021"
 [lib]
 path = "rust/lib.rs"
-crate-type = ["cdylib"]
+crate-type = ["lib", "cdylib"]
 
 # ASIO requirements
 [target.'cfg(target_os = "windows")'.dependencies]

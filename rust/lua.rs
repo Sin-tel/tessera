@@ -275,7 +275,7 @@ impl UserData for LuaData {
 }
 
 #[mlua::lua_module]
-fn rust_backend(lua: &Lua) -> LuaResult<LuaTable> {
+fn tessera(lua: &Lua) -> LuaResult<LuaTable> {
 	let exports = lua.create_table()?;
 	exports.set("init", lua.create_function(init)?)?;
 	Ok(exports)
