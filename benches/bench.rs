@@ -6,11 +6,10 @@ extern crate bencher;
 
 use bencher::Bencher;
 use fastrand::Rng;
-use rust_backend::dsp::delayline::*;
-use rust_backend::dsp::resample::*;
-use rust_backend::dsp::*;
 use std::f32::consts::PI;
-use std::f32::consts::TAU;
+use tessera::dsp::delayline::*;
+use tessera::dsp::resample::*;
+use tessera::dsp::*;
 
 const ITERATIONS: u32 = 1000;
 const SAMPLE_RATE: f32 = 44100.0;
@@ -62,7 +61,7 @@ fn softclip_cubic_bench(bench: &mut Bencher) {
 }
 
 fn sin_bench(bench: &mut Bencher) {
-	run(bench, |b| (TAU * b).sin())
+	run(bench, |b| (TWO_PI * b).sin())
 }
 
 fn sin_cheap_bench(bench: &mut Bencher) {
@@ -139,7 +138,7 @@ fn downsample_bench(bench: &mut Bencher) {
 }
 
 fn svf_bench(bench: &mut Bencher) {
-	let mut filter = rust_backend::dsp::simper::Filter::new(44100.0);
+	let mut filter = tessera::dsp::simper::Filter::new(44100.0);
 	filter.set_lowpass(500.0, 0.7);
 	let mut i = 0;
 	run(bench, |x| {
@@ -153,7 +152,7 @@ fn svf_bench(bench: &mut Bencher) {
 }
 
 fn onepole_bench(bench: &mut Bencher) {
-	let mut filter = rust_backend::dsp::onepole::OnePole::new(44100.0);
+	let mut filter = tessera::dsp::onepole::OnePole::new(44100.0);
 	filter.set_lowpass(500.0);
 	let mut i = 0;
 	run(bench, |x| {
@@ -167,12 +166,12 @@ fn onepole_bench(bench: &mut Bencher) {
 }
 
 fn dckiller_bench(bench: &mut Bencher) {
-	let mut filter = rust_backend::dsp::DcKiller::new(44100.0);
+	let mut filter = tessera::dsp::DcKiller::new(44100.0);
 	run(bench, |x| filter.process(x))
 }
 
 fn skf_bench(bench: &mut Bencher) {
-	let mut filter = rust_backend::dsp::skf::Skf::new(44100.0);
+	let mut filter = tessera::dsp::skf::Skf::new(44100.0);
 	filter.set(500.0, 0.7);
 	let mut i = 0;
 	run(bench, |x| {

@@ -47,6 +47,7 @@ mod render;
 mod scope;
 
 #[allow(dead_code)]
+// needs to be public for benches
 pub mod dsp;
 
 #[allow(unused_macros)]
