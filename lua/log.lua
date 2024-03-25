@@ -2,13 +2,15 @@ io.stdout:setvbuf("no")
 
 local log = {}
 
-local file = io.open("../out.log", "a")
+local file = io.open("../out/out.log", "a")
+file:setvbuf("full")
 
 local function write_log(level, ...)
 	local level_str = "[" .. level:upper() .. "] "
 
 	io.stdout:write(level_str)
 	print(...)
+
 	file:write(level_str)
 	local vlist = { ... }
 	for i, v in ipairs(vlist) do
@@ -18,6 +20,7 @@ local function write_log(level, ...)
 		file:write(v)
 	end
 	file:write("\n")
+	file:flush()
 end
 
 function log.info(...)

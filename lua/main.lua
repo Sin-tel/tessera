@@ -33,6 +33,8 @@ audio_status = "waiting"
 --- temp stuff, to delete ---
 
 -----------------------------
+local renderWav
+
 local function audioSetup()
 	if not backend:running() then
 		backend:setup(settings.audio.default_host, settings.audio.default_device, settings.audio.buffer_size)
@@ -236,13 +238,15 @@ function love.quit()
 	backend:quit()
 end
 
-local function renderWav()
+function renderWav()
 	--TODO: run this on a new thread in rust?
 
 	if not backend:running() then
 		log.error("backend offline")
 		return
 	end
+
+	log.info("start render wav")
 
 	mouse:setCursor("wait")
 	mouse:endFrame()
@@ -267,6 +271,9 @@ local function renderWav()
 		parseMessages()
 	end
 	wav.close()
+
+	log.info("finish render wav")
+
 	backend:setPaused(false)
 
 	mouse:setCursor("default")
