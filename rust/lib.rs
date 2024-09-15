@@ -43,6 +43,7 @@ mod audio;
 mod effect;
 mod instrument;
 mod lua;
+mod midi;
 mod render;
 mod scope;
 

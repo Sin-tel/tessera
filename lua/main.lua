@@ -56,9 +56,9 @@ local function audioSetup()
 	-- local ch = channelHandler:add("sine")
 	-- local ch = channelHandler:add("polysine")
 	-- local ch = channelHandler:add("analog")
-	-- local ch = channelHandler:add("fm")
+	local ch = channelHandler:add("fm")
 	-- local ch = channelHandler:add("wavetable")
-	local ch = channelHandler:add("epiano")
+	-- local ch = channelHandler:add("epiano")
 
 	-- channelHandler:addEffect(ch, "drive")
 	-- channelHandler:addEffect(ch, "delay")
@@ -181,7 +181,6 @@ function love.keypressed(key, scancode, isrepeat)
 		love.event.quit()
 	elseif key == "k" then
 		if backend:running() then
-			midi.quit()
 			backend:quit()
 		else
 			audio_status = "request"
@@ -233,8 +232,6 @@ end
 
 function love.quit()
 	-- settingsHandler.save(settings)
-
-	midi.quit()
 	backend:quit()
 end
 

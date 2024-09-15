@@ -87,7 +87,16 @@ where
 
 	let stream = device.build_output_stream(config, audio_closure, err_fn, None)?;
 
-	Ok(AudioContext { stream, audio_tx, stream_tx, lua_rx, m_render, scope, paused: false })
+	Ok(AudioContext {
+		stream,
+		audio_tx,
+		stream_tx,
+		lua_rx,
+		m_render,
+		scope,
+		paused: false,
+		midi_connections: Vec::new(),
+	})
 }
 
 fn build_closure<T>(
