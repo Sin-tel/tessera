@@ -12,15 +12,14 @@ pub fn init_logging() {
 		.set_target_level(LevelFilter::Off)
 		.build();
 
-    let filename = "../out/out.log";
+	let filename = "../out/out.log";
 
-    // create empty new file
-    File::create(filename).unwrap();
-    // append mode for atomic writes
-    let f = OpenOptions::new().append(true).open(filename).unwrap();
-    // buffer lines
-    let f_write = LineWriter::new(f);
-
+	// create empty new file
+	File::create(filename).unwrap();
+	// append mode for atomic writes
+	let f = OpenOptions::new().append(true).open(filename).unwrap();
+	// buffer lines
+	let f_write = LineWriter::new(f);
 
 	CombinedLogger::init(vec![
 		SimpleLogger::new(LevelFilter::Info, config.clone()),
