@@ -27,6 +27,7 @@ hound = "3.5"
 log = "0.4"
 simplelog = "0.12"
 log-panics = { version = "2", features = ["with-backtrace"]}
+midir = "0.10"
 
 [profile.dev]
 # opt-level = 1

@@ -56,7 +56,7 @@ function MidiHandler:event(device, event)
 	local mpe = device.mpe
 	local channel_index = channelHandler:getChannelIndex(self.channel)
 
-	if event.name == "note on" then
+	if event.name == "note_on" then
 		-- voice stealing logic.
 		-- if theres are voices free, use the oldest one,
 		-- if not, steal a playing one.
@@ -102,10 +102,10 @@ function MidiHandler:event(device, event)
 		voice.age = 0
 
 		local p = tuning:fromMidi(voice.note)
-		print("noteon", channel_index, p + voice.offset, velocity_curve(voice.vel), new_i)
+		print("note_on", channel_index, p + voice.offset, velocity_curve(voice.vel), new_i)
 
 		backend:sendNote(channel_index, p + voice.offset, velocity_curve(voice.vel), new_i)
-	elseif event.name == "note off" then
+	elseif event.name == "note_off" then
 		local get_i
 		for i, v in ipairs(self.voices) do
 			if v.note == event.note and v.note_on then
@@ -130,7 +130,7 @@ function MidiHandler:event(device, event)
 			if not self.sustain then
 				-- note off pitches are ignored but we send the correct one anyway
 				local p = tuning:fromMidi(voice.note)
-				print("noteoff", channel_index, p + voice.offset, 0, get_i)
+				print("note_off", channel_index, p + voice.offset, 0, get_i)
 				backend:sendNote(channel_index, p + voice.offset, 0, get_i)
 			end
 		else
@@ -148,7 +148,7 @@ function MidiHandler:event(device, event)
 		if mpe then
 			for i, v in ipairs(self.voices) do
 				if v.channel == event.channel then
-					v.offset = device.pitchbend_range * event.offset
+					v.offset = device.pitchbend_range * event.pitchbend
 					if v.note_on then
 						backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
 					end
@@ -156,7 +156,7 @@ function MidiHandler:event(device, event)
 			end
 		else
 			for i, v in ipairs(self.voices) do
-				v.offset = device.pitchbend_range * event.offset
+				v.offset = device.pitchbend_range * event.pitchbend
 				if v.note_on then
 					backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
 				end
@@ -166,7 +166,7 @@ function MidiHandler:event(device, event)
 		if mpe then
 			for i, v in ipairs(self.voices) do
 				if v.channel == event.channel then
-					v.pres = event.pres
+					v.pres = event.pressure
 					if v.note_on then
 						-- print("pres", channel_index, v.note + v.offset, v.pres, i)
 
@@ -176,16 +176,16 @@ function MidiHandler:event(device, event)
 			end
 		else
 			for i, v in ipairs(self.voices) do
-				v.pres = event.pres
+				v.pres = event.pressure
 				if v.note_on then
 					backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
 				end
 			end
 		end
-	elseif event.name == "cc" then
-		if event.cc == 64 then
+	elseif event.name == "controller" then
+		if event.controller == 64 then
 			-- sustain pedal
-			if event.y > 0 then
+			if event.value > 0 then
 				self.sustain = true
 			else
 				self.sustain = false

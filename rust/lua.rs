@@ -1,4 +1,3 @@
-// use flexi_logger::{Duplicate, FileSpec, Logger, WriteMode};
 use mlua::prelude::*;
 use mlua::{UserData, UserDataMethods, Value};
 use no_denormals::no_denormals;
@@ -8,6 +7,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::audio;
 use crate::log::{init_logging, log_error, log_info, log_warn};
+use crate::midi;
 use crate::render::Render;
 use crate::scope::Scope;
 
@@ -21,6 +21,7 @@ pub struct AudioContext {
 	pub m_render: Arc<Mutex<Render>>,
 	pub scope: Scope,
 	pub paused: bool,
+	pub midi_connections: Vec<midi::Connection>,
 }
 
 // Message struct to pass to audio thread
@@ -268,6 +269,52 @@ impl UserData for LuaData {
 		methods.add_method_mut("pop", |_, data, ()| {
 			if let LuaData(Some(ud)) = data {
 				Ok(ud.lua_rx.try_pop())
+			} else {
+				Ok(None)
+			}
+		});
+
+		methods.add_method("midiListPorts", |_, _, ()| {
+			midi::list_ports();
+			Ok(())
+		});
+
+		methods.add_method("midiConnections", |_, data, ()| {
+			if let LuaData(Some(ud)) = data {
+				let list: Vec<String> =
+					ud.midi_connections.iter().map(|c| c.name.clone()).collect();
+				Ok(Some(list))
+			} else {
+				Ok(None)
+			}
+		});
+
+		methods.add_method_mut("midiOpenConnection", |_, data, port_name: String| {
+			if let LuaData(Some(ud)) = data {
+				let connection = midi::connect(&port_name);
+				if let Some(c) = connection {
+					let name = c.name.clone();
+					let index = ud.midi_connections.len();
+					ud.midi_connections.push(c);
+					return Ok((Some(name), Some(index)));
+				}
+			}
+			Ok((None, None))
+		});
+
+		methods.add_method_mut("midiPoll", |_, data, connection_index: usize| {
+			if let LuaData(Some(ud)) = data {
+				let connection = ud.midi_connections.get_mut(connection_index);
+				match connection {
+					Some(c) => {
+						let events: Vec<midi::Event> = c.midi_rx.pop_iter().collect();
+						Ok(Some(events))
+					},
+					None => {
+						log_error!("Bad midi connection index: {connection_index}");
+						Ok(None)
+					},
+				}
 			} else {
 				Ok(None)
 			}
