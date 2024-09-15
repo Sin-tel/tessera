@@ -1,3 +1,3 @@
 [build]
 # disable this if you need some kind of portable build!
-rustflags = "-C target-cpu=native"
+# rustflags = "-C target-cpu=native"
