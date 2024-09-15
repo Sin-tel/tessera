@@ -25,7 +25,7 @@ function util.sign(x)
 end
 
 function util.clamp(x, min, max)
-	return x < min and min or (x > max and max or x)
+	return math.min(math.max(x, min), max)
 end
 
 function util.dist(x1, y1, x2, y2)

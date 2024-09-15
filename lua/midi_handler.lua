@@ -9,7 +9,7 @@ local MidiHandler = {}
 -- 0.02 = 34dB dynamic range
 -- 0.05 = 26dB dynamic range
 -- 0.10 = 20dB dynamic range
-local VEL_MIN = 0.02
+local VEL_MIN = 0.05
 local LOG_RANGE = -math.log(VEL_MIN)
 
 local function velocity_curve(x)

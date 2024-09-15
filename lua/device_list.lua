@@ -81,7 +81,7 @@ deviceList.instruments.fm = {
 
 deviceList.instruments.polysine = {
 	number = 4,
-	n_voices = 2,
+	n_voices = 16,
 	parameters = {
 		{ "feedback", "slider", { default = 0.5, max = 2.0 } },
 		{ "attack", "slider", { default = 40.0, min = 1.0, max = 20000.0, t = "log", fmt = "ms" } },
@@ -93,9 +93,9 @@ deviceList.instruments.epiano = {
 	number = 5,
 	n_voices = 16,
 	parameters = {
-		{ "gain", "slider", { default = -6, min = -24, max = 0, fmt = "%0.1f dB" } },
-		{ "wobble", "slider", { default = 0.5 } },
-		{ "bell", "slider", { default = 0.5 } },
+		{ "gain", "slider", { default = -6, min = -24, max = 6, fmt = "%0.1f dB" } },
+		{ "wobble", "slider", { default = 0.3 } },
+		{ "bell", "slider", { default = 0.15 } },
 	},
 }
 
