@@ -1,7 +1,8 @@
 use assert_no_alloc::*;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use no_denormals::no_denormals;
-use ringbuf::{HeapConsumer, HeapRb};
+use ringbuf::traits::*;
+use ringbuf::{HeapCons, HeapRb};
 use std::error::Error;
 use std::panic;
 use std::panic::AssertUnwindSafe;
@@ -90,7 +91,7 @@ where
 }
 
 fn build_closure<T>(
-	mut stream_rx: HeapConsumer<bool>,
+	mut stream_rx: HeapCons<bool>,
 	m_render: Arc<Mutex<Render>>,
 ) -> impl FnMut(&mut [T], &cpal::OutputCallbackInfo)
 where

@@ -1,6 +1,7 @@
 use bit_mask_ring_buf::BMRingBuf;
 use realfft::{RealFftPlanner, RealToComplex};
-use ringbuf::HeapConsumer;
+use ringbuf::traits::*;
+use ringbuf::HeapCons;
 use std::sync::Arc;
 
 use crate::audio::SPECTRUM_SIZE;
@@ -10,11 +11,11 @@ pub struct Scope {
 	buf: BMRingBuf<f32>,
 	pos: isize,
 	r2c: Arc<dyn RealToComplex<f32>>,
-	rx: HeapConsumer<f32>,
+	rx: HeapCons<f32>,
 }
 
 impl Scope {
-	pub fn new(rx: HeapConsumer<f32>) -> Self {
+	pub fn new(rx: HeapCons<f32>) -> Self {
 		let mut real_planner = RealFftPlanner::<f32>::new();
 		let r2c = real_planner.plan_fft_forward(SPECTRUM_SIZE);
 

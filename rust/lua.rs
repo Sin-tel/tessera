@@ -2,7 +2,8 @@
 use mlua::prelude::*;
 use mlua::{UserData, UserDataMethods, Value};
 use no_denormals::no_denormals;
-use ringbuf::{HeapConsumer, HeapProducer};
+use ringbuf::traits::*;
+use ringbuf::{HeapCons, HeapProd};
 use std::sync::{Arc, Mutex};
 
 use crate::audio;
@@ -14,9 +15,9 @@ struct LuaData(Option<AudioContext>);
 
 pub struct AudioContext {
 	pub stream: cpal::Stream,
-	pub audio_tx: HeapProducer<AudioMessage>,
-	pub stream_tx: HeapProducer<bool>,
-	pub lua_rx: HeapConsumer<LuaMessage>,
+	pub audio_tx: HeapProd<AudioMessage>,
+	pub stream_tx: HeapProd<bool>,
+	pub lua_rx: HeapCons<LuaMessage>,
 	pub m_render: Arc<Mutex<Render>>,
 	pub scope: Scope,
 	pub paused: bool,
@@ -266,7 +267,7 @@ impl UserData for LuaData {
 
 		methods.add_method_mut("pop", |_, data, ()| {
 			if let LuaData(Some(ud)) = data {
-				Ok(ud.lua_rx.pop())
+				Ok(ud.lua_rx.try_pop())
 			} else {
 				Ok(None)
 			}
@@ -307,14 +308,14 @@ fn check_lock_poison(data: &mut LuaData) {
 
 impl AudioContext {
 	fn send_message(&mut self, m: AudioMessage) {
-		if self.audio_tx.push(m).is_err() {
+		if self.audio_tx.try_push(m).is_err() {
 			log_warn!("Queue full. Dropped message!");
 		}
 	}
 
 	fn send_paused(&mut self, paused: bool) {
 		self.paused = paused;
-		if self.stream_tx.push(paused).is_err() {
+		if self.stream_tx.try_push(paused).is_err() {
 			log_warn!("Stream queue full. Dropped message!");
 		}
 	}

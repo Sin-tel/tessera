@@ -1,4 +1,5 @@
-use ringbuf::{HeapConsumer, HeapProducer};
+use ringbuf::traits::*;
+use ringbuf::{HeapCons, HeapProd};
 
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::env::AttackRelease;
@@ -15,9 +16,9 @@ pub struct Channel {
 }
 
 pub struct Render {
-	audio_rx: HeapConsumer<AudioMessage>,
-	lua_tx: HeapProducer<LuaMessage>,
-	scope_tx: HeapProducer<f32>,
+	audio_rx: HeapCons<AudioMessage>,
+	lua_tx: HeapProd<LuaMessage>,
+	scope_tx: HeapProd<f32>,
 	channels: Vec<Channel>,
 	buffer2: [[f32; MAX_BUF_SIZE]; 2],
 	pub sample_rate: f32,
@@ -29,9 +30,9 @@ pub struct Render {
 impl Render {
 	pub fn new(
 		sample_rate: f32,
-		audio_rx: HeapConsumer<AudioMessage>,
-		lua_tx: HeapProducer<LuaMessage>,
-		scope_tx: HeapProducer<f32>,
+		audio_rx: HeapCons<AudioMessage>,
+		lua_tx: HeapProd<LuaMessage>,
+		scope_tx: HeapProd<f32>,
 	) -> Render {
 		Render {
 			audio_rx,
@@ -46,7 +47,7 @@ impl Render {
 	}
 
 	pub fn send(&mut self, m: LuaMessage) {
-		self.lua_tx.push(m).ok();
+		self.lua_tx.try_push(m).ok();
 	}
 
 	pub fn add_channel(&mut self, instrument_index: usize) {
@@ -109,7 +110,7 @@ impl Render {
 		// Calculate peak
 		let mut sum = [0.0; 2];
 		for (i, track) in buffer.iter().enumerate() {
-			sum[i] = track.iter().map(|x| x.abs()).fold(std::f32::MIN, f32::max);
+			sum[i] = track.iter().map(|x| x.abs()).fold(f32::MIN, f32::max);
 		}
 
 		self.peak_l.set(sum[0]);
@@ -120,7 +121,7 @@ impl Render {
 
 		// Send everything to scope.
 		for s in buffer[0].iter() {
-			self.scope_tx.push(*s).ok(); // Don't really care if its full
+			self.scope_tx.try_push(*s).ok(); // Don't really care if its full
 		}
 
 		// hardclip
@@ -131,7 +132,7 @@ impl Render {
 
 	pub fn parse_messages(&mut self) {
 		use AudioMessage::*;
-		while let Some(m) = self.audio_rx.pop() {
+		while let Some(m) = self.audio_rx.try_pop() {
 			match m {
 				CV(ch_index, pitch, pres, id) => {
 					let ch = &mut self.channels[ch_index];
