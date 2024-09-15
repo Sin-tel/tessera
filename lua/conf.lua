@@ -1,6 +1,6 @@
 function love.conf(t)
-    t.window.title = "Justidaw"
-    t.identity = "justidaw"
+    t.window.title = "Tessera"
+    t.identity = "tessera"
     t.version = "11.4"
     -- t.window.icon = "res/icon.ico"
 
