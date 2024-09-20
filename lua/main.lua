@@ -9,7 +9,6 @@ end
 
 local settingsHandler = require("settings_handler")
 local backend = require("backend")
-local wav = require("lib/wav_save")
 local midi = require("midi")
 local views = require("views")
 
@@ -240,11 +239,11 @@ function renderWav()
 	--TODO: run this on a new thread in rust?
 
 	if not backend:running() then
-		log.error("backend offline")
+		log.error("Backend offline.")
 		return
 	end
 
-	log.info("start render wav")
+	log.info("Start render.")
 
 	mouse:setCursor("wait")
 	mouse:endFrame()
@@ -254,23 +253,17 @@ function renderWav()
 	-- sleep for a bit to make sure the audio thread is done
 	love.timer.sleep(0.01)
 
-	wav.open()
 	for _ = 1, 5000 do
-		local block = backend:renderBlock()
-		if not block then
-			log.error("failed to get block. try again")
-			wav.close()
+		local success = backend:renderBlock()
+		if not success then
+			log.error("Failed to render block.")
 			backend:play()
 			return
 		end
-
-		wav.append(block)
-
 		parseMessages()
 	end
-	wav.close()
-
-	log.info("finish render wav")
+	log.info("Finished render.")
+	backend:renderFinish()
 
 	backend:setPaused(false)
 

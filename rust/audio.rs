@@ -96,6 +96,7 @@ where
 		scope,
 		paused: false,
 		midi_connections: Vec::new(),
+		render_buffer: Vec::new(),
 	})
 }
 
