@@ -39,6 +39,8 @@ local function audioSetup()
 	if not backend:running() then
 		backend:setup(settings.audio.default_host, settings.audio.default_device, settings.audio.buffer_size)
 		-- backend:setup("wasapi", settings.audio.default_device)
+
+		midi.load(settings.midi.inputs)
 	else
 		log.warn("Audio already set up")
 	end
@@ -50,15 +52,13 @@ local function audioSetup()
 		audio_status = "dead"
 	end
 
-	midi.load(settings.midi.inputs)
-
 	channelHandler:load()
 	-- local ch = channelHandler:add("sine")
 	-- local ch = channelHandler:add("polysine")
 	-- local ch = channelHandler:add("analog")
-	local ch = channelHandler:add("fm")
+	-- local ch = channelHandler:add("fm")
 	-- local ch = channelHandler:add("wavetable")
-	-- local ch = channelHandler:add("epiano")
+	local ch = channelHandler:add("epiano")
 
 	-- channelHandler:addEffect(ch, "drive")
 	-- channelHandler:addEffect(ch, "delay")
@@ -181,6 +181,7 @@ function love.keypressed(key, scancode, isrepeat)
 		love.event.quit()
 	elseif key == "k" then
 		if backend:running() then
+			midi.quit()
 			backend:quit()
 		else
 			audio_status = "request"

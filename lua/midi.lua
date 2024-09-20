@@ -47,12 +47,17 @@ function midi.updateDevice(device)
 	end
 
 	local events = backend:midiPoll(device.index)
+	if not events then return end
 
 	if handler then
 		for _, event in ipairs(events) do
 			handler:event(device, event)
 		end
 	end
+end
+
+function midi.quit()
+	devices = {}
 end
 
 return midi

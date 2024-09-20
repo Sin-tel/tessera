@@ -61,8 +61,10 @@ pub fn connect(port_name: &str) -> Option<Connection> {
 					|_stamp, message, midi_rx| {
 						// println!("{message:?}");
 						let event = Event::from_bytes(message);
-						if midi_rx.try_push(event).is_err() {
-							log_warn!("Midi queue full!");
+						if let Some(e) = event {
+							if midi_rx.try_push(e).is_err() {
+								log_warn!("Midi queue full!");
+							}
 						}
 					},
 					midi_tx,
@@ -79,7 +81,7 @@ pub fn connect(port_name: &str) -> Option<Connection> {
 }
 
 impl Event {
-	pub fn from_bytes(data: &[u8]) -> Self {
+	pub fn from_bytes(data: &[u8]) -> Option<Self> {
 		use Message::*;
 		assert!(data.len() == 2 || data.len() == 3);
 
@@ -105,12 +107,15 @@ impl Event {
 			11 => Controller { controller: a, value: f32::from(b) / 127.0 },
 			13 => Pressure(f32::from(a)),
 			14 => PitchBend((i32::from(a) + i32::from(b) * 128 - 8192) as f32 / 8192.0),
-			other => unimplemented!("{other}"),
+			_ => {
+				log_warn!("Unparsed midi event: {data:?}");
+				return None;
+			},
 		};
 
 		// println!("{channel:?} {message:?}");
 
-		Event { channel, message }
+		Some(Event { channel, message })
 	}
 }
 
