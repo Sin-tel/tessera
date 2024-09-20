@@ -3,6 +3,7 @@ use mlua::{UserData, UserDataMethods, Value};
 use no_denormals::no_denormals;
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd};
+use std::error::Error;
 use std::sync::{Arc, Mutex};
 
 use crate::audio;
@@ -22,6 +23,7 @@ pub struct AudioContext {
 	pub scope: Scope,
 	pub paused: bool,
 	pub midi_connections: Vec<midi::Connection>,
+	pub render_buffer: Vec<f32>,
 }
 
 // Message struct to pass to audio thread
@@ -35,7 +37,6 @@ pub enum AudioMessage {
 	Bypass(usize, usize, bool),
 	ReorderEffect(usize, usize, usize),
 	// Swap(?),
-	//
 }
 
 #[derive(Debug)]
@@ -226,7 +227,6 @@ impl UserData for LuaData {
 			if let LuaData(Some(ud)) = data {
 				let len = 64;
 				let buffer: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
-				let mut out_buffer = vec![0.0f64; len * 2];
 
 				let mut render = ud.m_render.lock().expect("Failed to get lock.");
 				// TODO: need to check here if the stream is *actually* paused
@@ -234,15 +234,36 @@ impl UserData for LuaData {
 				render.parse_messages();
 				no_denormals(|| render.process(buffer));
 
-				// interlace and convert to i16 as f64 (lua wants doubles anyway)
-				for (i, outsample) in out_buffer.chunks_exact_mut(2).enumerate() {
-					outsample[0] = convert_sample_wav(buffer[0][i]);
-					outsample[1] = convert_sample_wav(buffer[1][i]);
+				// interlace
+				for i in 0..len {
+					ud.render_buffer.push(buffer[0][i]);
+					ud.render_buffer.push(buffer[1][i]);
 				}
-				Ok(Some(out_buffer))
+				Ok(true)
 			} else {
-				Ok(None)
+				Ok(false)
 			}
+		});
+
+		methods.add_method_mut("renderFinish", |_, data, ()| {
+			if let LuaData(Some(ud)) = data {
+				let filename = "../out/render.wav";
+
+				match write_wav(filename, &ud.render_buffer) {
+					Ok(()) => {
+						log_info!("Wrote \"{filename}\".");
+					},
+					Err(e) => {
+						log_error!("Failed to write wav!");
+						log_error!("{e}");
+					},
+				}
+				// reset the buffer
+				ud.render_buffer = Vec::new();
+			} else {
+				log_error!("Failed to write wav, backend offline.");
+			}
+			Ok(())
 		});
 
 		methods.add_method_mut("updateScope", |_, data, ()| {
@@ -308,16 +329,14 @@ impl UserData for LuaData {
 				match connection {
 					Some(c) => {
 						let events: Vec<midi::Event> = c.midi_rx.pop_iter().collect();
-						Ok(Some(events))
+						return Ok(Some(events));
 					},
 					None => {
 						log_error!("Bad midi connection index: {connection_index}");
-						Ok(None)
 					},
 				}
-			} else {
-				Ok(None)
 			}
+			Ok(None)
 		});
 	}
 }
@@ -329,19 +348,28 @@ fn tessera(lua: &Lua) -> LuaResult<LuaTable> {
 	Ok(exports)
 }
 
-fn dither() -> f64 {
-	// Don't know if this is the correct scaling for dithering, but it sounds good
-	(fastrand::f64() - fastrand::f64()) / (2.0 * f64::from(i16::MAX))
+fn write_wav(filename: &str, samples: &[f32]) -> Result<(), Box<dyn Error>> {
+	let spec = hound::WavSpec {
+		channels: 2,
+		sample_rate: 44100,
+		bits_per_sample: 16,
+		sample_format: hound::SampleFormat::Int,
+	};
+
+	let mut writer = hound::WavWriter::create(filename, spec)?;
+	for s in samples {
+		writer.write_sample(convert_sample_wav(*s))?;
+	}
+	writer.finalize()?;
+
+	Ok(())
 }
 
-fn convert_sample_wav(x: f32) -> f64 {
-	let z = (f64::from(x) + dither()).clamp(-1.0, 1.0);
-
-	if z >= 0.0 {
-		z * f64::from(i16::MAX)
-	} else {
-		-z * f64::from(i16::MIN)
-	}
+fn convert_sample_wav(x: f32) -> i16 {
+	// TPDF dither in range [-1, 1] quantization levels
+	let dither = (fastrand::f32() - fastrand::f32()) / f32::from(u16::MAX);
+	let x = (x + dither).clamp(-1.0, 1.0);
+	(if x >= 0.0 { x * f32::from(i16::MAX) } else { -x * f32::from(i16::MIN) }) as i16
 }
 
 fn check_lock_poison(data: &mut LuaData) {
