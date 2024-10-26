@@ -59,7 +59,7 @@ fn init(_: &Lua, _: ()) -> LuaResult<LuaData> {
 }
 
 impl UserData for LuaData {
-	fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+	fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
 		methods.add_method_mut(
 			"setup",
 			|_, data, (host_name, device_name, buffer_size): (String, String, Option<u32>)| {
@@ -396,8 +396,8 @@ impl AudioContext {
 	}
 }
 
-impl<'lua> IntoLua<'lua> for LuaMessage {
-	fn into_lua(self, lua: &'lua Lua) -> LuaResult<Value<'lua>> {
+impl IntoLua for LuaMessage {
+	fn into_lua(self, lua: &Lua) -> LuaResult<Value> {
 		use LuaMessage::*;
 
 		let table = Lua::create_table(lua)?;
