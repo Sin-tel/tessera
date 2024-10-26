@@ -119,8 +119,8 @@ impl Event {
 	}
 }
 
-impl<'lua> IntoLua<'lua> for Event {
-	fn into_lua(self, lua: &'lua Lua) -> LuaResult<Value<'lua>> {
+impl IntoLua for Event {
+	fn into_lua(self, lua: &Lua) -> LuaResult<Value> {
 		use Message::*;
 		let table = Lua::create_table(lua)?;
 		table.set("channel", self.channel)?;
