@@ -32,6 +32,7 @@ audio_status = "waiting"
 
 -- main project data structure
 project = {}
+project_ui = {}
 
 --- temp stuff, to delete ---
 
@@ -55,7 +56,6 @@ local function audioSetup()
 		audio_status = "dead"
 	end
 
-	channelHandler:load()
 	-- local ch = channelHandler:add("sine")
 	-- local ch = channelHandler:add("polysine")
 	-- local ch = channelHandler:add("analog")
@@ -110,22 +110,9 @@ function love.load()
 	top_right:setView(views.Channels:new())
 	bottom_rigth:setView(views.ChannelSettings:new())
 
-	-- project.instrument = {}
-	-- project.instrument.volume = 1
-	-- project.instrument.pan = 0.5
-	-- project.fx = {}
-	-- project.fx.reverb = {}
-	-- project.fx.reverb.mix = 0.2
-
-	-- util.pprint(project)
-
-	-- undo.push(project)
-	-- -- project.instrument.volume = 2
-	-- -- project.instrument = nil
-	-- project.test = { 2 }
-	-- undo.commit()
-
-	-- os.exit()
+	-- load empty project
+	project.channels = {}
+	project_ui.channels = {}
 end
 
 function love.update(dt)
@@ -207,6 +194,7 @@ function love.keypressed(key, scancode, isrepeat)
 	elseif key == "y" and ctrl then
 		command.redo()
 	elseif key == "z" then
+		log.info("(un)pausing backend")
 		backend:setPaused(not backend:paused())
 	elseif key == "r" and ctrl then
 		render()
@@ -215,27 +203,22 @@ function love.keypressed(key, scancode, isrepeat)
 	elseif key == "a" and ctrl then
 		channelHandler:add("fm")
 	elseif key == "down" and shift then
-		local ch = selection.channel
-		local d = selection.device
-		if ch and d then
-			channelHandler:reorderEffect(ch, d, 1)
+		if selection.channel_index and selection.device_index then
+			channelHandler:reorderEffect(selection.channel_index, selection.device_index, 1)
 		end
 	elseif key == "up" and shift then
-		local ch = selection.channel
-		local device = selection.device
-		if ch and device then
-			channelHandler:reorderEffect(ch, device, -1)
+		if selection.channel_index and selection.device_index then
+			channelHandler:reorderEffect(selection.channel_index, selection.device_index, -1)
 		end
 	elseif key == "delete" then
-		local ch = selection.channel
-		if ch then
-			if selection.device then
-				channelHandler:removeEffect(ch, selection.device)
+		if selection.channel_index then
+			if selection.device_index then
+				channelHandler:removeEffect(selection.channel_index, selection.device_index)
 			else
-				channelHandler:remove(ch)
-				selection.channel = nil
+				channelHandler:remove(selection.channel_index)
+				selection.channel_index = nil
 			end
-			selection.device = nil
+			selection.device_index = nil
 		end
 	end
 end

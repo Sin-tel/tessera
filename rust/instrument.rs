@@ -11,16 +11,16 @@ use crate::instrument::{
 use crate::log::log_warn;
 
 // list of instruments
-pub fn new(sample_rate: f32, instrument_number: usize) -> Box<dyn Instrument + Send> {
-	match instrument_number {
-		0 => Box::new(Sine::new(sample_rate)),
-		1 => Box::new(Wavetable::new(sample_rate)),
-		2 => Box::new(Analog::new(sample_rate)),
-		3 => Box::new(Fm::new(sample_rate)),
-		4 => Box::new(Polysine::new(sample_rate)),
-		5 => Box::new(Epiano::new(sample_rate)),
+pub fn new(sample_rate: f32, name: &str) -> Box<dyn Instrument + Send> {
+	match name {
+		"sine" => Box::new(Sine::new(sample_rate)),
+		"wavetable" => Box::new(Wavetable::new(sample_rate)),
+		"analog" => Box::new(Analog::new(sample_rate)),
+		"fm" => Box::new(Fm::new(sample_rate)),
+		"polysine" => Box::new(Polysine::new(sample_rate)),
+		"epiano" => Box::new(Epiano::new(sample_rate)),
 		_ => {
-			log_warn!("Instrument with number {instrument_number} not found. Returning default.");
+			log_warn!("Instrument with name \"{name}\" not found. Returning default.");
 			Box::new(Sine::new(sample_rate))
 		},
 	}

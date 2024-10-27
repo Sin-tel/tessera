@@ -38,8 +38,8 @@ function Channels:update()
 		channelHandler:add(intrument_name)
 	end
 
-	for _, v in ipairs(channelHandler.list) do
-		v.widget:update(self.ui)
+	for i, v in ipairs(project_ui.channels) do
+		v.widget:update(self.ui, i)
 	end
 
 	self.ui:endFrame()

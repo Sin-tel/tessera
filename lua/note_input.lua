@@ -18,12 +18,10 @@ function noteInput:keypressed(key, scancode, isrepeat)
 	local handled = false
 	for i, v in ipairs(self.diatonic_row) do
 		if v == key then
-			local ch = selection.channel
-
 			local p = tuning:fromDiatonic(i, octave)
 
-			if ch then
-				local ch_index = channelHandler:getChannelIndex(ch)
+			local ch_index = selection.channel_index
+			if ch_index then
 				backend:sendNote(ch_index, p, DEFAULT_VELOCITY)
 			end
 
@@ -51,20 +49,16 @@ function noteInput:keyreleased(key, scancode)
 					break
 				end
 			end
-			local ch = selection.channel
+			local ch_index = selection.channel_index
 
-			if ch then
+			if ch_index then
 				if #queue > 0 then
 					if last then
 						local p = tuning:fromDiatonic(queue[#queue], octave)
-						local ch_index = channelHandler:getChannelIndex(ch)
-
 						backend:sendNote(ch_index, p, DEFAULT_VELOCITY)
 					end
 				else
 					local p = tuning:fromDiatonic(i, octave)
-					local ch_index = channelHandler:getChannelIndex(ch)
-
 					backend:sendNote(ch_index, p, 0.0)
 				end
 			end

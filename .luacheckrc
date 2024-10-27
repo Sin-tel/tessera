@@ -23,6 +23,8 @@ stds.justidaw = {
       "width",
       "height",
       "time",
+      "project",
+      "project_ui",
    },
    read_globals = {},
 }
