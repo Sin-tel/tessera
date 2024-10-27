@@ -9,8 +9,6 @@ function SliderValue:new(options)
 	new.t = options.t
 	new.centered = options.centered
 
-	new.dirty = true
-
 	if new.t == "dB" then
 		new.default = util.from_dB(options.default or 0)
 		new.min = 0

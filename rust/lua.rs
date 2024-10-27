@@ -180,11 +180,11 @@ impl UserData for LuaData {
 			}
 		});
 
-		methods.add_method_mut("addChannel", |_, data, instrument_number: usize| {
+		methods.add_method_mut("addChannel", |_, data, instrument_name: String| {
 			check_lock_poison(data);
 			if let LuaData(Some(ud)) = data {
 				let mut render = ud.m_render.lock().expect("Failed to get lock.");
-				render.add_channel(instrument_number);
+				render.add_channel(&instrument_name);
 			}
 			Ok(())
 		});
@@ -198,17 +198,14 @@ impl UserData for LuaData {
 			Ok(())
 		});
 
-		methods.add_method_mut(
-			"addEffect",
-			|_, data, (channel_index, effect_number): (usize, usize)| {
-				check_lock_poison(data);
-				if let LuaData(Some(ud)) = data {
-					let mut render = ud.m_render.lock().expect("Failed to get lock.");
-					render.add_effect(channel_index - 1, effect_number);
-				}
-				Ok(())
-			},
-		);
+		methods.add_method_mut("addEffect", |_, data, (channel_index, name): (usize, String)| {
+			check_lock_poison(data);
+			if let LuaData(Some(ud)) = data {
+				let mut render = ud.m_render.lock().expect("Failed to get lock.");
+				render.add_effect(channel_index - 1, &name);
+			}
+			Ok(())
+		});
 
 		methods.add_method_mut(
 			"removeEffect",

@@ -3,6 +3,8 @@ table serializer that outputs human readable lua code
 
 supports nested tables (and arrays) of numbers, strings and booleans 
 doesn't support functions, userdata, circular references, and probably a lot of edge cases
+
+-- TODO: use fast string concat
 ]]
 
 local infinity = math.huge

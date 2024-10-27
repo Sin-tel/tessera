@@ -86,7 +86,7 @@ util.deepcopy = deepcopy
 function util.drawText(str, x, y, w, h, align, pad)
 	align = align or "left"
 
-	assert(type(str) == "string")
+	assert(type(str) == "string", type(str))
 
 	if pad then
 		local p = Ui.DEFAULT_PAD

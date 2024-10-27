@@ -16,19 +16,19 @@ use crate::effect::{
 use crate::log::log_warn;
 
 // list of effects
-pub fn new(sample_rate: f32, effect_number: usize) -> Box<dyn Effect + Send> {
-	match effect_number {
-		0 => Box::new(Pan::new(sample_rate)),
-		1 => Box::new(Gain::new(sample_rate)),
-		2 => Box::new(Drive::new(sample_rate)),
-		3 => Box::new(Delay::new(sample_rate)),
-		4 => Box::new(Reverb::new(sample_rate)),
-		5 => Box::new(TestFilter::new(sample_rate)),
-		6 => Box::new(Equalizer::new(sample_rate)),
-		7 => Box::new(Tilt::new(sample_rate)),
-		8 => Box::new(Convolve::new(sample_rate)),
+pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
+	match name {
+		"pan" => Box::new(Pan::new(sample_rate)),
+		"gain" => Box::new(Gain::new(sample_rate)),
+		"drive" => Box::new(Drive::new(sample_rate)),
+		"delay" => Box::new(Delay::new(sample_rate)),
+		"reverb" => Box::new(Reverb::new(sample_rate)),
+		"testfilter" => Box::new(TestFilter::new(sample_rate)),
+		"equalizer" => Box::new(Equalizer::new(sample_rate)),
+		"tilt" => Box::new(Tilt::new(sample_rate)),
+		"convolve" => Box::new(Convolve::new(sample_rate)),
 		_ => {
-			log_warn!("Effect with number {effect_number} not found. Returning default.");
+			log_warn!("Effect with name \"{name}\" not found. Returning default.");
 			Box::new(Gain::new(sample_rate))
 		},
 	}
@@ -48,8 +48,8 @@ pub struct Bypass {
 }
 
 impl Bypass {
-	pub fn new(sample_rate: f32, index: usize) -> Self {
-		Bypass { effect: effect::new(sample_rate, index), bypassed: false }
+	pub fn new(sample_rate: f32, name: &str) -> Self {
+		Bypass { effect: effect::new(sample_rate, name), bypassed: false }
 	}
 	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		if !self.bypassed {

@@ -33,22 +33,22 @@ function ChannelSettings:update()
 	-- TODO: should calculate this in device instead
 	local w_label = util.clamp(w * 0.4 - 64, 0, Ui.PARAMETER_LABEL_WIDTH)
 
-	if selection.channel then
-		if selection.channel.instrument:updateUi(self.ui, w, w_label) then
-			selection.device = selection.channel.instrument
+	if selection.channel_index then
+		local ch = project_ui.channels[selection.channel_index]
+		if ch.instrument:update(self.ui, 0, w, w_label) then
+			selection.device_index = 0
 		end
-		for i, v in ipairs(selection.channel.effects) do
-			if v:updateUi(self.ui, w, w_label) then
-				selection.device = v
+
+		for i, v in ipairs(ch.effects) do
+			if v:update(self.ui, i, w, w_label) then
+				selection.device_index = i
 			end
 		end
 
 		-- TODO: command
 		if add_effect_index then
 			local effect_name = self.effect_list[add_effect_index]
-			local new_effect = channelHandler:addEffect(selection.channel, effect_name)
-			-- this has to be set here otherwise clicking on the dropdown will select the device underneath
-			selection.device = new_effect
+			local new_effect = channelHandler:addEffect(selection.channel_index, effect_name)
 		end
 	end
 	self.ui:endFrame()
