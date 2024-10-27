@@ -1,5 +1,5 @@
-local ui = require("ui/ui")
 local SliderValue = require("ui/slider_value")
+local command = require("command")
 
 local Slider = {}
 
@@ -16,30 +16,44 @@ function Slider:new(options)
 	return new
 end
 
-function Slider:update(ui, x, y, w, h)
+function Slider:update(ui, target, key)
+	local x, y, w, h = ui:next()
 	local hit = ui:hitbox(self, x, y, w, h)
 
-	local v = self.value:getNormalized()
+	local v = self.value:toNormal(target[key])
+
+	local interact = false
 
 	if mouse.button_pressed == 3 and hit then
-		self.value:reset()
+		target[key] = self.value.default
 	end
 
 	if ui.active == self then
 		mouse:setRelative(true)
 		if mouse.button_pressed then
 			self.drag_start = v
+			self.prev_value = target[key]
 			self.active = true
 		end
 		if mouse.drag then
+			assert(w > 0)
 			local scale = 0.7 / w
-			local new_value = util.clamp(self.drag_start + scale * mouse.dx, 0, 1)
-			self.value:setNormalized(new_value)
+			local new_normalized = util.clamp(self.drag_start + scale * mouse.dx, 0, 1)
+			self.new_value = self.value:fromNormal(new_normalized)
+			target[key] = self.new_value
+			interact = true
 		end
 	end
 
 	if self.active and mouse.button_released then
 		self.active = false
+
+		if self.new_value ~= self.prev_value then
+			local c = command.change.new(target, key, self.new_value)
+			c.prev_value = self.prev_value
+			command.register(c)
+		end
+
 		if mouse.drag then
 			local ox, oy = ui.view:getOrigin()
 			mouse:setPosition(ox + x + v * w, oy + y + 0.5 * h)
@@ -55,16 +69,18 @@ function Slider:update(ui, x, y, w, h)
 		color_line = theme.line_hover
 	end
 
-	ui:pushDraw(self.draw, { self, color_fill, color_line, x, y, w, h })
+	local display = self.value:toString(target[key])
+
+	ui:pushDraw(self.draw, { self, v, display, color_fill, color_line, x, y, w, h })
+
+	return interact
 end
 
 local function stencil(x, y, w, h)
 	love.graphics.rectangle("fill", x, y, w, h, CORNER_RADIUS)
 end
 
-function Slider:draw(color_fill, color_line, x, y, w, h)
-	local v = self.value:getNormalized()
-
+function Slider:draw(v, display, color_fill, color_line, x, y, w, h)
 	love.graphics.stencil(function()
 		stencil(x, y, w, h)
 	end, "increment", 1, true)
@@ -85,15 +101,7 @@ function Slider:draw(color_fill, color_line, x, y, w, h)
 	love.graphics.rectangle("line", x, y, w, h, CORNER_RADIUS)
 
 	love.graphics.setColor(theme.ui_text)
-	util.drawText(self.value:asString(), x, y, w, h, "center")
-end
-
--- returns nil when not dirty
-function Slider:getFloat()
-	if self.value.dirty then
-		self.value.dirty = false
-		return self.value.v
-	end
+	util.drawText(display, x, y, w, h, "center")
 end
 
 return Slider

@@ -1,5 +1,6 @@
 local Ui = require("ui/ui")
 local util = require("util")
+local command = require("command")
 
 local Toggle = {}
 
@@ -10,24 +11,28 @@ function Toggle:new(text, options)
 
 	new.text = text
 	new.style = options.style or "checkbox"
-	new.checked = options.default or false
-	new.dirty = true
 
 	return new
 end
 
-function Toggle:update(ui, x, y, w, h)
+function Toggle:update(ui, target, key)
+	local x, y, w, h = ui:next()
+
 	ui:hitbox(self, x, y, w, h)
 
+	local clicked = false
+
 	if ui.clicked == self then
-		self.checked = not self.checked
-		self.dirty = true
+		local c = command.change.new(target, key, not target[key])
+		c:run()
+		command.register(c)
+		clicked = true
 	end
 
 	local color_fill = theme.widget_bg
 	local color_line = theme.line
 
-	if self.checked then
+	if target[key] then
 		color_fill = theme.widget
 	end
 	if ui.active == self then
@@ -43,7 +48,7 @@ function Toggle:update(ui, x, y, w, h)
 		ui:pushDraw(self.draw_toggle, { self, color_fill, color_line, x, y, w, h })
 	end
 
-	return self.checked
+	return clicked
 end
 
 function Toggle:draw_toggle(color_fill, color_line, x, y, w, h)
@@ -65,17 +70,6 @@ function Toggle:draw_checkbox(color_fill, color_line, x, y, w, h)
 	love.graphics.setColor(theme.ui_text)
 	local left_pad = h + Ui.DEFAULT_PAD
 	util.drawText(self.text, x + left_pad, y, w - left_pad, h)
-end
-
-function Toggle:getFloat()
-	if self.dirty then
-		self.dirty = false
-		if self.checked then
-			return 1.0
-		else
-			return 0.0
-		end
-	end
 end
 
 return Toggle

@@ -1,5 +1,6 @@
 local Ui = require("ui/ui")
 local util = require("util")
+local command = require("command")
 
 local Button = {}
 
@@ -10,8 +11,6 @@ function Dropdown:new(options)
 	self.__index = self
 
 	new.title = options.title
-	new.index = options.index or 1
-
 	new.open = false
 
 	new.list = {}
@@ -19,11 +18,11 @@ function Dropdown:new(options)
 		table.insert(new.list, Button:new(v))
 	end
 
-	new.list[new.index].checked = true
 	return new
 end
 
-function Dropdown:update(ui, x, y, w, h)
+function Dropdown:update(ui, target, key)
+	local x, y, w, h = ui:next()
 	local new_index
 	if self.open then
 		local hover_any = false
@@ -42,10 +41,9 @@ function Dropdown:update(ui, x, y, w, h)
 		end
 
 		if new_index then
-			self.index = new_index
-			for i, v in ipairs(self.list) do
-				v.checked = (i == self.index)
-			end
+			local c = command.change.new(target, key, new_index)
+			c:run()
+			command.register(c)
 			self.open = false
 		end
 		if mouse.button_pressed and not hover_any then
@@ -58,12 +56,12 @@ function Dropdown:update(ui, x, y, w, h)
 		end
 	end
 
-	ui:pushDraw(self.draw, { self, ui, x, y, w, h })
+	ui:pushDraw(self.draw, { self, ui, target[key], x, y, w, h })
 
 	return new_index
 end
 
-function Dropdown:draw(ui, x, y, w, h)
+function Dropdown:draw(ui, index, x, y, w, h)
 	local color_fill = theme.widget_bg
 	local color_line = theme.line
 
@@ -92,7 +90,7 @@ function Dropdown:draw(ui, x, y, w, h)
 	if self.title then
 		util.drawText(self.title, x, y, w, h, "center", true)
 	else
-		util.drawText(self.list[self.index].text, x, y, w, h, "center", true)
+		util.drawText(self.list[index].text, x, y, w, h, "center", true)
 	end
 end
 
@@ -102,7 +100,6 @@ function Button:new(text)
 	self.__index = self
 
 	new.text = text
-	new.checked = false
 
 	return new
 end

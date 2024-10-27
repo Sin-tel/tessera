@@ -81,12 +81,8 @@ function Ui:next()
 	if self.bg_color then
 		table.insert(self.bg_list, { self.layout.row_y, self.layout.row_h, self.bg_color })
 	end
-end
 
-function Ui:put(widget)
-	self:next()
-	local ret = widget:update(self, self.layout:get())
-	return ret
+	return self.layout:get()
 end
 
 local function drawLabel(text, align, x, y, w, h)
@@ -95,8 +91,8 @@ local function drawLabel(text, align, x, y, w, h)
 end
 
 function Ui:label(text, align)
-	self:next()
-	self:pushDraw(drawLabel, { text, align, self.layout:get() })
+	local x, y, w, h = self:next()
+	self:pushDraw(drawLabel, { text, align, x, y, w, h })
 end
 
 function Ui:hitbox(widget, x, y, w, h)

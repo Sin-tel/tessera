@@ -13,7 +13,8 @@ function Button:new(text)
 	return new
 end
 
-function Button:update(ui, x, y, w, h)
+function Button:update(ui)
+	local x, y, w, h = ui:next()
 	ui:hitbox(self, x, y, w, h)
 
 	ui:pushDraw(self.draw, { self, ui, x, y, w, h })

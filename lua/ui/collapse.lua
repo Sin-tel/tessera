@@ -15,7 +15,8 @@ function Collapse:new(text)
 	return new
 end
 
-function Collapse:update(ui, x, y, w, h)
+function Collapse:update(ui)
+	local x, y, w, h = ui:next()
 	ui:hitbox(self, x, y, w, h)
 
 	if ui.clicked == self then
