@@ -10,28 +10,46 @@ local log = require("log")
 local channelHandler = {}
 channelHandler.list = {}
 
+local function toNumber(x)
+	if type(x) == "number" then
+		return x
+	elseif type(x) == "boolean" then
+		return x and 1 or 0
+	else
+		error("unsupported type: " .. type(x))
+	end
+end
+
 function channelHandler:load()
 	self.list = {}
 end
 
 function channelHandler:sendParameters()
-	-- for k, ch in ipairs(self.list) do
-	-- 	for l, par in ipairs(ch.instrument.parameters) do
-	-- 		local value = par.widget:getFloat()
-	-- 		if value then
-	-- 			backend:sendParameter(k, 0, l, value)
-	-- 		end
-	-- 	end
+	for k, ch in ipairs(self.list) do
+		for l, par in ipairs(ch.instrument.parameters) do
+			local new_value = ch.instrument.state[par.key]
+			local old_value = ch.instrument.state_old[par.key]
+			if old_value ~= new_value then
+				local value = toNumber(new_value)
+				print(par.key, value)
+				backend:sendParameter(k, 0, l, value)
+				ch.instrument.state_old[par.key] = new_value
+			end
+		end
 
-	-- 	for e, fx in ipairs(ch.effects) do
-	-- 		for l, par in ipairs(fx.parameters) do
-	-- 			local value = par.widget:getFloat()
-	-- 			if value then
-	-- 				backend:sendParameter(k, e, l, value)
-	-- 			end
-	-- 		end
-	-- 	end
-	-- end
+		for e, fx in ipairs(ch.effects) do
+			for l, par in ipairs(fx.parameters) do
+				local new_value = fx.state[par.key]
+				local old_value = fx.state_old[par.key]
+				if old_value ~= new_value then
+					local value = toNumber(new_value)
+					print(par.key, value)
+					backend:sendParameter(k, e, l, value)
+					fx.state_old[par.key] = new_value
+				end
+			end
+		end
+	end
 end
 
 function channelHandler:add(name)
@@ -55,7 +73,7 @@ function channelHandler:add(name)
 		backend:addChannel(new.instrument.number)
 		selection.channel = new
 
-		-- new.midi_handler = MidiHandler:new(options.n_voices, new)
+		new.midi_handler = MidiHandler:new(options.n_voices, new)
 		-- self:addEffect(new, "pan")
 
 		return new

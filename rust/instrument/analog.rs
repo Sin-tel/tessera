@@ -185,9 +185,9 @@ impl Instrument for Analog {
 			4 => self.mix_noise = value,
 			5 => {
 				self.vcf_mode = match value as usize {
-					0 => FilterMode::Lowpass,
-					1 => FilterMode::Bandpass,
-					2 => FilterMode::Highpass,
+					1 => FilterMode::Lowpass,
+					2 => FilterMode::Bandpass,
+					3 => FilterMode::Highpass,
 					_ => unreachable!(),
 				}
 			},

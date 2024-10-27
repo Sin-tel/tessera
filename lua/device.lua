@@ -12,6 +12,7 @@ function Device:new(name, options)
 
 	-- TODO: get this out of here
 	new.state = {}
+	new.state_old = {}
 
 	-- UI stuff and parameter handlers
 	new.collapse = widgets.Collapse:new(new.name)
@@ -31,7 +32,7 @@ function Device:new(name, options)
 			new.state[key] = widget_options.default or 1
 		elseif widget_type == "toggle" then
 			p.widget = widgets.Toggle:new(key, { style = "checkbox", default = widget_options.default })
-			new.state[key] = widget_options.default
+			new.state[key] = widget_options.default or false
 			p.label = nil
 		else
 			error(widget_type .. " not supported!")
