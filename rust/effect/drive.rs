@@ -167,7 +167,7 @@ impl Effect for Drive {
 				v.pre_filter.set_tilt(700., -value);
 				v.post_filter.set_tilt(700., value);
 			}),
-			6 => self.oversample_mode = value as usize,
+			6 => self.oversample_mode = value as usize - 1,
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
