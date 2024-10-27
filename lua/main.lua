@@ -98,19 +98,17 @@ function love.load()
 
 	--- setup workspace ---
 	workspace:load()
-	-- local left, right = workspace.box:split(0.7, true)
-	-- local top_left1, bottom_left = left:split(0.8, false)
-	-- local top_left, middle_left = top_left1:split(0.3, false)
-	-- local top_right, bottom_rigth = right:split(0.3, false)
+	local left, right = workspace.box:split(0.7, true)
+	local top_left1, bottom_left = left:split(0.8, false)
+	local top_left, middle_left = top_left1:split(0.3, false)
+	local top_right, bottom_rigth = right:split(0.3, false)
 
-	-- bottom_left:setView(views.TestPad:new())
-	-- top_left:setView(views.Scope:new(false))
-	-- -- middle_left:setView(views.Debug:new())
+	bottom_left:setView(views.TestPad:new())
+	top_left:setView(views.Scope:new(false))
+	middle_left:setView(views.Debug:new())
 	-- middle_left:setView(views.UiTest:new())
-	-- top_right:setView(views.Channels:new())
-	-- bottom_rigth:setView(views.ChannelSettings:new())
-
-	workspace.box:setView(views.UiTest:new())
+	top_right:setView(views.Channels:new())
+	bottom_rigth:setView(views.ChannelSettings:new())
 
 	-- project.instrument = {}
 	-- project.instrument.volume = 1

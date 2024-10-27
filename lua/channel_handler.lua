@@ -55,9 +55,8 @@ function channelHandler:add(name)
 		backend:addChannel(new.instrument.number)
 		selection.channel = new
 
-		new.midi_handler = MidiHandler:new(options.n_voices, new)
-
-		self:addEffect(new, "pan")
+		-- new.midi_handler = MidiHandler:new(options.n_voices, new)
+		-- self:addEffect(new, "pan")
 
 		return new
 	else

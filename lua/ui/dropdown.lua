@@ -13,6 +13,12 @@ function Dropdown:new(options)
 	new.title = options.title
 	new.open = false
 
+	new.has_state = options.has_state
+
+	if not new.has_state then
+		assert(new.title)
+	end
+
 	new.list = {}
 	for _, v in ipairs(options.list) do
 		table.insert(new.list, Button:new(v))
@@ -22,10 +28,11 @@ function Dropdown:new(options)
 end
 
 function Dropdown:update(ui, target, key)
+	-- note: no need to pass `target, key` if `has_state = false`
+
 	local x, y, w, h = ui:next()
 	local new_index
 	if self.open then
-		local hover_any = false
 		local tx, ty = x, y
 		local p = Ui.DEFAULT_PAD
 		local th = Ui.ROW_HEIGHT - 2 * p
@@ -35,18 +42,15 @@ function Dropdown:update(ui, target, key)
 			if v:update(ui, tx, ty, w, th) then
 				new_index = i
 			end
-			if ui.hover == v then
-				hover_any = true
-			end
 		end
 
-		if new_index then
+		if new_index and self.has_state then
 			local c = command.change.new(target, key, new_index)
 			c:run()
 			command.register(c)
-			self.open = false
 		end
-		if mouse.button_pressed and not hover_any then
+
+		if mouse.button_released then
 			self.open = false
 		end
 	else
@@ -56,12 +60,18 @@ function Dropdown:update(ui, target, key)
 		end
 	end
 
-	ui:pushDraw(self.draw, { self, ui, target[key], x, y, w, h })
+	local label = self.title
+	if self.has_state then
+		local index = target[key]
+		label = self.list[index].text
+	end
+
+	ui:pushDraw(self.draw, { self, ui, label, x, y, w, h })
 
 	return new_index
 end
 
-function Dropdown:draw(ui, index, x, y, w, h)
+function Dropdown:draw(ui, label, x, y, w, h)
 	local color_fill = theme.widget_bg
 	local color_line = theme.line
 
@@ -87,11 +97,7 @@ function Dropdown:draw(ui, index, x, y, w, h)
 	end
 
 	love.graphics.setColor(theme.ui_text)
-	if self.title then
-		util.drawText(self.title, x, y, w, h, "center", true)
-	else
-		util.drawText(self.list[index].text, x, y, w, h, "center", true)
-	end
+	util.drawText(label, x, y, w, h, "center", true)
 end
 
 function Button:new(text)

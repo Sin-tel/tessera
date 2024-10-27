@@ -19,7 +19,7 @@ function UiTest:new()
 	new.ui = Ui:new(new)
 
 	new.button = widgets.Button:new("click me")
-	new.dropdown = widgets.Dropdown:new({ list = { "AAA", "BBB", "CCC" } })
+	new.dropdown = widgets.Dropdown:new({ list = { "AAA", "BBB", "CCC" }, has_state = true })
 	new.slider = widgets.Slider:new({ min = 20, max = 20000, fmt = "Hz", t = "log" })
 	new.checkbox = widgets.Toggle:new("checkbox widget", {})
 	new.selector = widgets.Selector:new({ "one", "two", "three" })

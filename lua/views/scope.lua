@@ -9,14 +9,14 @@ function Scope:new(spectrum)
 	setmetatable(new, self)
 	self.__index = self
 
-	local index = 1
+	self.index = 1
 	if spectrum then
-		index = 2
+		self.index = 2
 	end
 
 	new.ui = Ui:new(new)
 
-	new.selector = widgets.Selector:new({ "scope", "spectrum" }, index)
+	new.selector = widgets.Selector:new({ "scope", "spectrum" })
 
 	self.lines = {}
 	for i = 1, 7 do
@@ -34,14 +34,14 @@ end
 function Scope:update()
 	self.ui:startFrame()
 	self.ui.layout:col(200)
-	self.ui:put(self.selector)
+	self.selector:update(self.ui, self, "index")
 	self.ui:endFrame()
 end
 
 function Scope:draw()
 	local w, h = self:getDimensions()
 
-	if self.selector.index == 2 then
+	if self.index == 2 then
 		local spectrum = backend:getSpectrum()
 		if spectrum then
 			local n = #spectrum

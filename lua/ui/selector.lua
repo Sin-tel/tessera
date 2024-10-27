@@ -40,7 +40,6 @@ function Selector:update(ui, target, key)
 	end
 
 	if new_index then
-		print("new")
 		local c = command.change.new(target, key, new_index)
 		c:run()
 		command.register(c)
