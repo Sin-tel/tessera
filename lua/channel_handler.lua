@@ -15,23 +15,23 @@ function channelHandler:load()
 end
 
 function channelHandler:sendParameters()
-	for k, ch in ipairs(self.list) do
-		for l, par in ipairs(ch.instrument.parameters) do
-			local value = par.widget:getFloat()
-			if value then
-				backend:sendParameter(k, 0, l, value)
-			end
-		end
+	-- for k, ch in ipairs(self.list) do
+	-- 	for l, par in ipairs(ch.instrument.parameters) do
+	-- 		local value = par.widget:getFloat()
+	-- 		if value then
+	-- 			backend:sendParameter(k, 0, l, value)
+	-- 		end
+	-- 	end
 
-		for e, fx in ipairs(ch.effects) do
-			for l, par in ipairs(fx.parameters) do
-				local value = par.widget:getFloat()
-				if value then
-					backend:sendParameter(k, e, l, value)
-				end
-			end
-		end
-	end
+	-- 	for e, fx in ipairs(ch.effects) do
+	-- 		for l, par in ipairs(fx.parameters) do
+	-- 			local value = par.widget:getFloat()
+	-- 			if value then
+	-- 				backend:sendParameter(k, e, l, value)
+	-- 			end
+	-- 		end
+	-- 	end
+	-- end
 end
 
 function channelHandler:add(name)
@@ -146,14 +146,14 @@ end
 
 function channelHandler:solo(ch)
 	if ch.solo then
-		for _, ch in ipairs(self.list) do
-			ch.solo = false
-			self:mute(ch, false)
+		for _, v in ipairs(self.list) do
+			v.solo = false
+			self:mute(v, false)
 		end
 	else
-		for _, ch in ipairs(self.list) do
-			ch.solo = false
-			self:mute(ch, true)
+		for _, v in ipairs(self.list) do
+			v.solo = false
+			self:mute(v, true)
 		end
 		ch.solo = true
 		self:mute(ch, false)

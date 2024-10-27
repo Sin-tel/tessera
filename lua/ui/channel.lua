@@ -21,7 +21,8 @@ function Channel:new(channel)
 	return new
 end
 
-function Channel:update(ui, x, y, w, h)
+function Channel:update(ui)
+	local x, y, w, h = ui:next()
 	local p = Ui.DEFAULT_PAD
 	local b = Ui.BUTTON_SMALL
 

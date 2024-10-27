@@ -1,5 +1,6 @@
 local Ui = require("ui/ui")
 local util = require("util")
+local command = require("command")
 
 local Button = {}
 
@@ -11,26 +12,27 @@ function Selector:new(list, index)
 	setmetatable(new, self)
 	self.__index = self
 
-	new.index = index or 1
-	new.dirty = true
-
 	new.list = {}
 	for _, v in ipairs(list) do
 		table.insert(new.list, Button:new(v))
 	end
 
-	new.list[new.index].checked = true
+	index = index or 1
+
+	new.list[index].checked = true
 	return new
 end
 
-function Selector:update(ui, x, y, w, h)
+function Selector:update(ui, target, key)
+	local x, y, w, h = ui:next()
+
 	local tx, ty = x, y
 	local tw = w / #self.list
 
 	local new_index = nil
 	for i, v in ipairs(self.list) do
 		if v:update(ui, tx, ty, tw, h) then
-			if i ~= self.index then
+			if i ~= target[key] then
 				new_index = i
 			end
 		end
@@ -38,21 +40,17 @@ function Selector:update(ui, x, y, w, h)
 	end
 
 	if new_index then
-		self.index = new_index
-		self.dirty = true
-		for i, v in ipairs(self.list) do
-			v.checked = (i == self.index)
-		end
+		print("new")
+		local c = command.change.new(target, key, new_index)
+		c:run()
+		command.register(c)
 	end
 
-	return self.index
-end
-
-function Selector:getFloat()
-	if self.dirty then
-		self.dirty = false
-		return self.index - 1.0
+	for i, v in ipairs(self.list) do
+		v.checked = (i == target[key])
 	end
+
+	return new_index
 end
 
 function Button:new(text)

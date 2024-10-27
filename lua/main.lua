@@ -11,6 +11,7 @@ local settingsHandler = require("settings_handler")
 local backend = require("backend")
 local midi = require("midi")
 local views = require("views")
+local command = require("command")
 
 workspace = require("workspace")
 mouse = require("mouse")
@@ -29,15 +30,18 @@ resources = {}
 
 audio_status = "waiting"
 
+-- main project data structure
+project = {}
+
 --- temp stuff, to delete ---
 
 -----------------------------
-local renderWav
+local render
 
 local function audioSetup()
 	if not backend:running() then
-		backend:setup(settings.audio.default_host, settings.audio.default_device, settings.audio.buffer_size)
-		-- backend:setup("wasapi", settings.audio.default_device)
+		-- backend:setup(settings.audio.default_host, settings.audio.default_device, settings.audio.buffer_size)
+		backend:setup("wasapi", settings.audio.default_device)
 
 		midi.load(settings.midi.inputs)
 	else
@@ -94,21 +98,36 @@ function love.load()
 
 	--- setup workspace ---
 	workspace:load()
-	local left, right = workspace.box:split(0.7, true)
-	local top_left1, bottom_left = left:split(0.8, false)
-	local top_left, middle_left = top_left1:split(0.3, false)
-	local top_rigth, bottom_rigth = right:split(0.3, false)
+	-- local left, right = workspace.box:split(0.7, true)
+	-- local top_left1, bottom_left = left:split(0.8, false)
+	-- local top_left, middle_left = top_left1:split(0.3, false)
+	-- local top_right, bottom_rigth = right:split(0.3, false)
 
-	bottom_left:setView(views.TestPad:new())
-
-	top_left:setView(views.Scope:new(false))
-	-- middle_left:setView(views.Scope:new(true))
+	-- bottom_left:setView(views.TestPad:new())
+	-- top_left:setView(views.Scope:new(false))
+	-- -- middle_left:setView(views.Debug:new())
 	-- middle_left:setView(views.UiTest:new())
-	middle_left:setView(views.Debug:new())
-	-- middle_left:setView(views.Song:new())
+	-- top_right:setView(views.Channels:new())
+	-- bottom_rigth:setView(views.ChannelSettings:new())
 
-	top_rigth:setView(views.Channels:new())
-	bottom_rigth:setView(views.ChannelSettings:new())
+	workspace.box:setView(views.UiTest:new())
+
+	-- project.instrument = {}
+	-- project.instrument.volume = 1
+	-- project.instrument.pan = 0.5
+	-- project.fx = {}
+	-- project.fx.reverb = {}
+	-- project.fx.reverb.mix = 0.2
+
+	-- util.pprint(project)
+
+	-- undo.push(project)
+	-- -- project.instrument.volume = 2
+	-- -- project.instrument = nil
+	-- project.test = { 2 }
+	-- undo.commit()
+
+	-- os.exit()
 end
 
 function love.update(dt)
@@ -168,13 +187,13 @@ function love.textinput(t)
 end
 
 function love.keypressed(key, scancode, isrepeat)
-	if note_input:keypressed(key, scancode, isrepeat) then
-		return
-	end
-
 	local ctrl = love.keyboard.isDown("lctrl", "rctrl")
 	local shift = love.keyboard.isDown("lshift", "rshift")
 	local alt = love.keyboard.isDown("lalt", "ralt")
+
+	if not (ctrl or shift or alt) and note_input:keypressed(key, scancode, isrepeat) then
+		return
+	end
 
 	if key == "escape" then
 		love.event.quit()
@@ -185,10 +204,16 @@ function love.keypressed(key, scancode, isrepeat)
 		else
 			audio_status = "request"
 		end
-	elseif key == "p" then
+	elseif key == "z" and ctrl then
+		command.undo()
+	elseif key == "y" and ctrl then
+		command.redo()
+	elseif key == "z" then
 		backend:setPaused(not backend:paused())
+	elseif key == "r" and ctrl then
+		render()
 	elseif key == "s" and ctrl then
-		renderWav()
+		print("save")
 	elseif key == "a" and ctrl then
 		channelHandler:add("fm")
 	elseif key == "down" and shift then
@@ -235,8 +260,8 @@ function love.quit()
 	backend:quit()
 end
 
-function renderWav()
-	--TODO: run this on a new thread in rust?
+function render()
+	--TODO: make this not block the UI
 
 	if not backend:running() then
 		log.error("Backend offline.")

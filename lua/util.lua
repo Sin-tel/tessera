@@ -135,4 +135,26 @@ function util.average(t)
 	return sum / n
 end
 
+local function pprint(t, indent)
+	indent = indent or 0
+	if type(t) == "table" then
+		for k, v in pairs(t) do
+			if type(v) == "table" then
+				print(string.rep("  ", indent) .. tostring(k) .. ":")
+				pprint(v, indent + 1)
+			else
+				local s = tostring(v)
+				if type(v) == "string" then
+					s = '"' .. s .. '"'
+				end
+				print(string.rep("  ", indent) .. tostring(k) .. ": " .. s)
+			end
+		end
+	else
+		print(t)
+	end
+end
+
+util.pprint = pprint
+
 return util

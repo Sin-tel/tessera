@@ -1,7 +1,6 @@
 local SliderValue = {}
 
 -- TODO: bipolar db scale
--- TODO: initial value seperate from default value
 function SliderValue:new(options)
 	local new = {}
 	setmetatable(new, self)
@@ -13,8 +12,7 @@ function SliderValue:new(options)
 	new.dirty = true
 
 	if new.t == "dB" then
-		new.v = util.from_dB(options.default)
-		new.default = util.from_dB(options.default)
+		new.default = util.from_dB(options.default or 0)
 		new.min = 0
 		new.max = (options.max or 0)
 		new.fmt = options.fmt or "%0.1f dB"
@@ -25,7 +23,6 @@ function SliderValue:new(options)
 		new.min = options.min
 		new.max = options.max
 		local default = options.default or math.sqrt(new.min * new.max)
-		new.v = default
 		new.default = default
 		new.fmt = options.fmt or "%0.2f"
 		assert(new.min <= new.max)
@@ -38,7 +35,6 @@ function SliderValue:new(options)
 		new.max = options.max or 1
 		new.step = options.step
 		local default = options.default or 0.5 * (new.min + new.max)
-		new.v = default
 		new.default = default
 		new.fmt = options.fmt or "%0.2f"
 		assert(new.min < new.max)
@@ -49,43 +45,37 @@ function SliderValue:new(options)
 	return new
 end
 
-function SliderValue:reset()
-	self.v = self.default
-	self.dirty = true
-end
-
-function SliderValue:setNormalized(value)
+function SliderValue:fromNormal(value)
 	local x = util.clamp(value, 0, 1)
 	if self.t == "dB" then
 		x = util.curve_dB(x, self.max)
-		self.v = x
+		return x
 	elseif self.t == "log" then
-		self.v = math.exp(x * math.log(self.max / self.min) + math.log(self.min))
+		return math.exp(x * math.log(self.max / self.min) + math.log(self.min))
 	else
 		local v = x * (self.max - self.min) + self.min
 		if self.step then
 			v = math.floor(v / self.step) * self.step
 		end
-		self.v = v
+		return v
 	end
-	self.dirty = true
 end
 
-function SliderValue:getNormalized()
+function SliderValue:toNormal(value)
 	if self.t == "dB" then
-		return util.curve_dB_inv(self.v, self.max)
+		return util.curve_dB_inv(value, self.max)
 	elseif self.t == "log" then
-		return math.log(self.v / self.min) / math.log(self.max / self.min)
+		return math.log(value / self.min) / math.log(self.max / self.min)
 	else
-		return (self.v - self.min) / (self.max - self.min)
+		return (value - self.min) / (self.max - self.min)
 	end
 end
 
-function SliderValue:asString()
-	local display = self.v
+function SliderValue:toString(value)
+	local display = value
 
 	if self.t == "dB" then
-		display = util.to_dB(self.v)
+		display = util.to_dB(value)
 	end
 
 	if self.fmt == "Hz" then
