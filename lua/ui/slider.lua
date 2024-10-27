@@ -25,7 +25,11 @@ function Slider:update(ui, target, key)
 	local interact = false
 
 	if mouse.button_pressed == 3 and hit then
-		target[key] = self.value.default
+		if target[key] ~= self.value.default then
+			local c = command.change.new(target, key, self.value.default)
+			c:run()
+			command.register(c)
+		end
 	end
 
 	if ui.active == self then

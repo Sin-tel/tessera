@@ -28,7 +28,7 @@ function ChannelSettings:update()
 
 	self.ui:startFrame()
 	self.ui.layout:row(w)
-	local add_effect_index = self.ui:put(self.dropdown)
+	local add_effect_index = self.dropdown:update(self.ui)
 
 	-- TODO: should calculate this in device instead
 	local w_label = util.clamp(w * 0.4 - 64, 0, Ui.PARAMETER_LABEL_WIDTH)
@@ -43,6 +43,7 @@ function ChannelSettings:update()
 			end
 		end
 
+		-- TODO: command
 		if add_effect_index then
 			local effect_name = self.effect_list[add_effect_index]
 			local new_effect = channelHandler:addEffect(selection.channel, effect_name)

@@ -10,21 +10,29 @@ function Device:new(name, options)
 	new.number = options.number
 	new.name = name
 
+	-- TODO: get this out of here
+	new.state = {}
+
 	-- UI stuff and parameter handlers
 	new.collapse = widgets.Collapse:new(new.name)
 	new.parameters = {}
 	for _, v in ipairs(options.parameters) do
 		local p = {}
-		p.name = v[1]
+		local key = v[1]
+		p.key = key
+		p.label = key
 		local widget_type = v[2]
 		local widget_options = v[3] or {}
 		if widget_type == "slider" then
 			p.widget = widgets.Slider:new(widget_options)
+			new.state[key] = p.widget.value.default
 		elseif widget_type == "selector" then
 			p.widget = widgets.Selector:new(widget_options)
+			new.state[key] = widget_options.default or 1
 		elseif widget_type == "toggle" then
-			p.widget = widgets.Toggle:new(p.name, { style = "checkbox", default = widget_options.default })
-			p.name = nil
+			p.widget = widgets.Toggle:new(key, { style = "checkbox", default = widget_options.default })
+			new.state[key] = widget_options.default
+			p.label = nil
 		else
 			error(widget_type .. " not supported!")
 		end
@@ -42,15 +50,15 @@ function Device:updateUi(ui, w, w_label)
 	if selection.device == self then
 		ui:background(theme.bg_focus)
 	end
-	if ui:put(self.collapse) then
+	if self.collapse:update(ui) then
 		ui:background(theme.bg_nested)
 		for _, v in ipairs(self.parameters) do
 			ui.layout:col(w_label)
-			if v.name then
-				ui:label(v.name, "right")
+			if v.label then
+				ui:label(v.label, "right")
 			end
 			ui.layout:col(w - w_label) -- max
-			ui:put(v.widget)
+			v.widget:update(ui, self.state, v.key)
 			ui.layout:newRow()
 		end
 		ui:background()

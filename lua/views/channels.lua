@@ -10,14 +10,13 @@ function Channels:new()
 	setmetatable(new, self)
 	self.__index = self
 
-	-- new.select = nil
 	new.ui = Ui:new(new)
 
 	new.intrument_list = {}
 	for k, v in pairs(deviceList.instruments) do
 		table.insert(new.intrument_list, k)
 	end
-	new.dropdown = widgets.Dropdown:new({ title = "add instrument", list = new.intrument_list })
+	new.dropdown = widgets.Dropdown:new({ title = "add instrument", list = new.intrument_list, has_state = false })
 
 	return new
 end
@@ -29,17 +28,18 @@ function Channels:update()
 	self.ui:startFrame()
 	self.ui.layout:padding()
 	self.ui.layout:row(w)
-	local add_instrument_index = self.ui:put(self.dropdown)
+	local add_instrument_index = self.dropdown:update(self.ui)
 
 	self.ui.layout:padding(0)
 
+	-- TODO: add command for this
 	if add_instrument_index then
 		local intrument_name = self.intrument_list[add_instrument_index]
-		local ch = channelHandler:add(intrument_name)
+		channelHandler:add(intrument_name)
 	end
 
 	for _, v in ipairs(channelHandler.list) do
-		self.ui:put(v.widget)
+		v.widget:update(self.ui)
 	end
 
 	self.ui:endFrame()
