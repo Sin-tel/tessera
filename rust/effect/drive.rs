@@ -14,7 +14,7 @@ pub struct Drive {
 	gain: SmoothBuffer,
 	post_gain: SmoothBuffer,
 	gain_comp: f32,
-	oversample_mode: usize,
+	oversample: bool,
 	bias: f32,
 	hard: bool,
 	balance: f32,
@@ -52,7 +52,7 @@ impl Effect for Drive {
 			gain: SmoothBuffer::new(),
 			post_gain: SmoothBuffer::new(),
 			gain_comp: 0.,
-			oversample_mode: 0,
+			oversample: false,
 			bias: 0.,
 			hard: false,
 			balance: 0.,
@@ -75,72 +75,69 @@ impl Effect for Drive {
 			}
 		}
 
-		match self.oversample_mode {
-			// 1st order ADAA
-			0 => {
-				if self.hard {
-					for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-						for sample in buf.iter_mut() {
-							let x = *sample;
-							*sample = adaa_hard(x, track.prev);
-							track.prev = x;
-						}
-					}
-				} else {
-					for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-						for sample in buf.iter_mut() {
-							let x = *sample;
-							*sample = adaa_soft(x, track.prev);
-							track.prev = x;
-						}
-					}
-				}
-			},
+		if self.oversample {
 			// 2x oversample + ADAA
-			1 => {
-				if self.hard {
-					for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-						for sample in buf.iter_mut() {
-							let (u1, u2) = track.upsampler.process(*sample);
+			if self.hard {
+				for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+					for sample in buf.iter_mut() {
+						let (u1, u2) = track.upsampler.process(*sample);
 
-							let res1 = adaa_hard(u1, track.prev);
-							let res2 = adaa_hard(u2, u1);
-							track.prev = u2;
+						let res1 = adaa_hard(u1, track.prev);
+						let res2 = adaa_hard(u2, u1);
+						track.prev = u2;
 
-							*sample = track.downsampler.process(res1, res2);
-						}
-					}
-				} else {
-					for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-						for sample in buf.iter_mut() {
-							let (u1, u2) = track.upsampler.process(*sample);
-
-							let res1 = adaa_soft(u1, track.prev);
-							let res2 = adaa_soft(u2, u1);
-							track.prev = u2;
-
-							*sample = track.downsampler.process(res1, res2);
-						}
+						*sample = track.downsampler.process(res1, res2);
 					}
 				}
-			},
-			// naive (not used)
-			_ => {
-				if self.hard {
-					for buf in buffer.iter_mut() {
-						for sample in buf.iter_mut() {
-							*sample = clip_hard(*sample);
-						}
-					}
-				} else {
-					for buf in buffer.iter_mut() {
-						for sample in buf.iter_mut() {
-							*sample = clip_soft(*sample);
-						}
+			} else {
+				for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+					for sample in buf.iter_mut() {
+						let (u1, u2) = track.upsampler.process(*sample);
+
+						let res1 = adaa_soft(u1, track.prev);
+						let res2 = adaa_soft(u2, u1);
+						track.prev = u2;
+
+						*sample = track.downsampler.process(res1, res2);
 					}
 				}
-			},
+			}
+		} else {
+			// 1st order ADAA
+			if self.hard {
+				for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+					for sample in buf.iter_mut() {
+						let x = *sample;
+						*sample = adaa_hard(x, track.prev);
+						track.prev = x;
+					}
+				}
+			} else {
+				for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+					for sample in buf.iter_mut() {
+						let x = *sample;
+						*sample = adaa_soft(x, track.prev);
+						track.prev = x;
+					}
+				}
+			}
 		}
+		// naive (not used)
+		// _ => {
+		// 	if self.hard {
+		// 		for buf in buffer.iter_mut() {
+		// 			for sample in buf.iter_mut() {
+		// 				*sample = clip_hard(*sample);
+		// 			}
+		// 		}
+		// 	} else {
+		// 		for buf in buffer.iter_mut() {
+		// 			for sample in buf.iter_mut() {
+		// 				*sample = clip_soft(*sample);
+		// 			}
+		// 		}
+		// 	}
+		// },
 
 		for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
 			for (i, (sample, dry)) in buf.iter_mut().zip(track.buffer).enumerate() {
@@ -167,7 +164,7 @@ impl Effect for Drive {
 				v.pre_filter.set_tilt(700., -value);
 				v.post_filter.set_tilt(700., value);
 			}),
-			6 => self.oversample_mode = value as usize - 1,
+			6 => self.oversample = value > 0.5,
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
