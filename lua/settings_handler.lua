@@ -1,14 +1,5 @@
+local util = require("util")
 local writefile = require("lib/serialize")
-
-local function file_exists(name)
-   local f = io.open(name, "r")
-   if f ~= nil then
-      io.close(f)
-      return true
-   else
-      return false
-   end
-end
 
 local M = {}
 
@@ -16,7 +7,7 @@ M.path = love.filesystem.getSource()
 
 function M.load()
    local setup
-   if file_exists(M.path .. "/settings/setup.lua") then
+   if util.fileExists(M.path .. "/settings/setup.lua") then
       setup = require("settings/setup")
    else
       setup = {}
@@ -34,7 +25,7 @@ function M.load()
 end
 
 function M.save(setup)
-   writefile(M.path .. "/settings/setup", setup, "setup")
+   writefile(M.path .. "/settings/setup.lua", setup, "setup")
 end
 
 return M

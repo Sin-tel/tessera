@@ -35,10 +35,10 @@ function Channels:update()
 	-- TODO: add command for this
 	if add_instrument_index then
 		local intrument_name = self.intrument_list[add_instrument_index]
-		channelHandler:add(intrument_name)
+		channelHandler.newChannel(intrument_name)
 	end
 
-	for i, v in ipairs(project_ui.channels) do
+	for i, v in ipairs(ui_channels) do
 		v.widget:update(self.ui, i)
 	end
 

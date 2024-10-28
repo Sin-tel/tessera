@@ -29,13 +29,13 @@ function Channel:update(ui, channel_index)
 	local ch = project.channels[channel_index]
 
 	if self.button_mute:update(ui, ch.mute, w - 5 * b, y + p, b, b) then
-		channelHandler:mute(channel_index, not ch.mute)
+		channelHandler.mute(channel_index, not ch.mute)
 	end
 	if self.button_solo:update(ui, ch.solo, w - 4 * b, y + p, b, b) then
-		channelHandler:solo(channel_index)
+		channelHandler.solo(channel_index)
 	end
 	if self.button_armed:update(ui, ch.armed, w - 3 * b, y + p, b, b) then
-		channelHandler:armed(channel_index)
+		channelHandler.armed(channel_index)
 	end
 	if self.button_visible:update(ui, ch.visible, w - 2 * b, y + p, b, b) then
 		ch.visible = not ch.visible
