@@ -12,6 +12,9 @@ local backend = require("backend")
 local midi = require("midi")
 local views = require("views")
 local command = require("command")
+local save = require("save")
+
+local VERSION = "0.0.1"
 
 workspace = require("workspace")
 mouse = require("mouse")
@@ -30,14 +33,17 @@ resources = {}
 
 audio_status = "waiting"
 
--- main project data structure
 project = {}
-project_ui = {}
+ui_channels = {}
+
+local load_last_save = true
+local last_save_location = "../out/lastsave.sav"
 
 --- temp stuff, to delete ---
 
 -----------------------------
 local render
+local sendParameters
 
 local function audioSetup()
 	if not backend:running() then
@@ -56,19 +62,12 @@ local function audioSetup()
 		audio_status = "dead"
 	end
 
-	-- local ch = channelHandler:add("sine")
-	-- local ch = channelHandler:add("polysine")
-	-- local ch = channelHandler:add("analog")
-	-- local ch = channelHandler:add("fm")
-	-- local ch = channelHandler:add("wavetable")
-	local ch = channelHandler:add("epiano")
-
-	-- channelHandler:addEffect(ch, "drive")
-	-- channelHandler:addEffect(ch, "delay")
-	-- channelHandler:addEffect(ch, "reverb")
-	-- channelHandler:addEffect(ch, "convolve")
-
-	ch.armed = true
+	if load_last_save and util.fileExists(last_save_location) then
+		save.read(last_save_location)
+	else
+		local ch = channelHandler.newChannel("epiano")
+		ch.armed = true
+	end
 end
 
 -- update UI with messages from backend
@@ -112,7 +111,9 @@ function love.load()
 
 	-- load empty project
 	project.channels = {}
-	project_ui.channels = {}
+	ui_channels = {}
+	project.VERSION = VERSION
+	project.name = "Untitled project"
 end
 
 function love.update(dt)
@@ -138,7 +139,7 @@ function love.draw()
 	mouse:endFrame()
 
 	if backend:running() then
-		channelHandler:sendParameters()
+		sendParameters()
 	end
 
 	--- draw ---
@@ -199,23 +200,23 @@ function love.keypressed(key, scancode, isrepeat)
 	elseif key == "r" and ctrl then
 		render()
 	elseif key == "s" and ctrl then
-		print("save")
+		save.write(last_save_location)
 	elseif key == "a" and ctrl then
-		channelHandler:add("fm")
+		channelHandler.newChannel("fm")
 	elseif key == "down" and shift then
 		if selection.channel_index and selection.device_index then
-			channelHandler:reorderEffect(selection.channel_index, selection.device_index, 1)
+			channelHandler.reorderEffect(selection.channel_index, selection.device_index, 1)
 		end
 	elseif key == "up" and shift then
 		if selection.channel_index and selection.device_index then
-			channelHandler:reorderEffect(selection.channel_index, selection.device_index, -1)
+			channelHandler.reorderEffect(selection.channel_index, selection.device_index, -1)
 		end
 	elseif key == "delete" then
 		if selection.channel_index then
 			if selection.device_index then
-				channelHandler:removeEffect(selection.channel_index, selection.device_index)
+				channelHandler.removeEffect(selection.channel_index, selection.device_index)
 			else
-				channelHandler:remove(selection.channel_index)
+				channelHandler.removeChannel(selection.channel_index)
 				selection.channel_index = nil
 			end
 			selection.device_index = nil
@@ -274,4 +275,44 @@ function render()
 	backend:setPaused(false)
 
 	mouse:setCursor("default")
+end
+
+local function toNumber(x)
+	if type(x) == "number" then
+		return x
+	elseif type(x) == "boolean" then
+		return x and 1 or 0
+	else
+		error("unsupported type: " .. type(x))
+	end
+end
+
+function sendParameters()
+	for k, ch in
+		ipairs( --
+			ui_channels
+		)
+	do
+		for l, par in ipairs(ch.instrument.parameters) do
+			local new_value = ch.instrument.state[l]
+			local old_value = ch.instrument.state_old[l]
+			if old_value ~= new_value then
+				local value = toNumber(new_value)
+				backend:sendParameter(k, 0, l, value)
+				ch.instrument.state_old[l] = new_value
+			end
+		end
+
+		for e, fx in ipairs(ch.effects) do
+			for l, par in ipairs(fx.parameters) do
+				local new_value = fx.state[l]
+				local old_value = fx.state_old[l]
+				if old_value ~= new_value then
+					local value = toNumber(new_value)
+					backend:sendParameter(k, e, l, value)
+					fx.state_old[l] = new_value
+				end
+			end
+		end
+	end
 end

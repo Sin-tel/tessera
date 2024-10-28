@@ -34,7 +34,7 @@ function ChannelSettings:update()
 	local w_label = util.clamp(w * 0.4 - 64, 0, Ui.PARAMETER_LABEL_WIDTH)
 
 	if selection.channel_index then
-		local ch = project_ui.channels[selection.channel_index]
+		local ch = ui_channels[selection.channel_index]
 		if ch.instrument:update(self.ui, 0, w, w_label) then
 			selection.device_index = 0
 		end
@@ -48,7 +48,7 @@ function ChannelSettings:update()
 		-- TODO: command
 		if add_effect_index then
 			local effect_name = self.effect_list[add_effect_index]
-			local new_effect = channelHandler:addEffect(selection.channel_index, effect_name)
+			channelHandler.newEffect(selection.channel_index, effect_name)
 		end
 	end
 	self.ui:endFrame()

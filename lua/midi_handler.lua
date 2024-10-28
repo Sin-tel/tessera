@@ -31,12 +31,12 @@ local function newVoice()
 	return new
 end
 
-function MidiHandler:new(n_voices, channel)
+function MidiHandler:new(n_voices, ch_index)
 	local new = {}
 	setmetatable(new, self)
 	self.__index = self
 
-	new.channel = channel
+	new.ch_index = ch_index
 
 	new.n_voices = n_voices
 	-- queue of notes that are held but not active
@@ -54,7 +54,6 @@ end
 -- TODO: fix mpe pitch before playing note
 function MidiHandler:event(device, event)
 	local mpe = device.mpe
-	local channel_index = channelHandler:getChannelIndex(self.channel)
 
 	if event.name == "note_on" then
 		-- voice stealing logic.
@@ -102,9 +101,9 @@ function MidiHandler:event(device, event)
 		voice.age = 0
 
 		local p = tuning:fromMidi(voice.note)
-		print("note_on", channel_index, p + voice.offset, velocity_curve(voice.vel), new_i)
+		print("note_on", self.ch_index, p + voice.offset, velocity_curve(voice.vel), new_i)
 
-		backend:sendNote(channel_index, p + voice.offset, velocity_curve(voice.vel), new_i)
+		backend:sendNote(self.ch_index, p + voice.offset, velocity_curve(voice.vel), new_i)
 	elseif event.name == "note_off" then
 		local get_i
 		for i, v in ipairs(self.voices) do
@@ -130,8 +129,8 @@ function MidiHandler:event(device, event)
 			if not self.sustain then
 				-- note off pitches are ignored but we send the correct one anyway
 				local p = tuning:fromMidi(voice.note)
-				print("note_off", channel_index, p + voice.offset, 0, get_i)
-				backend:sendNote(channel_index, p + voice.offset, 0, get_i)
+				print("note_off", self.ch_index, p + voice.offset, 0, get_i)
+				backend:sendNote(self.ch_index, p + voice.offset, 0, get_i)
 			end
 		else
 			print("ERROR")
@@ -142,7 +141,7 @@ function MidiHandler:event(device, event)
 			-- voice.vel = old_voice.vel
 			-- voice.pres = old_voice.pres
 			-- local p = tuning:fromMidi(voice.note)
-			-- backend:sendNote(channel_index, p + voice.offset, velocity_curve(voice.vel), get_i)
+			-- backend:sendNote(self.ch_index, p + voice.offset, velocity_curve(voice.vel), get_i)
 		end
 	elseif event.name == "pitchbend" then
 		if mpe then
@@ -150,7 +149,7 @@ function MidiHandler:event(device, event)
 				if v.channel == event.channel then
 					v.offset = device.pitchbend_range * event.pitchbend
 					if v.note_on then
-						backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
+						backend:sendCv(self.ch_index, v.note + v.offset, v.pres, i)
 					end
 				end
 			end
@@ -158,7 +157,7 @@ function MidiHandler:event(device, event)
 			for i, v in ipairs(self.voices) do
 				v.offset = device.pitchbend_range * event.pitchbend
 				if v.note_on then
-					backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
+					backend:sendCv(self.ch_index, v.note + v.offset, v.pres, i)
 				end
 			end
 		end
@@ -168,9 +167,9 @@ function MidiHandler:event(device, event)
 				if v.channel == event.channel then
 					v.pres = event.pressure
 					if v.note_on then
-						-- print("pres", channel_index, v.note + v.offset, v.pres, i)
+						-- print("pres", self.ch_index, v.note + v.offset, v.pres, i)
 
-						backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
+						backend:sendCv(self.ch_index, v.note + v.offset, v.pres, i)
 					end
 				end
 			end
@@ -178,7 +177,7 @@ function MidiHandler:event(device, event)
 			for i, v in ipairs(self.voices) do
 				v.pres = event.pressure
 				if v.note_on then
-					backend:sendCv(channel_index, v.note + v.offset, v.pres, i)
+					backend:sendCv(self.ch_index, v.note + v.offset, v.pres, i)
 				end
 			end
 		end
@@ -195,7 +194,7 @@ function MidiHandler:event(device, event)
 						v.note_on = false
 						-- note off pitches are ignored but we send the correct one anyway
 						local p = tuning:fromMidi(v.note)
-						backend:sendNote(channel_index, p + v.offset, 0, i)
+						backend:sendNote(self.ch_index, p + v.offset, 0, i)
 					end
 				end
 			end

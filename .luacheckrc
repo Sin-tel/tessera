@@ -24,7 +24,7 @@ stds.justidaw = {
       "height",
       "time",
       "project",
-      "project_ui",
+      "ui_channels",
    },
    read_globals = {},
 }

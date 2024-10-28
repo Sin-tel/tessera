@@ -1,3 +1,4 @@
+local log = require("log")
 local Ui = require("ui/ui")
 
 local util = {}
@@ -70,7 +71,7 @@ local function deepcopy(orig, copies)
 		else
 			copy = {}
 			copies[orig] = copy
-			for orig_key, orig_value in next, orig, nil do
+			for orig_key, orig_value in pairs(orig) do
 				copy[deepcopy(orig_key, copies)] = deepcopy(orig_value, copies)
 			end
 			setmetatable(copy, deepcopy(getmetatable(orig), copies))
@@ -156,5 +157,32 @@ local function pprint(t, indent)
 end
 
 util.pprint = pprint
+
+function util.writefile(filename, contents)
+	local file, err = io.open(filename, "w")
+	if err then
+		log.error(err)
+		return err
+	end
+	file:write(contents)
+	file:close()
+end
+
+function util.readfile(filename)
+	local file = assert(io.open(filename, "r"))
+	local content = file:read("*a")
+	file:close()
+	return content
+end
+
+function util.fileExists(filename)
+	local f = io.open(filename, "r")
+	if f ~= nil then
+		io.close(f)
+		return true
+	else
+		return false
+	end
+end
 
 return util
