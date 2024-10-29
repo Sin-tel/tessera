@@ -10,7 +10,7 @@ stds.justidaw = {
       -- tables
       "resources",
       "theme",
-      "settings",
+      "setup",
       "workspace",
       "mouse",
       "keyboard",

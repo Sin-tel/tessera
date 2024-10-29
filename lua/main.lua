@@ -7,7 +7,6 @@ if not release then
 	require("lib/strict")
 end
 
-local settingsHandler = require("settings_handler")
 local backend = require("backend")
 local midi = require("midi")
 local views = require("views")
@@ -28,7 +27,7 @@ time = 0
 
 theme = require("settings/theme")
 selection = {}
-settings = {}
+setup = {}
 resources = {}
 
 audio_status = "waiting"
@@ -47,10 +46,10 @@ local sendParameters
 
 local function audioSetup()
 	if not backend:running() then
-		-- backend:setup(settings.audio.default_host, settings.audio.default_device, settings.audio.buffer_size)
-		backend:setup("wasapi", settings.audio.default_device)
+		-- backend:setup(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
+		backend:setup("wasapi", "default")
 
-		midi.load(settings.midi.inputs)
+		midi.load(setup.midi.inputs)
 	else
 		log.warn("Audio already set up")
 	end
@@ -65,6 +64,7 @@ local function audioSetup()
 	if load_last_save and util.fileExists(last_save_location) then
 		save.read(last_save_location)
 	else
+		-- default project
 		local ch = channelHandler.newChannel("epiano")
 		ch.armed = true
 	end
@@ -89,7 +89,7 @@ end
 function love.load()
 	math.randomseed(os.time())
 	love.math.setRandomSeed(os.time())
-	settings = settingsHandler.load()
+	setup = save.readSetup()
 	mouse:load()
 
 	--- load resources ---
@@ -238,7 +238,7 @@ function love.resize(w, h)
 end
 
 function love.quit()
-	-- settingsHandler.save(settings)
+	save.writeSetup()
 	backend:quit()
 end
 
@@ -288,11 +288,7 @@ local function toNumber(x)
 end
 
 function sendParameters()
-	for k, ch in
-		ipairs( --
-			ui_channels
-		)
-	do
+	for k, ch in ipairs(ui_channels) do
 		for l, par in ipairs(ch.instrument.parameters) do
 			local new_value = ch.instrument.state[l]
 			local old_value = ch.instrument.state_old[l]
