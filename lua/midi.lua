@@ -39,15 +39,17 @@ end
 function midi.updateDevice(device)
 	-- TODO: remove
 	local handler
-	for i, ch in ipairs(channelHandler.list) do
-		if ch.armed then
+	for i, ch in ipairs(ui_channels) do
+		if project.channels[i].armed then
 			handler = ch.midi_handler
 			break
 		end
 	end
 
 	local events = backend:midiPoll(device.index)
-	if not events then return end
+	if not events then
+		return
+	end
 
 	if handler then
 		for _, event in ipairs(events) do
