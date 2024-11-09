@@ -1,6 +1,7 @@
 local backend = require("backend")
 local deviceList = require("device_list")
 local Device = require("device")
+local MidiHandler = require("midi_handler")
 local widgets = require("ui/widgets")
 local SliderValue = require("ui/slider_value")
 
@@ -47,7 +48,7 @@ function channelHandler.buildChannel(channel)
 		channelHandler.buildEffect(ch_index, v)
 	end
 
-	-- new.midi_handler = MidiHandler:new(options.n_voices, new)
+	channel_ui.midi_handler = MidiHandler:new(options.n_voices, ch_index)
 	-- channelHandler.newEffect(ch_index, "pan")
 end
 
