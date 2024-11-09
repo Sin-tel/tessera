@@ -13,7 +13,10 @@ local views = require("views")
 local command = require("command")
 local save = require("save")
 
-local VERSION = "0.0.1"
+local VERSION = {}
+VERSION.MAJ = "0"
+VERSION.MIN = "0"
+VERSION.PATCH = "1"
 
 workspace = require("workspace")
 mouse = require("mouse")
@@ -38,11 +41,11 @@ ui_channels = {}
 local load_last_save = true
 local last_save_location = "../out/lastsave.sav"
 
---- temp stuff, to delete ---
-
------------------------------
+-- predeclarations
 local render
 local sendParameters
+local parseMessages
+local newProject
 
 local function audioSetup()
 	if not backend:running() then
@@ -70,23 +73,8 @@ local function audioSetup()
 	end
 end
 
--- update UI with messages from backend
-local function parseMessages()
-	while true do
-		local p = backend:pop()
-		if p == nil then
-			return
-		end
-		if p.tag == "cpu" then
-			workspace.cpu_load = p.cpu_load
-		elseif p.tag == "meter" then
-			workspace.meter.l = util.to_dB(p.l)
-			workspace.meter.r = util.to_dB(p.r)
-		end
-	end
-end
-
 function love.load()
+	log.info("Tessera v" .. VERSION.MAJ .. "." .. VERSION.MIN .. "." .. VERSION.PATCH)
 	math.randomseed(os.time())
 	love.math.setRandomSeed(os.time())
 	setup = save.readSetup()
@@ -110,10 +98,7 @@ function love.load()
 	bottom_rigth:setView(views.ChannelSettings:new())
 
 	-- load empty project
-	project.channels = {}
-	ui_channels = {}
-	project.VERSION = VERSION
-	project.name = "Untitled project"
+	newProject()
 end
 
 function love.update(dt)
@@ -194,11 +179,13 @@ function love.keypressed(key, scancode, isrepeat)
 		command.undo()
 	elseif key == "y" and ctrl then
 		command.redo()
-	elseif key == "z" then
-		log.info("(un)pausing backend")
-		backend:setPaused(not backend:paused())
+	-- elseif key == "z" then
+	-- 	log.info("(un)pausing backend")
+	-- 	backend:setPaused(not backend:paused())
 	elseif key == "r" and ctrl then
 		render()
+	elseif key == "n" and ctrl then
+		newProject()
 	elseif key == "s" and ctrl then
 		save.write(last_save_location)
 	elseif key == "a" and ctrl then
@@ -277,6 +264,22 @@ function render()
 	mouse:setCursor("default")
 end
 
+-- update UI with messages from backend
+function parseMessages()
+	while true do
+		local p = backend:pop()
+		if p == nil then
+			return
+		end
+		if p.tag == "cpu" then
+			workspace.cpu_load = p.cpu_load
+		elseif p.tag == "meter" then
+			workspace.meter.l = util.to_dB(p.l)
+			workspace.meter.r = util.to_dB(p.r)
+		end
+	end
+end
+
 local function toNumber(x)
 	if type(x) == "number" then
 		return x
@@ -311,4 +314,28 @@ function sendParameters()
 			end
 		end
 	end
+end
+
+-- TODO: command
+function newProject()
+	-- cleanup current project
+	if project.channels then
+		for i = #project.channels, 1, -1 do
+			backend:removeChannel(i)
+		end
+	end
+
+	-- init empty project
+	project = {}
+	project.channels = {}
+	ui_channels = {}
+	project.VERSION = {}
+	project.VERSION.MAJ = VERSION.MAJ
+	project.VERSION.MIN = VERSION.MIN
+	project.VERSION.PATCH = VERSION.PATCH
+	project.name = "Untitled project"
+
+	-- clear selection
+	selection.channel_index = nil
+	selection.device_index = nil
 end

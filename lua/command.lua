@@ -1,3 +1,5 @@
+local backend = require("backend")
+
 local command = {}
 
 command.maxSize = 50
@@ -66,5 +68,44 @@ function change:reverse()
 end
 
 command.change = change
+
+--
+local newProject = {}
+newProject.__index = newProject
+
+function newProject.new()
+    local self = setmetatable({}, newProject)
+
+    self.prev = util.clone(project)
+    return self
+end
+
+function newProject:run()
+    -- cleanup current project
+    if project.channels then
+        for i = #project.channels, 1, -1 do
+            backend:removeChannel(i)
+        end
+    end
+
+    -- init empty project
+    project = {}
+    project.channels = {}
+    ui_channels = {}
+    project.VERSION_MAJ = VERSION_MAJ
+    project.VERSION_MIN = VERSION_MIN
+    project.VERSION_PATCH = VERSION_PATCH
+    project.name = "Untitled project"
+
+    -- clear selection
+    selection.channel_index = nil
+    selection.device_index = nil
+end
+
+function newProject:reverse()
+    project = util.clone(self.prev)
+end
+
+command.newProject = newProject
 
 return command

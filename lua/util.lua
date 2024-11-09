@@ -61,20 +61,17 @@ function util.ratio(r)
 	return 12.0 * math.log(r) / math.log(2)
 end
 
-local function deepcopy(orig, copies)
-	copies = copies or {}
-	local orig_type = type(orig)
+-- clone a simple, non-recursive data table
+local function clone(orig, seen)
+	seen = seen or {}
 	local copy
-	if orig_type == "table" then
-		if copies[orig] then
-			copy = copies[orig]
-		else
-			copy = {}
-			copies[orig] = copy
-			for orig_key, orig_value in pairs(orig) do
-				copy[deepcopy(orig_key, copies)] = deepcopy(orig_value, copies)
-			end
-			setmetatable(copy, deepcopy(getmetatable(orig), copies))
+	if type(orig) == "table" then
+		assert(not seen[orig])
+		copy = {}
+		seen[orig] = true
+		for k, v in pairs(orig) do
+			assert(type(k) ~= "table")
+			copy[k] = clone(v, seen)
 		end
 	else -- number, string, boolean, etc
 		copy = orig
@@ -82,7 +79,7 @@ local function deepcopy(orig, copies)
 	return copy
 end
 
-util.deepcopy = deepcopy
+util.clone = clone
 
 function util.drawText(str, x, y, w, h, align, pad)
 	align = align or "left"
