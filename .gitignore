@@ -1,5 +1,4 @@
 /target
-notes.md
 cargo.lock
 lua/settings/setup.lua
 *.sublime-project
