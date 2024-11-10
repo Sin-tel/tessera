@@ -92,9 +92,10 @@ function newProject:run()
     project = {}
     project.channels = {}
     ui_channels = {}
-    project.VERSION_MAJ = VERSION_MAJ
-    project.VERSION_MIN = VERSION_MIN
-    project.VERSION_PATCH = VERSION_PATCH
+    project.VERSION = {}
+    project.VERSION.MAJOR = VERSION.MAJOR
+    project.VERSION.MINOR = VERSION.MINOR
+    project.VERSION.PATCH = VERSION.PATCH
     project.name = "Untitled project"
 
     -- clear selection
@@ -104,6 +105,7 @@ end
 
 function newProject:reverse()
     project = util.clone(self.prev)
+    channelHandler.buildProject()
 end
 
 command.newProject = newProject
