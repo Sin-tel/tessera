@@ -89,6 +89,7 @@ function newChannel:run()
     local channel = {
         instrument = newDeviceData(self.name, options),
         effects = {},
+        notes = {},
         mute = false,
         solo = false,
         armed = false,

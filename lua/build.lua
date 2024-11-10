@@ -6,6 +6,23 @@ local MidiHandler = require("midi_handler")
 
 local build = {}
 
+function build.newProject()
+	-- init empty project
+	local project = {}
+	project.channels = {}
+	project.VERSION = {}
+	project.VERSION.MAJOR = VERSION.MAJOR
+	project.VERSION.MINOR = VERSION.MINOR
+	project.VERSION.PATCH = VERSION.PATCH
+	project.name = "Untitled project"
+	project.transport = {}
+	project.transport.time = 0
+	project.transport.start_time = 0
+	project.transport.playing = false
+
+	return project
+end
+
 function build.project()
 	for _, v in ipairs(project.channels) do
 		build.channel(v)
