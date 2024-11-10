@@ -7,12 +7,12 @@ resources.fonts.notes = love.graphics.newImageFont(
 	"res/font_notes.png",
 	" ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		.. "0123456789.+-/"
-		.. "qwerty" -- flats/sharps  b#
-		.. "asdfgh" -- pluses minuses  +-
-		.. "zxcvbn" -- septimals L7
-		.. "iopjkl" -- quarternotes / undecimals  dt
-		.. "{[()]}" -- ups/downs  v^
-		.. "!@#$&*", -- arrows   ??
+		.. "qwerty" -- flats/sharps  bbb, bb, b, n, #,  ##
+		.. "asdfgh" -- plus/min      ---, --, -, +, ++, +++
+		.. "zxcvbn" -- septimals     LLL, LL, L, 7, 77, 777
+		.. "iopjkl" -- quartersharps ddd, dd, d, t, tt, ttt
+		.. "{[()]}" -- ups/downs     vvv, vv, v, ^, ^^, ^^^
+		.. "!@#$&*", -- arrows       vvv, vv, v, ^, ^^, ^^^
 	-1
 )
 
