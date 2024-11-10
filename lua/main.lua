@@ -72,10 +72,15 @@ local function audioSetup()
 
 		-- pitch = {base_pitch, start_time, velocity, verts}
 		-- verts = list of {time, pitch_offset, pressure}
-		project.channels[1].notes = {
-			{ pitch = { 0, 0 }, time = 0, vel = 0.8, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } },
-			{ pitch = { 1, 0 }, time = 0.5, vel = 0.8, verts = { { 0, 0, 0.5 }, { 1, 0.5, 0.5 }, { 0, 1.0, 0.5 } } },
-		}
+
+		-- local tuning = require("tuning")
+		for i = 0, 12 do
+			-- local p = tuning.fromMidi(60 + i)
+			local s = 6 - i
+			local p = { -4 * s, 7 * s }
+			local note = { pitch = p, time = i * 0.5, vel = 0.8, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
+			table.insert(project.channels[1].notes, note)
+		end
 	end
 end
 

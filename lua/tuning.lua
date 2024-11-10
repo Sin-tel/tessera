@@ -49,7 +49,7 @@ tuning.table = {
 	{},
 }
 
-tuning.diatonic_names = { "C", "D", "E", "F", "G", "A", "B" }
+tuning.circle_of_fifths = { "F", "C", "G", "D", "A", "E", "B" }
 
 -- current scale expressed in generator steps
 -- stylua: ignore
@@ -81,7 +81,7 @@ tuning.chromatic_table = {
 }
 
 -- diatonic home row, 1 = C5
-function tuning:fromDiatonic(n, add_octave)
+function tuning.fromDiatonic(n, add_octave)
 	add_octave = add_octave or 0
 	local s = #tuning.diatonic_table
 	local oct = math.floor((n - 1) / s)
@@ -92,11 +92,11 @@ function tuning:fromDiatonic(n, add_octave)
 	new[1] = dia[1] + oct + add_octave
 	new[2] = dia[2]
 
-	return self:getPitch(new)
+	return tuning.getPitch(new)
 end
 
 -- indexed by midi number, middle C = midi note number 60
-function tuning:fromMidi(n)
+function tuning.fromMidi(n)
 	local s = #tuning.chromatic_table
 	local oct = math.floor(n / s)
 	n = n - oct * s
@@ -106,17 +106,62 @@ function tuning:fromMidi(n)
 	new[1] = dia[1] + oct - 5
 	new[2] = dia[2]
 
-	return self:getPitch(new)
+	-- return tuning.getPitch(new)
+	return new
 end
 
 -- coordinates to pitch
-function tuning:getPitch(p)
+function tuning.getPitch(p)
 	local f = 60
-	-- we dont use ipairs because entries may be nil, which is implicitly zero
-	for i, v in pairs(p) do
-		f = f + v * (self.generators[i] or 0)
+	for i, v in ipairs(p) do
+		f = f + v * (tuning.generators[i] or 0)
 	end
 	return f
+end
+
+-- TODO: generalize this to other systems
+function tuning.getName(p)
+	-- factor 4/7 is because base note name does not change when altering by an apotome (#) which is [-4, 7]
+	local o = p[1] + math.floor(p[2] * 4 / 7) + 4
+	local n_i = (p[2] + 1)
+	local sharps = math.floor(n_i / #tuning.circle_of_fifths)
+
+	local acc = ""
+	if sharps > 0 then
+		if sharps % 2 == 1 then
+			acc = "t" -- #
+		end
+		local double_sharps = math.floor(sharps / 2)
+		-- x
+		acc = acc .. string.rep("y", double_sharps)
+	elseif sharps < 0 then
+		local flats = -sharps
+		if flats == 1 then
+			acc = "e" --b
+		elseif flats == 2 then
+			acc = "w" --bb
+		elseif flats == 3 then
+			acc = "q" --bbb
+		else
+			local group = (flats - 1) % 3
+			if group == 0 then
+				acc = "ww" -- bb bb
+			elseif group == 1 then
+				acc = "wq" -- bb bbb
+			else
+				acc = "qq" -- bbb bbb
+			end
+			local triple_flats = math.floor((flats - 4) / 3)
+			if triple_flats > 0 then
+				--- bbb
+				acc = acc .. string.rep("q", triple_flats)
+			end
+		end
+	end
+
+	local n = tuning.circle_of_fifths[n_i % #tuning.circle_of_fifths + 1]
+
+	return n .. acc .. tostring(o)
 end
 
 return tuning

@@ -5,20 +5,19 @@ local noteInput = {}
 
 local queue = {}
 
-local DEFAULT_VELOCITY = 0.2
+local DEFAULT_VELOCITY = 0.65
 
-local octave = -1
+local octave = 0
 
 -- TODO: this should not communicate with backend directly
---       instead, pass through the selected devices midi handler
+--       instead, pass through the selected devices' input handler
 
 noteInput.diatonic_row = { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]" }
 
 function noteInput:keypressed(key, scancode, isrepeat)
-	local handled = false
 	for i, v in ipairs(self.diatonic_row) do
 		if v == key then
-			local p = tuning:fromDiatonic(i, octave)
+			local p = tuning.fromDiatonic(i, octave)
 
 			local ch_index = selection.channel_index
 			if ch_index then
@@ -27,16 +26,14 @@ function noteInput:keypressed(key, scancode, isrepeat)
 
 			table.insert(queue, i)
 
-			handled = true
-			break
+			return true
 		end
 	end
 
-	return handled
+	return false
 end
 
 function noteInput:keyreleased(key, scancode)
-	local handled = false
 	for i, v in ipairs(self.diatonic_row) do
 		if v == key then
 			local last = false
@@ -54,16 +51,16 @@ function noteInput:keyreleased(key, scancode)
 			if ch_index then
 				if #queue > 0 then
 					if last then
-						local p = tuning:fromDiatonic(queue[#queue], octave)
+						local p = tuning.fromDiatonic(queue[#queue], octave)
 						backend:sendNote(ch_index, p, DEFAULT_VELOCITY)
 					end
 				else
-					local p = tuning:fromDiatonic(i, octave)
+					local p = tuning.fromDiatonic(i, octave)
 					backend:sendNote(ch_index, p, 0.0)
 				end
 			end
 
-			handled = true
+			return true
 		end
 	end
 
@@ -72,16 +69,16 @@ function noteInput:keyreleased(key, scancode)
 		if octave < -4 then
 			octave = -4
 		end
-		handled = true
+		return true
 	elseif key == "x" then
 		octave = octave + 1
 		if octave > 4 then
 			octave = 4
 		end
-		handled = true
+		return true
 	end
 
-	return handled
+	return false
 end
 
 return noteInput
