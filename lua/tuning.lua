@@ -95,7 +95,7 @@ function tuning:fromDiatonic(n, add_octave)
 	return self:getPitch(new)
 end
 
--- indexed by midi number, C5 = 72
+-- indexed by midi number, middle C = midi note number 60
 function tuning:fromMidi(n)
 	local s = #tuning.chromatic_table
 	local oct = math.floor(n / s)
@@ -103,7 +103,7 @@ function tuning:fromMidi(n)
 	local dia = tuning.chromatic_table[n + 1]
 
 	local new = {}
-	new[1] = dia[1] + oct - 6
+	new[1] = dia[1] + oct - 5
 	new[2] = dia[2]
 
 	return self:getPitch(new)
@@ -111,7 +111,7 @@ end
 
 -- coordinates to pitch
 function tuning:getPitch(p)
-	local f = 72
+	local f = 60
 	-- we dont use ipairs because entries may be nil, which is implicitly zero
 	for i, v in pairs(p) do
 		f = f + v * (self.generators[i] or 0)

@@ -16,6 +16,7 @@ local midi = require("midi")
 local views = require("views")
 local save = require("save")
 local note_input = require("note_input")
+local build = require("build")
 
 workspace = require("workspace")
 mouse = require("mouse")
@@ -23,8 +24,6 @@ command = require("command")
 util = require("util")
 
 width, height = love.graphics.getDimensions()
-
-time = 0
 
 theme = require("settings/theme")
 selection = {}
@@ -70,6 +69,13 @@ local function audioSetup()
 		log.info("Loading default project")
 		command.newChannel.new("epiano"):run()
 		project.channels[1].armed = true
+
+		-- pitch = {base_pitch, start_time, velocity, verts}
+		-- verts = list of {time, pitch_offset, pressure}
+		project.channels[1].notes = {
+			{ pitch = { 0, 0 }, time = 0, vel = 0.8, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } },
+			{ pitch = { 1, 0 }, time = 0.5, vel = 0.8, verts = { { 0, 0, 0.5 }, { 1, 0.5, 0.5 }, { 0, 1.0, 0.5 } } },
+		}
 	end
 end
 
@@ -92,17 +98,19 @@ function love.load()
 
 	bottom_left:setView(views.TestPad:new())
 	top_left:setView(views.Scope:new(false))
-	middle_left:setView(views.Debug:new())
+	middle_left:setView(views.Song:new())
 	-- middle_left:setView(views.UiTest:new())
 	top_right:setView(views.Channels:new())
 	bottom_rigth:setView(views.ChannelSettings:new())
 
 	-- load empty project
-	command.newProject.new():run()
+	project = build.newProject()
 end
 
 function love.update(dt)
-	time = time + dt
+	if project.transport.playing then
+		project.transport.time = project.transport.time + dt
+	end
 
 	midi.update()
 	if backend:running() then
@@ -168,6 +176,13 @@ function love.keypressed(key, scancode, isrepeat)
 
 	if key == "escape" then
 		love.event.quit()
+	elseif key == "space" then
+		if project.transport.playing then
+			project.transport.playing = false
+		else
+			project.transport.time = project.transport.start_time
+			project.transport.playing = true
+		end
 	elseif key == "k" then
 		if backend:running() then
 			midi.quit()

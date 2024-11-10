@@ -94,16 +94,9 @@ function newProject:run()
         end
     end
 
-    -- init empty project
-    project = {}
-    project.channels = {}
-    ui_channels = {}
-    project.VERSION = {}
-    project.VERSION.MAJOR = VERSION.MAJOR
-    project.VERSION.MINOR = VERSION.MINOR
-    project.VERSION.PATCH = VERSION.PATCH
-    project.name = "Untitled project"
+    project = build.newProject()
 
+    ui_channels = {}
     -- clear selection
     selection.channel_index = nil
     selection.device_index = nil
