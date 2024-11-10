@@ -13,17 +13,29 @@ function save.read(filename)
 	log.info('loading project "' .. filename .. '"')
 
 	local content = util.readfile(filename)
-	project = setfenv(loadstring(content), {})()
-	for _, v in ipairs(project.channels) do
-		channelHandler.buildChannel(v)
+	local new_project = setfenv(loadstring(content), {})()
+
+	-- currently assume most pessimistic compatibility
+	-- later on we may be more lenient (probably should according to semver)
+	-- if we can automatically upgrade save files to new version, do so here
+	if
+		new_project.VERSION.MAJOR == VERSION.MAJOR
+		and new_project.VERSION.MINOR == VERSION.MINOR
+		and new_project.VERSION.PATCH == VERSION.PATCH
+	then
+		project = new_project
+		channelHandler.buildProject()
+		return true
 	end
 
-	assert(#ui_channels == #project.channels)
+	local save_version = new_project.VERSION.MAJOR
+		.. "."
+		.. new_project.VERSION.MINOR
+		.. "."
+		.. new_project.VERSION.PATCH
+	log.warn("Save file version incompatible (" .. save_version .. ")")
 
-	if #project.channels > 0 then
-		selection.channel_index = 1
-		selection.device_index = 0
-	end
+	return false
 end
 
 local setup_path = love.filesystem.getSource() .. "/settings/setup.lua"

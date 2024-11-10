@@ -13,9 +13,9 @@ local views = require("views")
 local command = require("command")
 local save = require("save")
 
-local VERSION = {}
-VERSION.MAJ = "0"
-VERSION.MIN = "0"
+VERSION = {}
+VERSION.MAJOR = "0"
+VERSION.MINOR = "0"
 VERSION.PATCH = "1"
 
 workspace = require("workspace")
@@ -45,7 +45,6 @@ local last_save_location = "../out/lastsave.sav"
 local render
 local sendParameters
 local parseMessages
-local newProject
 
 local function audioSetup()
 	if not backend:running() then
@@ -64,17 +63,20 @@ local function audioSetup()
 		audio_status = "dead"
 	end
 
+	local success = false
 	if load_last_save and util.fileExists(last_save_location) then
-		save.read(last_save_location)
-	else
-		-- default project
+		success = save.read(last_save_location)
+	end
+
+	if not success then
+		log.info("Loading default project")
 		local ch = channelHandler.newChannel("epiano")
 		ch.armed = true
 	end
 end
 
 function love.load()
-	log.info("Tessera v" .. VERSION.MAJ .. "." .. VERSION.MIN .. "." .. VERSION.PATCH)
+	log.info("Tessera v" .. VERSION.MAJOR .. "." .. VERSION.MINOR .. "." .. VERSION.PATCH)
 	math.randomseed(os.time())
 	love.math.setRandomSeed(os.time())
 	setup = save.readSetup()
@@ -98,7 +100,7 @@ function love.load()
 	bottom_rigth:setView(views.ChannelSettings:new())
 
 	-- load empty project
-	newProject()
+	command.newProject.new():run()
 end
 
 function love.update(dt)
@@ -185,7 +187,9 @@ function love.keypressed(key, scancode, isrepeat)
 	elseif key == "r" and ctrl then
 		render()
 	elseif key == "n" and ctrl then
-		newProject()
+		local c = command.newProject.new()
+		c:run()
+		command.register(c)
 	elseif key == "s" and ctrl then
 		save.write(last_save_location)
 	elseif key == "a" and ctrl then
@@ -314,28 +318,4 @@ function sendParameters()
 			end
 		end
 	end
-end
-
--- TODO: command
-function newProject()
-	-- cleanup current project
-	if project.channels then
-		for i = #project.channels, 1, -1 do
-			backend:removeChannel(i)
-		end
-	end
-
-	-- init empty project
-	project = {}
-	project.channels = {}
-	ui_channels = {}
-	project.VERSION = {}
-	project.VERSION.MAJ = VERSION.MAJ
-	project.VERSION.MIN = VERSION.MIN
-	project.VERSION.PATCH = VERSION.PATCH
-	project.name = "Untitled project"
-
-	-- clear selection
-	selection.channel_index = nil
-	selection.device_index = nil
 end

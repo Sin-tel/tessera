@@ -25,6 +25,7 @@ stds.justidaw = {
       "time",
       "project",
       "ui_channels",
+      "VERSION",
    },
    read_globals = {},
 }
