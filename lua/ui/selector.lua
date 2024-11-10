@@ -1,6 +1,4 @@
 local Ui = require("ui/ui")
-local util = require("util")
-local command = require("command")
 
 local Button = {}
 
@@ -40,9 +38,7 @@ function Selector:update(ui, target, key)
 	end
 
 	if new_index then
-		local c = command.change.new(target, key, new_index)
-		c:run()
-		command.register(c)
+		command.run_and_register(command.change.new(target, key, new_index))
 	end
 
 	for i, v in ipairs(self.list) do

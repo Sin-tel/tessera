@@ -1,5 +1,4 @@
 local SliderValue = require("ui/slider_value")
-local command = require("command")
 
 local Slider = {}
 
@@ -26,9 +25,7 @@ function Slider:update(ui, target, key)
 
 	if mouse.button_pressed == 3 and hit then
 		if target[key] ~= self.value.default then
-			local c = command.change.new(target, key, self.value.default)
-			c:run()
-			command.register(c)
+			command.run_and_register(command.change.new(target, key, self.value.default))
 		end
 	end
 

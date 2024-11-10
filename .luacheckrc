@@ -7,14 +7,14 @@ stds.love = {
 stds.justidaw = {
    globals = {
       "util",
-      -- tables
+      -- tables / modules
       "resources",
       "theme",
       "setup",
       "workspace",
       "mouse",
       "keyboard",
-      "channelHandler",
+      "command",
       -- runtime stuff
       "audio_status",
       "selection",

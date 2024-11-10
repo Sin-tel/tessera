@@ -6,23 +6,21 @@ require("lib/run")
 if not release then
 	require("lib/strict")
 end
-
-local backend = require("backend")
-local midi = require("midi")
-local views = require("views")
-local command = require("command")
-local save = require("save")
-
 VERSION = {}
 VERSION.MAJOR = "0"
 VERSION.MINOR = "0"
 VERSION.PATCH = "1"
 
+local backend = require("backend")
+local midi = require("midi")
+local views = require("views")
+local save = require("save")
+local note_input = require("note_input")
+
 workspace = require("workspace")
 mouse = require("mouse")
-local note_input = require("note_input")
+command = require("command")
 util = require("util")
-channelHandler = require("channel_handler")
 
 width, height = love.graphics.getDimensions()
 
@@ -70,8 +68,8 @@ local function audioSetup()
 
 	if not success then
 		log.info("Loading default project")
-		local ch = channelHandler.newChannel("epiano")
-		ch.armed = true
+		command.newChannel.new("epiano"):run()
+		project.channels[1].armed = true
 	end
 end
 
@@ -187,30 +185,30 @@ function love.keypressed(key, scancode, isrepeat)
 	elseif key == "r" and ctrl then
 		render()
 	elseif key == "n" and ctrl then
-		local c = command.newProject.new()
-		c:run()
-		command.register(c)
+		command.run_and_register(command.newProject.new())
 	elseif key == "s" and ctrl then
 		save.write(last_save_location)
-	elseif key == "a" and ctrl then
-		channelHandler.newChannel("fm")
 	elseif key == "down" and shift then
 		if selection.channel_index and selection.device_index then
-			channelHandler.reorderEffect(selection.channel_index, selection.device_index, 1)
+			local new_index = selection.device_index + 1
+			command.run_and_register(
+				command.reorderEffect.new(selection.channel_index, selection.device_index, new_index)
+			)
 		end
 	elseif key == "up" and shift then
 		if selection.channel_index and selection.device_index then
-			channelHandler.reorderEffect(selection.channel_index, selection.device_index, -1)
+			local new_index = selection.device_index - 1
+			command.run_and_register(
+				command.reorderEffect.new(selection.channel_index, selection.device_index, new_index)
+			)
 		end
 	elseif key == "delete" then
 		if selection.channel_index then
-			if selection.device_index then
-				channelHandler.removeEffect(selection.channel_index, selection.device_index)
+			if selection.device_index and selection.device_index > 0 then
+				command.run_and_register(command.removeEffect.new(selection.channel_index, selection.device_index))
 			else
-				channelHandler.removeChannel(selection.channel_index)
-				selection.channel_index = nil
+				command.run_and_register(command.removeChannel.new(selection.channel_index))
 			end
-			selection.device_index = nil
 		end
 	end
 end

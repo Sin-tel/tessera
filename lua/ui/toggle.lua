@@ -1,6 +1,4 @@
 local Ui = require("ui/ui")
-local util = require("util")
-local command = require("command")
 
 local Toggle = {}
 
@@ -23,9 +21,7 @@ function Toggle:update(ui, target, key)
 	local clicked = false
 
 	if ui.clicked == self then
-		local c = command.change.new(target, key, not target[key])
-		c:run()
-		command.register(c)
+		command.run_and_register(command.change.new(target, key, not target[key]))
 		clicked = true
 	end
 

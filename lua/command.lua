@@ -1,10 +1,16 @@
 local backend = require("backend")
+local build = require("build")
 
 local command = {}
 
 command.maxSize = 50
 command.stack = {}
 command.index = 0
+
+function command.run_and_register(c)
+    c:run()
+    command.register(c)
+end
 
 function command.register(c)
     command.index = command.index + 1
@@ -105,9 +111,12 @@ end
 
 function newProject:reverse()
     project = util.clone(self.prev)
-    channelHandler.buildProject()
+    build.project()
 end
 
 command.newProject = newProject
+
+command.newChannel, command.removeChannel, command.newEffect, command.removeEffect, command.reorderEffect =
+    unpack(require("command_channel"))
 
 return command

@@ -36,7 +36,7 @@ function Debug:draw()
 
 	-- TODO: remove
 	-- local handler
-	-- for i, ch in ipairs(channelHandler.list) do
+	-- for i, ch in ipairs(build.list) do
 	-- 	if ch.armed then
 	-- 		handler = ch.midi_handler
 	-- 		break

@@ -1,6 +1,5 @@
 local tuning = require("tuning")
 local backend = require("backend")
-local util = require("util")
 
 local MidiHandler = {}
 
