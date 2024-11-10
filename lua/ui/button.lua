@@ -1,5 +1,4 @@
 local Ui = require("ui/ui")
-local util = require("util")
 
 local Button = {}
 

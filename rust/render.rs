@@ -50,19 +50,19 @@ impl Render {
 		self.lua_tx.try_push(m).ok();
 	}
 
-	pub fn add_channel(&mut self, instrument_name: &str) {
+	pub fn insert_channel(&mut self, channel_index: usize, instrument_name: &str) {
 		let new_instr = instrument::new(self.sample_rate, instrument_name);
 		let newch = Channel { instrument: new_instr, effects: Vec::new(), mute: false };
-		self.channels.push(newch);
+		self.channels.insert(channel_index, newch);
 	}
 
 	pub fn remove_channel(&mut self, index: usize) {
 		self.channels.remove(index);
 	}
 
-	pub fn add_effect(&mut self, channel_index: usize, name: &str) {
+	pub fn insert_effect(&mut self, channel_index: usize, effect_index: usize, name: &str) {
 		if let Some(ch) = self.channels.get_mut(channel_index) {
-			ch.effects.push(Bypass::new(self.sample_rate, name));
+			ch.effects.insert(effect_index, Bypass::new(self.sample_rate, name));
 		} else {
 			log_warn!("Channel index out of bounds");
 		}

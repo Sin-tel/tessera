@@ -1,7 +1,6 @@
 local View = require("view")
 local Ui = require("ui/ui")
 local widgets = require("ui/widgets")
-local command = require("command")
 
 local UiTest = View:derive("UI test")
 
@@ -45,9 +44,7 @@ function UiTest:update()
 
 	self.ui.layout:col(w * 0.3)
 	if self.button:update(self.ui) then
-		local c = command.change.new(self.state, "toggle", not self.state.toggle)
-		c:run()
-		command.register(c)
+		command.run_and_register(command.change.new(self.state, "toggle", not self.state.toggle))
 	end
 	self.ui.layout:newRow()
 

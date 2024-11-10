@@ -1,5 +1,7 @@
 local serialize = require("lib/serialize")
 local log = require("log")
+local build = require("build")
+
 local save = {}
 
 function save.write(filename)
@@ -24,7 +26,7 @@ function save.read(filename)
 		and new_project.VERSION.PATCH == VERSION.PATCH
 	then
 		project = new_project
-		channelHandler.buildProject()
+		build.project()
 		return true
 	end
 

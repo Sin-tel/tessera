@@ -1,5 +1,50 @@
 local Ui = require("ui/ui")
 local util = require("util")
+local backend = require("backend")
+
+-- TODO: commands
+local function do_mute(ch_index, mute)
+	local ch = project.channels[ch_index]
+	if mute then
+		ch.solo = false
+	end
+	if ch.mute ~= mute then
+		ch.mute = mute
+		backend:sendMute(ch_index, mute)
+	end
+end
+
+local function do_solo(ch_index)
+	local ch = project.channels[ch_index]
+	if ch.solo then
+		for i, v in ipairs(project.channels) do
+			v.solo = false
+			do_mute(i, false)
+		end
+	else
+		for i, v in ipairs(project.channels) do
+			if i == ch_index then
+				v.solo = true
+				do_mute(i, false)
+			else
+				v.solo = false
+				do_mute(i, true)
+			end
+		end
+	end
+end
+
+local function do_armed(ch_index)
+	local ch = project.channels[ch_index]
+	if ch.armed then
+		ch.armed = false
+	else
+		for _, v in ipairs(project.channels) do
+			v.armed = false
+		end
+		ch.armed = true
+	end
+end
 
 local Button = {}
 
@@ -29,13 +74,13 @@ function Channel:update(ui, channel_index)
 	local ch = project.channels[channel_index]
 
 	if self.button_mute:update(ui, ch.mute, w - 5 * b, y + p, b, b) then
-		channelHandler.mute(channel_index, not ch.mute)
+		do_mute(channel_index, not ch.mute)
 	end
 	if self.button_solo:update(ui, ch.solo, w - 4 * b, y + p, b, b) then
-		channelHandler.solo(channel_index)
+		do_solo(channel_index)
 	end
 	if self.button_armed:update(ui, ch.armed, w - 3 * b, y + p, b, b) then
-		channelHandler.armed(channel_index)
+		do_armed(channel_index)
 	end
 	if self.button_visible:update(ui, ch.visible, w - 2 * b, y + p, b, b) then
 		ch.visible = not ch.visible

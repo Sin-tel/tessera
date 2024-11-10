@@ -1,9 +1,7 @@
 local View = require("view")
 local Ui = require("ui/ui")
 local widgets = require("ui/widgets")
-local util = require("util")
 local deviceList = require("device_list")
-local channelHandler = require("channel_handler")
 
 local ChannelSettings = View:derive("Channel settings")
 
@@ -45,10 +43,9 @@ function ChannelSettings:update()
 			end
 		end
 
-		-- TODO: command
 		if add_effect_index then
 			local effect_name = self.effect_list[add_effect_index]
-			channelHandler.newEffect(selection.channel_index, effect_name)
+			command.run_and_register(command.newEffect.new(selection.channel_index, effect_name))
 		end
 	end
 	self.ui:endFrame()

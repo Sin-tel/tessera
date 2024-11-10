@@ -32,10 +32,10 @@ function Channels:update()
 
 	self.ui.layout:padding(0)
 
-	-- TODO: add command for this
 	if add_instrument_index then
 		local intrument_name = self.intrument_list[add_instrument_index]
-		channelHandler.newChannel(intrument_name)
+
+		command.run_and_register(command.newChannel.new(intrument_name))
 	end
 
 	for i, v in ipairs(ui_channels) do
