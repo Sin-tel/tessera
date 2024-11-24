@@ -44,7 +44,7 @@ pub fn run(
 	// log_info!("{config:?}");
 	// log_info!("{config2:?}");
 
-	let userdata = match config.sample_format() {
+	let audio_ctx = match config.sample_format() {
 		cpal::SampleFormat::F64 => build_stream::<f64>(&output_device, &config2),
 		cpal::SampleFormat::F32 => build_stream::<f32>(&output_device, &config2),
 
@@ -59,10 +59,14 @@ pub fn run(
 		sample_format => panic!("Unsupported sample format '{sample_format}'"),
 	}?;
 
-	userdata.stream.play()?;
+	audio_ctx.stream.play()?;
+
+	let sample_rate = audio_ctx.sample_rate;
 
 	log_info!("Stream set up succesfully!");
-	Ok(userdata)
+	log_info!("Sample rate: {sample_rate}");
+
+	Ok(audio_ctx)
 }
 
 pub fn build_stream<T>(
@@ -78,9 +82,10 @@ where
 	let (scope_tx, scope_rx) = HeapRb::<f32>::new(2048).split();
 	let scope = Scope::new(scope_rx);
 
-	let sample_rate = config.sample_rate.0 as f32;
+	let sample_rate = config.sample_rate.0;
 
-	let m_render = Arc::new(Mutex::new(Render::new(sample_rate, audio_rx, lua_tx, scope_tx)));
+	let m_render =
+		Arc::new(Mutex::new(Render::new(sample_rate as f32, audio_rx, lua_tx, scope_tx)));
 	let m_render_clone = Arc::clone(&m_render);
 
 	let audio_closure = build_closure::<T>(stream_rx, m_render_clone);
@@ -95,6 +100,7 @@ where
 		m_render,
 		scope,
 		paused: false,
+		sample_rate,
 		midi_connections: Vec::new(),
 		render_buffer: Vec::new(),
 	})
