@@ -1,15 +1,6 @@
-everything in channel_handler should be in commands
-
 catch lua error handler
 - save to log
 - save backup
-
-add undo system commands
-
-channel handler:
- - state, action, project
-
-## todo
 
 * make seperate midi handlers per device
 * note off command for instrument
@@ -18,6 +9,7 @@ channel handler:
     - pre voice alloc
     - do voice alloc while recording, do another voice alloc pass during playback
 * add simple playback (no editing yet!)
+* prepare for play
 
 remove getdimensions and getmouse from the view thingys
  -- just store it in the thing?
