@@ -23,23 +23,21 @@ function ChannelSettings:new()
 end
 
 function ChannelSettings:update()
-	local w, h = self:getDimensions()
-
 	self.ui:startFrame()
-	self.ui.layout:row(w)
+	self.ui.layout:row(self.w)
 	local add_effect_index = self.dropdown:update(self.ui)
 
 	-- TODO: should calculate this in device instead
-	local w_label = util.clamp(w * 0.4 - 64, 0, Ui.PARAMETER_LABEL_WIDTH)
+	local w_label = util.clamp(self.w * 0.4 - 64, 0, Ui.PARAMETER_LABEL_WIDTH)
 
 	if selection.channel_index then
 		local ch = ui_channels[selection.channel_index]
-		if ch.instrument:update(self.ui, 0, w, w_label) then
+		if ch.instrument:update(self.ui, 0, self.w, w_label) then
 			selection.device_index = 0
 		end
 
 		for i, v in ipairs(ch.effects) do
-			if v:update(self.ui, i, w, w_label) then
+			if v:update(self.ui, i, self.w, w_label) then
 				selection.device_index = i
 			end
 		end

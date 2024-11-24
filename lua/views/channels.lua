@@ -24,12 +24,9 @@ function Channels:new()
 end
 
 function Channels:update()
-	local w, h = self:getDimensions()
-	local mx, my = self:getMouse()
-
 	self.ui:startFrame()
 	self.ui.layout:padding()
-	self.ui.layout:row(w)
+	self.ui.layout:row(self.w)
 	local add_instrument_index = self.dropdown:update(self.ui)
 
 	self.ui.layout:padding(0)

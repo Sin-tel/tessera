@@ -27,12 +27,10 @@ end
 
 function Debug:draw()
 	local ix, iy = 20, 20
-	local w, h = self:getDimensions()
-	local mx, my = self:getMouse()
 
 	love.graphics.setColor(theme.ui_text)
 
-	util.drawText(dump(project), ix, iy, w, 0)
+	util.drawText(dump(project), ix, iy, self.w, 0)
 
 	-- TODO: remove
 	-- local handler

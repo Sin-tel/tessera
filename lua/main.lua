@@ -70,23 +70,24 @@ local function audioSetup()
 		project.channels[1].armed = true
 
 		-- pitch = {base_pitch, start_time, velocity, verts}
-		-- verts = list of {pitch_offset, time, pressure}
+		-- verts = list of {time, pitch_offset, pressure}
 
 		local tuning = require("tuning")
-		local note = { pitch = tuning.fromMidi(60), time = 0, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
+		-- local note = {
+		-- 	time = 0,
+		-- 	pitch = tuning.fromMidi(60),
+		-- 	vel = 0.6,
+		-- 	verts = { { 0, 0, 0.2 }, { 0.5, -0.5, 0.6 }, { 1.0, 1.8, 0.5 }, { 1.5, -0.5, 0.5 }, { 2.0, 0.0, 0.1 } },
+		-- }
+		-- table.insert(project.channels[1].notes, note)
+
+		local note = { pitch = tuning.fromMidi(60), time = 0, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
 		table.insert(project.channels[1].notes, note)
 
-		note = { pitch = tuning.fromMidi(64), time = 1, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
+		note = { pitch = tuning.fromMidi(64), time = 1, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
 		table.insert(project.channels[1].notes, note)
 
-		note = { pitch = tuning.fromMidi(67), time = 2, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
-		table.insert(project.channels[1].notes, note)
-
-		note = { pitch = tuning.fromMidi(60), time = 3, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0, 1.0, 0.5 } } }
-		table.insert(project.channels[1].notes, note)
-		note = { pitch = tuning.fromMidi(64), time = 3.1, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0, 1.0, 0.5 } } }
-		table.insert(project.channels[1].notes, note)
-		note = { pitch = tuning.fromMidi(67), time = 3.2, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0, 1.0, 0.5 } } }
+		note = { pitch = tuning.fromMidi(67), time = 2, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
 		table.insert(project.channels[1].notes, note)
 	end
 end
@@ -171,12 +172,16 @@ function love.textinput(t)
 	-- print(t)b
 end
 
-function love.keypressed(key, scancode, isrepeat)
+function love.keypressed(_, key)
 	local ctrl = love.keyboard.isDown("lctrl", "rctrl")
 	local shift = love.keyboard.isDown("lshift", "rshift")
 	local alt = love.keyboard.isDown("lalt", "ralt")
 
-	if not (ctrl or shift or alt) and note_input:keypressed(key, scancode, isrepeat) then
+	if not (ctrl or shift or alt) and note_input:keypressed(key) then
+		return
+	end
+
+	if workspace:keypressed(key) then
 		return
 	end
 
@@ -233,8 +238,8 @@ function love.keypressed(key, scancode, isrepeat)
 	end
 end
 
-function love.keyreleased(key, scancode)
-	if note_input:keyreleased(key, scancode) then
+function love.keyreleased(_, key)
+	if note_input:keyreleased(key) then
 		return
 	end
 end

@@ -403,11 +403,16 @@ function workspace:mousereleased()
 	end
 end
 
--- TODO: remove
 -- function workspace:wheelmoved(y)
 -- 	if self.focus then
 -- 		self.focus:wheelmoved(y)
 -- 	end
 -- end
+
+function workspace:keypressed(key)
+	if self.focus then
+		return self.focus:keypressed(key)
+	end
+end
 
 return workspace

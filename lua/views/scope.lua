@@ -39,8 +39,6 @@ function Scope:update()
 end
 
 function Scope:draw()
-	local w, h = self:getDimensions()
-
 	if self.index == 2 then
 		local spectrum = backend:getSpectrum()
 		if spectrum then
@@ -50,20 +48,20 @@ function Scope:draw()
 				self.average[i] = self.average[i] + 1.0 * (spectrum[i] - self.average[i])
 			end
 
-			local tx = w * 0.95
-			local ty = h * 0.1
-			local sx = (w * 0.9) / n
-			local sy = h * 0.5
+			local tx = self.w * 0.95
+			local ty = self.h * 0.1
+			local sx = (self.w * 0.9) / n
+			local sy = self.h * 0.5
 
 			love.graphics.setColor(theme.bg_focus)
 			for i, v in ipairs(self.lines) do
 				local y = 0.2 * (math.log(v))
-				love.graphics.line(0, ty - sy * y, w, ty - sy * y)
+				love.graphics.line(0, ty - sy * y, self.w, ty - sy * y)
 			end
 
 			for i = -9, 0 do
 				local x = 300 * (math.log(2 ^ i))
-				love.graphics.line(tx + x * sx, 0, tx + x * sx, h)
+				love.graphics.line(tx + x * sx, 0, tx + x * sx, self.h)
 			end
 
 			love.graphics.setColor(theme.ui_text)
@@ -83,11 +81,11 @@ function Scope:draw()
 			local n = #scope
 
 			local tx = 0 --w * 0.05
-			local ty = h * 0.5
+			local ty = self.h * 0.5
 			local sx = 1 --w / n
-			local sy = h * 0.5
+			local sy = self.h * 0.5
 
-			local n_max = math.min(n, math.floor(w / sx))
+			local n_max = math.min(n, math.floor(self.w / sx))
 
 			local max = 0
 			for i = 1, n_max do

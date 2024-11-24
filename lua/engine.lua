@@ -65,7 +65,6 @@ function engine.playback()
 
 		local ch_index = 1 -- FIXME
 		local note_i = n_index -- FIXME
-		print(note_i)
 		backend:noteOn(ch_index, p, vel, note_i)
 
 		n_index = n_index + 1
@@ -75,17 +74,27 @@ function engine.playback()
 		local v = voices[i]
 		local note = note_table[v.n_index]
 
-		while v.v_index < #note.verts and project.transport.time > note.time + note.verts[v.v_index + 1][2] do
+		while v.v_index + 1 <= #note.verts and project.transport.time > note.time + note.verts[v.v_index + 1][1] do
 			v.v_index = v.v_index + 1
 		end
 
+		local ch_index = 1 -- FIXME
+		local note_i = v.n_index -- FIXME
 		-- note off
 		if v.v_index >= #note.verts then
-			local ch_index = 1 -- FIXME
-			local note_i = v.n_index -- FIXME
-
 			backend:noteOff(ch_index, note_i)
 			table.remove(voices, i)
+		else
+			local p = tuning.getPitch(note.pitch)
+
+			local t0 = note.verts[v.v_index][1]
+			local t1 = note.verts[v.v_index + 1][1]
+			local alpha = (project.transport.time - (note.time + t0)) / (t1 - t0)
+
+			local p_off = util.lerp(note.verts[v.v_index][2], note.verts[v.v_index + 1][2], alpha)
+			local press = util.lerp(note.verts[v.v_index][3], note.verts[v.v_index + 1][3], alpha)
+
+			backend:sendCv(ch_index, p + p_off, press, note_i)
 		end
 	end
 end
