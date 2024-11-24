@@ -35,6 +35,15 @@ end
 
 function engine.stop()
 	engine.playing = false
+
+	for i = #voices, 1, -1 do
+		local v = voices[i]
+		local ch_index = 1 -- FIXME
+		local note_i = v.n_index -- FIXME
+		-- note off
+		backend:noteOff(ch_index, note_i)
+		table.remove(voices, i)
+	end
 end
 
 function engine.seek(time)
