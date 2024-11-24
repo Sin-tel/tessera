@@ -12,6 +12,7 @@ VERSION.MINOR = "0"
 VERSION.PATCH = "1"
 
 local backend = require("backend")
+local engine = require("engine")
 local midi = require("midi")
 local views = require("views")
 local save = require("save")
@@ -39,9 +40,7 @@ local load_last_save = true
 local last_save_location = "../out/lastsave.sav"
 
 -- predeclarations
-local render
 local sendParameters
-local parseMessages
 
 local function audioSetup()
 	if not backend:running() then
@@ -73,14 +72,12 @@ local function audioSetup()
 		-- pitch = {base_pitch, start_time, velocity, verts}
 		-- verts = list of {time, pitch_offset, pressure}
 
-		-- local tuning = require("tuning")
-		for i = 0, 12 do
-			-- local p = tuning.fromMidi(60 + i)
-			local s = 6 - i
-			local p = { -4 * s, 7 * s }
-			local note = { pitch = p, time = i * 0.5, vel = 0.8, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
-			table.insert(project.channels[1].notes, note)
-		end
+		local tuning = require("tuning")
+		local note = { pitch = tuning.fromMidi(60), time = 0, vel = 0.8, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
+		table.insert(project.channels[1].notes, note)
+
+		note = { pitch = tuning.fromMidi(62), time = 1, vel = 0.8, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
+		table.insert(project.channels[1].notes, note)
 	end
 end
 
@@ -113,14 +110,8 @@ function love.load()
 end
 
 function love.update(dt)
-	if project.transport.playing then
-		project.transport.time = project.transport.time + dt
-	end
-
 	midi.update()
-	if backend:running() then
-		parseMessages()
-	end
+	engine.update(dt)
 end
 
 function love.draw()
@@ -182,11 +173,10 @@ function love.keypressed(key, scancode, isrepeat)
 	if key == "escape" then
 		love.event.quit()
 	elseif key == "space" then
-		if project.transport.playing then
-			project.transport.playing = false
+		if engine.playing then
+			engine.stop()
 		else
-			project.transport.time = project.transport.start_time
-			project.transport.playing = true
+			engine.start()
 		end
 	elseif key == "k" then
 		if backend:running() then
@@ -203,7 +193,7 @@ function love.keypressed(key, scancode, isrepeat)
 	-- 	log.info("(un)pausing backend")
 	-- 	backend:setPaused(not backend:paused())
 	elseif key == "r" and ctrl then
-		render()
+		engine.render()
 	elseif key == "n" and ctrl then
 		command.run_and_register(command.newProject.new())
 	elseif key == "s" and ctrl then
@@ -249,57 +239,6 @@ end
 function love.quit()
 	save.writeSetup()
 	backend:quit()
-end
-
-function render()
-	--TODO: make this not block the UI
-
-	if not backend:running() then
-		log.error("Backend offline.")
-		return
-	end
-
-	log.info("Start render.")
-
-	mouse:setCursor("wait")
-	mouse:endFrame()
-
-	backend:setPaused(true)
-
-	-- sleep for a bit to make sure the audio thread is done
-	love.timer.sleep(0.01)
-
-	for _ = 1, 5000 do
-		local success = backend:renderBlock()
-		if not success then
-			log.error("Failed to render block.")
-			backend:play()
-			return
-		end
-		parseMessages()
-	end
-	log.info("Finished render.")
-	backend:renderFinish()
-
-	backend:setPaused(false)
-
-	mouse:setCursor("default")
-end
-
--- update UI with messages from backend
-function parseMessages()
-	while true do
-		local p = backend:pop()
-		if p == nil then
-			return
-		end
-		if p.tag == "cpu" then
-			workspace.cpu_load = p.cpu_load
-		elseif p.tag == "meter" then
-			workspace.meter.l = util.to_dB(p.l)
-			workspace.meter.r = util.to_dB(p.r)
-		end
-	end
 end
 
 local function toNumber(x)
