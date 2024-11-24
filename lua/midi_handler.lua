@@ -3,20 +3,6 @@ local backend = require("backend")
 
 local MidiHandler = {}
 
--- TODO: make this configurable (per intrument?)
--- 0.01 = 40dB dynamic range
--- 0.02 = 34dB dynamic range
--- 0.05 = 26dB dynamic range
--- 0.10 = 20dB dynamic range
-local VEL_MIN = 0.05
-local LOG_RANGE = -math.log(VEL_MIN)
-
-local function velocity_curve(x)
-	local v = x ^ 0.8
-	local out = VEL_MIN * math.exp(LOG_RANGE * v)
-	return out
-end
-
 -- TODO: note is the midi note, make it also have a pitch table
 local function newVoice()
 	local new = {}
@@ -100,9 +86,9 @@ function MidiHandler:event(device, event)
 		voice.age = 0
 
 		local p = tuning.getPitch(tuning.fromMidi(voice.note))
-		print("note_on", self.ch_index, p + voice.offset, velocity_curve(voice.vel), new_i)
-
-		backend:sendNote(self.ch_index, p + voice.offset, velocity_curve(voice.vel), new_i)
+		local vel = util.velocity_curve(voice.vel)
+		-- print("note_on", self.ch_index, p + voice.offset, vel, new_i)
+		backend:sendNote(self.ch_index, p + voice.offset, vel, new_i)
 	elseif event.name == "note_off" then
 		local get_i
 		for i, v in ipairs(self.voices) do
@@ -140,7 +126,7 @@ function MidiHandler:event(device, event)
 			-- voice.vel = old_voice.vel
 			-- voice.pres = old_voice.pres
 			-- local p = tuning.fromMidi(voice.note)
-			-- backend:sendNote(self.ch_index, p + voice.offset, velocity_curve(voice.vel), get_i)
+			-- backend:sendNote(self.ch_index, p + voice.offset, util.velocity_curve(voice.vel), get_i)
 		end
 	elseif event.name == "pitchbend" then
 		if mpe then

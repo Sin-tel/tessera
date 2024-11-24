@@ -61,6 +61,20 @@ function util.ratio(r)
 	return 12.0 * math.log(r) / math.log(2)
 end
 
+-- TODO: make this configurable (per intrument?)
+-- 0.01 = 40dB dynamic range
+-- 0.02 = 34dB dynamic range
+-- 0.05 = 26dB dynamic range
+-- 0.10 = 20dB dynamic range
+local VEL_MIN = 0.05
+local LOG_RANGE = -math.log(VEL_MIN)
+
+function util.velocity_curve(x)
+	local v = x ^ 0.8
+	local out = VEL_MIN * math.exp(LOG_RANGE * v)
+	return out
+end
+
 -- clone a simple, non-recursive data table
 local function clone(orig, seen)
 	seen = seen or {}

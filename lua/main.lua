@@ -66,17 +66,20 @@ local function audioSetup()
 
 	if not success then
 		log.info("Loading default project")
-		command.newChannel.new("epiano"):run()
+		command.newChannel.new("polysine"):run()
 		project.channels[1].armed = true
 
 		-- pitch = {base_pitch, start_time, velocity, verts}
-		-- verts = list of {time, pitch_offset, pressure}
+		-- verts = list of {pitch_offset, time, pressure}
 
 		local tuning = require("tuning")
 		local note = { pitch = tuning.fromMidi(60), time = 0, vel = 0.8, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
 		table.insert(project.channels[1].notes, note)
 
 		note = { pitch = tuning.fromMidi(62), time = 1, vel = 0.8, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
+		table.insert(project.channels[1].notes, note)
+
+		note = { pitch = tuning.fromMidi(64), time = 2, vel = 0.8, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
 		table.insert(project.channels[1].notes, note)
 	end
 end
@@ -237,7 +240,7 @@ function love.resize(w, h)
 end
 
 function love.quit()
-	save.writeSetup()
+	-- save.writeSetup()
 	backend:quit()
 end
 

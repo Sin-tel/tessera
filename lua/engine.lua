@@ -1,13 +1,36 @@
 local backend = require("backend")
 local log = require("log")
+local tuning = require("tuning")
 
 local engine = {}
 
 engine.playing = false
 
+local n_index = 1
+local note_table = {}
+local voices = {}
+
 function engine.start()
 	engine.playing = true
 	engine.seek(project.transport.start_time)
+	note_table = {}
+	voices = {}
+
+	--- TODO only playing back on channel 1 for now
+	for i, v in ipairs(project.channels[1].notes) do
+		assert(v.verts[1][1] == 0)
+		table.insert(note_table, v)
+	end
+	table.sort(note_table, function(a, b)
+		return a.time < b.time
+	end)
+
+	-- seek
+	n_index = 1
+
+	while note_table[n_index] and project.transport.time > note_table[n_index].time do
+		n_index = n_index + 1
+	end
 end
 
 function engine.stop()
@@ -21,10 +44,48 @@ end
 function engine.update(dt)
 	if engine.playing then
 		project.transport.time = project.transport.time + dt
+		if backend:running() then
+			engine.playback()
+		end
 	end
 
 	if backend:running() then
 		engine.parseMessages()
+	end
+end
+
+function engine.playback()
+	while note_table[n_index] and project.transport.time > note_table[n_index].time do
+		local note = note_table[n_index]
+		table.insert(voices, { n_index = n_index, v_index = 1 })
+
+		-- note on
+		local p = tuning.getPitch(note.pitch)
+		local vel = util.velocity_curve(note.vel)
+
+		local ch_index = 1 -- FIXME
+		local note_i = #voices -- FIXME
+		backend:sendNote(ch_index, p, vel, note_i)
+
+		n_index = n_index + 1
+	end
+
+	for i = #voices, 1, -1 do
+		local v = voices[i]
+		local note = note_table[v.n_index]
+
+		while v.v_index < #note.verts and project.transport.time > note.time + note.verts[v.v_index + 1][2] do
+			v.v_index = v.v_index + 1
+		end
+
+		-- note off
+		if v.v_index >= #note.verts then
+			local p = tuning.getPitch(note.pitch)
+			local ch_index = 1 -- FIXME
+			local note_i = i -- FIXME
+			backend:sendNote(ch_index, p, 0, note_i)
+			table.remove(voices, i)
+		end
 	end
 end
 
