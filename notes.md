@@ -12,11 +12,6 @@ catch lua error handler
 
 test pad and keyboard input should go through interface instead of directly sending to backend!
 
-text ordering in dropdown??
-
-remove getdimensions and getmouse from the view thingys
- -- just store it in the thing?
-
 ## piano roll
 
 piano roll playback
