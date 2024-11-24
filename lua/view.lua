@@ -17,16 +17,21 @@ function View:derive(name)
 
 	new.super = self
 	new.name = name
+
+	-- dummy values
+	new.w = 32
+	new.h = 32
 	return new
 end
 
 function View:draw() end
 
 function View:drawFull()
-	local w, h = self.box.w, self.box.h
-
 	love.graphics.push()
 	love.graphics.translate(Ui.BORDER_SIZE, Ui.HEADER + Ui.BORDER_SIZE)
+
+	self.w = self.box.w - 2 * Ui.BORDER_SIZE
+	self.h = self.box.h - Ui.HEADER - 2 * Ui.BORDER_SIZE
 	self:draw()
 	love.graphics.pop()
 
@@ -34,21 +39,18 @@ function View:drawFull()
 	if self.box.focus then
 		love.graphics.setColor(theme.header_focus)
 	end
-	love.graphics.rectangle("fill", 0, 0, w, Ui.HEADER)
+	love.graphics.rectangle("fill", 0, 0, self.box.w, Ui.HEADER)
 
 	love.graphics.setFont(resources.fonts.main)
 	love.graphics.setColor(theme.ui_text)
 
-	util.drawText(self.name, 0, 0, w, Ui.HEADER, "left", true)
+	util.drawText(self.name, 0, 0, self.box.w, Ui.HEADER, "left", true)
 end
 
 function View:mousepressed() end
 function View:mousereleased() end
+function View:keypressed(key) end
 function View:update() end
-
-function View:getDimensions()
-	return self.box.w - 2 * Ui.BORDER_SIZE, self.box.h - Ui.HEADER - 2 * Ui.BORDER_SIZE
-end
 
 function View:getMouse()
 	return mouse.x - (self.box.x + Ui.BORDER_SIZE), mouse.y - (self.box.y + Ui.HEADER + Ui.BORDER_SIZE)

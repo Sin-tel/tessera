@@ -67,15 +67,13 @@ function Ui:startFrame()
 end
 
 function Ui:endFrame()
-	local w, h = self.view:getDimensions()
-	self.max_scroll = math.max(0, self.layout:totalHeight() - h)
+	self.max_scroll = math.max(0, self.layout:totalHeight() - self.view.h)
 end
 
 function Ui:next()
 	if not self.layout.ok then
 		-- TODO: do col("max") when in column mode
-		local w, h = self.view:getDimensions()
-		self.layout:row(w, Ui.ROW_HEIGHT)
+		self.layout:row(self.view.w, Ui.ROW_HEIGHT)
 	end
 
 	if self.bg_color then
@@ -133,11 +131,9 @@ function Ui:pushDraw(f, args)
 end
 
 function Ui:draw()
-	local w, h = self.view:getDimensions()
-
 	for _, b in ipairs(self.bg_list) do
 		love.graphics.setColor(b[3])
-		love.graphics.rectangle("fill", 0, b[1], w, b[2])
+		love.graphics.rectangle("fill", 0, b[1], self.view.w, b[2])
 	end
 
 	-- draw in reverse order to handle overlaps

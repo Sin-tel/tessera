@@ -20,13 +20,12 @@ function TestPadView:new()
 end
 
 function TestPadView:draw()
-	local w, h = self:getDimensions()
 	local mx, my = self:getMouse()
 
-	local x1 = w * 0.05
-	local y1 = h * 0.05
-	local x2 = w * 0.95
-	local y2 = h * 0.95
+	local x1 = self.w * 0.05
+	local y1 = self.h * 0.05
+	local x2 = self.w * 0.95
+	local y2 = self.h * 0.95
 
 	love.graphics.setColor(theme.bg_nested)
 	love.graphics.rectangle("fill", x1, y1, x2 - x1, y2 - y1)
@@ -34,7 +33,7 @@ function TestPadView:draw()
 	love.graphics.setColor(theme.line)
 	love.graphics.rectangle("line", x1, y1, x2 - x1, y2 - y1)
 
-	local oct = math.floor(w / 200)
+	local oct = math.floor(self.w / 200)
 	if oct < 1 then
 		oct = 1
 	end
