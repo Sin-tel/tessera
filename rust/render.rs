@@ -140,10 +140,16 @@ impl Render {
 						ch.instrument.cv(pitch, pres, id);
 					}
 				},
-				Note(ch_index, pitch, vel, id) => {
+				NoteOn(ch_index, pitch, vel, id) => {
 					let ch = &mut self.channels[ch_index];
 					if !ch.mute {
-						ch.instrument.note(pitch, vel, id);
+						ch.instrument.note_on(pitch, vel, id);
+					}
+				},
+				NoteOff(ch_index, id) => {
+					let ch = &mut self.channels[ch_index];
+					if !ch.mute {
+						ch.instrument.note_off(id);
 					}
 				},
 				Parameter(ch_index, device_index, index, val) => {

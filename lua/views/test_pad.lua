@@ -65,14 +65,14 @@ end
 
 function TestPadView:mousepressed()
 	if (mouse.button == 1 or mouse.button == 2) and selection.channel_index then
-		backend:sendNote(selection.channel_index, self.f, self.v)
+		backend:noteOn(selection.channel_index, self.f, util.velocity_curve(self.v))
 		self.note = true
 	end
 end
 
 function TestPadView:mousereleased()
 	if mouse.button == 1 and selection.channel_index then
-		backend:sendNote(selection.channel_index, self.f, 0)
+		backend:noteOff(selection.channel_index)
 		self.note = false
 	end
 end

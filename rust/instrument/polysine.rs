@@ -90,23 +90,25 @@ impl Instrument for Polysine {
 		voice.vel.set(pres);
 	}
 
-	fn note(&mut self, pitch: f32, vel: f32, id: usize) {
+	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {
 		let voice = &mut self.voices[id];
-		if vel == 0.0 {
-			voice.vel.set(0.0);
-			voice.note_on = false;
-		} else {
-			let p = pitch_to_hz(pitch) / self.sample_rate;
+		let p = pitch_to_hz(pitch) / self.sample_rate;
 
-			voice.freq.set(p);
-			if !voice.note_on {
-				voice.freq.immediate();
-			}
-			voice.note_on = true;
-			voice.active = true;
-			voice.vel.set(vel);
+		voice.freq.set(p);
+		if !voice.note_on {
+			voice.freq.immediate();
 		}
+		voice.note_on = true;
+		voice.active = true;
+		voice.vel.set(vel);
 	}
+
+	fn note_off(&mut self, id: usize) {
+		let voice = &mut self.voices[id];
+		voice.vel.set(0.0);
+		voice.note_on = false;
+	}
+
 	#[allow(clippy::match_single_binding)]
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {

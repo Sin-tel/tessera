@@ -73,13 +73,20 @@ local function audioSetup()
 		-- verts = list of {pitch_offset, time, pressure}
 
 		local tuning = require("tuning")
-		local note = { pitch = tuning.fromMidi(60), time = 0, vel = 0.8, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
+		local note = { pitch = tuning.fromMidi(60), time = 0, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
 		table.insert(project.channels[1].notes, note)
 
-		note = { pitch = tuning.fromMidi(62), time = 1, vel = 0.8, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
+		note = { pitch = tuning.fromMidi(64), time = 1, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
 		table.insert(project.channels[1].notes, note)
 
-		note = { pitch = tuning.fromMidi(64), time = 2, vel = 0.8, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
+		note = { pitch = tuning.fromMidi(67), time = 2, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0, 0.5, 0.5 } } }
+		table.insert(project.channels[1].notes, note)
+
+		note = { pitch = tuning.fromMidi(60), time = 3, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0, 1.0, 0.5 } } }
+		table.insert(project.channels[1].notes, note)
+		note = { pitch = tuning.fromMidi(64), time = 3.1, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0, 1.0, 0.5 } } }
+		table.insert(project.channels[1].notes, note)
+		note = { pitch = tuning.fromMidi(67), time = 3.2, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0, 1.0, 0.5 } } }
 		table.insert(project.channels[1].notes, note)
 	end
 end

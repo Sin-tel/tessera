@@ -16,6 +16,8 @@ function Channels:new()
 	for k, v in pairs(deviceList.instruments) do
 		table.insert(new.intrument_list, k)
 	end
+	table.sort(new.intrument_list)
+
 	new.dropdown = widgets.Dropdown:new({ title = "add instrument", list = new.intrument_list, has_state = false })
 
 	return new

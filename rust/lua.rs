@@ -32,7 +32,8 @@ pub struct AudioContext {
 #[derive(Debug)]
 pub enum AudioMessage {
 	CV(usize, f32, f32, usize),
-	Note(usize, f32, f32, usize),
+	NoteOn(usize, f32, f32, usize),
+	NoteOff(usize, usize),
 	Parameter(usize, usize, usize, f32),
 	Mute(usize, bool),
 	Bypass(usize, usize, bool),
@@ -106,15 +107,25 @@ impl UserData for LuaData {
 		);
 
 		methods.add_method_mut(
-			"sendNote",
+			"noteOn",
 			|_, data, (channel_index, pitch, vel, id): (usize, f32, f32, Option<usize>)| {
 				if let LuaData(Some(ud)) = data {
-					ud.send_message(AudioMessage::Note(
+					ud.send_message(AudioMessage::NoteOn(
 						channel_index - 1,
 						pitch,
 						vel,
 						id.unwrap_or(1) - 1,
 					));
+				}
+				Ok(())
+			},
+		);
+
+		methods.add_method_mut(
+			"noteOff",
+			|_, data, (channel_index, id): (usize, Option<usize>)| {
+				if let LuaData(Some(ud)) = data {
+					ud.send_message(AudioMessage::NoteOff(channel_index - 1, id.unwrap_or(1) - 1));
 				}
 				Ok(())
 			},

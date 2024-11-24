@@ -3,13 +3,16 @@ catch lua error handler
 - save backup
 
 * make seperate midi handlers per device
-* note off command for instrument
 * translate those into CV
 * record internal representation onto timeline
     - pre voice alloc
     - do voice alloc while recording, do another voice alloc pass during playback
 * add simple playback (no editing yet!)
 * prepare for play
+
+test pad and keyboard input should go through interface instead of directly sending to backend!
+
+text ordering in dropdown??
 
 remove getdimensions and getmouse from the view thingys
  -- just store it in the thing?

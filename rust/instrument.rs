@@ -32,6 +32,7 @@ pub trait Instrument {
 		Self: Sized;
 	fn cv(&mut self, pitch: f32, pres: f32, id: usize);
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]);
-	fn note(&mut self, pitch: f32, vel: f32, id: usize);
+	fn note_on(&mut self, pitch: f32, vel: f32, id: usize);
+	fn note_off(&mut self, id: usize);
 	fn set_parameter(&mut self, index: usize, val: f32);
 }

@@ -87,8 +87,8 @@ function MidiHandler:event(device, event)
 
 		local p = tuning.getPitch(tuning.fromMidi(voice.note))
 		local vel = util.velocity_curve(voice.vel)
-		-- print("note_on", self.ch_index, p + voice.offset, vel, new_i)
-		backend:sendNote(self.ch_index, p + voice.offset, vel, new_i)
+		print("note_on", self.ch_index, p + voice.offset, vel, new_i)
+		backend:noteOn(self.ch_index, p + voice.offset, vel, new_i)
 	elseif event.name == "note_off" then
 		local get_i
 		for i, v in ipairs(self.voices) do
@@ -112,10 +112,8 @@ function MidiHandler:event(device, event)
 		if #self.queue == 0 then
 			voice.note_on = false
 			if not self.sustain then
-				-- note off pitches are ignored but we send the correct one anyway
-				local p = tuning.getPitch(tuning.fromMidi(voice.note))
-				print("note_off", self.ch_index, p + voice.offset, 0, get_i)
-				backend:sendNote(self.ch_index, p + voice.offset, 0, get_i)
+				print("note_off", self.ch_index, get_i)
+				backend:noteOff(self.ch_index, get_i)
 			end
 		else
 			print("ERROR")
@@ -126,7 +124,7 @@ function MidiHandler:event(device, event)
 			-- voice.vel = old_voice.vel
 			-- voice.pres = old_voice.pres
 			-- local p = tuning.fromMidi(voice.note)
-			-- backend:sendNote(self.ch_index, p + voice.offset, util.velocity_curve(voice.vel), get_i)
+			-- backend:noteOn(self.ch_index, p + voice.offset, util.velocity_curve(voice.vel), get_i)
 		end
 	elseif event.name == "pitchbend" then
 		if mpe then
@@ -153,7 +151,6 @@ function MidiHandler:event(device, event)
 					v.pres = event.pressure
 					if v.note_on then
 						-- print("pres", self.ch_index, v.note + v.offset, v.pres, i)
-
 						backend:sendCv(self.ch_index, v.note + v.offset, v.pres, i)
 					end
 				end
@@ -177,9 +174,8 @@ function MidiHandler:event(device, event)
 				for i, v in ipairs(self.voices) do
 					if not v.note_on then
 						v.note_on = false
-						-- note off pitches are ignored but we send the correct one anyway
-						local p = tuning.getPitch(tuning.fromMidi(v.note))
-						backend:sendNote(self.ch_index, p + v.offset, 0, i)
+						print("note_off", self.ch_index, i)
+						backend:noteOff(self.ch_index, i)
 					end
 				end
 			end
