@@ -22,6 +22,7 @@ pub struct AudioContext {
 	pub m_render: Arc<Mutex<Render>>,
 	pub scope: Scope,
 	pub paused: bool,
+	pub sample_rate: u32,
 	pub midi_connections: Vec<midi::Connection>,
 	pub render_buffer: Vec<f32>,
 }
@@ -251,8 +252,9 @@ impl UserData for LuaData {
 		methods.add_method_mut("renderFinish", |_, data, ()| {
 			if let LuaData(Some(ud)) = data {
 				let filename = "../out/render.wav";
+				let sample_rate = ud.sample_rate;
 
-				match write_wav(filename, &ud.render_buffer) {
+				match write_wav(filename, &ud.render_buffer, sample_rate) {
 					Ok(()) => {
 						log_info!("Wrote \"{filename}\".");
 					},
@@ -351,10 +353,10 @@ fn tessera(lua: &Lua) -> LuaResult<LuaTable> {
 	Ok(exports)
 }
 
-fn write_wav(filename: &str, samples: &[f32]) -> Result<(), Box<dyn Error>> {
+fn write_wav(filename: &str, samples: &[f32], sample_rate: u32) -> Result<(), Box<dyn Error>> {
 	let spec = hound::WavSpec {
 		channels: 2,
-		sample_rate: 44100,
+		sample_rate,
 		bits_per_sample: 16,
 		sample_format: hound::SampleFormat::Int,
 	};
