@@ -5,7 +5,7 @@ local noteInput = {}
 
 local queue = {}
 
-local DEFAULT_VELOCITY = 0.65
+local DEFAULT_VELOCITY = 0.3
 
 local octave = 0
 
@@ -17,7 +17,7 @@ noteInput.diatonic_row = { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "["
 function noteInput:keypressed(key)
 	for i, v in ipairs(self.diatonic_row) do
 		if v == key then
-			local p = tuning.fromDiatonic(i, octave)
+			local p = tuning.getPitch(tuning.fromDiatonic(i, octave))
 
 			local ch_index = selection.channel_index
 			if ch_index then
@@ -51,7 +51,7 @@ function noteInput:keyreleased(key)
 			if ch_index then
 				if #queue > 0 then
 					if last then
-						local p = tuning.fromDiatonic(queue[#queue], octave)
+						local p = tuning.getPitch(tuning.fromDiatonic(queue[#queue], octave))
 						backend:noteOn(ch_index, p, DEFAULT_VELOCITY)
 					end
 				else

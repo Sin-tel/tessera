@@ -92,7 +92,7 @@ function tuning.fromDiatonic(n, add_octave)
 	new[1] = dia[1] + oct + add_octave
 	new[2] = dia[2]
 
-	return tuning.getPitch(new)
+	return new
 end
 
 -- indexed by midi number, middle C = midi note number 60
@@ -106,7 +106,6 @@ function tuning.fromMidi(n)
 	new[1] = dia[1] + oct - 5
 	new[2] = dia[2]
 
-	-- return tuning.getPitch(new)
 	return new
 end
 

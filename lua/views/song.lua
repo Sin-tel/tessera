@@ -13,6 +13,12 @@ function Song:new()
 
 	self.ox = 200
 	self.oy = 900
+
+	self.ox_ = self.ox
+	self.oy_ = self.oy
+
+	self.sx_ = self.sx
+	self.sy_ = self.sy
 	return new
 end
 
@@ -36,30 +42,75 @@ function Song:invTransform(x, y)
 	return (x - self.ox) / self.sx, (y - self.oy) / self.sy
 end
 
+function Song:update()
+	if self.drag then
+		self.ox = self.drag_ix + mouse.dx
+		self.oy = self.drag_iy + mouse.dy
+		-- should be instant
+		self.ox_ = self.ox
+		self.oy_ = self.oy
+	end
+
+	if mouse.scroll and self:focus() then
+		local zoom = math.exp(0.15 * mouse.scroll)
+		local mx, my = self:getMouse()
+		self.sx_ = self.sx_ * zoom
+		self.sy_ = self.sy_ * zoom
+
+		self.ox_ = self.ox_ + (mx - self.ox_) * (1 - zoom)
+		self.oy_ = self.oy_ + (my - self.oy_) * (1 - zoom)
+	end
+end
+
 function Song:draw()
 	love.graphics.setColor(theme.bg_nested)
 	love.graphics.rectangle("fill", 0, 0, self.w, self.h)
 
 	-- draw grid
-	love.graphics.setColor(theme.line)
 	local ix, iy = self:invTransform(0, 0)
 	local ex, ey = self:invTransform(self.w, self.h)
 
-	-- octaves
-	for i = math.floor(ey / 12) + 1, math.floor(iy / 12) do
-		local py = self:proj_pitch(i * 12)
+	local sf = 0.5
+	self.ox = self.ox + sf * (self.ox_ - self.ox)
+	self.oy = self.oy + sf * (self.oy_ - self.oy)
+	self.sx = self.sx + sf * (self.sx_ - self.sx)
+	self.sy = self.sy + sf * (self.sy_ - self.sy)
+
+	-- pitch grid
+	local oct = tuning.generators[1]
+	for i = math.floor((ey - 60) / oct), math.floor((iy - 60) / oct) do
+		if self.sy < -60 then
+			love.graphics.setColor(theme.grid)
+			for j, _ in ipairs(tuning.chromatic_table) do
+				local py = self:proj_pitch(tuning.getPitch(tuning.fromMidi(j + 12 * i + 60)))
+				love.graphics.line(0, py, self.w, py)
+			end
+		elseif self.sy < -20 then
+			love.graphics.setColor(theme.grid)
+			for j, _ in ipairs(tuning.diatonic_table) do
+				local py = self:proj_pitch(tuning.getPitch(tuning.fromDiatonic(j, i)))
+				love.graphics.line(0, py, self.w, py)
+			end
+		end
+		love.graphics.setColor(theme.grid_highlight)
+		local py = self:proj_pitch(tuning.getPitch({ i }))
 		love.graphics.line(0, py, self.w, py)
 	end
 
 	-- time grid
-	for i = math.floor(ix / 2) + 1, math.floor(ex / 2) do
-		local px = self:proj_time(i * 2)
+	local grid_t_res = 4 ^ math.floor(3.5 - math.log(self.sx, 4))
+	for i = math.floor(ix / grid_t_res) + 1, math.floor(ex / grid_t_res) do
+		love.graphics.setColor(theme.grid)
+		if i % 4 == 0 then
+			love.graphics.setColor(theme.grid_highlight)
+		end
+		local px = self:proj_time(i * grid_t_res)
 		love.graphics.line(px, 0, px, self.h)
 	end
 
 	-- playhead
 	local px = self:proj_time(project.transport.time)
-	love.graphics.setColor(0.8, 0.2, 0.2)
+	love.graphics.setColor(theme.playhead)
 	love.graphics.line(px, 0, px, self.h)
 
 	-- draw notes
@@ -78,8 +129,9 @@ function Song:draw()
 				local y0 = self:proj_pitch(p_start)
 
 				love.graphics.setColor(0.6, 0.6, 0.6)
-				love.graphics.line(x0, y0, x0, y0 - 24 * note.vel)
-				love.graphics.line(x0 - 2, y0 - 24 * note.vel, x0 + 2, y0 - 24 * note.vel)
+				local vo = 32 * note.vel
+				love.graphics.line(x0, y0, x0, y0 - vo)
+				love.graphics.line(x0 - 2, y0 - vo, x0 + 2, y0 - vo)
 				-- love.graphics.setColor(theme.bg_nested)
 				-- love.graphics.circle("fill", x0, y0 - 24 * note.vel, 3)
 				-- love.graphics.setColor(0.6, 0.6, 0.6)
@@ -115,19 +167,33 @@ end
 function Song:keypressed(key)
 	local zoom
 	if key == "kp+" then
-		zoom = 1.2
+		zoom = math.sqrt(2)
 	elseif key == "kp-" then
-		zoom = 1 / 1.2
+		zoom = 1 / math.sqrt(2)
 	end
 
 	if zoom then
-		local mx, my = self:getMouse()
-		self.sx = self.sx * zoom
-		self.sy = self.sy * zoom
-
-		self.ox = self.ox + (mx - self.ox) * (1 - zoom)
-		self.oy = self.oy + (my - self.oy) * (1 - zoom)
+		-- local mx, _ = self:getMouse()
+		local mx = self.w * 0.25
+		self.sx_ = self.sx_ * zoom
+		self.ox_ = self.ox_ + (mx - self.ox_) * (1 - zoom)
 		return true
+	end
+end
+
+function Song:mousepressed()
+	if mouse.button == 3 then
+		self.drag = true
+		-- local mx, my = self:getMouse()
+
+		self.drag_ix = self.ox
+		self.drag_iy = self.oy
+	end
+end
+
+function Song:mousereleased()
+	if mouse.button_released == 3 then
+		self.drag = false
 	end
 end
 

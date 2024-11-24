@@ -49,7 +49,8 @@ end
 
 function View:mousepressed() end
 function View:mousereleased() end
-function View:keypressed(key) end
+function View:mousereleased() end
+function View:keypressed(key, mod) end
 function View:update() end
 
 function View:getMouse()
