@@ -9,9 +9,10 @@ add undo system commands
 channel handler:
  - state, action, project
 
-## todo soonish
+## todo
 
 * make seperate midi handlers per device
+* note off command for instrument
 * translate those into CV
 * record internal representation onto timeline
     - pre voice alloc
