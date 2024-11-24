@@ -143,29 +143,31 @@ impl Instrument for Fm {
 		voice.pres.set(pres);
 	}
 
-	fn note(&mut self, pitch: f32, vel: f32, id: usize) {
+	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {
 		let voice = &mut self.voices[id];
-		if vel == 0.0 {
-			voice.env.note_off();
-		} else {
-			let f = pitch_to_hz(pitch) / self.sample_rate;
-			voice.freq.set_immediate(f);
-			voice.set_modulator(self.ratio, self.ratio_fine, self.offset);
-			voice.freq2.immediate();
-			voice.env.note_on(vel);
-			voice.vel = vel;
-			voice.bright = 1.0 - ((pitch - 60.) * 0.03 * self.keytrack).clamp(-1., 0.95);
+		let f = pitch_to_hz(pitch) / self.sample_rate;
+		voice.freq.set_immediate(f);
+		voice.set_modulator(self.ratio, self.ratio_fine, self.offset);
+		voice.freq2.immediate();
+		voice.env.note_on(vel);
+		voice.vel = vel;
+		voice.bright = 1.0 - ((pitch - 60.) * 0.03 * self.keytrack).clamp(-1., 0.95);
 
-			// phase reset
-			if !voice.active {
-				voice.accum = 0.0;
-				voice.accum2 = 0.0;
-			}
-			voice.active = true;
-
-			voice.pitch_env = self.pitch_mod;
+		// phase reset
+		if !voice.active {
+			voice.accum = 0.0;
+			voice.accum2 = 0.0;
 		}
+		voice.active = true;
+
+		voice.pitch_env = self.pitch_mod;
 	}
+
+	fn note_off(&mut self, id: usize) {
+		let voice = &mut self.voices[id];
+		voice.env.note_off();
+	}
+
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.feedback = value * 0.5,

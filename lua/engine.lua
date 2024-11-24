@@ -64,8 +64,9 @@ function engine.playback()
 		local vel = util.velocity_curve(note.vel)
 
 		local ch_index = 1 -- FIXME
-		local note_i = #voices -- FIXME
-		backend:sendNote(ch_index, p, vel, note_i)
+		local note_i = n_index -- FIXME
+		print(note_i)
+		backend:noteOn(ch_index, p, vel, note_i)
 
 		n_index = n_index + 1
 	end
@@ -80,10 +81,10 @@ function engine.playback()
 
 		-- note off
 		if v.v_index >= #note.verts then
-			local p = tuning.getPitch(note.pitch)
 			local ch_index = 1 -- FIXME
-			local note_i = i -- FIXME
-			backend:sendNote(ch_index, p, 0, note_i)
+			local note_i = v.n_index -- FIXME
+
+			backend:noteOff(ch_index, note_i)
 			table.remove(voices, i)
 		end
 	end

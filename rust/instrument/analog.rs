@@ -153,29 +153,30 @@ impl Instrument for Analog {
 		self.update_filter();
 	}
 
-	fn note(&mut self, pitch: f32, vel: f32, _id: usize) {
-		if vel == 0.0 {
-			self.note_on = false;
-			self.gate.set(0.0);
-			self.envelope.note_off();
-		} else {
-			let f = pitch_to_hz(pitch) / self.sample_rate;
-			self.freq.set(f);
-			// make it less sensitive to velocity
-			let v = vel * (2. - vel);
-			self.envelope.set_vel(v);
+	fn note_on(&mut self, pitch: f32, vel: f32, _id: usize) {
+		let f = pitch_to_hz(pitch) / self.sample_rate;
+		self.freq.set(f);
+		// make it less sensitive to velocity
+		let v = vel * (2. - vel);
+		self.envelope.set_vel(v);
 
-			self.gate.set(0.3);
-			self.update_filter();
-			if !(self.legato && self.note_on) {
-				self.envelope.note_on(v);
-				self.freq.immediate();
-				// TODO: if attack is really fast the filter should be set to max immediately
-				self.filter.immediate();
-			}
-			self.note_on = true;
+		self.gate.set(0.3);
+		self.update_filter();
+		if !(self.legato && self.note_on) {
+			self.envelope.note_on(v);
+			self.freq.immediate();
+			// TODO: if attack is really fast the filter should be set to max immediately
+			self.filter.immediate();
 		}
+		self.note_on = true;
 	}
+
+	fn note_off(&mut self, _id: usize) {
+		self.note_on = false;
+		self.gate.set(0.0);
+		self.envelope.note_off();
+	}
+
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.pulse_width.set(value),

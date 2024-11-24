@@ -21,7 +21,7 @@ function noteInput:keypressed(key, scancode, isrepeat)
 
 			local ch_index = selection.channel_index
 			if ch_index then
-				backend:sendNote(ch_index, p, DEFAULT_VELOCITY)
+				backend:noteOn(ch_index, p, DEFAULT_VELOCITY)
 			end
 
 			table.insert(queue, i)
@@ -52,11 +52,10 @@ function noteInput:keyreleased(key, scancode)
 				if #queue > 0 then
 					if last then
 						local p = tuning.fromDiatonic(queue[#queue], octave)
-						backend:sendNote(ch_index, p, DEFAULT_VELOCITY)
+						backend:noteOn(ch_index, p, DEFAULT_VELOCITY)
 					end
 				else
-					local p = tuning.fromDiatonic(i, octave)
-					backend:sendNote(ch_index, p, 0.0)
+					backend:noteOff(ch_index)
 				end
 			end
 

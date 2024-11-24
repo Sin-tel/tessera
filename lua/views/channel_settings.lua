@@ -16,6 +16,7 @@ function ChannelSettings:new()
 	for k, v in pairs(deviceList.effects) do
 		table.insert(new.effect_list, k)
 	end
+	table.sort(new.effect_list)
 	new.dropdown = widgets.Dropdown:new({ title = "add effect", list = new.effect_list })
 
 	return new

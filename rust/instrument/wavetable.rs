@@ -136,21 +136,21 @@ impl Instrument for Wavetable {
 		self.pres.set(pres);
 	}
 
-	fn note(&mut self, pitch: f32, vel: f32, _id: usize) {
-		if vel == 0.0 {
-			self.vel.set(0.0);
-		} else {
-			let p = pitch_to_hz(pitch) / self.sample_rate;
-			self.freq.set_immediate(p);
+	fn note_on(&mut self, pitch: f32, vel: f32, _id: usize) {
+		let p = pitch_to_hz(pitch) / self.sample_rate;
+		self.freq.set_immediate(p);
 
-			// if self.vel.get() < 0.01 {
-			// self.vel.set_immediate(vel);
-			// self.accum = 0.0;
-			self.interpolate = 1.0;
-			// } else {
-			self.vel.set(vel);
-			// }
-		}
+		// if self.vel.get() < 0.01 {
+		// self.vel.set_immediate(vel);
+		// self.accum = 0.0;
+		self.interpolate = 1.0;
+		// } else {
+		self.vel.set(vel);
+		// }
+	}
+
+	fn note_off(&mut self, _id: usize) {
+		self.vel.set(0.0);
 	}
 
 	#[allow(clippy::match_single_binding)]

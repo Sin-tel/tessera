@@ -144,49 +144,51 @@ impl Instrument for Epiano {
 		// epiano doesn't respond to pitch & pressure
 	}
 
-	fn note(&mut self, pitch: f32, vel: f32, id: usize) {
+	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {
 		let voice = &mut self.voices[id];
-		if vel == 0.0 {
-			voice.note_on = false;
-			for (i, v) in voice.filter.iter_mut().enumerate() {
-				v.set_bandpass(voice.freq[i], voice.freq[i] * 0.12);
-			}
-		} else {
-			let f = pitch_to_hz(pitch);
+		let f = pitch_to_hz(pitch);
 
-			voice.vel = 0.004 * vel * (self.sample_rate / f);
+		voice.vel = 0.004 * vel * (self.sample_rate / f);
 
-			voice.hammer_freq = f / self.sample_rate;
-			voice.hammer_freq = voice.hammer_freq.min(0.015);
-			voice.hammer_freq *= 1. + vel;
+		voice.hammer_freq = f / self.sample_rate;
+		voice.hammer_freq = voice.hammer_freq.min(0.015);
+		voice.hammer_freq *= 1. + vel;
 
-			voice.freq[0] = f;
-			voice.freq[1] = f + 0.4 + 0.4 * self.rng.f32();
-			voice.freq[2] = f * 4. + 1200. * self.rng.f32();
-			voice.freq[3] = f * 6. + 1600. * self.rng.f32();
+		voice.freq[0] = f;
+		voice.freq[1] = f + 0.4 + 0.4 * self.rng.f32();
+		voice.freq[2] = f * 4. + 1200. * self.rng.f32();
+		voice.freq[3] = f * 6. + 1600. * self.rng.f32();
 
-			voice.filter[0].set_bandpass(voice.freq[0], voice.freq[0] * 6.0);
-			voice.filter[1].set_bandpass(voice.freq[1], voice.freq[1] * 4.0);
-			voice.filter[2].set_bandpass(voice.freq[2], voice.freq[2] * 0.4);
-			voice.filter[3].set_bandpass(voice.freq[3], voice.freq[3] * 0.3);
+		voice.filter[0].set_bandpass(voice.freq[0], voice.freq[0] * 6.0);
+		voice.filter[1].set_bandpass(voice.freq[1], voice.freq[1] * 4.0);
+		voice.filter[2].set_bandpass(voice.freq[2], voice.freq[2] * 0.4);
+		voice.filter[3].set_bandpass(voice.freq[3], voice.freq[3] * 0.3);
 
-			voice.filter.iter_mut().for_each(Filter::reset_state);
-			voice.filter.iter_mut().for_each(Filter::immediate);
+		voice.filter.iter_mut().for_each(Filter::reset_state);
+		voice.filter.iter_mut().for_each(Filter::immediate);
 
-			voice.hammer_phase = 0.;
+		voice.hammer_phase = 0.;
 
-			voice.prev = (self.x0 * self.x0 + self.y0 * self.y0).sqrt().recip();
+		voice.prev = (self.x0 * self.x0 + self.y0 * self.y0).sqrt().recip();
 
-			voice.gain = self.gain;
-			voice.gain_recip = self.gain.recip();
-			voice.wobble = self.wobble;
-			voice.bell = self.bell;
+		voice.gain = self.gain;
+		voice.gain_recip = self.gain.recip();
+		voice.wobble = self.wobble;
+		voice.bell = self.bell;
 
-			voice.active = true;
-			voice.note_on = true;
-			voice.timer = 0;
+		voice.active = true;
+		voice.note_on = true;
+		voice.timer = 0;
+	}
+
+	fn note_off(&mut self, id: usize) {
+		let voice = &mut self.voices[id];
+		voice.note_on = false;
+		for (i, v) in voice.filter.iter_mut().enumerate() {
+			v.set_bandpass(voice.freq[i], voice.freq[i] * 0.12);
 		}
 	}
+
 	#[allow(clippy::match_single_binding)]
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
