@@ -403,15 +403,9 @@ function workspace:mousereleased()
 	end
 end
 
--- function workspace:wheelmoved(y)
--- 	if self.focus then
--- 		self.focus:wheelmoved(y)
--- 	end
--- end
-
-function workspace:keypressed(key)
+function workspace:keypressed(key, mod)
 	if self.focus then
-		return self.focus:keypressed(key)
+		return self.focus:keypressed(key, mod)
 	end
 end
 

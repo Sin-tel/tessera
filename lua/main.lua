@@ -173,15 +173,17 @@ function love.textinput(t)
 end
 
 function love.keypressed(_, key)
-	local ctrl = love.keyboard.isDown("lctrl", "rctrl")
-	local shift = love.keyboard.isDown("lshift", "rshift")
-	local alt = love.keyboard.isDown("lalt", "ralt")
+	local mod = {}
+	mod.ctrl = love.keyboard.isDown("lctrl", "rctrl")
+	mod.shift = love.keyboard.isDown("lshift", "rshift")
+	mod.alt = love.keyboard.isDown("lalt", "ralt")
+	mod.any = mod.ctrl or mod.shift or mod.alt
 
-	if not (ctrl or shift or alt) and note_input:keypressed(key) then
+	if not mod.any and note_input:keypressed(key, mod) then
 		return
 	end
 
-	if workspace:keypressed(key) then
+	if workspace:keypressed(key, mod) then
 		return
 	end
 
@@ -200,27 +202,27 @@ function love.keypressed(_, key)
 		else
 			audio_status = "request"
 		end
-	elseif key == "z" and ctrl then
+	elseif key == "z" and mod.ctrl then
 		command.undo()
-	elseif key == "y" and ctrl then
+	elseif key == "y" and mod.ctrl then
 		command.redo()
 	-- elseif key == "z" then
 	-- 	log.info("(un)pausing backend")
 	-- 	backend:setPaused(not backend:paused())
-	elseif key == "r" and ctrl then
+	elseif key == "r" and mod.ctrl then
 		engine.render()
-	elseif key == "n" and ctrl then
+	elseif key == "n" and mod.ctrl then
 		command.run_and_register(command.newProject.new())
-	elseif key == "s" and ctrl then
+	elseif key == "s" and mod.ctrl then
 		save.write(last_save_location)
-	elseif key == "down" and shift then
+	elseif key == "down" and mod.shift then
 		if selection.channel_index and selection.device_index then
 			local new_index = selection.device_index + 1
 			command.run_and_register(
 				command.reorderEffect.new(selection.channel_index, selection.device_index, new_index)
 			)
 		end
-	elseif key == "up" and shift then
+	elseif key == "up" and mod.shift then
 		if selection.channel_index and selection.device_index then
 			local new_index = selection.device_index - 1
 			command.run_and_register(
