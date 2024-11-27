@@ -60,14 +60,15 @@ function Scope:draw()
 			end
 
 			for i = -9, 0 do
-				local x = 300 * (math.log(2 ^ i))
+				-- gridline should hit C4
+				local x = 200 * i - 79
 				love.graphics.line(tx + x * sx, 0, tx + x * sx, self.h)
 			end
 
 			love.graphics.setColor(theme.ui_text)
 			for i = 1, n - 1 do
-				local x1 = 300 * (math.log(i / n))
-				local x2 = 300 * (math.log((i + 1) / n))
+				local x1 = 200 * math.log((i - 1) / (n - 1), 2)
+				local x2 = 200 * math.log(i / (n - 1), 2)
 
 				local y1 = 0.2 * (math.log(self.average[i]))
 				local y2 = 0.2 * (math.log(self.average[i + 1]))
