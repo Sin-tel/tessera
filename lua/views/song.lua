@@ -158,7 +158,7 @@ function Song:draw()
 				love.graphics.setColor(theme.ui_text)
 
 				local note_name = tuning.getName(note.pitch)
-				util.drawText(note_name, x0 + 6, y0 - 9, self.w, 0)
+				util.drawText(note_name, x0 + 5, y0 - 10, self.w, 0)
 			end
 		end
 	end

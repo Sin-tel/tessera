@@ -128,32 +128,32 @@ function tuning.getName(p)
 	local acc = ""
 	if sharps > 0 then
 		if sharps % 2 == 1 then
-			acc = "t" -- #
+			acc = "c" -- #
 		end
 		local double_sharps = math.floor(sharps / 2)
 		-- x
-		acc = acc .. string.rep("y", double_sharps)
+		acc = acc .. string.rep("d", double_sharps)
 	elseif sharps < 0 then
 		local flats = -sharps
 		if flats == 1 then
-			acc = "e" --b
+			acc = "a" --b
 		elseif flats == 2 then
-			acc = "w" --bb
+			acc = "e" --bb
 		elseif flats == 3 then
-			acc = "q" --bbb
+			acc = "f" --bbb
 		else
 			local group = (flats - 1) % 3
 			if group == 0 then
-				acc = "ww" -- bb bb
+				acc = "ee" -- bb bb
 			elseif group == 1 then
-				acc = "wq" -- bb bbb
+				acc = "ef" -- bb bbb
 			else
-				acc = "qq" -- bbb bbb
+				acc = "ff" -- bbb bbb
 			end
 			local triple_flats = math.floor((flats - 4) / 3)
 			if triple_flats > 0 then
 				--- bbb
-				acc = acc .. string.rep("q", triple_flats)
+				acc = acc .. string.rep("f", triple_flats)
 			end
 		end
 	end

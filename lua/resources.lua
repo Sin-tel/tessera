@@ -2,19 +2,8 @@ local resources = {}
 
 -- fonts.main = love.graphics.newFont(12)
 resources.fonts = {}
-resources.fonts.main = love.graphics.newFont("res/dejavu_normal.fnt", "res/dejavu_normal.png")
-resources.fonts.notes = love.graphics.newImageFont(
-	"res/font_notes.png",
-	" ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		.. "0123456789.+-/"
-		.. "qwerty" -- flats/sharps  bbb, bb, b, n, #,  ##
-		.. "asdfgh" -- plus/min      ---, --, -, +, ++, +++
-		.. "zxcvbn" -- septimals     LLL, LL, L, 7, 77, 777
-		.. "iopjkl" -- quartersharps ddd, dd, d, t, tt, ttt
-		.. "{[()]}" -- ups/downs     vvv, vv, v, ^, ^^, ^^^
-		.. "!@#$&*", -- arrows       vvv, vv, v, ^, ^^, ^^^
-	-1
-)
+resources.fonts.main = love.graphics.newFont("res/font/inter.fnt", "res/font/inter.png")
+resources.fonts.notes = love.graphics.newFont("res/font/notes.otf", 16, "normal")
 
 love.graphics.setFont(resources.fonts.main)
 
