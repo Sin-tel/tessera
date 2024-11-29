@@ -3,7 +3,7 @@ local resources = {}
 -- fonts.main = love.graphics.newFont(12)
 resources.fonts = {}
 resources.fonts.main = love.graphics.newFont("res/font/inter.fnt", "res/font/inter.png")
-resources.fonts.notes = love.graphics.newFont("res/font/notes.otf", 16, "normal")
+resources.fonts.notes = love.graphics.newFont("res/font/notes.otf", 14, "normal")
 
 love.graphics.setFont(resources.fonts.main)
 

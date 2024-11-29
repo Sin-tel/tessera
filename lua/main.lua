@@ -66,7 +66,7 @@ local function audioSetup()
 
 	if not success then
 		log.info("Loading default project")
-		command.newChannel.new("polysine"):run()
+		command.newChannel.new("epiano"):run()
 		project.channels[1].armed = true
 
 		-- pitch = {base_pitch, start_time, velocity, verts}
@@ -81,14 +81,28 @@ local function audioSetup()
 		-- }
 		-- table.insert(project.channels[1].notes, note)
 
-		local note = { pitch = tuning.fromMidi(60), time = 0, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
-		table.insert(project.channels[1].notes, note)
+		-- local note = { pitch = tuning.fromMidi(60), time = 0, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
+		-- table.insert(project.channels[1].notes, note)
 
-		note = { pitch = tuning.fromMidi(64), time = 1, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
-		table.insert(project.channels[1].notes, note)
+		-- note = { pitch = tuning.fromMidi(64), time = 1, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
+		-- table.insert(project.channels[1].notes, note)
 
-		note = { pitch = tuning.fromMidi(67), time = 2, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
-		table.insert(project.channels[1].notes, note)
+		-- note = { pitch = tuning.fromMidi(67), time = 2, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
+		-- table.insert(project.channels[1].notes, note)
+
+		for i = 0, 6 do
+			local n = i - 3
+			local p = { -4 * n, 7 * n }
+
+			--tuning.fromMidi(60 + i)
+			local note = {
+				pitch = p,
+				time = i,
+				vel = 0.6,
+				verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } },
+			}
+			table.insert(project.channels[1].notes, note)
+		end
 	end
 end
 
@@ -112,7 +126,7 @@ function love.load()
 	bottom_left:setView(views.TestPad:new())
 	top_left:setView(views.Scope:new(false))
 	middle_left:setView(views.Song:new())
-	-- middle_left:setView(views.UiTest:new())
+	-- middle_left:setView(views.Debug:new())
 	top_right:setView(views.Channels:new())
 	bottom_rigth:setView(views.ChannelSettings:new())
 
