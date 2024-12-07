@@ -174,6 +174,7 @@ impl Render {
 					let e = ch.effects.remove(old_index);
 					ch.effects.insert(new_index, e);
 				},
+				AudioMessage::Panic => panic!("oof"),
 			}
 		}
 	}

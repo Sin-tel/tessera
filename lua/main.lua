@@ -147,6 +147,10 @@ function love.load()
 end
 
 function love.update(dt)
+	if not backend:ok() and (audio_status == "render" or audio_status == "running") then
+		log.warn("Backend died.")
+		audio_status = "dead"
+	end
 	if audio_status == "render" then
 		engine.render()
 	else
@@ -262,7 +266,7 @@ function love.keypressed(_, key)
 		else
 			engine.start()
 		end
-	elseif key == "k" then
+	elseif mod.ctrl and key == "k" then
 		if backend:ok() then
 			audio_status = "dead"
 			midi.quit()
@@ -270,6 +274,9 @@ function love.keypressed(_, key)
 		else
 			audio_status = "request"
 		end
+	elseif mod.ctrl and key == "w" then
+		-- for testing panic recovery
+		backend:panic()
 	elseif key == "z" and mod.ctrl then
 		command.undo()
 	elseif key == "y" and mod.ctrl then

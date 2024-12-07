@@ -5,6 +5,7 @@ local midi = {}
 local devices = {}
 
 function midi.load(input_ports)
+	devices = {}
 	backend:midiListPorts()
 
 	for _, v in ipairs(input_ports) do
