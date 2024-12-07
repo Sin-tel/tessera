@@ -21,7 +21,7 @@ pub struct AudioContext {
 	pub lua_rx: HeapCons<LuaMessage>,
 	pub m_render: Arc<Mutex<Render>>,
 	pub scope: Scope,
-	pub paused: bool,
+	pub is_rendering: bool,
 	pub sample_rate: u32,
 	pub midi_connections: Vec<midi::Connection>,
 	pub render_buffer: Vec<f32>,
@@ -89,7 +89,14 @@ impl UserData for LuaData {
 			Ok(())
 		});
 
-		methods.add_method("running", |_, LuaData(ud), ()| Ok(ud.is_some()));
+		methods.add_method("ok", |_, LuaData(ud), ()| Ok(ud.is_some()));
+
+		methods.add_method("getSampleRate", |_, LuaData(data), ()| {
+			if let Some(ud) = data {
+				return Ok(Some(ud.sample_rate));
+			}
+			Ok(None)
+		});
 
 		methods.add_method_mut(
 			"sendCv",
@@ -177,16 +184,16 @@ impl UserData for LuaData {
 			},
 		);
 
-		methods.add_method_mut("setPaused", |_, data, paused: bool| {
+		methods.add_method_mut("setRendering", |_, data, rendering: bool| {
 			if let LuaData(Some(ud)) = data {
-				ud.send_paused(paused);
+				ud.send_rendering(rendering);
 			}
 			Ok(())
 		});
 
-		methods.add_method("paused", |_, data, ()| {
+		methods.add_method("isRendering", |_, data, ()| {
 			if let LuaData(Some(ud)) = data {
-				Ok(ud.paused)
+				Ok(ud.is_rendering)
 			} else {
 				Ok(true)
 			}
@@ -278,6 +285,13 @@ impl UserData for LuaData {
 				ud.render_buffer = Vec::new();
 			} else {
 				log_error!("Failed to write wav, backend offline.");
+			}
+			Ok(())
+		});
+
+		methods.add_method_mut("renderCancel", |_, data, ()| {
+			if let LuaData(Some(ud)) = data {
+				ud.render_buffer = Vec::new();
 			}
 			Ok(())
 		});
@@ -404,9 +418,9 @@ impl AudioContext {
 		}
 	}
 
-	fn send_paused(&mut self, paused: bool) {
-		self.paused = paused;
-		if self.stream_tx.try_push(paused).is_err() {
+	fn send_rendering(&mut self, is_rendering: bool) {
+		self.is_rendering = is_rendering;
+		if self.stream_tx.try_push(is_rendering).is_err() {
 			log_warn!("Stream queue full. Dropped message!");
 		}
 	}
