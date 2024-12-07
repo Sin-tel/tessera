@@ -99,7 +99,7 @@ where
 		lua_rx,
 		m_render,
 		scope,
-		paused: false,
+		is_rendering: false,
 		sample_rate,
 		midi_connections: Vec::new(),
 		render_buffer: Vec::new(),
@@ -116,7 +116,7 @@ where
 	// Callback data
 	let mut start = false;
 
-	let mut paused = false;
+	let mut is_rendering = false;
 
 	let process_buffer = [[0.0f32; MAX_BUF_SIZE]; 2];
 
@@ -128,7 +128,7 @@ where
 				assert_no_alloc(|| {
 					let cpal_buffer_size = cpal_buffer.len() / 2;
 					match m_render.try_lock() {
-						Ok(mut render) if !paused => {
+						Ok(mut render) if !is_rendering => {
 							if !start {
 								start = true;
 								log_info!("Buffer size: {cpal_buffer_size:?}");
@@ -138,7 +138,7 @@ where
 
 							// parse all messages
 							for m in stream_rx.pop_iter() {
-								paused = m;
+								is_rendering = m;
 							}
 							render.parse_messages();
 
@@ -167,7 +167,7 @@ where
 							// Output silence as a fallback when lock fails.
 
 							for m in stream_rx.pop_iter() {
-								paused = m;
+								is_rendering = m;
 							}
 							// log_info!("Output silent");
 							for outsample in cpal_buffer.chunks_exact_mut(2) {

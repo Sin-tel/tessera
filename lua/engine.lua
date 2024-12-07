@@ -2,9 +2,13 @@ local backend = require("backend")
 local log = require("log")
 local tuning = require("tuning")
 
+local RENDER_BLOCK_SIZE = 64
+
 local engine = {}
 
 engine.playing = false
+engine.render_progress = 0
+engine.render_total = 8
 
 local n_index = 1
 local note_table = {}
@@ -53,14 +57,12 @@ end
 function engine.update(dt)
 	if engine.playing then
 		project.transport.time = project.transport.time + dt
-		if backend:running() then
+		if backend:ok() then
 			engine.playback()
 		end
 	end
 
-	if backend:running() then
-		engine.parseMessages()
-	end
+	engine.parseMessages()
 end
 
 function engine.playback()
@@ -108,39 +110,76 @@ function engine.playback()
 	end
 end
 
-function engine.render()
-	--TODO: make this not block the UI
+function engine.renderStart()
+	-- TODO: flush midi and audio buffers
 
-	if not backend:running() then
-		log.error("Backend offline.")
+	if not backend:ok() then
+		log.error("Can't render, backend offline.")
 		return
 	end
+
+	assert(audio_status == "running")
+	audio_status = "render"
+
+	-- TODO: calculate how long we should render
+	engine.render_total = 8
+	engine.render_progress = 0
+
+	if engine.playing then
+		engine.stop()
+	end
+	engine.start()
 
 	log.info("Start render.")
 
 	mouse:setCursor("wait")
 	mouse:endFrame()
 
-	backend:setPaused(true)
+	backend:setRendering(true)
 
 	-- sleep for a bit to make sure the audio thread is done
+	-- TODO: find something better
 	love.timer.sleep(0.01)
+end
 
-	for _ = 1, 5000 do
+function engine.render()
+	assert(backend:isRendering())
+
+	local dt = RENDER_BLOCK_SIZE / backend:getSampleRate()
+
+	local target_ms = 2 -- can probably set this higher
+	local start = love.timer.getTime()
+	for i = 1, 100 do
 		local success = backend:renderBlock()
 		if not success then
 			log.error("Failed to render block.")
-			backend:play()
+			engine.renderCancel()
 			return
 		end
-		engine.parseMessages()
+
+		engine.update(dt)
+		engine.render_progress = engine.render_progress + dt
+		if engine.render_progress >= engine.render_total then
+			log.info("Finished render.")
+			backend:renderFinish()
+			engine.renderEnd()
+			break
+		end
+
+		local t_now = (love.timer.getTime() - start) * 1000
+		if t_now > target_ms then
+			break
+		end
 	end
-	log.info("Finished render.")
-	backend:renderFinish()
+end
 
-	backend:setPaused(false)
+function engine.renderEnd()
+	-- TODO: flush midi and audio buffers
 
+	backend:setRendering(false)
 	mouse:setCursor("default")
+	audio_status = "running"
+	engine.stop()
 end
 
 -- update UI with messages from backend

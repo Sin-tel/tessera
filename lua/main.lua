@@ -31,7 +31,7 @@ selection = {}
 setup = {}
 resources = {}
 
-audio_status = "waiting"
+audio_status = "init"
 
 project = {}
 ui_channels = {}
@@ -42,23 +42,7 @@ local last_save_location = "../out/lastsave.sav"
 -- predeclarations
 local sendParameters
 
-local function audioSetup()
-	if not backend:running() then
-		-- backend:setup(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
-		backend:setup("wasapi", "default")
-
-		midi.load(setup.midi.inputs)
-	else
-		log.warn("Audio already set up")
-	end
-
-	if backend:running() then
-		audio_status = "running"
-	else
-		log.error("Audio setup failed")
-		audio_status = "dead"
-	end
-
+local function load_project()
 	local success = false
 	if load_last_save and util.fileExists(last_save_location) then
 		success = save.read(last_save_location)
@@ -106,6 +90,33 @@ local function audioSetup()
 	end
 end
 
+local function audioSetup()
+	if not backend:ok() then
+		-- backend:setup(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
+		backend:setup("wasapi", "default")
+
+		midi.load(setup.midi.inputs)
+	else
+		log.warn("Audio already set up")
+	end
+
+	if backend:ok() then
+		audio_status = "running"
+	else
+		log.error("Audio setup failed")
+		audio_status = "dead"
+	end
+
+	if project.needs_init then
+		load_project()
+		project.needs_init = false
+	else
+		-- restore backend
+		ui_channels = {}
+		build.project()
+	end
+end
+
 function love.load()
 	log.info("Tessera v" .. VERSION.MAJOR .. "." .. VERSION.MINOR .. "." .. VERSION.PATCH)
 	math.randomseed(os.time())
@@ -132,28 +143,35 @@ function love.load()
 
 	-- load empty project
 	project = build.newProject()
+	project.needs_init = true
 end
 
 function love.update(dt)
-	midi.update()
-	engine.update(dt)
+	if audio_status == "render" then
+		engine.render()
+	else
+		midi.update()
+		engine.update(dt)
+	end
 end
 
 function love.draw()
 	--- update ---
 	if audio_status == "request" then
 		audioSetup()
-	elseif audio_status == "waiting" then
+	elseif audio_status == "init" then
 		audio_status = "request"
 	end
-	mouse:update()
+
 	backend:updateScope()
-	workspace:update()
+	if audio_status ~= "render" then
+		mouse:update()
+		workspace:update()
+		mouse:endFrame()
 
-	mouse:endFrame()
-
-	if backend:running() then
-		sendParameters()
+		if backend:ok() then
+			sendParameters()
+		end
 	end
 
 	--- draw ---
@@ -162,25 +180,51 @@ function love.draw()
 	love.graphics.rectangle("fill", 0, 0, width, height)
 
 	workspace:draw()
+
+	if audio_status == "render" then
+		love.graphics.setColor(0, 0, 0, 0.7)
+		love.graphics.rectangle("fill", 0, 0, width, height)
+
+		love.graphics.setColor(theme.background)
+		love.graphics.rectangle("fill", width * 0.3, height * 0.5 - 16, width * 0.4, 32)
+		love.graphics.setColor(theme.widget)
+		local p = engine.render_progress / engine.render_total
+		love.graphics.rectangle("fill", width * 0.3 + 4, height * 0.5 - 12, (width * 0.4 - 8) * p, 24)
+	end
 end
 
 function love.mousepressed(x, y, button)
+	if audio_status == "render" then
+		return
+	end
 	mouse:pressed(x, y, button)
 end
 
 function love.mousereleased(x, y, button)
+	if audio_status == "render" then
+		return
+	end
 	mouse:released(x, y, button)
 end
 
 function love.mousemoved(x, y, dx, dy, istouch)
+	if audio_status == "render" then
+		return
+	end
 	mouse:mousemoved(x, y, dx, dy, istouch)
 end
 
 function love.wheelmoved(_, y)
+	if audio_status == "render" then
+		return
+	end
 	mouse:wheelmoved(y)
 end
 
 function love.textinput(t)
+	if audio_status == "render" then
+		return
+	end
 	-- should we handle love.textedited? (for IMEs)
 	-- TODO: handle utf-8
 	-- print(t)b
@@ -192,6 +236,15 @@ function love.keypressed(_, key)
 	mod.shift = love.keyboard.isDown("lshift", "rshift")
 	mod.alt = love.keyboard.isDown("lalt", "ralt")
 	mod.any = mod.ctrl or mod.shift or mod.alt
+
+	if audio_status == "render" then
+		if (key == "c" and mod.ctrl) or key == "escape" then
+			backend:renderCancel()
+			engine.renderEnd()
+		end
+
+		return
+	end
 
 	if not mod.any and note_input:keypressed(key, mod) then
 		return
@@ -210,7 +263,8 @@ function love.keypressed(_, key)
 			engine.start()
 		end
 	elseif key == "k" then
-		if backend:running() then
+		if backend:ok() then
+			audio_status = "dead"
 			midi.quit()
 			backend:quit()
 		else
@@ -220,11 +274,8 @@ function love.keypressed(_, key)
 		command.undo()
 	elseif key == "y" and mod.ctrl then
 		command.redo()
-	-- elseif key == "z" then
-	-- 	log.info("(un)pausing backend")
-	-- 	backend:setPaused(not backend:paused())
 	elseif key == "r" and mod.ctrl then
-		engine.render()
+		engine.renderStart()
 	elseif key == "n" and mod.ctrl then
 		command.run_and_register(command.newProject.new())
 	elseif key == "s" and mod.ctrl then
@@ -255,6 +306,9 @@ function love.keypressed(_, key)
 end
 
 function love.keyreleased(_, key)
+	if audio_status == "render" then
+		return
+	end
 	if note_input:keyreleased(key) then
 		return
 	end
