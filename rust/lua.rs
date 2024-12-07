@@ -31,6 +31,7 @@ pub struct AudioContext {
 // Should not contain any boxed values
 #[derive(Debug)]
 pub enum AudioMessage {
+	Panic,
 	CV(usize, f32, f32, usize),
 	NoteOn(usize, f32, f32, usize),
 	NoteOff(usize, usize),
@@ -84,12 +85,23 @@ impl UserData for LuaData {
 			Ok(())
 		});
 
+		methods.add_method_mut("panic", |_, data, ()| {
+			if let LuaData(Some(ud)) = data {
+				ud.send_message(AudioMessage::Panic);
+			}
+			Ok(())
+		});
+
 		methods.add_method_mut("setWorkingDirectory", |_, _, path: String| {
 			std::env::set_current_dir(std::path::Path::new(&path))?;
 			Ok(())
 		});
 
-		methods.add_method("ok", |_, LuaData(ud), ()| Ok(ud.is_some()));
+		methods.add_method_mut("ok", |_, data, ()| {
+			check_lock_poison(data);
+			let LuaData(data) = data;
+			Ok(data.is_some())
+		});
 
 		methods.add_method("getSampleRate", |_, LuaData(data), ()| {
 			if let Some(ud) = data {
