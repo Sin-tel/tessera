@@ -164,12 +164,14 @@ impl Instrument for Epiano {
 		voice.filter[2].set_bandpass(voice.freq[2], voice.freq[2] * 0.4);
 		voice.filter[3].set_bandpass(voice.freq[3], voice.freq[3] * 0.3);
 
-		voice.filter.iter_mut().for_each(Filter::reset_state);
-		voice.filter.iter_mut().for_each(Filter::immediate);
+		if !voice.note_on {
+			// don't reset state in case of voice stealing to minimize clicking
+			voice.filter.iter_mut().for_each(Filter::reset_state);
+			voice.filter.iter_mut().for_each(Filter::immediate);
+			voice.prev = (self.x0 * self.x0 + self.y0 * self.y0).sqrt().recip();
+		}
 
 		voice.hammer_phase = 0.;
-
-		voice.prev = (self.x0 * self.x0 + self.y0 * self.y0).sqrt().recip();
 
 		voice.gain = self.gain;
 		voice.gain_recip = self.gain.recip();

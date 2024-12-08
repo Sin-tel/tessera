@@ -1,10 +1,6 @@
 local View = require("view")
-local backend = require("backend")
-
+local VoiceAlloc = require("voice_alloc")
 local TestPadView = View:derive("TestPad")
-
--- TODO: this should not communicate with backend directly
---       instead, pass through the selected devices midi handler
 
 function TestPadView:new()
 	local new = {}
@@ -14,7 +10,7 @@ function TestPadView:new()
 	new.v = 0
 	new.f = 49
 
-	new.note = false
+	new.id = nil
 
 	return new
 end
@@ -53,26 +49,30 @@ function TestPadView:draw()
 		local mxx = (mx - x1) / (x2 - x1)
 		local myy = (my - y1) / (y2 - y1)
 
-		self.f = 60 - math.floor(oct * 0.5) * 12 + oct * 12 * mxx
+		self.f = -math.floor(oct * 0.5) * 12 + oct * 12 * mxx
 		self.v = 1.0 - myy
 
-		if (mouse.button == 1 or mouse.button == 2) and selection.channel_index then
-			backend:sendCv(selection.channel_index, self.f, self.v)
+		local ch_index = selection.channel_index
+		if (mouse.button == 1 or mouse.button == 2) and ch_index then
+			ui_channels[ch_index].voice_alloc:cv(self.id, self.f, self.v)
 		end
 	end
 end
 
 function TestPadView:mousepressed()
-	if (mouse.button == 1 or mouse.button == 2) and selection.channel_index then
-		backend:noteOn(selection.channel_index, self.f, util.velocity_curve(self.v))
-		self.note = true
+	local ch_index = selection.channel_index
+	if (mouse.button == 1 or mouse.button == 2) and ch_index then
+		self.id = VoiceAlloc.next_id()
+		ui_channels[ch_index].voice_alloc:noteOn(self.id, 60, util.velocity_curve(self.v))
+		ui_channels[ch_index].voice_alloc:cv(self.id, self.f, self.v)
 	end
 end
 
 function TestPadView:mousereleased()
-	if mouse.button == 1 and selection.channel_index then
-		backend:noteOff(selection.channel_index)
-		self.note = false
+	local ch_index = selection.channel_index
+	if mouse.button == 1 and ch_index then
+		ui_channels[ch_index].voice_alloc:noteOff(self.id)
+		self.id = nil
 	end
 end
 
