@@ -32,7 +32,7 @@ function build.project()
 	assert(#ui_channels == #project.channels)
 
 	if #project.channels > 0 then
-		selection.channel_index = 1
+		selection.ch_index = 1
 		selection.device_index = 0
 	end
 end

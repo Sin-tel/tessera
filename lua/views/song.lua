@@ -117,7 +117,7 @@ function Song:draw()
 	love.graphics.setFont(resources.fonts.notes)
 	for ch_index, ch in ipairs(project.channels) do
 		if ch.visible then
-			-- if selection.channel_index == ch_index then
+			-- if selection.ch_index == ch_index then
 			-- 	love.graphics.setColor(0.9, 0.9, 0.9)
 			-- else
 			-- 	love.graphics.setColor(0.4, 0.4, 0.4)

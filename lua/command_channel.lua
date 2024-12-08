@@ -28,8 +28,8 @@ local function newDeviceData(name, options)
 end
 
 local function _removeChannel(ch_index)
-    if selection.channel_index == ch_index then
-        selection.channel_index = nil
+    if selection.ch_index == ch_index then
+        selection.ch_index = nil
     end
     table.remove(project.channels, ch_index)
     table.remove(ui_channels, ch_index)
@@ -37,7 +37,7 @@ local function _removeChannel(ch_index)
 end
 
 local function _removeEffect(ch_index, effect_index)
-    if selection.channel_index == ch_index and selection.device_index == effect_index then
+    if selection.ch_index == ch_index and selection.device_index == effect_index then
         selection.device_index = nil
     end
 
@@ -61,7 +61,7 @@ local function _reorderEffect(ch_index, old_index, new_index)
 
             backend:reorderEffect(ch_index, old_index, new_index)
 
-            if selection.channel_index == ch_index and selection.device_index == old_index then
+            if selection.ch_index == ch_index and selection.device_index == old_index then
                 selection.device_index = new_index
             end
         end
@@ -102,7 +102,7 @@ function newChannel:run()
     build.channel(channel)
 
     -- select it
-    selection.channel_index = self.ch_index
+    selection.ch_index = self.ch_index
 
     return channel
 end

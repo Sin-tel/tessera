@@ -50,7 +50,9 @@ local function load_project()
 
 	if not success then
 		log.info("Loading default project")
+		-- command.newChannel.new("analog"):run()
 		command.newChannel.new("epiano"):run()
+		-- command.newChannel.new("polysine"):run()
 		project.channels[1].armed = true
 
 		-- pitch = {base_pitch, start_time, velocity, verts}
@@ -65,28 +67,28 @@ local function load_project()
 		-- }
 		-- table.insert(project.channels[1].notes, note)
 
-		-- local note = { pitch = tuning.fromMidi(60), time = 0, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
-		-- table.insert(project.channels[1].notes, note)
+		local note = { pitch = tuning.fromMidi(60), time = 0, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
+		table.insert(project.channels[1].notes, note)
 
-		-- note = { pitch = tuning.fromMidi(64), time = 1, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
-		-- table.insert(project.channels[1].notes, note)
+		note = { pitch = tuning.fromMidi(64), time = 0.1, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
+		table.insert(project.channels[1].notes, note)
 
-		-- note = { pitch = tuning.fromMidi(67), time = 2, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
-		-- table.insert(project.channels[1].notes, note)
+		note = { pitch = tuning.fromMidi(67), time = 0.2, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
+		table.insert(project.channels[1].notes, note)
 
-		for i = 0, 6 do
-			local n = i - 3
-			local p = { -4 * n, 7 * n }
+		-- for i = 0, 6 do
+		-- 	local n = i - 3
+		-- 	local p = { -4 * n, 7 * n }
 
-			--tuning.fromMidi(60 + i)
-			local note = {
-				pitch = p,
-				time = i,
-				vel = 0.6,
-				verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } },
-			}
-			table.insert(project.channels[1].notes, note)
-		end
+		-- 	--tuning.fromMidi(60 + i)
+		-- 	local note = {
+		-- 		pitch = p,
+		-- 		time = i,
+		-- 		vel = 0.6,
+		-- 		verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } },
+		-- 	}
+		-- 	table.insert(project.channels[1].notes, note)
+		-- end
 	end
 end
 
@@ -94,7 +96,6 @@ local function audioSetup()
 	if not backend:ok() then
 		-- backend:setup(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
 		backend:setup("wasapi", "default")
-
 		midi.load(setup.midi.inputs)
 	else
 		log.warn("Audio already set up")
@@ -288,25 +289,21 @@ function love.keypressed(_, key)
 	elseif key == "s" and mod.ctrl then
 		save.write(last_save_location)
 	elseif key == "down" and mod.shift then
-		if selection.channel_index and selection.device_index then
+		if selection.ch_index and selection.device_index then
 			local new_index = selection.device_index + 1
-			command.run_and_register(
-				command.reorderEffect.new(selection.channel_index, selection.device_index, new_index)
-			)
+			command.run_and_register(command.reorderEffect.new(selection.ch_index, selection.device_index, new_index))
 		end
 	elseif key == "up" and mod.shift then
-		if selection.channel_index and selection.device_index then
+		if selection.ch_index and selection.device_index then
 			local new_index = selection.device_index - 1
-			command.run_and_register(
-				command.reorderEffect.new(selection.channel_index, selection.device_index, new_index)
-			)
+			command.run_and_register(command.reorderEffect.new(selection.ch_index, selection.device_index, new_index))
 		end
 	elseif key == "delete" then
-		if selection.channel_index then
+		if selection.ch_index then
 			if selection.device_index and selection.device_index > 0 then
-				command.run_and_register(command.removeEffect.new(selection.channel_index, selection.device_index))
+				command.run_and_register(command.removeEffect.new(selection.ch_index, selection.device_index))
 			else
-				command.run_and_register(command.removeChannel.new(selection.channel_index))
+				command.run_and_register(command.removeChannel.new(selection.ch_index))
 			end
 		end
 	end

@@ -64,23 +64,23 @@ function Channel:new()
 	return new
 end
 
-function Channel:update(ui, channel_index)
+function Channel:update(ui, ch_index)
 	local x, y, w, h = ui:next()
 	local p = Ui.DEFAULT_PAD
 	local b = Ui.BUTTON_SMALL
 
 	ui:hitbox(self, x, y, w - 5 * b, h)
 
-	local ch = project.channels[channel_index]
+	local ch = project.channels[ch_index]
 
 	if self.button_mute:update(ui, ch.mute, w - 5 * b, y + p, b, b) then
-		do_mute(channel_index, not ch.mute)
+		do_mute(ch_index, not ch.mute)
 	end
 	if self.button_solo:update(ui, ch.solo, w - 4 * b, y + p, b, b) then
-		do_solo(channel_index)
+		do_solo(ch_index)
 	end
 	if self.button_armed:update(ui, ch.armed, w - 3 * b, y + p, b, b) then
-		do_armed(channel_index)
+		do_armed(ch_index)
 	end
 	if self.button_visible:update(ui, ch.visible, w - 2 * b, y + p, b, b) then
 		ch.visible = not ch.visible
@@ -88,23 +88,23 @@ function Channel:update(ui, channel_index)
 	if self.button_lock:update(ui, ch.lock, w - b, y + p, b, b) then
 		ch.lock = not ch.lock
 	end
-	ui:pushDraw(self.draw, { self, ui, channel_index, x, y, w, h })
+	ui:pushDraw(self.draw, { self, ui, ch_index, x, y, w, h })
 
 	if ui.clicked == self then
-		selection.channel_index = channel_index
+		selection.ch_index = ch_index
 		selection.device_index = nil
 	end
 
 	return ui.clicked == self
 end
 
-function Channel:draw(ui, channel_index, x, y, w, h)
+function Channel:draw(ui, ch_index, x, y, w, h)
 	local color_fill = nil
 	if ui.hover == self then
 		color_fill = theme.bg_highlight
 	end
 
-	if selection.channel_index == channel_index and selection.device_index == nil then
+	if selection.ch_index == ch_index and selection.device_index == nil then
 		color_fill = theme.bg_focus
 	end
 
@@ -114,11 +114,11 @@ function Channel:draw(ui, channel_index, x, y, w, h)
 	end
 
 	love.graphics.setColor(theme.ui_text)
-	if selection.channel_index == channel_index then
+	if selection.ch_index == ch_index then
 		love.graphics.setColor(theme.highlight)
 	end
 
-	util.drawText(project.channels[channel_index].name, x, y, w, h, "left", true)
+	util.drawText(project.channels[ch_index].name, x, y, w, h, "left", true)
 end
 
 function Button:new(options)
