@@ -3,6 +3,7 @@ local deviceList = require("device_list")
 local widgets = require("ui/widgets")
 local Device = require("device")
 local MidiHandler = require("midi_handler")
+local VoiceAlloc = require("voice_alloc")
 
 local build = {}
 
@@ -53,7 +54,7 @@ function build.channel(channel, ch_index)
 		build.effect(ch_index, i, v)
 	end
 
-	channel_ui.midi_handler = MidiHandler:new(options.n_voices, ch_index)
+	channel_ui.voice_alloc = VoiceAlloc.new(ch_index, options.n_voices)
 end
 
 function build.effect(ch_index, effect_index, effect)

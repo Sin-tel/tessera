@@ -112,14 +112,9 @@ impl UserData for LuaData {
 
 		methods.add_method_mut(
 			"sendCv",
-			|_, data, (channel_index, pitch, pres, id): (usize, f32, f32, Option<usize>)| {
+			|_, data, (channel_index, pitch, pres, voice): (usize, f32, f32, usize)| {
 				if let LuaData(Some(ud)) = data {
-					ud.send_message(AudioMessage::CV(
-						channel_index - 1,
-						pitch,
-						pres,
-						id.unwrap_or(1) - 1,
-					));
+					ud.send_message(AudioMessage::CV(channel_index - 1, pitch, pres, voice - 1));
 				}
 				Ok(())
 			},
@@ -127,28 +122,20 @@ impl UserData for LuaData {
 
 		methods.add_method_mut(
 			"noteOn",
-			|_, data, (channel_index, pitch, vel, id): (usize, f32, f32, Option<usize>)| {
+			|_, data, (channel_index, pitch, vel, voice): (usize, f32, f32, usize)| {
 				if let LuaData(Some(ud)) = data {
-					ud.send_message(AudioMessage::NoteOn(
-						channel_index - 1,
-						pitch,
-						vel,
-						id.unwrap_or(1) - 1,
-					));
+					ud.send_message(AudioMessage::NoteOn(channel_index - 1, pitch, vel, voice - 1));
 				}
 				Ok(())
 			},
 		);
 
-		methods.add_method_mut(
-			"noteOff",
-			|_, data, (channel_index, id): (usize, Option<usize>)| {
-				if let LuaData(Some(ud)) = data {
-					ud.send_message(AudioMessage::NoteOff(channel_index - 1, id.unwrap_or(1) - 1));
-				}
-				Ok(())
-			},
-		);
+		methods.add_method_mut("noteOff", |_, data, (channel_index, voice): (usize, usize)| {
+			if let LuaData(Some(ud)) = data {
+				ud.send_message(AudioMessage::NoteOff(channel_index - 1, voice - 1));
+			}
+			Ok(())
+		});
 
 		methods.add_method_mut("sendMute", |_, data, (channel_index, mute): (usize, bool)| {
 			if let LuaData(Some(ud)) = data {
