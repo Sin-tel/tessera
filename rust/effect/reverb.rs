@@ -117,6 +117,18 @@ impl Effect for Reverb {
 			*r = lerp(*r, out_r, self.balance);
 		}
 	}
+	fn flush(&mut self) {
+		for d in &mut self.delaylines {
+			d.flush();
+		}
+		for d in &mut self.allpass_l {
+			d.flush();
+		}
+		for d in &mut self.allpass_r {
+			d.flush();
+		}
+	}
+
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.balance = value,

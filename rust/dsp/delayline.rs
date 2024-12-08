@@ -97,4 +97,9 @@ impl DelayLine {
 
 		sum
 	}
+
+	pub fn flush(&mut self) {
+		self.h = [0.; 4];
+		self.buf.clear();
+	}
 }

@@ -86,6 +86,7 @@ impl Instrument for Sine {
 			self.vel.set(0.0);
 		}
 	}
+	fn flush(&mut self) {}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {

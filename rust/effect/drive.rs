@@ -146,6 +146,8 @@ impl Effect for Drive {
 			}
 		}
 	}
+	fn flush(&mut self) {}
+
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.balance = value,

@@ -46,6 +46,12 @@ function midi.update()
 	end
 end
 
+function midi.flush()
+	for _, device in pairs(devices) do
+		backend:midiPoll(device.index)
+	end
+end
+
 function midi.updateDevice(device)
 	local events = backend:midiPoll(device.index)
 	if not events then

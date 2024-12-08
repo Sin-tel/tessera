@@ -35,4 +35,5 @@ pub trait Instrument {
 	fn note_on(&mut self, pitch: f32, vel: f32, id: usize);
 	fn note_off(&mut self, id: usize);
 	fn set_parameter(&mut self, index: usize, val: f32);
+	fn flush(&mut self);
 }

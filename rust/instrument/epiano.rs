@@ -190,8 +190,8 @@ impl Instrument for Epiano {
 			v.set_bandpass(voice.freq[i], voice.freq[i] * 0.12);
 		}
 	}
+	fn flush(&mut self) {}
 
-	#[allow(clippy::match_single_binding)]
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.gain = from_db(value),

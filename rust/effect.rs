@@ -40,6 +40,7 @@ pub trait Effect {
 		Self: Sized;
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]);
 	fn set_parameter(&mut self, index: usize, val: f32);
+	fn flush(&mut self);
 }
 
 pub struct Bypass {

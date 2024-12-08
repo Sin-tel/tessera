@@ -52,6 +52,7 @@ impl Effect for Tilt {
 			}
 		}
 	}
+	fn flush(&mut self) {}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		#[allow(clippy::single_match_else)]

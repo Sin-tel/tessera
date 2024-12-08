@@ -167,6 +167,7 @@ impl Instrument for Fm {
 		let voice = &mut self.voices[id];
 		voice.env.note_off();
 	}
+	fn flush(&mut self) {}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {

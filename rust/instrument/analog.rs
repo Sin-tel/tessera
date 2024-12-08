@@ -176,6 +176,7 @@ impl Instrument for Analog {
 		self.gate.set(0.0);
 		self.envelope.note_off();
 	}
+	fn flush(&mut self) {}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {

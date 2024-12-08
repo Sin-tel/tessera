@@ -295,6 +295,15 @@ impl UserData for LuaData {
 			Ok(())
 		});
 
+		methods.add_method_mut("flush", |_, data, ()| {
+			check_lock_poison(data);
+			if let LuaData(Some(ud)) = data {
+				let mut render = ud.m_render.lock().expect("Failed to get lock.");
+				render.flush();
+			}
+			Ok(())
+		});
+
 		methods.add_method_mut("updateScope", |_, data, ()| {
 			if let LuaData(Some(ud)) = data {
 				ud.scope.update();
