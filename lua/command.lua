@@ -98,7 +98,7 @@ function newProject:run()
 
     ui_channels = {}
     -- clear selection
-    selection.channel_index = nil
+    selection.ch_index = nil
     selection.device_index = nil
 end
 

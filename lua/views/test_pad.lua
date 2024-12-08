@@ -52,7 +52,7 @@ function TestPadView:draw()
 		self.f = -math.floor(oct * 0.5) * 12 + oct * 12 * mxx
 		self.v = 1.0 - myy
 
-		local ch_index = selection.channel_index
+		local ch_index = selection.ch_index
 		if (mouse.button == 1 or mouse.button == 2) and ch_index then
 			ui_channels[ch_index].voice_alloc:cv(self.id, self.f, self.v)
 		end
@@ -60,7 +60,7 @@ function TestPadView:draw()
 end
 
 function TestPadView:mousepressed()
-	local ch_index = selection.channel_index
+	local ch_index = selection.ch_index
 	if (mouse.button == 1 or mouse.button == 2) and ch_index then
 		self.id = VoiceAlloc.next_id()
 		ui_channels[ch_index].voice_alloc:noteOn(self.id, 60, util.velocity_curve(self.v))
@@ -69,7 +69,7 @@ function TestPadView:mousepressed()
 end
 
 function TestPadView:mousereleased()
-	local ch_index = selection.channel_index
+	local ch_index = selection.ch_index
 	if mouse.button == 1 and ch_index then
 		ui_channels[ch_index].voice_alloc:noteOff(self.id)
 		self.id = nil

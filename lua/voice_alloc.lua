@@ -28,10 +28,10 @@ function VoiceAlloc.next_id()
 	return id_
 end
 
-function VoiceAlloc.new(channel_index, n_voices)
+function VoiceAlloc.new(ch_index, n_voices)
 	local self = setmetatable({}, VoiceAlloc)
 
-	self.channel_index = channel_index
+	self.ch_index = ch_index
 	self.n_voices = n_voices
 	-- queue of notes that are held but not active
 	self.queue = {}
@@ -99,7 +99,7 @@ function VoiceAlloc:noteOn(id, pitch, vel)
 	voice.age = 0
 	voice.key_down = true
 
-	backend:noteOn(self.channel_index, pitch, vel, new_i)
+	backend:noteOn(self.ch_index, pitch, vel, new_i)
 end
 
 function VoiceAlloc:noteOff(id)
@@ -119,13 +119,13 @@ function VoiceAlloc:noteOff(id)
 	if #self.queue == 0 then
 		v.key_down = false
 		if not self.sustain then
-			backend:noteOff(self.channel_index, i)
+			backend:noteOff(self.ch_index, i)
 		end
 	else
 		-- pop
 		local old_voice = table.remove(self.queue)
 		self.voices[i] = old_voice
-		backend:noteOn(self.channel_index, old_voice.pitch, old_voice.vel, i)
+		backend:noteOn(self.ch_index, old_voice.pitch, old_voice.vel, i)
 	end
 end
 
@@ -136,7 +136,7 @@ function VoiceAlloc:cv(id, offset, pres)
 	end
 	v.offset = offset
 	v.pres = pres
-	backend:sendCv(self.channel_index, v.pitch + v.offset, pres, i)
+	backend:sendCv(self.ch_index, v.pitch + v.offset, pres, i)
 end
 
 function VoiceAlloc:pitch(id, offset)
@@ -145,7 +145,7 @@ function VoiceAlloc:pitch(id, offset)
 		return
 	end
 	v.offset = offset
-	backend:sendCv(self.channel_index, v.pitch + v.offset, v.pres, i)
+	backend:sendCv(self.ch_index, v.pitch + v.offset, v.pres, i)
 end
 
 function VoiceAlloc:setSustain(s)
@@ -154,7 +154,7 @@ function VoiceAlloc:setSustain(s)
 		for i, v in ipairs(self.voices) do
 			if not v.key_down then
 				v.key_down = false
-				backend:noteOff(self.channel_index, i)
+				backend:noteOff(self.ch_index, i)
 			end
 		end
 	end
@@ -164,7 +164,7 @@ function VoiceAlloc:allNotesOff()
 	for i, v in ipairs(self.voices) do
 		self.sustain = false
 		if v.key_down then
-			backend:noteOff(self.channel_index, i)
+			backend:noteOff(self.ch_index, i)
 		end
 		self.voices[i] = newVoice()
 	end

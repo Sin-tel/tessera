@@ -12,7 +12,7 @@ local octave = 0
 noteInput.diatonic_row = { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]" }
 
 function noteInput:keypressed(key)
-	local ch_index = selection.channel_index
+	local ch_index = selection.ch_index
 	if ch_index then
 		for i, v in ipairs(self.diatonic_row) do
 			if v == key then
@@ -29,7 +29,7 @@ function noteInput:keypressed(key)
 end
 
 function noteInput:keyreleased(key)
-	local ch_index = selection.channel_index
+	local ch_index = selection.ch_index
 	if ch_index then
 		for i, v in ipairs(self.diatonic_row) do
 			if v == key then
