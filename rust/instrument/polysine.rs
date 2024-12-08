@@ -108,8 +108,8 @@ impl Instrument for Polysine {
 		voice.vel.set(0.0);
 		voice.note_on = false;
 	}
+	fn flush(&mut self) {}
 
-	#[allow(clippy::match_single_binding)]
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.feedback = value,

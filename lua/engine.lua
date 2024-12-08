@@ -1,5 +1,6 @@
 local log = require("log")
 local backend = require("backend")
+local midi = require("midi")
 
 local RENDER_BLOCK_SIZE = 64
 
@@ -44,7 +45,8 @@ function engine.update(dt)
 end
 
 function engine.renderStart()
-	-- TODO: flush midi and audio buffers
+	backend:flush()
+	midi.flush()
 
 	if not backend:ok() then
 		log.error("Can't render, backend offline.")
@@ -106,7 +108,7 @@ function engine.render()
 end
 
 function engine.renderEnd()
-	-- TODO: flush midi and audio buffers
+	midi.flush()
 
 	backend:setRendering(false)
 	mouse:setCursor("default")
@@ -140,7 +142,6 @@ function engine.endTime()
 			end
 		end
 	end
-	print(t_end)
 	return t_end
 end
 

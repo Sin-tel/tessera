@@ -178,6 +178,15 @@ impl Render {
 			}
 		}
 	}
+
+	pub fn flush(&mut self) {
+		for ch in &mut self.channels {
+			ch.instrument.flush();
+			for fx in &mut ch.effects {
+				fx.effect.flush();
+			}
+		}
+	}
 }
 
 #[cfg(debug_assertions)]

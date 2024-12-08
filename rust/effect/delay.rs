@@ -86,6 +86,12 @@ impl Effect for Delay {
 			}
 		}
 	}
+
+	fn flush(&mut self) {
+		self.tracks[0].delayline.flush();
+		self.tracks[1].delayline.flush();
+	}
+
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.balance = value,
