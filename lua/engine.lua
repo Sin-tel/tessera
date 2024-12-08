@@ -7,7 +7,7 @@ local engine = {}
 
 engine.playing = false
 engine.render_progress = 0
-engine.render_total = 8
+engine.render_end = 8
 
 function engine.start()
 	engine.playing = true
@@ -54,8 +54,7 @@ function engine.renderStart()
 	assert(audio_status == "running")
 	audio_status = "render"
 
-	-- TODO: calculate how long we should render
-	engine.render_total = 8
+	engine.render_end = engine.endTime() + 2.0
 	engine.render_progress = 0
 
 	if engine.playing then
@@ -92,7 +91,7 @@ function engine.render()
 
 		engine.update(dt)
 		engine.render_progress = engine.render_progress + dt
-		if engine.render_progress >= engine.render_total then
+		if engine.render_progress >= engine.render_end then
 			log.info("Finished render.")
 			backend:renderFinish()
 			engine.renderEnd()
@@ -129,6 +128,20 @@ function engine.parseMessages()
 			workspace.meter.r = util.to_dB(p.r)
 		end
 	end
+end
+
+function engine.endTime()
+	local t_end = 0.0
+	for _, ch in ipairs(project.channels) do
+		for _, v in ipairs(ch.notes) do
+			local t = v.time + v.verts[#v.verts][1]
+			if t > t_end then
+				t_end = t
+			end
+		end
+	end
+	print(t_end)
+	return t_end
 end
 
 return engine

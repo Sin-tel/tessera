@@ -65,7 +65,7 @@ local function load_project()
 		-- 	vel = 0.6,
 		-- 	verts = { { 0, 0, 0.2 }, { 0.5, -0.5, 0.6 }, { 1.0, 1.8, 0.5 }, { 1.5, -0.5, 0.5 }, { 2.0, 0.0, 0.1 } },
 		-- }
-		-- table.insert(project.channels[1].notes, note)
+		-- table.insert(project.channels[1].notes, note)`
 
 		local note = { pitch = tuning.fromMidi(60), time = 0, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
 		table.insert(project.channels[1].notes, note)
@@ -193,7 +193,7 @@ function love.draw()
 		love.graphics.setColor(theme.background)
 		love.graphics.rectangle("fill", width * 0.3, height * 0.5 - 16, width * 0.4, 32)
 		love.graphics.setColor(theme.widget)
-		local p = engine.render_progress / engine.render_total
+		local p = engine.render_progress / engine.render_end
 		love.graphics.rectangle("fill", width * 0.3 + 4, height * 0.5 - 12, (width * 0.4 - 8) * p, 24)
 	end
 end
