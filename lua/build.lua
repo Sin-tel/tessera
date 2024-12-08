@@ -2,8 +2,8 @@ local backend = require("backend")
 local deviceList = require("device_list")
 local widgets = require("ui/widgets")
 local Device = require("device")
-local MidiHandler = require("midi_handler")
 local VoiceAlloc = require("voice_alloc")
+local Roll = require("roll")
 
 local build = {}
 
@@ -37,8 +37,8 @@ function build.project()
 	end
 end
 
-function build.channel(channel, ch_index)
-	ch_index = ch_index or #project.channels
+function build.channel(channel)
+	local ch_index = #ui_channels + 1
 
 	local options = deviceList.instruments[channel.instrument.name]
 	assert(options)
@@ -55,6 +55,7 @@ function build.channel(channel, ch_index)
 	end
 
 	channel_ui.voice_alloc = VoiceAlloc.new(ch_index, options.n_voices)
+	channel_ui.roll = Roll.new(ch_index)
 end
 
 function build.effect(ch_index, effect_index, effect)

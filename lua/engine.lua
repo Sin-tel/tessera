@@ -1,7 +1,5 @@
 local log = require("log")
-local tuning = require("tuning")
 local backend = require("backend")
-local VoiceAlloc = require("voice_alloc")
 
 local RENDER_BLOCK_SIZE = 64
 
@@ -11,30 +9,12 @@ engine.playing = false
 engine.render_progress = 0
 engine.render_total = 8
 
-local n_index = 1
-local note_table = {}
-local voices = {}
-
 function engine.start()
 	engine.playing = true
 	engine.seek(project.transport.start_time)
-	note_table = {}
-	voices = {}
 
-	--- TODO only playing back on channel 1 for now
-	for i, v in ipairs(project.channels[1].notes) do
-		assert(v.verts[1][1] == 0)
-		table.insert(note_table, v)
-	end
-	table.sort(note_table, function(a, b)
-		return a.time < b.time
-	end)
-
-	-- seek
-	n_index = 1
-
-	while note_table[n_index] and project.transport.time > note_table[n_index].time do
-		n_index = n_index + 1
+	for _, v in ipairs(ui_channels) do
+		v.roll:start()
 	end
 end
 
@@ -44,8 +24,6 @@ function engine.stop()
 	for _, v in ipairs(ui_channels) do
 		v.voice_alloc:allNotesOff()
 	end
-
-	voices = {}
 end
 
 function engine.seek(time)
@@ -56,53 +34,13 @@ function engine.update(dt)
 	if engine.playing then
 		project.transport.time = project.transport.time + dt
 		if backend:ok() then
-			engine.playback()
+			for _, v in ipairs(ui_channels) do
+				v.roll:playback()
+			end
 		end
 	end
 
 	engine.parseMessages()
-end
-
-function engine.playback()
-	while note_table[n_index] and project.transport.time > note_table[n_index].time do
-		local note = note_table[n_index]
-		local id = VoiceAlloc.next_id()
-		table.insert(voices, { n_index = n_index, v_index = 1, id = id })
-
-		-- note on
-		local p = tuning.getPitch(note.pitch)
-		local vel = util.velocity_curve(note.vel)
-
-		local ch_index = 1 -- FIXME
-		ui_channels[ch_index].voice_alloc:noteOn(id, p, vel)
-
-		n_index = n_index + 1
-	end
-
-	for i = #voices, 1, -1 do
-		local v = voices[i]
-		local note = note_table[v.n_index]
-
-		while v.v_index + 1 <= #note.verts and project.transport.time > note.time + note.verts[v.v_index + 1][1] do
-			v.v_index = v.v_index + 1
-		end
-
-		local ch_index = 1 -- FIXME
-		-- note off
-		if v.v_index >= #note.verts then
-			ui_channels[ch_index].voice_alloc:noteOff(v.id)
-			table.remove(voices, i)
-		else
-			local t0 = note.verts[v.v_index][1]
-			local t1 = note.verts[v.v_index + 1][1]
-			local alpha = (project.transport.time - (note.time + t0)) / (t1 - t0)
-
-			local p_off = util.lerp(note.verts[v.v_index][2], note.verts[v.v_index + 1][2], alpha)
-			local press = util.lerp(note.verts[v.v_index][3], note.verts[v.v_index + 1][3], alpha)
-
-			ui_channels[ch_index].voice_alloc:cv(v.id, p_off, press)
-		end
-	end
 end
 
 function engine.renderStart()
