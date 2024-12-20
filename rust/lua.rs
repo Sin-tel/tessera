@@ -253,7 +253,7 @@ impl UserData for LuaData {
 				// TODO: need to check here if the stream is *actually* paused
 
 				render.parse_messages();
-				no_denormals(|| render.process(buffer));
+				unsafe { no_denormals(|| render.process(buffer)) };
 
 				// interlace
 				for i in 0..len {
