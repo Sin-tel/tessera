@@ -12,6 +12,8 @@ catch lua error handler
 
 test pad and keyboard input should go through interface instead of directly sending to backend!
 
+add view resized callback
+
 ## piano roll
 
 piano roll playback
@@ -60,10 +62,31 @@ support surge wavetable format?
 
 ## other notes
 
-datorro reverb
+# datorro reverb
 https://ccrma.stanford.edu/~dattorro/EffectDesignPart1.pdf
 
+https://msp.ucsd.edu/techniques/v0.11/book-html/node111.html
+
+# erbeverb
+- take 4x FDN but put allpass in the matrix
+- granular delay line
+make time adjustable by interpolation instead of sweeping, avoid pitch shift
+do this randomly with adjustable speed and depth
+- add saturation in fb loop
+- tilt filter on output
+
+
+figure out ZDF for distortion with HP feedback
+
+port over tubes
+-> add zdf feedback?
+-> add DC offset compensation signal feedback path
+
+delay differential equations
+
 https://deps.rs/repo/github/Sin-tel/tessera
+
+physmod delay line modulation by input (fm-ish)
 
 make simper f32x4 bandpass for modal
 
