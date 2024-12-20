@@ -124,60 +124,65 @@ where
 
 	move |cpal_buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
 		let result = panic::catch_unwind(AssertUnwindSafe(|| {
-			no_denormals(|| {
-				assert_no_alloc(|| {
-					let cpal_buffer_size = cpal_buffer.len() / 2;
-					match m_render.try_lock() {
-						Ok(mut render) if !is_rendering => {
-							if !start {
-								start = true;
-								log_info!("Buffer size: {cpal_buffer_size:?}");
-							}
-
-							let time = std::time::Instant::now();
-
-							// parse all messages
-							for m in stream_rx.pop_iter() {
-								is_rendering = m;
-							}
-							render.parse_messages();
-
-							for buffer_chunk in cpal_buffer.chunks_mut(MAX_BUF_SIZE) {
-								let chunk_size = buffer_chunk.len() / 2;
-								let [mut l, mut r] = process_buffer;
-								let buf_slice = &mut [&mut l[..chunk_size], &mut r[..chunk_size]];
-
-								render.process(buf_slice);
-
-								// interlace and convert
-								for (i, outsample) in buffer_chunk.chunks_exact_mut(2).enumerate() {
-									outsample[0] = T::from_sample(buf_slice[0][i]);
-									outsample[1] = T::from_sample(buf_slice[1][i]);
+			unsafe {
+				no_denormals(|| {
+					assert_no_alloc(|| {
+						let cpal_buffer_size = cpal_buffer.len() / 2;
+						match m_render.try_lock() {
+							Ok(mut render) if !is_rendering => {
+								if !start {
+									start = true;
+									log_info!("Buffer size: {cpal_buffer_size:?}");
 								}
-							}
 
-							let t = time.elapsed();
-							let p = t.as_secs_f64()
-								/ (cpal_buffer_size as f64 / f64::from(render.sample_rate));
-							cpu_load.set(p as f32);
-							let load = cpu_load.process();
-							render.send(LuaMessage::Cpu(load));
-						},
-						_ => {
-							// Output silence as a fallback when lock fails.
+								let time = std::time::Instant::now();
 
-							for m in stream_rx.pop_iter() {
-								is_rendering = m;
-							}
-							// log_info!("Output silent");
-							for outsample in cpal_buffer.chunks_exact_mut(2) {
-								outsample[0] = T::from_sample(0.0f32);
-								outsample[1] = T::from_sample(0.0f32);
-							}
-						},
-					}
+								// parse all messages
+								for m in stream_rx.pop_iter() {
+									is_rendering = m;
+								}
+								render.parse_messages();
+
+								for buffer_chunk in cpal_buffer.chunks_mut(MAX_BUF_SIZE) {
+									let chunk_size = buffer_chunk.len() / 2;
+									let [mut l, mut r] = process_buffer;
+									let buf_slice =
+										&mut [&mut l[..chunk_size], &mut r[..chunk_size]];
+
+									render.process(buf_slice);
+
+									// interlace and convert
+									for (i, outsample) in
+										buffer_chunk.chunks_exact_mut(2).enumerate()
+									{
+										outsample[0] = T::from_sample(buf_slice[0][i]);
+										outsample[1] = T::from_sample(buf_slice[1][i]);
+									}
+								}
+
+								let t = time.elapsed();
+								let p = t.as_secs_f64()
+									/ (cpal_buffer_size as f64 / f64::from(render.sample_rate));
+								cpu_load.set(p as f32);
+								let load = cpu_load.process();
+								render.send(LuaMessage::Cpu(load));
+							},
+							_ => {
+								// Output silence as a fallback when lock fails.
+
+								for m in stream_rx.pop_iter() {
+									is_rendering = m;
+								}
+								// log_info!("Output silent");
+								for outsample in cpal_buffer.chunks_exact_mut(2) {
+									outsample[0] = T::from_sample(0.0f32);
+									outsample[1] = T::from_sample(0.0f32);
+								}
+							},
+						}
+					});
 				});
-			});
+			};
 		}));
 		if let Err(e) = result {
 			let msg = match e.downcast_ref::<&'static str>() {
