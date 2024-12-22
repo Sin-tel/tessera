@@ -19,7 +19,7 @@ function build.newProject()
 	project.transport = {}
 	project.transport.time = 0
 	project.transport.start_time = 0
-	project.transport.playing = false
+	project.transport.recording = true
 
 	return project
 end

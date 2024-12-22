@@ -58,7 +58,7 @@ local function load_project()
 		-- pitch = {base_pitch, start_time, velocity, verts}
 		-- verts = list of {time, pitch_offset, pressure}
 
-		local tuning = require("tuning")
+		-- local tuning = require("tuning")
 		-- local note = {
 		-- 	time = 0,
 		-- 	pitch = tuning.fromMidi(60),
@@ -67,14 +67,14 @@ local function load_project()
 		-- }
 		-- table.insert(project.channels[1].notes, note)`
 
-		local note = { pitch = tuning.fromMidi(60), time = 0, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
-		table.insert(project.channels[1].notes, note)
+		-- local note = { pitch = tuning.fromMidi(60), time = 0, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
+		-- table.insert(project.channels[1].notes, note)
 
-		note = { pitch = tuning.fromMidi(64), time = 0.1, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
-		table.insert(project.channels[1].notes, note)
+		-- note = { pitch = tuning.fromMidi(64), time = 0.1, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
+		-- table.insert(project.channels[1].notes, note)
 
-		note = { pitch = tuning.fromMidi(67), time = 0.2, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
-		table.insert(project.channels[1].notes, note)
+		-- note = { pitch = tuning.fromMidi(67), time = 0.2, vel = 0.6, verts = { { 0, 0, 0.5 }, { 0.5, 0.0, 0.5 } } }
+		-- table.insert(project.channels[1].notes, note)
 
 		-- for i = 0, 6 do
 		-- 	local n = i - 3
@@ -131,11 +131,9 @@ function love.load()
 	--- setup workspace ---
 	workspace:load()
 	local left, right = workspace.box:split(0.7, true)
-	local top_left1, bottom_left = left:split(0.8, false)
-	local top_left, middle_left = top_left1:split(0.3, false)
-	local top_right, bottom_rigth = right:split(0.3, false)
+	local top_left, middle_left = left:split(0.2, false)
+	local top_right, bottom_rigth = right:split(0.35, false)
 
-	bottom_left:setView(views.TestPad:new())
 	top_left:setView(views.Scope:new(false))
 	middle_left:setView(views.Song:new())
 	-- middle_left:setView(views.Debug:new())
@@ -288,6 +286,8 @@ function love.keypressed(_, key)
 		command.run_and_register(command.newProject.new())
 	elseif key == "s" and mod.ctrl then
 		save.write(last_save_location)
+	elseif key == "b" then
+		project.transport.recording = not project.transport.recording
 	elseif key == "down" and mod.shift then
 		if selection.ch_index and selection.device_index then
 			local new_index = selection.device_index + 1

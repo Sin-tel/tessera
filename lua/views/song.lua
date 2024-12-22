@@ -110,7 +110,11 @@ function Song:draw()
 
 	-- playhead
 	local px = self:proj_time(project.transport.time)
-	love.graphics.setColor(theme.playhead)
+	if project.transport.recording then
+		love.graphics.setColor(theme.recording)
+	else
+		love.graphics.setColor(theme.widget)
+	end
 	love.graphics.line(px, 0, px, self.h)
 
 	-- draw notes

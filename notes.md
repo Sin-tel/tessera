@@ -1,16 +1,8 @@
+* record events onto timeline
+
 catch lua error handler
 - save to log
 - save backup
-
-* make seperate midi handlers per device
-* translate those into CV
-* record internal representation onto timeline
-    - pre voice alloc
-    - do voice alloc while recording, do another voice alloc pass during playback
-* add simple playback (no editing yet!)
-* prepare for play
-
-test pad and keyboard input should go through interface instead of directly sending to backend!
 
 add view resized callback
 
