@@ -1,6 +1,7 @@
 local bit = require("bit")
 local backend = require("backend")
 local log = require("log")
+local tuning = require("tuning")
 
 local VoiceAlloc = {}
 
@@ -8,8 +9,6 @@ VoiceAlloc.__index = VoiceAlloc
 
 local id_ = 0
 
--- TODO: should store tuning coords
--- TODO: figure out a nice way to get events to record
 local function newVoice()
 	local new = {}
 	new.id = 0
@@ -52,10 +51,29 @@ function VoiceAlloc:findVoice(id)
 	end
 end
 
-function VoiceAlloc:noteOn(id, pitch, vel)
+function VoiceAlloc:event(event)
+	if event.name == "note_on" then
+		self:noteOn(event.id, event.pitch, event.vel)
+	elseif event.name == "note_off" then
+		self:noteOff(event.id)
+	elseif event.name == "cv" then
+		self:cv(event.id, event.offset, event.pres)
+	elseif event.name == "pitch" then
+		self:pitch(event.id, event.offset)
+	elseif event.name == "sustain" then
+		self:setSustain(event.sustain)
+	else
+		log.warn("unhandled event: ", util.pprint(event))
+	end
+end
+
+function VoiceAlloc:noteOn(id, pitch_coord, vel)
 	-- voice stealing logic
 	-- if theres are voices free, use the oldest one,
 	-- if not, steal a playing one. Priority goes to closest one in pitch
+
+	local pitch = tuning.getPitch(pitch_coord)
+
 	local playing_dist, playing_i = math.huge, nil
 	local released_age, released_i = -1, nil
 	for i, v in ipairs(self.voices) do
@@ -99,7 +117,8 @@ function VoiceAlloc:noteOn(id, pitch, vel)
 	voice.age = 0
 	voice.key_down = true
 
-	backend:noteOn(self.ch_index, pitch, vel, new_i)
+	local v_curve = util.velocity_curve(vel)
+	backend:noteOn(self.ch_index, pitch, v_curve, new_i)
 end
 
 function VoiceAlloc:noteOff(id)

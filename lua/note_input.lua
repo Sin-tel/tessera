@@ -16,10 +16,10 @@ function noteInput:keypressed(key)
 	if ch_index then
 		for i, v in ipairs(self.diatonic_row) do
 			if v == key then
-				local p = tuning.getPitch(tuning.fromDiatonic(i, octave))
+				local p = tuning.fromDiatonic(i, octave)
 				local id = VoiceAlloc.next_id()
 				key_down[i] = id
-				ui_channels[ch_index].voice_alloc:noteOn(id, p, DEFAULT_VELOCITY)
+				ui_channels[ch_index].roll:event({ name = "note_on", id = id, pitch = p, vel = DEFAULT_VELOCITY })
 				return true
 			end
 		end
@@ -35,7 +35,7 @@ function noteInput:keyreleased(key)
 			if v == key then
 				local id = key_down[i]
 				if id then
-					ui_channels[ch_index].voice_alloc:noteOff(id)
+					ui_channels[ch_index].roll:event({ name = "note_off", id = id })
 				end
 				return true
 			end

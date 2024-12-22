@@ -58,31 +58,31 @@ function midi.updateDevice(device)
 		return
 	end
 
-	local voice_alloc
+	-- TODO: be smarter about the routing here
+	local sink
 	for i, ch in ipairs(ui_channels) do
 		if project.channels[i].armed then
-			voice_alloc = ch.voice_alloc
+			sink = ch.roll
 			break
 		end
 	end
 
-	if voice_alloc then
+	if sink then
 		for _, event in ipairs(events) do
-			midi.handle_event(device, voice_alloc, event)
+			midi.handle_event(device, sink, event)
 		end
 	end
 end
 
-function midi.handle_event(device, voice_alloc, event)
+function midi.handle_event(device, sink, event)
 	if event.name == "note_on" then
 		local n_index = eventNoteIndex(event)
 		local id = VoiceAlloc.next_id()
 		device.notes[n_index] = id
 
-		local pitch = tuning.getPitch(tuning.fromMidi(event.note))
-		local vel = util.velocity_curve(event.vel)
+		local pitch = tuning.fromMidi(event.note)
 
-		voice_alloc:noteOn(id, pitch, vel)
+		sink:event({ name = "note_on", id = id, pitch = pitch, vel = event.vel })
 	elseif event.name == "note_off" then
 		local n_index = eventNoteIndex(event)
 		local id = device.notes[n_index]
@@ -91,12 +91,12 @@ function midi.handle_event(device, voice_alloc, event)
 			return
 		end
 
-		voice_alloc:noteOff(id)
+		sink:event({ name = "note_off", id = id })
 		device.notes[n_index] = nil
 	elseif event.name == "pitchbend" then
 		local offset = device.pitchbend_range * event.pitchbend
 		for _, id in pairs(device.notes) do
-			voice_alloc:pitch(id, offset)
+			sink:event({ name = "pitch", id = id, offset = offset })
 		end
 	elseif event.name == "pressure" then
 		-- TODO
@@ -104,9 +104,9 @@ function midi.handle_event(device, voice_alloc, event)
 		if event.controller == 64 then
 			-- sustain pedal
 			if event.value > 0 then
-				voice_alloc:setSustain(true)
+				sink:event({ name = "sustain", sustain = true })
 			else
-				voice_alloc:setSustain(false)
+				sink:event({ name = "sustain", sustain = false })
 			end
 		end
 	end

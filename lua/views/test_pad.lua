@@ -1,6 +1,7 @@
 local View = require("view")
 local VoiceAlloc = require("voice_alloc")
 local TestPadView = View:derive("TestPad")
+local tuning = require("tuning")
 
 function TestPadView:new()
 	local new = {}
@@ -54,7 +55,7 @@ function TestPadView:draw()
 
 		local ch_index = selection.ch_index
 		if (mouse.button == 1 or mouse.button == 2) and ch_index then
-			ui_channels[ch_index].voice_alloc:cv(self.id, self.f, self.v)
+			ui_channels[ch_index].voice_alloc:event({ name = "cv", id = self.id, offset = self.f, pres = self.v })
 		end
 	end
 end
@@ -63,15 +64,17 @@ function TestPadView:mousepressed()
 	local ch_index = selection.ch_index
 	if (mouse.button == 1 or mouse.button == 2) and ch_index then
 		self.id = VoiceAlloc.next_id()
-		ui_channels[ch_index].voice_alloc:noteOn(self.id, 60, util.velocity_curve(self.v))
-		ui_channels[ch_index].voice_alloc:cv(self.id, self.f, self.v)
+		local vel = self.v
+		local pitch = tuning.fromMidi(60)
+		ui_channels[ch_index].voice_alloc:event({ name = "note_on", id = self.id, pitch = pitch, vel = vel })
+		ui_channels[ch_index].voice_alloc:event({ name = "cv", id = self.id, offset = self.f, pres = self.v })
 	end
 end
 
 function TestPadView:mousereleased()
 	local ch_index = selection.ch_index
 	if mouse.button == 1 and ch_index then
-		ui_channels[ch_index].voice_alloc:noteOff(self.id)
+		ui_channels[ch_index].voice_alloc:event({ name = "note_off", id = self.id })
 		self.id = nil
 	end
 end
