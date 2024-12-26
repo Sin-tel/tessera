@@ -1,4 +1,5 @@
 local tuning = require("tuning")
+local engine = require("engine")
 local View = require("view")
 
 local Song = View:derive("Song")
@@ -7,6 +8,9 @@ function Song:new()
 	local new = {}
 	setmetatable(new, self)
 	self.__index = self
+
+	-- TODO: expose this as an option
+	self.follow = true
 
 	self.sx = 90
 	self.sy = -12
@@ -110,12 +114,20 @@ function Song:draw()
 
 	-- playhead
 	local px = self:proj_time(project.transport.time)
+
+	-- if self.follow and px > self.w * 0.9 then
+	if self.follow and engine.playing then
+		self.ox_ = -project.transport.time * self.sx + self.w * 0.5
+	end
+
 	if project.transport.recording then
 		love.graphics.setColor(theme.recording)
 	else
 		love.graphics.setColor(theme.widget)
 	end
 	love.graphics.line(px, 0, px, self.h)
+
+	local w_scale = math.min(12, -self.sy)
 
 	-- draw notes
 	love.graphics.setFont(resources.fonts.notes)
@@ -146,8 +158,23 @@ function Song:draw()
 					local x2 = self:proj_time(t_start + note.verts[i + 1][1])
 					local y1 = self:proj_pitch(p_start + note.verts[i][2])
 					local y2 = self:proj_pitch(p_start + note.verts[i + 1][2])
-					local w1 = note.verts[i][3] * 12
-					local w2 = note.verts[i + 1][3] * 12
+					local w1 = note.verts[i][3] * w_scale
+					local w2 = note.verts[i + 1][3] * w_scale
+					love.graphics.setColor(0.3, 0.3, 0.3)
+					love.graphics.polygon("fill", x1, y1 + w1, x2, y2 + w2, x2, y2 - w2, x1, y1 - w1, x1, y1 + w1)
+					love.graphics.setColor(0.9, 0.9, 0.9)
+					love.graphics.line(x1, y1, x2, y2)
+				end
+
+				-- draw temp lines for notes that are not yet finished
+				if note.is_recording then
+					local n = #note.verts
+					local x1 = self:proj_time(t_start + note.verts[n][1])
+					local x2 = self:proj_time(project.transport.time)
+					local y1 = self:proj_pitch(p_start + note.verts[n][2])
+					local y2 = y1
+					local w1 = note.verts[n][3] * w_scale
+					local w2 = w1
 					love.graphics.setColor(0.3, 0.3, 0.3)
 					love.graphics.polygon("fill", x1, y1 + w1, x2, y2 + w2, x2, y2 - w2, x1, y1 - w1, x1, y1 + w1)
 					love.graphics.setColor(0.9, 0.9, 0.9)
@@ -159,10 +186,29 @@ function Song:draw()
 				love.graphics.setColor(0.9, 0.9, 0.9)
 				love.graphics.circle("line", x0, y0, 3)
 
-				love.graphics.setColor(theme.ui_text)
+				if self.sy < -20 then
+					love.graphics.setColor(theme.ui_text)
 
-				local note_name = tuning.getName(note.pitch)
-				util.drawText(note_name, x0 + 5, y0 - 10, self.w, 0)
+					local note_name = tuning.getName(note.pitch)
+					util.drawText(note_name, x0 + 5, y0 - 10, self.w, 0)
+				end
+			end
+
+			-- sustain pedal
+			if ch.control.sustain then
+				local w = w_scale
+				local y = self.h - w
+				for i = 1, #ch.control.sustain - 1 do
+					local c = ch.control.sustain[i]
+					local c2 = ch.control.sustain[i + 1]
+
+					if c.value and not c2.value then
+						local x1 = self:proj_time(c.time)
+						local x2 = self:proj_time(c2.time)
+						love.graphics.setColor(0.3, 0.3, 0.3)
+						love.graphics.rectangle("fill", x1, y, x2 - x1, w)
+					end
+				end
 			end
 		end
 	end

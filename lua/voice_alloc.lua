@@ -180,8 +180,8 @@ function VoiceAlloc:setSustain(s)
 end
 
 function VoiceAlloc:allNotesOff()
+	self:setSustain(false)
 	for i, v in ipairs(self.voices) do
-		self.sustain = false
 		if v.key_down then
 			backend:noteOff(self.ch_index, i)
 		end
