@@ -27,6 +27,21 @@ local function newDeviceData(name, options)
     return { name = name, state = state }
 end
 
+local function newChannelData(name, options)
+    return {
+        instrument = newDeviceData(name, options),
+        effects = {},
+        notes = {},
+        control = {},
+        mute = false,
+        solo = false,
+        armed = false,
+        visible = true,
+        lock = false,
+        name = name .. " " .. #project.channels,
+    }
+end
+
 local function _removeChannel(ch_index)
     if selection.ch_index == ch_index then
         selection.ch_index = nil
@@ -86,17 +101,7 @@ function newChannel:run()
     local options = deviceList.instruments[self.name]
     assert(options)
     -- build state
-    local channel = {
-        instrument = newDeviceData(self.name, options),
-        effects = {},
-        notes = {},
-        mute = false,
-        solo = false,
-        armed = false,
-        visible = true,
-        lock = false,
-        name = self.name .. " " .. #project.channels,
-    }
+    local channel = newChannelData(self.name, options)
     table.insert(project.channels, channel)
 
     build.channel(channel)

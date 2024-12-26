@@ -69,12 +69,12 @@ function midi.updateDevice(device)
 
 	if sink then
 		for _, event in ipairs(events) do
-			midi.handle_event(device, sink, event)
+			midi.event(device, sink, event)
 		end
 	end
 end
 
-function midi.handle_event(device, sink, event)
+function midi.event(device, sink, event)
 	if event.name == "note_on" then
 		local n_index = eventNoteIndex(event)
 		local id = VoiceAlloc.next_id()

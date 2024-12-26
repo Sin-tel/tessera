@@ -1,5 +1,4 @@
 local VoiceAlloc = require("voice_alloc")
-local tuning = require("tuning")
 local engine = require("engine")
 
 local Roll = {}
@@ -20,27 +19,54 @@ function Roll.new(ch_index)
 	return self
 end
 
+local function sort_time(a, b)
+	return a.time < b.time
+end
+
 function Roll:start()
 	self.note_table = {}
+	self.control_table = {}
 	self.voices = {}
 
 	for i, v in ipairs(project.channels[self.ch_index].notes) do
 		assert(v.verts[1][1] == 0)
 		table.insert(self.note_table, v)
 	end
-	table.sort(self.note_table, function(a, b)
-		return a.time < b.time
-	end)
+	table.sort(self.note_table, sort_time)
+
+	-- dump all control messages in one table
+	-- TODO: don't know if it's good to have two seperate tables
+	for k, c in pairs(project.channels[self.ch_index].control) do
+		for i, v in ipairs(c) do
+			table.insert(self.control_table, { name = k, value = v.value, time = v.time })
+		end
+	end
+	table.sort(self.control_table, sort_time)
 
 	-- seek
 	self.n_index = 1
+	self.c_index = 1
 
 	while self.note_table[self.n_index] and project.transport.time > self.note_table[self.n_index].time do
 		self.n_index = self.n_index + 1
 	end
+
+	-- TODO: find last relevant event and skip to there?
+	-- while self.control_table[self.c_index] and project.transport.time > self.control_table[self.c_index].time do
+	-- 	self.c_index = self.c_index + 1
+	-- end
 end
 
 function Roll:playback()
+	while self.control_table[self.c_index] and project.transport.time > self.control_table[self.c_index].time do
+		local c = self.control_table[self.c_index]
+		-- print(util.pprint(c))
+		if c.name == "sustain" then
+			self.voice_alloc:event({ name = "sustain", sustain = c.value })
+		end
+		self.c_index = self.c_index + 1
+	end
+
 	while self.note_table[self.n_index] and project.transport.time > self.note_table[self.n_index].time do
 		local note = self.note_table[self.n_index]
 		local id = VoiceAlloc.next_id()
@@ -80,21 +106,35 @@ function Roll:event(event)
 	-- passthrough
 	self.voice_alloc:event(event)
 
+	-- record events to timeline
 	if engine.playing and project.transport.recording then
+		local time = project.transport.time
+
 		if event.name == "note_on" then
 			local note = {
 				pitch = event.pitch,
-				time = project.transport.time,
+				time = time,
 				vel = event.vel,
 				verts = { { 0.0, 0.0, 0.3 } },
+
+				is_recording = true,
 			}
 
 			self.rec_notes[event.id] = note
 			table.insert(project.channels[self.ch_index].notes, note)
 		elseif event.name == "note_off" then
 			local note = self.rec_notes[event.id]
-			local t_offset = project.transport.time - note.time
+			note.is_recording = nil
+			local t_offset = time - note.time
 			table.insert(self.rec_notes[event.id].verts, { t_offset, 0, 0.3 })
+		elseif event.name == "sustain" then
+			if not project.channels[self.ch_index].control.sustain then
+				project.channels[self.ch_index].control.sustain = {}
+			end
+			local c = { value = event.sustain, time = time }
+			table.insert(project.channels[self.ch_index].control.sustain, c)
+		else
+			print("unhandled event: ", util.pprint(event))
 		end
 	end
 end
