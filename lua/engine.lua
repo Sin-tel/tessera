@@ -24,11 +24,19 @@ function engine.stop()
 
 	for _, v in ipairs(ui_channels) do
 		v.voice_alloc:allNotesOff()
+		v.roll:stop()
 	end
 end
 
 function engine.seek(time)
 	project.transport.time = time
+
+	if engine.playing then
+		for _, v in ipairs(ui_channels) do
+			v.voice_alloc:allNotesOff()
+			v.roll:seek()
+		end
+	end
 end
 
 function engine.update(dt)
