@@ -43,11 +43,22 @@ function Roll:start()
 	end
 	table.sort(self.control_table, sort_time)
 
+	self:seek()
+end
+
+function Roll:seek()
 	-- seek
 	self.n_index = 1
 	self.c_index = 1
 
-	while self.note_table[self.n_index] and project.transport.time > self.note_table[self.n_index].time do
+	-- skip notes already played
+	while self.note_table[self.n_index] do
+		local note = self.note_table[self.n_index]
+		local vt = note.verts[#note.verts][1]
+		-- TODO: some annoying edge cases here
+		if note.time + vt > project.transport.time then
+			break
+		end
 		self.n_index = self.n_index + 1
 	end
 
@@ -55,6 +66,17 @@ function Roll:start()
 	-- while self.control_table[self.c_index] and project.transport.time > self.control_table[self.c_index].time do
 	-- 	self.c_index = self.c_index + 1
 	-- end
+end
+
+function Roll:stop()
+	-- any hanging notes shoud get a note off
+	for _, note in pairs(self.rec_notes) do
+		note.is_recording = nil
+		local t_offset = project.transport.time - note.time
+		table.insert(note.verts, { t_offset, 0, 0.3 })
+	end
+
+	self.rec_notes = {}
 end
 
 function Roll:playback()
@@ -127,6 +149,8 @@ function Roll:event(event)
 			note.is_recording = nil
 			local t_offset = time - note.time
 			table.insert(self.rec_notes[event.id].verts, { t_offset, 0, 0.3 })
+
+			self.rec_notes[event.id] = nil
 		elseif event.name == "sustain" then
 			if not project.channels[self.ch_index].control.sustain then
 				project.channels[self.ch_index].control.sustain = {}

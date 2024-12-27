@@ -22,7 +22,6 @@ stds.justidaw = {
       "release",
       "width",
       "height",
-      "time",
       "project",
       "ui_channels",
       "VERSION",

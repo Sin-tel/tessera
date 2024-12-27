@@ -10,7 +10,7 @@ function Song:new()
 	self.__index = self
 
 	-- TODO: expose this as an option
-	self.follow = true
+	self.follow = false
 
 	self.sx = 90
 	self.sy = -12
@@ -47,6 +47,8 @@ function Song:invTransform(x, y)
 end
 
 function Song:update()
+	local mx, my = self:getMouse()
+
 	if self.drag then
 		self.ox = self.drag_ix + mouse.dx
 		self.oy = self.drag_iy + mouse.dy
@@ -57,12 +59,18 @@ function Song:update()
 
 	if mouse.scroll and self:focus() then
 		local zoom = math.exp(0.15 * mouse.scroll)
-		local mx, my = self:getMouse()
 		self.sx_ = self.sx_ * zoom
 		self.sy_ = self.sy_ * zoom
 
 		self.ox_ = self.ox_ + (mx - self.ox_) * (1 - zoom)
 		self.oy_ = self.oy_ + (my - self.oy_) * (1 - zoom)
+	end
+
+	if mouse.button == 1 and my < 16 then
+		local new_time = self:proj_time_inv(mx)
+
+		project.transport.start_time = new_time
+		engine.seek(new_time)
 	end
 end
 
@@ -112,20 +120,10 @@ function Song:draw()
 		love.graphics.line(px, 0, px, self.h)
 	end
 
-	-- playhead
-	local px = self:proj_time(project.transport.time)
-
 	-- if self.follow and px > self.w * 0.9 then
 	if self.follow and engine.playing then
 		self.ox_ = -project.transport.time * self.sx + self.w * 0.5
 	end
-
-	if project.transport.recording then
-		love.graphics.setColor(theme.recording)
-	else
-		love.graphics.setColor(theme.widget)
-	end
-	love.graphics.line(px, 0, px, self.h)
 
 	local w_scale = math.min(12, -self.sy)
 
@@ -212,6 +210,20 @@ function Song:draw()
 			end
 		end
 	end
+	-- top 'ribbon'
+	love.graphics.setColor(theme.background)
+	love.graphics.rectangle("fill", 0, -1, self.w, 16)
+	love.graphics.setColor(theme.background)
+	love.graphics.rectangle("line", 0, 0, self.w, 16)
+
+	-- playhead
+	local px = self:proj_time(project.transport.time)
+	if project.transport.recording then
+		love.graphics.setColor(theme.recording)
+	else
+		love.graphics.setColor(theme.widget)
+	end
+	love.graphics.line(px, 0, px, self.h)
 end
 
 function Song:keypressed(key)
