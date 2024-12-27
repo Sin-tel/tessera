@@ -149,7 +149,7 @@ deviceList.effects.testfilter = {
 	},
 }
 
-deviceList.effects.eq = {
+deviceList.effects.equalizer = {
 	parameters = {
 		{ "low gain", "slider", { default = 0, min = -24, max = 24, centered = true, fmt = "%0.1f dB" } },
 		{ "band 1 gain", "slider", { default = 0, min = -24, max = 24, centered = true, fmt = "%0.1f dB" } },
