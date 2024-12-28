@@ -137,8 +137,8 @@ function Roll:event(event)
 				pitch = event.pitch,
 				time = time,
 				vel = event.vel,
-				verts = { { 0.0, 0.0, 0.3 } },
-
+				-- TODO: initial pressure?
+				verts = { { 0.0, 0.0, 0.01 } },
 				is_recording = true,
 			}
 
@@ -148,9 +148,41 @@ function Roll:event(event)
 			local note = self.rec_notes[event.id]
 			note.is_recording = nil
 			local t_offset = time - note.time
-			table.insert(self.rec_notes[event.id].verts, { t_offset, 0, 0.3 })
+
+			local v_prev = note.verts[#note.verts]
+			local offset = 0
+			local pres = 0
+			if v_prev then
+				offset = v_prev[2]
+			end
+
+			table.insert(self.rec_notes[event.id].verts, { t_offset, offset, pres })
 
 			self.rec_notes[event.id] = nil
+		elseif event.name == "pitch" then
+			local note = self.rec_notes[event.id]
+			local t_offset = time - note.time
+
+			local v_prev = note.verts[#note.verts]
+
+			local n_new = { t_offset, event.offset, v_prev[3] }
+			if t_offset ~= v_prev[1] then
+				table.insert(self.rec_notes[event.id].verts, n_new)
+			else
+				note.verts[#note.verts] = n_new
+			end
+		elseif event.name == "pressure" then
+			local note = self.rec_notes[event.id]
+			local t_offset = time - note.time
+
+			local v_prev = note.verts[#note.verts]
+
+			local n_new = { t_offset, v_prev[2], event.pressure }
+			if t_offset ~= v_prev[1] then
+				table.insert(self.rec_notes[event.id].verts, n_new)
+			else
+				note.verts[#note.verts] = n_new
+			end
 		elseif event.name == "sustain" then
 			if not project.channels[self.ch_index].control.sustain then
 				project.channels[self.ch_index].control.sustain = {}

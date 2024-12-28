@@ -66,7 +66,7 @@ function Song:update()
 		self.oy_ = self.oy_ + (my - self.oy_) * (1 - zoom)
 	end
 
-	if mouse.button == 1 and my < 16 then
+	if mouse.button == 1 and my > 0 and my < 16 then
 		local new_time = self:proj_time_inv(mx)
 
 		project.transport.start_time = new_time

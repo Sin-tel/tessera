@@ -94,12 +94,34 @@ function midi.event(device, sink, event)
 		sink:event({ name = "note_off", id = id })
 		device.notes[n_index] = nil
 	elseif event.name == "pitchbend" then
+		-- TODO: fix mpe pitchbend before note on
 		local offset = device.pitchbend_range * event.pitchbend
-		for _, id in pairs(device.notes) do
-			sink:event({ name = "pitch", id = id, offset = offset })
+		if device.mpe then
+			for k, id in pairs(device.notes) do
+				local midi_ch = math.floor(k / 256)
+				if midi_ch == event.channel then
+					sink:event({ name = "pitch", id = id, offset = offset })
+				end
+			end
+		else
+			for _, id in pairs(device.notes) do
+				sink:event({ name = "pitch", id = id, offset = offset })
+			end
 		end
 	elseif event.name == "pressure" then
-		-- TODO
+		if device.mpe then
+			for k, id in pairs(device.notes) do
+				local midi_ch = math.floor(k / 256)
+				if midi_ch == event.channel then
+					sink:event({ name = "pressure", id = id, pressure = event.pressure })
+				end
+			end
+		else
+			-- TODO: untested
+			for _, id in pairs(device.notes) do
+				sink:event({ name = "pressure", id = id, pressure = event.pressure })
+			end
+		end
 	elseif event.name == "controller" then
 		if event.controller == 64 then
 			-- sustain pedal
