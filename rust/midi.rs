@@ -105,7 +105,7 @@ impl Event {
 				}
 			},
 			11 => Controller { controller: a, value: f32::from(b) / 127.0 },
-			13 => Pressure(f32::from(a)),
+			13 => Pressure(f32::from(a) / 127.0),
 			14 => PitchBend((i32::from(a) + i32::from(b) * 128 - 8192) as f32 / 8192.0),
 			_ => {
 				log_warn!("Unparsed midi event: {data:?}");

@@ -24,6 +24,12 @@ tuning.generators = {
 	6.97049,
 }
 
+-- septimal meantone WE
+-- tuning.generators = {
+-- 	12.01236,
+-- 	6.97212,
+-- }
+
 -- -- meantone target tuning (5/4, 2)
 -- tuning.generators = {
 -- 	12.0,

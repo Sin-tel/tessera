@@ -60,6 +60,8 @@ function VoiceAlloc:event(event)
 		self:cv(event.id, event.offset, event.pres)
 	elseif event.name == "pitch" then
 		self:pitch(event.id, event.offset)
+	elseif event.name == "pressure" then
+		self:pressure(event.id, event.pressure)
 	elseif event.name == "sustain" then
 		self:setSustain(event.sustain)
 	else
@@ -164,6 +166,15 @@ function VoiceAlloc:pitch(id, offset)
 		return
 	end
 	v.offset = offset
+	backend:sendCv(self.ch_index, v.pitch + v.offset, v.pres, i)
+end
+
+function VoiceAlloc:pressure(id, pres)
+	local i, v = self:findVoice(id)
+	if not v then
+		return
+	end
+	v.pres = pres
 	backend:sendCv(self.ch_index, v.pitch + v.offset, v.pres, i)
 end
 
