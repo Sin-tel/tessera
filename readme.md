@@ -1,6 +1,6 @@
 # Tessera
 
-***Warning: this is in a very early stage of development.***
+<img src="screenshot.png" alt="syntax" style="width:763px;"/>
 
 Experimental DAW with a focus on microtonal composition, expressiveness and physical modelling.
 
@@ -18,3 +18,5 @@ A setup file will automatically be generated in [lua/settings](lua/settings) whe
 For release mode, use `cargo build --release` and set `release = true` in `main.lua`.
 
 When things stabilize I will provide builds.
+
+
