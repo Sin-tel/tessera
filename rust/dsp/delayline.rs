@@ -1,12 +1,12 @@
 use crate::dsp::*;
-use bit_mask_ring_buf::BMRingBuf;
+use bit_mask_ring_buf::BitMaskRB;
 
 // TODO: we probably want to avoid the multiply by sample_rate in every call
 //       and have the caller take care of that
 
 #[derive(Debug)]
 pub struct DelayLine {
-	buf: BMRingBuf<f32>,
+	buf: BitMaskRB<f32>,
 	sample_rate: f32,
 	pos: isize,
 	h: [f32; 4],
@@ -17,7 +17,7 @@ impl DelayLine {
 	pub fn new(sample_rate: f32, len: f32) -> Self {
 		Self {
 			// + 4 is so that we have a bit of room for doing cubic interpolation etc.
-			buf: BMRingBuf::<f32>::from_len((len * sample_rate) as usize + 4),
+			buf: BitMaskRB::<f32>::new((len * sample_rate) as usize + 4, 0.0),
 			sample_rate,
 			pos: 0,
 			h: [0.0; 4],
@@ -25,18 +25,9 @@ impl DelayLine {
 		}
 	}
 
-	// pub fn new_from_usize(sample_rate: f32, len: usize) -> Self {
-	// 	Self {
-	// 		buf: BMRingBuf::<f32>::from_len(len),
-	// 		sample_rate,
-	// 		pos: 0,
-	// 		h: [0.0; 4],
-	// 	}
-	// }
-
 	pub fn push(&mut self, s: f32) {
 		self.pos += 1;
-		*self.buf.at_mut(&mut self.pos) = s;
+		*self.buf.get_mut(self.pos) = s;
 	}
 
 	#[must_use]
@@ -100,6 +91,8 @@ impl DelayLine {
 
 	pub fn flush(&mut self) {
 		self.h = [0.; 4];
-		self.buf.clear();
+		for k in self.buf.raw_data_mut() {
+			*k = 0.0;
+		}
 	}
 }
