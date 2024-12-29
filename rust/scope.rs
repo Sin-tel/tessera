@@ -1,4 +1,4 @@
-use bit_mask_ring_buf::BMRingBuf;
+use bit_mask_ring_buf::BitMaskRB;
 use realfft::{RealFftPlanner, RealToComplex};
 use ringbuf::traits::*;
 use ringbuf::HeapCons;
@@ -8,7 +8,7 @@ use crate::audio::SPECTRUM_SIZE;
 use crate::dsp::TWO_PI;
 
 pub struct Scope {
-	buf: BMRingBuf<f32>,
+	buf: BitMaskRB<f32>,
 	pos: isize,
 	r2c: Arc<dyn RealToComplex<f32>>,
 	rx: HeapCons<f32>,
@@ -19,7 +19,7 @@ impl Scope {
 		let mut real_planner = RealFftPlanner::<f32>::new();
 		let r2c = real_planner.plan_fft_forward(SPECTRUM_SIZE);
 
-		Scope { buf: BMRingBuf::<f32>::from_len(SPECTRUM_SIZE), pos: 0, r2c, rx }
+		Scope { buf: BitMaskRB::<f32>::new(SPECTRUM_SIZE, 0.0), pos: 0, r2c, rx }
 	}
 
 	pub fn get_spectrum(&self) -> Vec<f64> {

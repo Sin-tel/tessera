@@ -13,44 +13,44 @@
 // TODO: simd
 // see: https://jatinchowdhury18.medium.com/fast-fir-filtering-798d5d773838
 
-use bit_mask_ring_buf::BMRingBuf;
+use bit_mask_ring_buf::BitMaskRB;
 
 #[derive(Debug)]
 pub struct Downsampler19 {
-	buf1: BMRingBuf<f32>,
-	buf2: BMRingBuf<f32>,
+	buf1: BitMaskRB<f32>,
+	buf2: BitMaskRB<f32>,
 	pos: isize,
 }
 
 #[derive(Debug)]
 pub struct Downsampler31 {
-	buf1: BMRingBuf<f32>,
-	buf2: BMRingBuf<f32>,
+	buf1: BitMaskRB<f32>,
+	buf2: BitMaskRB<f32>,
 	pos: isize,
 }
 
 #[derive(Debug)]
 pub struct Downsampler51 {
-	buf1: BMRingBuf<f32>,
-	buf2: BMRingBuf<f32>,
+	buf1: BitMaskRB<f32>,
+	buf2: BitMaskRB<f32>,
 	pos: isize,
 }
 
 #[derive(Debug)]
 pub struct Upsampler19 {
-	buf: BMRingBuf<f32>,
+	buf: BitMaskRB<f32>,
 	pos: isize,
 }
 
 #[derive(Debug)]
 pub struct Upsampler31 {
-	buf: BMRingBuf<f32>,
+	buf: BitMaskRB<f32>,
 	pos: isize,
 }
 
 impl Downsampler19 {
 	pub fn new() -> Self {
-		Self { buf1: BMRingBuf::<f32>::from_len(16), buf2: BMRingBuf::<f32>::from_len(16), pos: 0 }
+		Self { buf1: BitMaskRB::<f32>::new(16, 0.0), buf2: BitMaskRB::<f32>::new(16, 0.0), pos: 0 }
 	}
 
 	#[rustfmt::skip]
@@ -72,7 +72,7 @@ impl Downsampler19 {
 
 impl Downsampler31 {
 	pub fn new() -> Self {
-		Self { buf1: BMRingBuf::<f32>::from_len(16), buf2: BMRingBuf::<f32>::from_len(16), pos: 0 }
+		Self { buf1: BitMaskRB::<f32>::new(16, 0.0), buf2: BitMaskRB::<f32>::new(16, 0.0), pos: 0 }
 	}
 
 	#[rustfmt::skip]
@@ -97,7 +97,7 @@ impl Downsampler31 {
 
 impl Downsampler51 {
 	pub fn new() -> Self {
-		Self { buf1: BMRingBuf::<f32>::from_len(32), buf2: BMRingBuf::<f32>::from_len(32), pos: 0 }
+		Self { buf1: BitMaskRB::<f32>::new(32, 0.0), buf2: BitMaskRB::<f32>::new(32, 0.0), pos: 0 }
 	}
 
 	#[rustfmt::skip]
@@ -127,7 +127,7 @@ impl Downsampler51 {
 
 impl Upsampler19 {
 	pub fn new() -> Self {
-		Self { buf: BMRingBuf::<f32>::from_len(16), pos: 0 }
+		Self { buf: BitMaskRB::<f32>::new(16, 0.0), pos: 0 }
 	}
 
 	#[rustfmt::skip]
@@ -150,7 +150,7 @@ impl Upsampler19 {
 
 impl Upsampler31 {
 	pub fn new() -> Self {
-		Self { buf: BMRingBuf::<f32>::from_len(16), pos: 0 }
+		Self { buf: BitMaskRB::<f32>::new(16, 0.0), pos: 0 }
 	}
 
 	#[rustfmt::skip]
