@@ -1,4 +1,4 @@
-* record events onto timeline
+seperate pitch and pressure events?
 
 catch lua error handler
 - save to log
