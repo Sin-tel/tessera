@@ -1,4 +1,4 @@
-use crate::log::{log_info, log_warn};
+use crate::log::{log_error, log_info, log_warn};
 use midir::{Ignore, MidiInput, MidiInputConnection};
 use mlua::prelude::*;
 use mlua::Value;
@@ -54,29 +54,36 @@ pub fn connect(port_name: &str) -> Option<Connection> {
 		if name.to_lowercase().contains(&port_name.to_lowercase()) {
 			let (midi_tx, midi_rx) = HeapRb::<Event>::new(256).split();
 
-			let connection = midi_in
-				.connect(
-					p,
-					"midir-test",
-					|_stamp, message, midi_rx| {
-						// println!("{message:?}");
-						let event = Event::from_bytes(message);
-						if let Some(e) = event {
-							if midi_rx.try_push(e).is_err() {
-								log_warn!("Midi queue full!");
-							}
+			let connect_result = midi_in.connect(
+				p,
+				"midir-test",
+				|_stamp, message, midi_rx| {
+					// println!("{message:?}");
+					let event = Event::from_bytes(message);
+					if let Some(e) = event {
+						if midi_rx.try_push(e).is_err() {
+							log_warn!("Midi queue full!");
 						}
-					},
-					midi_tx,
-				)
-				.unwrap();
+					}
+				},
+				midi_tx,
+			);
 
-			log_info!("Succesfully opened midi port \"{name}\".");
-			return Some(Connection { connection, midi_rx, name });
+			match connect_result {
+				Ok(connection) => {
+					log_info!("Succesfully opened midi port \"{name}\".");
+					return Some(Connection { connection, midi_rx, name });
+				},
+				Err(err) => {
+					log_error!("Failed to open midi port \"{port_name}\".");
+					log_error!("\t{err}");
+					return None;
+				},
+			}
 		}
 	}
 
-	log_warn!("Failed to open midi port \"{port_name}\".");
+	log_warn!("Midi port \"{port_name}\" not found.");
 	None
 }
 

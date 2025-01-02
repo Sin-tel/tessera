@@ -165,11 +165,14 @@ function Roll:event(event)
 
 			local v_prev = note.verts[#note.verts]
 
+			print(t_offset - v_prev[1])
 			local n_new = { t_offset, event.offset, v_prev[3] }
-			if t_offset ~= v_prev[1] then
+			-- if t_offset - v_prev[1] >= 0.008 then
+			if t_offset - v_prev[1] >= 0.0 then
 				table.insert(self.rec_notes[event.id].verts, n_new)
 			else
-				note.verts[#note.verts] = n_new
+				-- note.verts[#note.verts] = n_new
+				note.verts[#note.verts][2] = event.offset
 			end
 		elseif event.name == "pressure" then
 			local note = self.rec_notes[event.id]
@@ -178,10 +181,12 @@ function Roll:event(event)
 			local v_prev = note.verts[#note.verts]
 
 			local n_new = { t_offset, v_prev[2], event.pressure }
-			if t_offset ~= v_prev[1] then
+
+			if t_offset - v_prev[1] >= 0.008 then
 				table.insert(self.rec_notes[event.id].verts, n_new)
 			else
-				note.verts[#note.verts] = n_new
+				-- note.verts[#note.verts] = n_new
+				note.verts[#note.verts][3] = event.pressure
 			end
 		elseif event.name == "sustain" then
 			if not project.channels[self.ch_index].control.sustain then
