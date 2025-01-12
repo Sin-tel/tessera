@@ -83,11 +83,15 @@ impl Instrument for Polysine {
 		}
 	}
 
-	fn cv(&mut self, pitch: f32, pres: f32, id: usize) {
+	fn pitch(&mut self, pitch: f32, id: usize) {
 		let voice = &mut self.voices[id];
 		let p = pitch_to_hz(pitch) / self.sample_rate;
 		voice.freq.set(p);
-		voice.vel.set(pres);
+	}
+
+	fn pressure(&mut self, pressure: f32, id: usize) {
+		let voice = &mut self.voices[id];
+		voice.vel.set(pressure);
 	}
 
 	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {

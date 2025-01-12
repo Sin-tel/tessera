@@ -66,12 +66,14 @@ impl Instrument for Sine {
 		}
 	}
 
-	fn cv(&mut self, pitch: f32, _: f32, _id: usize) {
+	fn pitch(&mut self, pitch: f32, _id: usize) {
 		if !self.fixed {
 			let p = pitch_to_hz(pitch) / self.sample_rate;
 			self.freq.set(p);
 		}
 	}
+
+	fn pressure(&mut self, _presure: f32, _id: usize) {}
 
 	fn note_on(&mut self, pitch: f32, vel: f32, _id: usize) {
 		if !self.fixed {

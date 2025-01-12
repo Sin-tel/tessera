@@ -157,7 +157,8 @@ function VoiceAlloc:cv(id, offset, pres)
 	end
 	v.offset = offset
 	v.pres = pres
-	backend:sendCv(self.ch_index, v.pitch + v.offset, pres, i)
+	backend:pitch(self.ch_index, v.pitch + v.offset, i)
+	backend:pressure(self.ch_index, pres, i)
 end
 
 function VoiceAlloc:pitch(id, offset)
@@ -166,7 +167,7 @@ function VoiceAlloc:pitch(id, offset)
 		return
 	end
 	v.offset = offset
-	backend:sendCv(self.ch_index, v.pitch + v.offset, v.pres, i)
+	backend:pitch(self.ch_index, v.pitch + v.offset, i)
 end
 
 function VoiceAlloc:pressure(id, pres)
@@ -175,7 +176,7 @@ function VoiceAlloc:pressure(id, pres)
 		return
 	end
 	v.pres = pres
-	backend:sendCv(self.ch_index, v.pitch + v.offset, v.pres, i)
+	backend:pressure(self.ch_index, v.pres, i)
 end
 
 function VoiceAlloc:setSustain(s)
