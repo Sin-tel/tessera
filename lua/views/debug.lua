@@ -39,23 +39,6 @@ function Debug:draw()
 	util.drawText('jA kB Cl Dm En Fo Gp Aq D"', ix, iy + 2 * ls, self.w, 0)
 	util.drawText("abc - pnoq - jk - (a)", ix, iy + 3 * ls, self.w, 0)
 	util.drawText("+-lm hci 5/4 7/8 11/8 - 4:5:6:7 Ac~Ba", ix, iy + 4 * ls, self.w, 0)
-
-	-- TODO: remove
-	-- local handler
-	-- for i, ch in ipairs(build.list) do
-	-- 	if ch.armed then
-	-- 		handler = ch.midi_handler
-	-- 		break
-	-- 	end
-	-- end
-
-	-- if not handler then
-	-- 	return
-	-- end
-
-	-- for i, v in ipairs(handler.voices) do
-	-- 	util.drawText(tostring(v.note), ix, iy + 16 * i, w, 0)
-	-- end
 end
 
 return Debug

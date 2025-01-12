@@ -31,10 +31,8 @@ midir = "0.10"
 
 [profile.dev]
 # opt-level = 1
-# overflow-checks = false
 
 [profile.dev.package."*"]
-debug = false
 opt-level = 3
 
 [profile.release]
