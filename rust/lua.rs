@@ -32,9 +32,10 @@ pub struct AudioContext {
 #[derive(Debug)]
 pub enum AudioMessage {
 	Panic,
-	CV(usize, f32, f32, usize),
 	NoteOn(usize, f32, f32, usize),
 	NoteOff(usize, usize),
+	Pitch(usize, f32, usize),
+	Pressure(usize, f32, usize),
 	Parameter(usize, usize, usize, f32),
 	Mute(usize, bool),
 	Bypass(usize, usize, bool),
@@ -111,10 +112,20 @@ impl UserData for LuaData {
 		});
 
 		methods.add_method_mut(
-			"sendCv",
-			|_, data, (channel_index, pitch, pres, voice): (usize, f32, f32, usize)| {
+			"pitch",
+			|_, data, (channel_index, pitch, voice): (usize, f32, usize)| {
 				if let LuaData(Some(ud)) = data {
-					ud.send_message(AudioMessage::CV(channel_index - 1, pitch, pres, voice - 1));
+					ud.send_message(AudioMessage::Pitch(channel_index - 1, pitch, voice - 1));
+				}
+				Ok(())
+			},
+		);
+
+		methods.add_method_mut(
+			"pressure",
+			|_, data, (channel_index, pressure, voice): (usize, f32, usize)| {
+				if let LuaData(Some(ud)) = data {
+					ud.send_message(AudioMessage::Pressure(channel_index - 1, pressure, voice - 1));
 				}
 				Ok(())
 			},

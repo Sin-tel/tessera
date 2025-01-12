@@ -134,12 +134,6 @@ impl Render {
 		use AudioMessage::*;
 		while let Some(m) = self.audio_rx.try_pop() {
 			match m {
-				CV(ch_index, pitch, pres, id) => {
-					let ch = &mut self.channels[ch_index];
-					if !ch.mute {
-						ch.instrument.cv(pitch, pres, id);
-					}
-				},
 				NoteOn(ch_index, pitch, vel, id) => {
 					let ch = &mut self.channels[ch_index];
 					if !ch.mute {
@@ -150,6 +144,18 @@ impl Render {
 					let ch = &mut self.channels[ch_index];
 					if !ch.mute {
 						ch.instrument.note_off(id);
+					}
+				},
+				Pitch(ch_index, pitch, id) => {
+					let ch = &mut self.channels[ch_index];
+					if !ch.mute {
+						ch.instrument.pitch(pitch, id);
+					}
+				},
+				Pressure(ch_index, pressure, id) => {
+					let ch = &mut self.channels[ch_index];
+					if !ch.mute {
+						ch.instrument.pressure(pressure, id);
 					}
 				},
 				Parameter(ch_index, device_index, index, val) => {

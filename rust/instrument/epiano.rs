@@ -140,9 +140,8 @@ impl Instrument for Epiano {
 		}
 	}
 
-	fn cv(&mut self, _pitch: f32, _pres: f32, _id: usize) {
-		// epiano doesn't respond to pitch & pressure
-	}
+	fn pitch(&mut self, _pres: f32, _id: usize) {}
+	fn pressure(&mut self, _pressure: f32, _id: usize) {}
 
 	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {
 		let voice = &mut self.voices[id];
