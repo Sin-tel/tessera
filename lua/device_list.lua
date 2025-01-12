@@ -84,6 +84,17 @@ deviceList.instruments.polysine = {
 	},
 }
 
+deviceList.instruments.pluck = {
+	n_voices = 8,
+	parameters = {
+		{ "decay", "slider", { default = 0.66, min = 0.0, max = 1.0 } },
+		{ "release", "slider", { default = 0.5, min = -1.0, max = 1.0, centered = true } },
+		{ "damp", "slider", { default = 0.5, min = 0.0, max = 1.0 } },
+		{ "position", "slider", { default = 0.23, min = 0.1, max = 0.5 } },
+		{ "noise", "slider", { default = 0.5, min = 0.0, max = 1.0 } },
+	},
+}
+
 deviceList.instruments.epiano = {
 	n_voices = 16,
 	parameters = {
@@ -105,6 +116,12 @@ deviceList.effects.pan = {
 deviceList.effects.gain = {
 	parameters = {
 		{ "gain", "slider", { default = 0, max = 12, t = "dB" } },
+	},
+}
+
+deviceList.effects.wide = {
+	parameters = {
+		{ "amount", "slider", { default = 0.2, max = 1 } },
 	},
 }
 
