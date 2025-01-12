@@ -50,9 +50,9 @@ local function load_project()
 
 	if not success then
 		log.info("Loading default project")
-		-- command.newChannel.new("analog"):run()
+		command.newChannel.new("pluck"):run()
 		-- command.newChannel.new("epiano"):run()
-		command.newChannel.new("polysine"):run()
+		-- command.newChannel.new("polysine"):run()
 		project.channels[1].armed = true
 
 		-- pitch = {base_pitch, start_time, velocity, verts}
