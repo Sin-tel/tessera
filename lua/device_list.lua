@@ -154,6 +154,7 @@ deviceList.effects.reverb = {
 		{ "size", "slider", { default = 0.8, min = 0.3, max = 1.0 } },
 		{ "decay", "slider", { default = 1.3, min = 0.5, max = 20.0, t = "log", fmt = "s" } },
 		{ "modulation", "slider", { default = 0.5 } },
+		{ "predelay", "slider", { default = 0.02, min = 0.0, max = 0.05, fmt = "s" } },
 	},
 }
 
