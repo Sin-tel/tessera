@@ -20,7 +20,7 @@ impl DelayLine {
 			buf: BitMaskRB::<f32>::new((len * sample_rate) as usize + 4, 0.0),
 			sample_rate,
 			pos: 0,
-			h: [0.0; 4],
+			h: [0.0, 1.0, 0.0, 0.0],
 			time_prev: 0.,
 		}
 	}
@@ -32,7 +32,10 @@ impl DelayLine {
 
 	#[must_use]
 	pub fn go_back_int(&self, time: f32) -> f32 {
-		let d_int = (time * self.sample_rate).floor() as isize;
+		let delay = (time * self.sample_rate).max(1.);
+		assert!(delay < self.buf.len().get() as f32);
+		let d_int = delay.floor() as isize;
+
 		self.buf[self.pos - d_int]
 	}
 
@@ -50,9 +53,10 @@ impl DelayLine {
 
 	#[must_use]
 	pub fn go_back_linear(&self, time: f32) -> f32 {
-		let delay = time * self.sample_rate;
-		let (d_int, frac) = make_isize_frac(delay);
+		let delay = (time * self.sample_rate).max(1.);
+		assert!(delay < self.buf.len().get() as f32);
 
+		let (d_int, frac) = make_isize_frac(delay);
 		lerp(self.buf[self.pos - d_int + 1], self.buf[self.pos - d_int], frac)
 	}
 
@@ -69,7 +73,9 @@ impl DelayLine {
 
 	#[must_use]
 	pub fn go_back_cubic(&mut self, time: f32) -> f32 {
-		let delay = time * self.sample_rate;
+		let delay = (time * self.sample_rate).max(1.);
+		assert!(delay < self.buf.len().get() as f32);
+
 		let (d_int, dm1) = make_isize_frac(delay);
 
 		// self.calc_coeff(dm1);
