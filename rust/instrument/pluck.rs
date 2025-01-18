@@ -38,7 +38,8 @@ struct Voice {
 	position: f32,
 	decay: f32,
 	release: f32,
-	off_time: usize,
+	off_time: f32,
+	mute_state: f32,
 
 	delay_l: DelayLine,
 	delay_r: DelayLine,
@@ -56,8 +57,10 @@ impl Voice {
 
 		let mut mute_filter = Filter::new(sample_rate);
 		mute_filter.set_highshelf(1000., BUTTERWORTH_Q, -4.);
+
 		let mut noise_filter = Filter::new(sample_rate);
-		noise_filter.set_bandpass(1200., 1.2);
+		noise_filter.set_lowpass(5000., 0.5);
+
 		Self {
 			freq: SmoothExp::new(10., sample_rate),
 			note_on: false,
@@ -68,7 +71,8 @@ impl Voice {
 			position: 0.,
 			decay: 0.,
 			release: 0.,
-			off_time: 0,
+			off_time: 0.,
+			mute_state: 0.,
 
 			delay_l: DelayLine::new(sample_rate, MAX_LEN),
 			delay_r: DelayLine::new(sample_rate, MAX_LEN),
@@ -110,8 +114,6 @@ impl Instrument for Pluck {
 			for sample in bl.iter_mut() {
 				let f = voice.freq.process();
 
-				let nse = voice.noise_filter.process(self.rng.f32() - 0.5);
-
 				// TODO: proper tuning table
 				let tun_o = 0.00001;
 				let tun_f = 1.07186;
@@ -128,38 +130,46 @@ impl Instrument for Pluck {
 				let s = right + left;
 
 				let mut hf = 0.0;
+				let mut hf_n = 0.0;
 				if s > voice.hammer_x {
+					let nse = voice.noise_filter.process(self.rng.f32() - 0.5);
 					let h = s - voice.hammer_x;
 
-					// let p = h.powf(2.5);
 					hf = 0.5 * h.powi(2);
-					// hf = p * (0.6 + 0.1 * hv);
-					hf *= 1.0 + self.noise * nse;
-
-					hf = hf.min(1.0);
+					hf_n = hf * (1.0 + self.noise * nse);
+					// hf = hf.min(1.0);
 				}
 
-				voice.hammer_v += hf * 0.001;
-				// voice.hammer_v += 0.00001 * hf * f;
+				voice.hammer_v += 0.00001 * hf * f;
 				voice.hammer_x += voice.hammer_v;
 
-				let nr = voice.mute_filter.process(right);
 				if voice.note_on {
 					right *= voice.decay;
 				} else {
-					right = nr * voice.release;
+					voice.mute_state = lerp(voice.mute_state, 1.0, 0.03);
+					let r2 = voice.mute_filter.process(right * voice.release);
+					// let r2 = nr * voice.release;
+
+					right = lerp(right, r2, voice.mute_state);
 				}
-				voice.delay_l.push(right - hf);
-				voice.delay_r.push(left * voice.decay - hf);
+
+				// let rattle = -0.4;
+				// if right < rattle {
+				// 	right = (right - rattle) * 0.5 + rattle
+				// 	// right = (right + rattle) * 0.98 - rattle
+				// }
+
+				voice.delay_l.push(right - hf_n);
+				voice.delay_r.push(left * voice.decay - hf_n);
 
 				let out = left + right;
 
-				*sample += out * 0.1;
+				*sample += out * 0.2;
 			}
 
 			if !voice.note_on {
-				voice.off_time += bl.len();
-				if voice.off_time > 20_000 {
+				voice.off_time += bl.len() as f32 / self.sample_rate;
+				if voice.off_time > 1. {
 					voice.active = false;
 				}
 			}
@@ -172,7 +182,7 @@ impl Instrument for Pluck {
 
 	fn pitch(&mut self, pitch: f32, id: usize) {
 		let voice = &mut self.voices[id];
-		let p = pitch_to_hz(pitch) / self.sample_rate;
+		let p = pitch_to_hz(pitch);
 		voice.freq.set(p);
 	}
 
@@ -188,16 +198,17 @@ impl Instrument for Pluck {
 
 		voice.note_on = true;
 		voice.active = true;
-		voice.off_time = 0;
+		voice.off_time = 0.;
+		voice.mute_state = 0.0;
 
 		voice.hammer_x = 1.0;
 		voice.hammer_v = -0.08 * vel;
 
 		voice.decay = 0.99_f32.powf((1.0 - self.decay) * 120. / f);
 
-		let mut r = 60. + 150. * self.release;
+		let mut r = 100. + 300. * self.release;
 		if self.release < 0. {
-			r = 60. - 150. * self.release;
+			r = 100. - 110. * self.release;
 		}
 		voice.release = 0.9_f32.powf(r / f);
 
@@ -207,8 +218,10 @@ impl Instrument for Pluck {
 		voice.position = self.position + 0.05 * (self.rng.f32() - 0.5);
 		voice.position = voice.position.clamp(0.05, 0.95);
 
-		let high_gain = -self.damp * 200. / f;
-		voice.lp.set_highshelf(4000.0, high_gain);
+		let high_gain = -self.damp * 400. / f;
+		voice.lp.set_highshelf(6000.0 - 4000.0 * self.damp, high_gain);
+
+		voice.noise_filter.set_lowpass(1000. + 6000. * vel, 0.5);
 
 		// let mute_gain = -6. * (1.0 - self.release);
 		let mut mute_gain = 0.;
