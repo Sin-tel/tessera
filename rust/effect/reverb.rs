@@ -1,4 +1,5 @@
 use crate::dsp::delayline::DelayLine;
+use crate::dsp::onepole::OnePole;
 use crate::dsp::smooth::{SmoothBuffer, SmoothExp};
 use crate::dsp::*;
 use crate::effect::*;
@@ -11,9 +12,11 @@ const LENGTHS: [f32; 4] = [0.060929704, 0.09861678, 0.17113379, 0.11852608];
 
 const MAX_AP_LEN: f32 = 0.01;
 
-const AP_LEN_L: [f32; 3] = [0.0009297052, 0.008820862, 0.0051473924];
+const AP_LEN_L: [f32; 3] = [0.0032199547, 0.002426304, 0.008594104];
 
-const AP_LEN_R: [f32; 3] = [0.001201814, 0.007868481, 0.00569161];
+const AP_LEN_R: [f32; 3] = [0.006281179, 0.007868481, 0.002743764];
+
+const CUTOFF: f32 = 5000.0;
 
 #[derive(Debug)]
 pub struct Reverb {
@@ -23,6 +26,12 @@ pub struct Reverb {
 	allpass_l: [DelayLine; 3],
 	allpass_r: [DelayLine; 3],
 
+	filter1: OnePole,
+	filter2: OnePole,
+
+	pre_l: DelayLine,
+	pre_r: DelayLine,
+
 	lfo1: SmoothBuffer,
 	lfo2: SmoothBuffer,
 	accum1: f32,
@@ -30,6 +39,7 @@ pub struct Reverb {
 
 	balance: f32,
 	size: SmoothExp,
+	pre_delay: SmoothExp,
 	decay: f32,
 	feedback: f32,
 	mod_amount: f32,
@@ -41,18 +51,28 @@ impl Effect for Reverb {
 		let allpass_l = std::array::from_fn(|_| DelayLine::new(sample_rate, MAX_AP_LEN));
 		let allpass_r = std::array::from_fn(|_| DelayLine::new(sample_rate, MAX_AP_LEN));
 
+		let mut filter1 = OnePole::new(sample_rate);
+		filter1.set_highshelf(CUTOFF, -3.);
+		let mut filter2 = OnePole::new(sample_rate);
+		filter2.set_highshelf(CUTOFF, -3.);
+
 		Reverb {
 			sample_rate,
 			delaylines,
 			allpass_l,
 			allpass_r,
+			pre_l: DelayLine::new(sample_rate, 0.100),
+			pre_r: DelayLine::new(sample_rate, 0.100),
+			filter1,
+			filter2,
 			lfo1: SmoothBuffer::new(),
 			lfo2: SmoothBuffer::new(),
 			accum1: 0.,
 			accum2: 0.,
 			balance: 0.,
 			size: SmoothExp::new(100., sample_rate),
-			decay: 0.,
+			pre_delay: SmoothExp::new(100., sample_rate),
+			decay: 0.1,
 			feedback: 0.,
 			mod_amount: 0.,
 		}
@@ -75,8 +95,12 @@ impl Effect for Reverb {
 		self.lfo2.process_buffer(n);
 
 		for (j, (l, r)) in zip(bl.iter_mut(), br.iter_mut()).enumerate() {
-			let mut sl = *l;
-			let mut sr = *r;
+			let pre_delay = self.pre_delay.process();
+			let mut sl = self.pre_l.go_back_cubic(pre_delay);
+			let mut sr = self.pre_r.go_back_cubic(pre_delay);
+
+			self.pre_l.push(*l);
+			self.pre_r.push(*r);
 
 			let k_ap = 0.6;
 
@@ -98,20 +122,23 @@ impl Effect for Reverb {
 			];
 
 			// Hadamard matrix
-			let s = [
+			let mut s = [
 				d[0] + d[1] + d[2] + d[3] + sl,
 				d[0] - d[1] + d[2] - d[3] + sr,
 				d[0] + d[1] - d[2] - d[3] + sl,
 				d[0] - d[1] - d[2] + d[3] + sr,
 			];
 
+			s[0] = self.filter1.process(s[0]);
+			s[1] = self.filter2.process(s[1]);
+
 			let gain = self.feedback * 0.5;
 			for (i, v) in self.delaylines.iter_mut().enumerate() {
 				v.push(s[i] * gain);
 			}
 
-			let out_l = d[2];
-			let out_r = d[3];
+			let out_l = 0.5 * sl + d[0];
+			let out_r = 0.5 * sr + d[1];
 
 			*l = lerp(*l, out_l, self.balance);
 			*r = lerp(*r, out_r, self.balance);
@@ -141,6 +168,7 @@ impl Effect for Reverb {
 				self.update_feedback();
 			},
 			3 => self.mod_amount = value,
+			4 => self.pre_delay.set(value),
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}
@@ -151,10 +179,18 @@ impl Reverb {
 		if self.decay > 15. {
 			// freeze
 			self.feedback = 1.0;
+
+			self.filter1.set_highshelf(CUTOFF, 0.);
+			self.filter2.set_highshelf(CUTOFF, 0.);
 		} else {
 			// decay is time to -60 dB
 			let avg_len = 0.5 * MAX_LEN;
-			self.feedback = from_db((-60. * avg_len * self.size.target()) / self.decay);
+
+			let coef = (-60. * avg_len * self.size.target()) / self.decay;
+			self.feedback = from_db(coef);
+
+			self.filter1.set_highshelf(CUTOFF, 2. * coef);
+			self.filter2.set_highshelf(CUTOFF, 2. * coef);
 		}
 	}
 }
