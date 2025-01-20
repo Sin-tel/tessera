@@ -33,6 +33,9 @@ pub fn log2_cheap(x: f32) -> f32 {
 	const MASK: u32 = !(255 << 23);
 	const A: u32 = 127 << 23;
 
+	#[cfg(debug_assertions)]
+	assert!(x > 0.);
+
 	let u = x.to_bits();
 	let w = ((u as i32 >> 23) - 128) as f32;
 
@@ -124,6 +127,7 @@ pub fn time_constant(t: f32, sample_rate: f32) -> f32 {
 	// - 1000 * ln(0.01)
 	const T_LN: f32 = 4605.1704;
 
+	#[cfg(debug_assertions)]
 	assert!(t > 0.);
 
 	let denom = sample_rate * t;
@@ -137,7 +141,9 @@ pub fn time_constant(t: f32, sample_rate: f32) -> f32 {
 }
 
 pub fn time_constant_linear(t: f32, sample_rate: f32) -> f32 {
+	#[cfg(debug_assertions)]
 	assert!(t > 0.);
+
 	1000. / (sample_rate * t)
 }
 

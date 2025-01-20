@@ -1,5 +1,4 @@
 use fft_convolver::FFTConvolver;
-use hound;
 use std::iter::zip;
 
 use crate::audio::MAX_BUF_SIZE;
