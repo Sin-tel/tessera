@@ -194,4 +194,15 @@ deviceList.effects.convolve = {
 	},
 }
 
+deviceList.effects.compressor = {
+	parameters = {
+		{ "dry wet", "slider", { default = 1.0 } },
+		{ "treshold", "slider", { default = -24, min = -48, max = 0, fmt = "%0.1f dB" } },
+		{ "ratio", "slider", { default = 4, min = 1, max = 20, t = "log" } },
+		{ "attack", "slider", { default = 0.012, min = 0.001, max = 0.100, t = "log", fmt = "s" } },
+		{ "release", "slider", { default = 0.150, min = 0.010, max = 0.4, fmt = "s" } },
+		{ "make up", "slider", { default = 0, min = 0, max = 24, fmt = "%0.1f dB" } },
+	},
+}
+
 return deviceList

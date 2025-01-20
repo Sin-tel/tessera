@@ -1,3 +1,4 @@
+mod compressor;
 mod convolve;
 mod delay;
 mod drive;
@@ -11,14 +12,15 @@ mod wide;
 
 use crate::effect;
 use crate::effect::{
-	convolve::Convolve, delay::Delay, drive::Drive, equalizer::Equalizer, gain::Gain, pan::Pan,
-	reverb::Reverb, testfilter::TestFilter, tilt::Tilt, wide::Wide,
+	compressor::Compressor, convolve::Convolve, delay::Delay, drive::Drive, equalizer::Equalizer,
+	gain::Gain, pan::Pan, reverb::Reverb, testfilter::TestFilter, tilt::Tilt, wide::Wide,
 };
 use crate::log::log_warn;
 
 // list of effects
 pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
 	match name {
+		"compressor" => Box::new(Compressor::new(sample_rate)),
 		"convolve" => Box::new(Convolve::new(sample_rate)),
 		"delay" => Box::new(Delay::new(sample_rate)),
 		"drive" => Box::new(Drive::new(sample_rate)),
