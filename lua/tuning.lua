@@ -24,6 +24,24 @@ tuning.generators = {
 	6.97049,
 }
 
+-- flattone
+-- tuning.generators = {
+-- 	12.02062,
+-- 	6.94545,
+-- }
+
+-- archytas
+-- tuning.generators = {
+-- 	11.96955,
+-- 	7.07522,
+-- }
+
+-- 29edo
+-- tuning.generators = {
+-- 	12.0,
+-- 	7.03448,
+-- }
+
 -- septimal meantone WE
 -- tuning.generators = {
 -- 	12.01236,
