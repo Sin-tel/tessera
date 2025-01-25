@@ -35,6 +35,7 @@ struct Voice {
 
 	hammer_x: f32,
 	hammer_v: f32,
+	prev: f32,
 	position: f32,
 	decay: f32,
 	release: f32,
@@ -45,6 +46,7 @@ struct Voice {
 	delay_r: DelayLine,
 
 	lp: OnePole,
+	lp_f: OnePole,
 	ap: Filter,
 	noise_filter: Filter,
 	mute_filter: Filter,
@@ -61,6 +63,9 @@ impl Voice {
 		let mut noise_filter = Filter::new(sample_rate);
 		noise_filter.set_lowpass(5000., 0.5);
 
+		let mut lp_f = OnePole::new(sample_rate);
+		lp_f.set_lowpass(8000.);
+
 		Self {
 			freq: SmoothExp::new(10., sample_rate),
 			note_on: false,
@@ -68,6 +73,7 @@ impl Voice {
 
 			hammer_x: 0.,
 			hammer_v: 0.,
+			prev: 0.,
 			position: 0.,
 			decay: 0.,
 			release: 0.,
@@ -77,8 +83,8 @@ impl Voice {
 			delay_l: DelayLine::new(sample_rate, MAX_LEN),
 			delay_r: DelayLine::new(sample_rate, MAX_LEN),
 
-			// lp: Filter::new(sample_rate),
 			lp: OnePole::new(sample_rate),
+			lp_f,
 			ap: Filter::new(sample_rate),
 			noise_filter,
 			mute_filter,
@@ -121,9 +127,12 @@ impl Instrument for Pluck {
 
 				let pos = voice.position;
 
-				let mut right = -voice.delay_r.go_back_cubic((1.0 - pos) * len);
+				let w = 1.0 - 0.02 * voice.prev;
+				let mut right = -voice.delay_r.go_back_cubic((1.0 - pos) * len * w);
 				let mut left = -voice.delay_l.go_back_cubic(pos * len);
 
+				voice.prev = voice.lp_f.process(right.clamp(0.0, 1.0));
+				// voice.prev = voice.lp_f.process((right * right).min(1.0));
 				right = voice.ap.process(right);
 				left = voice.lp.process(left);
 
@@ -153,11 +162,11 @@ impl Instrument for Pluck {
 					right = lerp(right, r2, voice.mute_state);
 				}
 
-				// let rattle = -0.4;
-				// if right < rattle {
-				// 	right = (right - rattle) * 0.5 + rattle
-				// 	// right = (right + rattle) * 0.98 - rattle
-				// }
+				let rattle = -0.4;
+				if right < rattle {
+					right = (right - rattle) * 0.5 + rattle
+					// right = (right + rattle) * 0.98 - rattle
+				}
 
 				voice.delay_l.push(right - hf_n);
 				voice.delay_r.push(left * voice.decay - hf_n);
