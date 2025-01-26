@@ -89,9 +89,11 @@ deviceList.instruments.pluck = {
 	parameters = {
 		{ "decay", "slider", { default = 0.66, min = 0.0, max = 1.0 } },
 		{ "release", "slider", { default = 0.5, min = -1.0, max = 1.0, centered = true } },
-		{ "damp", "slider", { default = 0.5, min = 0.0, max = 1.0 } },
-		{ "position", "slider", { default = 0.23, min = 0.1, max = 0.5 } },
-		{ "noise", "slider", { default = 0.5, min = 0.0, max = 1.0 } },
+		{ "damp", "slider", { default = 0.2, min = 0.0, max = 1.0 } },
+		{ "position", "slider", { default = 0.26, min = 0.1, max = 0.5 } },
+		{ "noise", "slider", { default = 0.4, min = 0.0, max = 1.0 } },
+		{ "dispersion", "slider", { default = 0.25, min = 0.0, max = 1.0 } },
+		{ "bloom", "slider", { default = 0.1, min = 0.0, max = 1.0 } },
 	},
 }
 
