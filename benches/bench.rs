@@ -151,6 +151,12 @@ fn svf_bench(bench: &mut Bencher) {
 	})
 }
 
+fn svf_phase_bench(bench: &mut Bencher) {
+	let mut filter = tessera::dsp::simper::Filter::new(44100.0);
+	filter.set_lowpass(500.0, 0.7);
+	run(bench, |x| filter.phase_delay(x))
+}
+
 fn onepole_bench(bench: &mut Bencher) {
 	let mut filter = tessera::dsp::onepole::OnePole::new(44100.0);
 	filter.set_lowpass(500.0);
@@ -208,8 +214,10 @@ benchmark_group!(
 	// floor_bench,
 	// round_bench,
 	svf_bench,
-	onepole_bench,
-	dckiller_bench,
+	// onepole_bench,
+	// dckiller_bench,
+	svf_phase_bench,
+	// svf_phase2_bench,
 	// skf_bench,
 	// upsample_bench,
 	// downsample_bench,
