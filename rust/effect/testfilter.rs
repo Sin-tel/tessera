@@ -35,6 +35,10 @@ impl Effect for TestFilter {
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
+		// let f = &self.tracks[0].filter2;
+		// dbg!(f.phase_delay(1000.));
+		// let a = f.phase_delay2(1000.) - f.phase_delay(1000.);
+
 		if self.onepole {
 			for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
 				// track.filter1.set_lowpass(self.cutoff);
@@ -45,8 +49,8 @@ impl Effect for TestFilter {
 			}
 		} else {
 			for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-				// track.filter2.set_lowpass(self.cutoff, self.q);
-				track.filter2.set_tilt(self.cutoff, self.q, self.gain);
+				track.filter2.set_lowpass(self.cutoff, self.q);
+				// track.filter2.set_tilt(self.cutoff, self.q, self.gain);
 				for sample in buf.iter_mut() {
 					*sample = track.filter2.process(*sample);
 				}
@@ -62,6 +66,6 @@ impl Effect for TestFilter {
 			2 => self.gain = value,
 			3 => self.onepole = value > 0.5,
 			_ => log_warn!("Parameter with index {index} not found"),
-		}
+		};
 	}
 }
