@@ -1,5 +1,5 @@
 /target
-cargo.lock
+Cargo.lock
 lua/settings/setup.lua
 *.sublime-project
 *.sublime-workspace
