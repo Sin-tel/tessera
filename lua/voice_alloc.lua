@@ -105,7 +105,6 @@ function VoiceAlloc:noteOn(id, pitch_coord, vel)
 	assert(new_i ~= nil)
 
 	if self.voices[new_i].key_down then
-		print("add to queue")
 		table.insert(self.queue, self.voices[new_i])
 		self.voices[new_i] = newVoice()
 	end
@@ -129,7 +128,6 @@ function VoiceAlloc:noteOff(id)
 		-- voice was already dead
 		for j, b in ipairs(self.queue) do
 			if b.id == id then
-				print("removed from queue")
 				table.remove(self.queue, j)
 				break
 			end

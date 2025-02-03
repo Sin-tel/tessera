@@ -23,6 +23,10 @@ pub struct Pluck {
 	damp: f32,
 	decay: f32,
 	release: f32,
+	dispersion: f32,
+	bloom: f32,
+
+	shelf: Filter,
 }
 
 const N_VOICES: usize = 8;
@@ -35,7 +39,9 @@ struct Voice {
 
 	hammer_x: f32,
 	hammer_v: f32,
+	prev: f32,
 	position: f32,
+	len_corr: f32,
 	decay: f32,
 	release: f32,
 	off_time: f32,
@@ -45,6 +51,7 @@ struct Voice {
 	delay_r: DelayLine,
 
 	lp: OnePole,
+	lp_f: OnePole,
 	ap: Filter,
 	noise_filter: Filter,
 	mute_filter: Filter,
@@ -61,6 +68,9 @@ impl Voice {
 		let mut noise_filter = Filter::new(sample_rate);
 		noise_filter.set_lowpass(5000., 0.5);
 
+		let mut lp_f = OnePole::new(sample_rate);
+		lp_f.set_lowpass(8000.);
+
 		Self {
 			freq: SmoothExp::new(10., sample_rate),
 			note_on: false,
@@ -68,7 +78,9 @@ impl Voice {
 
 			hammer_x: 0.,
 			hammer_v: 0.,
+			prev: 0.,
 			position: 0.,
+			len_corr: 0.,
 			decay: 0.,
 			release: 0.,
 			off_time: 0.,
@@ -77,8 +89,8 @@ impl Voice {
 			delay_l: DelayLine::new(sample_rate, MAX_LEN),
 			delay_r: DelayLine::new(sample_rate, MAX_LEN),
 
-			// lp: Filter::new(sample_rate),
 			lp: OnePole::new(sample_rate),
+			lp_f,
 			ap: Filter::new(sample_rate),
 			noise_filter,
 			mute_filter,
@@ -93,6 +105,9 @@ impl Instrument for Pluck {
 			voices.push(Voice::new(sample_rate));
 		}
 
+		let mut shelf = Filter::new(sample_rate);
+		shelf.set_lowshelf(180., BUTTERWORTH_Q, -6.);
+
 		Pluck {
 			voices,
 			// dc_killer: DcKiller::new(sample_rate),
@@ -104,6 +119,10 @@ impl Instrument for Pluck {
 			damp: 0.0,
 			position: 0.2,
 			noise: 0.0,
+			dispersion: 0.0,
+			bloom: 0.0,
+
+			shelf,
 		}
 	}
 
@@ -114,16 +133,15 @@ impl Instrument for Pluck {
 			for sample in bl.iter_mut() {
 				let f = voice.freq.process();
 
-				// TODO: proper tuning table
-				let tun_o = 0.00001;
-				let tun_f = 1.07186;
-				let len = tun_o + tun_f / f;
+				let len = (1. / f) - voice.len_corr;
 
 				let pos = voice.position;
 
-				let mut right = -voice.delay_r.go_back_cubic((1.0 - pos) * len);
+				let w = 1.0 - self.bloom * voice.prev;
+				let mut right = -voice.delay_r.go_back_cubic((1.0 - pos) * len * w);
 				let mut left = -voice.delay_l.go_back_cubic(pos * len);
 
+				voice.prev = voice.lp_f.process(right.clamp(0.0, 1.0));
 				right = voice.ap.process(right);
 				left = voice.lp.process(left);
 
@@ -153,18 +171,18 @@ impl Instrument for Pluck {
 					right = lerp(right, r2, voice.mute_state);
 				}
 
-				// let rattle = -0.4;
-				// if right < rattle {
-				// 	right = (right - rattle) * 0.5 + rattle
-				// 	// right = (right + rattle) * 0.98 - rattle
-				// }
+				let rattle = -0.4;
+				if right < rattle {
+					right = (right - rattle) * 0.5 + rattle;
+					// right = (right + rattle) * 0.98 - rattle
+				}
 
 				voice.delay_l.push(right - hf_n);
 				voice.delay_r.push(left * voice.decay - hf_n);
 
 				let out = left + right;
 
-				*sample += out * 0.2;
+				*sample += out * 0.5;
 			}
 
 			if !voice.note_on {
@@ -173,6 +191,10 @@ impl Instrument for Pluck {
 					voice.active = false;
 				}
 			}
+		}
+
+		for sample in bl.iter_mut() {
+			*sample = self.shelf.process(*sample);
 		}
 
 		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
@@ -212,14 +234,18 @@ impl Instrument for Pluck {
 		}
 		voice.release = 0.9_f32.powf(r / f);
 
-		let apf = (f * 7.0).min(18000.0);
-		voice.ap.set_allpass(apf, BUTTERWORTH_Q);
+		let apf = (f * self.dispersion).min(18000.0);
+		// voice.ap.set_allpass(apf, BUTTERWORTH_Q);
+		voice.ap.set_allpass(apf, 0.5);
+
+		voice.len_corr = voice.ap.phase_delay(f) / self.sample_rate;
 
 		voice.position = self.position + 0.05 * (self.rng.f32() - 0.5);
 		voice.position = voice.position.clamp(0.05, 0.95);
 
-		let high_gain = -self.damp * 400. / f;
-		voice.lp.set_highshelf(6000.0 - 4000.0 * self.damp, high_gain);
+		let damp_gain = -self.damp * 400. / f;
+		let damp_f = (2. * f + 800.0) * (3. - 2. * self.damp);
+		voice.lp.set_highshelf(damp_f, damp_gain);
 
 		voice.noise_filter.set_lowpass(1000. + 6000. * vel, 0.5);
 
@@ -245,8 +271,8 @@ impl Instrument for Pluck {
 			2 => self.damp = value,
 			3 => self.position = value,
 			4 => self.noise = 0.5 * value * value,
-			// 1 => self.voices.iter_mut().for_each(|v| v.vel.set_attack(value)),
-			// 2 => self.voices.iter_mut().for_each(|v| v.vel.set_release(value)),
+			5 => self.dispersion = 12. - 10.5 * value,
+			6 => self.bloom = 0.1 * value * value,
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}

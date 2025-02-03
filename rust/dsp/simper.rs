@@ -8,11 +8,14 @@
 #![allow(dead_code)]
 
 use crate::dsp::smooth::SmoothLinear;
-use crate::dsp::{from_db, prewarp};
+use crate::dsp::*;
+use rustfft::num_complex::Complex;
 
 #[derive(Debug)]
 pub struct Filter {
 	sample_rate: f32,
+	k: f32,
+	g: f32,
 	s1: f32,
 	s2: f32,
 
@@ -38,6 +41,8 @@ impl Filter {
 
 			s1: 0.,
 			s2: 0.,
+			k: 0.,
+			g: 0.,
 		}
 	}
 
@@ -56,6 +61,9 @@ impl Filter {
 	}
 
 	fn set_coefs(&mut self, g: f32, k: f32) {
+		self.g = g;
+		self.k = k;
+
 		let a1 = 1.0 / (1.0 + g * (g + k));
 		let a2 = g * a1;
 		let a3 = g * a2;
@@ -172,5 +180,44 @@ impl Filter {
 		self.s2 = 2. * v2 - self.s2;
 
 		m0 * v0 + m1 * v1 + m2 * v2
+	}
+
+	#[must_use]
+	pub fn phase_delay(&self, f: f32) -> f32 {
+		let g = self.g;
+		let k = self.k;
+		let m0 = self.m0.target();
+		let m1 = self.m1.target();
+		let m2 = self.m2.target();
+
+		let g2 = g * g;
+
+		// denominator coefs
+		let d0 = 1. + g2 + g * k;
+		let d1 = -2. + 2. * g2;
+		let d2 = 1. + g2 - g * k;
+
+		// numerator coefs
+		let n0 = m0 * d0 + m1 * g + m2 * g2;
+		let n1 = m0 * d1 + m2 * 2. * g2;
+		let n2 = m0 * d2 - m1 * g + m2 * g2;
+
+		let omega = TWO_PI * f / self.sample_rate;
+
+		// z^0 = 1
+		let z0 = Complex::new(1., 0.);
+		// z^{-1} = e^{-jw}
+		let z1 = Complex::from_polar(1., -omega);
+		// z^{-2} = e^{-2jw}
+		let z2 = Complex::from_polar(1., -2. * omega);
+
+		// evaluate transfer function
+		let n = n0 * z0 + n1 * z1 + n2 * z2;
+		let d = d0 * z0 + d1 * z1 + d2 * z2;
+
+		let phase = (n / d).arg();
+
+		// phase delay = -phase / w
+		-phase / omega
 	}
 }
