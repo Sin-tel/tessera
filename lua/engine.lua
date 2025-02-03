@@ -89,9 +89,9 @@ function engine.render()
 
 	local dt = RENDER_BLOCK_SIZE / backend:getSampleRate()
 
-	local target_ms = 2 -- can probably set this higher
-	local start = love.timer.getTime()
-	for i = 1, 100 do
+	local target_ms = 2
+	local t_start = love.timer.getTime()
+	for i = 1, 300 do
 		local success = backend:renderBlock()
 		if not success then
 			log.error("Failed to render block.")
@@ -108,8 +108,9 @@ function engine.render()
 			break
 		end
 
-		local t_now = (love.timer.getTime() - start) * 1000
+		local t_now = (love.timer.getTime() - t_start) * 1000
 		if t_now > target_ms then
+			print(i)
 			break
 		end
 	end

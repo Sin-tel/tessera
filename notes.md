@@ -1,10 +1,17 @@
-seperate pitch and pressure events?
+basic selection and editing
+
+make tuning settings
+
+sync polyphony / voice count somehow
 
 catch lua error handler
 - save to log
 - save backup
 
 add view resized callback
+
+add some way to tune instruments properly
+ - can be done semi-automatically?
 
 ## piano roll
 
@@ -15,7 +22,7 @@ piano roll playback
  - will need robust time manipuation tools to cope
  - (maybe a global speed mult because thats easy)
 
- ## envelope
+## envelope
 
 also make ADS envelope for FM modulator
  how should these interact with pressure?
@@ -25,50 +32,55 @@ previous work
  - reason friktion
  - expressive E noisy 2
 
-## MIDI
+## instruments
+double reed
+flute model
+bowed string/modal
+extended 808 bass model
 
-add note off?
+pluck model:
+* multiple strings?
+    - coupling -> two stage decay
+    - rotation matrix
+* sitar bridge?
+* fretboard rattle?
+* control allpass dispersion
+    - fix tuning
+
+## tuning
+make tuning import/export and add to project settings
+add generic transposition / movement system
+port over the tracking scripts for midi input
+
+## MIDI
+also need midi out ports
+linnstrument custom mode
 
 midi impl is now kind of stupidly polling, but we can get better latency if we do everything in rust directly in the backend
  - bit more work to get right though since that means more logic on rust side
  - this is good though, since eventually we want to move as much as possible to rust
  - for now, lets leave it like this!
 
-signal flow
-```
-                   midi_device       --- channel -----
-                        |           /                   \
-raw midi -[parse]-> midi msg -> event ->[voice alloc]-> backend
-                                   v        ^
-                                record------|
-```
+## compressor
+Digital Dynamic Range Compressor Design - A Tutorial and Analysis
+https://www.eecs.qmul.ac.uk/~josh/documents/2012/GiannoulisMassbergReiss-dynamicrangecompression-JAES2012.pdf
+Parameter Automation in a Dynamic Range Compressor
+https://www.eecs.qmul.ac.uk/~josh/documents/2013/Giannoulis%20Massberg%20Reiss%20-%20dynamic%20range%20compression%20automation%20-%20JAES%202013.pdf
 
-## UNITS
-make everythin in samples?
- -> also envelope stuff should be in seconds not ms
+stereo linking?
+
+## other notes
+
+reverb
+https://ccrma.stanford.edu/~dattorro/EffectDesignPart1.pdf
+https://msp.ucsd.edu/techniques/v0.11/book-html/node111.html
+
+
+figure out ZDF for distortion with HP feedback
 
 add noise to epiano? better impact model
 
 support surge wavetable format?
-
-
-## other notes
-
-# datorro reverb
-https://ccrma.stanford.edu/~dattorro/EffectDesignPart1.pdf
-
-https://msp.ucsd.edu/techniques/v0.11/book-html/node111.html
-
-# erbeverb
-- take 4x FDN but put allpass in the matrix
-- granular delay line
-make time adjustable by interpolation instead of sweeping, avoid pitch shift
-do this randomly with adjustable speed and depth
-- add saturation in fb loop
-- tilt filter on output
-
-
-figure out ZDF for distortion with HP feedback
 
 port over tubes
 -> add zdf feedback?
