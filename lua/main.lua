@@ -94,9 +94,11 @@ end
 
 local function audioSetup()
 	if not backend:ok() then
-		-- backend:setup(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
-		backend:setup("wasapi", "default")
-		midi.load(setup.midi.inputs)
+		backend:setup(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
+		-- backend:setup("wasapi", "default")
+		if setup.midi then
+			midi.load(setup.midi.inputs)
+		end
 	else
 		log.warn("Audio already set up")
 	end

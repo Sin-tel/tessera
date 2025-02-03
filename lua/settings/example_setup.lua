@@ -10,7 +10,12 @@ You can also use the string 'default' to specify that the system default host or
 
 local setup = {
 	audio = {
-		-- This should be 'WASAPI' or 'ASIO', depending on the backend.
+		--[[
+		Audio backend
+		common values are:
+			- 'WASAPI' or 'ASIO' on windows
+			- 'ALSA' or 'PULSE' on linux
+		]]
 		default_host = "ASIO",
 		-- Name of the output device.
 		default_device = "asio4all",
