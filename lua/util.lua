@@ -196,4 +196,8 @@ function util.fileExists(filename)
 	end
 end
 
+function util.color_alpha(c, alpha)
+	return c[1], c[2], c[3], alpha
+end
+
 return util
