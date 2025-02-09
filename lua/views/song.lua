@@ -111,15 +111,23 @@ function Song:draw()
 				local x0 = self.transform:time(t_start)
 				local y0 = self.transform:pitch(p_start)
 
+				-- if selection.notes[note] then
+				-- 	love.graphics.setColor(0.4, 0.6, 0.9)
+				-- else
+				-- 	love.graphics.setColor(0.6, 0.6, 0.6)
+				-- end
+
+				-- velocity
 				love.graphics.setColor(0.6, 0.6, 0.6)
 				local vo = 32 * note.vel
 				love.graphics.line(x0, y0, x0, y0 - vo)
 				love.graphics.line(x0 - 2, y0 - vo, x0 + 2, y0 - vo)
-				-- love.graphics.setColor(theme.bg_nested)
-				-- love.graphics.circle("fill", x0, y0 - 24 * note.vel, 3)
-				-- love.graphics.setColor(0.6, 0.6, 0.6)
-				-- love.graphics.circle("line", x0, y0 - 24 * note.vel, 3)
 
+				-- note
+				local c = theme.note
+				if selection.notes[note] then
+					c = theme.note_select
+				end
 				for i = 1, #note.verts - 1 do
 					local x1 = self.transform:time(t_start + note.verts[i][1])
 					local x2 = self.transform:time(t_start + note.verts[i + 1][1])
@@ -128,8 +136,9 @@ function Song:draw()
 					local w1 = note.verts[i][3] * w_scale
 					local w2 = note.verts[i + 1][3] * w_scale
 					love.graphics.setColor(0.3, 0.3, 0.3)
+
 					love.graphics.polygon("fill", x1, y1 + w1, x2, y2 + w2, x2, y2 - w2, x1, y1 - w1, x1, y1 + w1)
-					love.graphics.setColor(0.9, 0.9, 0.9)
+					love.graphics.setColor(c)
 					love.graphics.line(x1, y1, x2, y2)
 				end
 
@@ -144,15 +153,17 @@ function Song:draw()
 					local w2 = w1
 					love.graphics.setColor(0.3, 0.3, 0.3)
 					love.graphics.polygon("fill", x1, y1 + w1, x2, y2 + w2, x2, y2 - w2, x1, y1 - w1, x1, y1 + w1)
-					love.graphics.setColor(0.9, 0.9, 0.9)
+					love.graphics.setColor(c)
 					love.graphics.line(x1, y1, x2, y2)
 				end
 
+				-- note head
 				love.graphics.setColor(theme.bg_nested)
 				love.graphics.circle("fill", x0, y0, 3)
-				love.graphics.setColor(0.9, 0.9, 0.9)
+				love.graphics.setColor(c)
 				love.graphics.circle("line", x0, y0, 3)
 
+				-- note names
 				if self.transform.sy < -20 then
 					love.graphics.setColor(theme.ui_text)
 

@@ -1,78 +1,58 @@
+local tuning = require("tuning")
+
 local edit = {}
 
--- edit.points = {}
+edit.ox = 0
+edit.oy = 0
 
-edit.x = 0
-edit.y = 0
+function edit:mousepressed(song)
+	local mx, my = song:getMouse()
 
-function edit:mousepressed()
-	-- edit.points = {}
+	self.ox = mx
+	self.oy = my
 
-	-- edit.x = mouseX
-	-- edit.y = mouseY
-
-	-- local pt = { edit.x, edit.y, pres }
-	-- table.insert(edit.points, pt)
-	-- edit.lastpoint = pt
+	self.selection_active = true
 end
 
-function edit:mousedown()
-	-- local dx = mouseX - edit.x
-	-- local dy = mouseY - edit.y
-
-	-- local l = math.sqrt(dx ^ 2 + dy ^ 2)
-	-- if l > edit.radius then
-	-- 	edit.x = mouseX - (edit.radius * dx / l)
-	-- 	edit.y = mouseY - (edit.radius * dy / l)
-	-- end
-
-	-- if not (edit.lastpoint[1] == edit.x and edit.lastpoint[2] == edit.y) then
-	-- 	edit.removePoints()
-	-- 	local pt = { edit.x, edit.y, pres }
-	-- 	table.insert(edit.points, pt)
-	-- 	table.sort(edit.points, function(a, b)
-	-- 		return a[1] < b[1]
-	-- 	end)
-	-- 	edit.lastpoint = pt
-	-- end
+function edit:mousedown(song)
+	--
 end
 
-function edit:mousereleased()
-	-- for i, v in ipairs(edit.points) do
-	-- 	v[1], v[2] = View.invTransform(v[1], v[2])
-	-- end
-	-- if #edit.points > 2 then
-	-- 	edit.keep = {}
-	-- 	for i in ipairs(edit.points) do
-	-- 		edit.keep[i] = false
-	-- 	end
-	-- 	edit.keep[1] = true
-	-- 	edit.keep[#edit.points] = true
+function edit:mousereleased(song)
+	local mx, my = song:getMouse()
 
-	-- 	edit.simplify(1, #edit.points, true)
+	self.selection_active = false
 
-	-- 	local newTable = {}
-	-- 	for i, v in ipairs(edit.points) do
-	-- 		if edit.keep[i] then
-	-- 			table.insert(newTable, v)
-	-- 		end
-	-- 	end
-	-- 	edit.points = newTable
+	selection.notes = {}
 
-	-- 	table.sort(edit.points, function(a, b)
-	-- 		return a[1] < b[1]
-	-- 	end)
+	local x1 = math.min(self.ox, mx)
+	local y1 = math.min(self.oy, my)
+	local x2 = math.max(self.ox, mx)
+	local y2 = math.max(self.oy, my)
 
-	-- 	Edit.addNote(edit.points)
-	-- end
-	-- edit.points = {}
+	-- TODO factor out selection stuff
+	local ch_index = 1
+	for i, v in ipairs(project.channels[ch_index].notes) do
+		local t_start = v.time
+		local p_start = tuning.getPitch(v.pitch)
+		local x0 = song.transform:time(t_start)
+		local y0 = song.transform:pitch(p_start)
 
-	-- Edit.resampleAll()
+		if x1 < x0 and x0 < x2 and y1 < y0 and y0 < y2 then
+			selection.notes[v] = true
+		end
+	end
 end
 
-function edit:draw()
+function edit:draw(song)
+	local mx, my = song:getMouse()
+
 	if self.selection_active then
-		--
+		love.graphics.setColor(util.color_alpha(theme.selection, 0.02))
+		love.graphics.rectangle("fill", self.ox, self.oy, mx - self.ox, my - self.oy)
+		love.graphics.setColor(theme.selection)
+
+		love.graphics.rectangle("line", self.ox + 0.5, self.oy + 0.5, mx - self.ox, my - self.oy)
 	end
 end
 
