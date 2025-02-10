@@ -28,6 +28,7 @@ width, height = love.graphics.getDimensions()
 
 theme = require("settings/theme")
 selection = {}
+selection.notes = {}
 setup = {}
 resources = {}
 
@@ -95,7 +96,6 @@ end
 local function audioSetup()
 	if not backend:ok() then
 		backend:setup(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
-		-- backend:setup("wasapi", "default")
 		if setup.midi then
 			midi.load(setup.midi.inputs)
 		end
