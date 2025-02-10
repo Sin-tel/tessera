@@ -4,7 +4,7 @@ setlocal enabledelayedexpansion
 :: It will default to searching for love
 :: but you can override the default by
 :: setting the `LOVE` env var to another name
-:: ex: 
+:: ex:
 :: ```
 :: set LOVE="C:\Program Files\LOVE\love.exe"
 :: ``
@@ -41,7 +41,7 @@ exit /b 1
 :: make sure to preserve current working directory
 :execute
 pushd lua
-"%LOVE%" . 
+"%LOVE%" .
 popd
 
 endlocal
