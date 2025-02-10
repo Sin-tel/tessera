@@ -12,7 +12,7 @@ if [[ -z "$LOVE" ]]; then
 $HOME/Applications/love.app/Contents/MacOS:\
 /usr/games:\
 /opt/homebrew/bin"
-    
+
     # Find first valid executable (love/love2d) in modified PATH
     LOVE=$(command -v love love2d 2>/dev/null | head -n1)
 fi
