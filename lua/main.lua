@@ -30,8 +30,7 @@ util = require("util")
 width, height = love.graphics.getDimensions()
 
 theme = require("settings/theme")
-selection = {}
-selection.notes = {}
+selection = require("selection")
 setup = {}
 resources = {}
 
@@ -39,6 +38,12 @@ audio_status = "init"
 
 project = {}
 ui_channels = {}
+
+modifier_keys = {}
+modifier_keys.ctrl = false
+modifier_keys.shift = false
+modifier_keys.alt = false
+modifier_keys.any = false
 
 local load_last_save = true
 local last_save_location = "../out/lastsave.sav"
@@ -125,9 +130,18 @@ end
 
 function love.load()
 	log.info("Tessera v" .. VERSION.MAJOR .. "." .. VERSION.MINOR .. "." .. VERSION.PATCH)
+	if release then
+		log.info("Running in release mode")
+	else
+		log.info("Running in debug mode")
+	end
+
+	love.keyboard.setKeyRepeat(true)
 	math.randomseed(os.time())
 	love.math.setRandomSeed(os.time())
+
 	setup = save.readSetup()
+
 	mouse:load()
 
 	--- load resources ---
@@ -239,14 +253,17 @@ function love.textinput(t)
 end
 
 function love.keypressed(_, key)
-	local mod = {}
-	mod.ctrl = love.keyboard.isDown("lctrl", "rctrl")
-	mod.shift = love.keyboard.isDown("lshift", "rshift")
-	mod.alt = love.keyboard.isDown("lalt", "ralt")
-	mod.any = mod.ctrl or mod.shift or mod.alt
+	if key == "lshift" or key == "rshift" then
+		modifier_keys.shift = true
+	elseif key == "lctrl" or key == "rctrl" then
+		modifier_keys.ctrl = true
+	elseif key == "lalt" or key == "ralt" then
+		modifier_keys.alt = true
+	end
+	modifier_keys.any = modifier_keys.ctrl or modifier_keys.shift or modifier_keys.alt
 
 	if audio_status == "render" then
-		if (key == "c" and mod.ctrl) or key == "escape" then
+		if (key == "c" and modifier_keys.ctrl) or key == "escape" then
 			backend:renderCancel()
 			engine.renderEnd()
 		end
@@ -254,11 +271,11 @@ function love.keypressed(_, key)
 		return
 	end
 
-	if not mod.any and note_input:keypressed(key, mod) then
+	if not modifier_keys.any and note_input:keypressed(key) then
 		return
 	end
 
-	if workspace:keypressed(key, mod) then
+	if workspace:keypressed(key) then
 		return
 	end
 
@@ -270,7 +287,7 @@ function love.keypressed(_, key)
 		else
 			engine.start()
 		end
-	elseif mod.ctrl and key == "k" then
+	elseif modifier_keys.ctrl and key == "k" then
 		if backend:ok() then
 			audio_status = "dead"
 			midi.quit()
@@ -278,27 +295,27 @@ function love.keypressed(_, key)
 		else
 			audio_status = "request"
 		end
-	elseif mod.ctrl and key == "w" then
+	elseif modifier_keys.ctrl and key == "w" then
 		-- for testing panic recovery
 		backend:panic()
-	elseif key == "z" and mod.ctrl then
+	elseif key == "z" and modifier_keys.ctrl then
 		command.undo()
-	elseif key == "y" and mod.ctrl then
+	elseif key == "y" and modifier_keys.ctrl then
 		command.redo()
-	elseif key == "r" and mod.ctrl then
+	elseif key == "r" and modifier_keys.ctrl then
 		engine.renderStart()
-	elseif key == "n" and mod.ctrl then
+	elseif key == "n" and modifier_keys.ctrl then
 		command.run_and_register(command.newProject.new())
-	elseif key == "s" and mod.ctrl then
+	elseif key == "s" and modifier_keys.ctrl then
 		save.write(last_save_location)
 	elseif key == "b" then
 		project.transport.recording = not project.transport.recording
-	elseif key == "down" and mod.shift then
+	elseif key == "down" and modifier_keys.shift then
 		if selection.ch_index and selection.device_index then
 			local new_index = selection.device_index + 1
 			command.run_and_register(command.reorderEffect.new(selection.ch_index, selection.device_index, new_index))
 		end
-	elseif key == "up" and mod.shift then
+	elseif key == "up" and modifier_keys.shift then
 		if selection.ch_index and selection.device_index then
 			local new_index = selection.device_index - 1
 			command.run_and_register(command.reorderEffect.new(selection.ch_index, selection.device_index, new_index))
@@ -315,6 +332,15 @@ function love.keypressed(_, key)
 end
 
 function love.keyreleased(_, key)
+	if key == "lshift" or key == "rshift" then
+		modifier_keys.shift = false
+	elseif key == "lctrl" or key == "rctrl" then
+		modifier_keys.ctrl = false
+	elseif key == "lalt" or key == "ralt" then
+		modifier_keys.alt = false
+	end
+	modifier_keys.any = modifier_keys.ctrl or modifier_keys.shift or modifier_keys.alt
+
 	if audio_status == "render" then
 		return
 	end
