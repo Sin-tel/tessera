@@ -3,7 +3,7 @@ local engine = require("engine")
 local View = require("view")
 local Transform = require("views/transform")
 
-local edit = require("tools/edit")
+local select_rect = require("tools/select_rect")
 local pan = require("tools/pan")
 
 local Song = View:derive("Song")
@@ -16,7 +16,7 @@ function Song:new()
 	self.__index = self
 
 	self.current_tool = pan
-	self.selected_tool = edit
+	self.selected_tool = select_rect
 
 	-- TODO: expose this as an option
 	self.follow = false
@@ -27,25 +27,31 @@ function Song:new()
 end
 
 function Song:update()
-	local mx, my = self:getMouse()
-
-	if mouse.scroll and self:focus() then
-		local zoom_factor = math.exp(0.15 * mouse.scroll)
-		self.transform:zoom_x(mx, zoom_factor)
-		self.transform:zoom_y(my, zoom_factor)
-	end
-
 	self.transform:update()
 
-	if mouse.button == 1 and my > 0 and my < 16 then
-		-- move playhead when clicking on ribbon
-		-- TODO: action should be triggered when mouse pressed in ribbon
-		local new_time = self.transform:time_inv(mx)
+	if self:focus() then
+		local mx, my = self:getMouse()
 
-		project.transport.start_time = new_time
-		engine.seek(new_time)
-	elseif mouse.button then
-		self.current_tool:mousedown(self)
+		if mouse.scroll then
+			local zoom_factor = math.exp(0.15 * mouse.scroll)
+			if not modifier_keys.ctrl then
+				self.transform:zoom_x(mx, zoom_factor)
+			end
+			if not modifier_keys.shift then
+				self.transform:zoom_y(my, zoom_factor)
+			end
+		end
+
+		if mouse.button == 1 and my > 0 and my < 16 then
+			-- move playhead when clicking on ribbon
+			-- TODO: action should be triggered when mouse pressed in ribbon
+			local new_time = self.transform:time_inv(mx)
+
+			project.transport.start_time = new_time
+			engine.seek(new_time)
+		elseif mouse.button then
+			self.current_tool:mousedown(self)
+		end
 	end
 end
 
@@ -100,22 +106,11 @@ function Song:draw()
 	love.graphics.setFont(resources.fonts.notes)
 	for ch_index, ch in ipairs(project.channels) do
 		if ch.visible then
-			-- if selection.ch_index == ch_index then
-			-- 	love.graphics.setColor(0.9, 0.9, 0.9)
-			-- else
-			-- 	love.graphics.setColor(0.4, 0.4, 0.4)
-			-- end
 			for _, note in ipairs(ch.notes) do
 				local t_start = note.time
 				local p_start = tuning.getPitch(note.pitch)
 				local x0 = self.transform:time(t_start)
 				local y0 = self.transform:pitch(p_start)
-
-				-- if selection.notes[note] then
-				-- 	love.graphics.setColor(0.4, 0.6, 0.9)
-				-- else
-				-- 	love.graphics.setColor(0.6, 0.6, 0.6)
-				-- end
 
 				-- velocity
 				love.graphics.setColor(0.6, 0.6, 0.6)
@@ -125,7 +120,7 @@ function Song:draw()
 
 				-- note
 				local c = theme.note
-				if selection.notes[note] then
+				if selection.mask[note] then
 					c = theme.note_select
 				end
 				for i = 1, #note.verts - 1 do
@@ -165,8 +160,7 @@ function Song:draw()
 
 				-- note names
 				if self.transform.sy < -20 then
-					love.graphics.setColor(theme.ui_text)
-
+					love.graphics.setColor(c)
 					local note_name = tuning.getName(note.pitch)
 					util.drawText(note_name, x0 + 5, y0 - 10, self.w, 0)
 				end
@@ -210,14 +204,53 @@ end
 
 function Song:keypressed(key)
 	local zoom_factor
+	local move_up
+	local move_right
 	if key == "kp+" then
 		zoom_factor = math.sqrt(2)
 	elseif key == "kp-" then
 		zoom_factor = 1 / math.sqrt(2)
+	elseif key == "up" then
+		move_up = 1
+	elseif key == "down" then
+		move_up = -1
+	elseif key == "right" then
+		move_right = 1
+	elseif key == "left" then
+		move_right = -1
 	end
 
 	if zoom_factor then
 		self.transform:zoom_x(self.w * 0.25, zoom_factor)
+		return true
+	end
+
+	if move_up then
+		for k, v in ipairs(selection.list) do
+			if modifier_keys.shift then
+				tuning.moveOctave(v.pitch, move_up)
+			elseif modifier_keys.ctrl then
+				tuning.moveChromatic(v.pitch, move_up)
+			elseif modifier_keys.alt then
+				tuning.moveComma(v.pitch, move_up)
+			else
+				tuning.moveDiatonic(v.pitch, move_up)
+			end
+		end
+		return true
+	end
+
+	if move_right then
+		local move_amt = 1
+		if modifier_keys.shift then
+			move_amt = 0.25
+		end
+		if modifier_keys.alt then
+			move_amt = 0.01
+		end
+		for k, v in ipairs(selection.list) do
+			v.time = v.time + move_right * move_amt
+		end
 		return true
 	end
 end

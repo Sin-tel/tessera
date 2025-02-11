@@ -13,7 +13,7 @@ stds.justidaw = {
       "setup",
       "workspace",
       "mouse",
-      "keyboard",
+      "modifier_keys",
       "command",
       -- runtime stuff
       "audio_status",

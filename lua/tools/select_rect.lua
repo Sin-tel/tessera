@@ -1,29 +1,29 @@
 local tuning = require("tuning")
 
-local edit = {}
+local select_rect = {}
 
-edit.ox = 0
-edit.oy = 0
+select_rect.ox = 0
+select_rect.oy = 0
 
-function edit:mousepressed(song)
+function select_rect:mousepressed(song)
 	local mx, my = song:getMouse()
 
 	self.ox = mx
 	self.oy = my
 
-	self.selection_active = true
+	self.active = true
 end
 
-function edit:mousedown(song)
+function select_rect:mousedown(song)
 	--
 end
 
-function edit:mousereleased(song)
+function select_rect:mousereleased(song)
 	local mx, my = song:getMouse()
 
-	self.selection_active = false
+	self.active = false
 
-	selection.notes = {}
+	local mask = {}
 
 	local x1 = math.min(self.ox, mx)
 	local y1 = math.min(self.oy, my)
@@ -39,15 +39,17 @@ function edit:mousereleased(song)
 		local y0 = song.transform:pitch(p_start)
 
 		if x1 < x0 and x0 < x2 and y1 < y0 and y0 < y2 then
-			selection.notes[v] = true
+			mask[v] = true
 		end
 	end
+
+	selection.set(mask)
 end
 
-function edit:draw(song)
+function select_rect:draw(song)
 	local mx, my = song:getMouse()
 
-	if self.selection_active then
+	if self.active then
 		love.graphics.setColor(util.color_alpha(theme.selection, 0.02))
 		love.graphics.rectangle("fill", self.ox, self.oy, mx - self.ox, my - self.oy)
 		love.graphics.setColor(theme.selection)
@@ -56,4 +58,4 @@ function edit:draw(song)
 	end
 end
 
-return edit
+return select_rect
