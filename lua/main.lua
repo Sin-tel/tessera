@@ -1,8 +1,6 @@
-env_rel = os.getenv("RELEASE")
-if env_rel then
+release = false
+if os.getenv("RELEASE") then
 	release = true
-else
-	release = false
 end
 
 local log = require("log")
