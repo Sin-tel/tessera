@@ -15,6 +15,6 @@ GUI parts are written in lua with [LÖVE](https://love2d.org/), the audio backen
 
 A setup file will automatically be generated in [lua/settings](lua/settings) where you can configure your audio/midi device, see [example_setup.lua](lua/settings/example_setup.lua) for instructions.
 
-For release mode, use `cargo build --release` and set `release = true` in `main.lua`.
+For release mode, use `cargo build --release` and set environment variable `RELEASE=true`.
 
 When things stabilize I will provide builds.
