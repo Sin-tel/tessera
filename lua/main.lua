@@ -1,4 +1,7 @@
 release = false
+if os.getenv("RELEASE") then
+	release = true
+end
 
 local log = require("log")
 require("lib/run")
