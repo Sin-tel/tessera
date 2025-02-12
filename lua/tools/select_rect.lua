@@ -30,7 +30,7 @@ function select_rect:mousereleased(song)
 	local x2 = math.max(self.ox, mx)
 	local y2 = math.max(self.oy, my)
 
-	-- TODO factor out selection stuff
+	-- TODO: fix ch_index
 	local ch_index = 1
 	for i, v in ipairs(project.channels[ch_index].notes) do
 		local t_start = v.time

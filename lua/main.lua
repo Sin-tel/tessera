@@ -321,6 +321,7 @@ function love.keypressed(_, key)
 			command.run_and_register(command.reorderEffect.new(selection.ch_index, selection.device_index, new_index))
 		end
 	elseif key == "delete" then
+		-- TODO: move these to respective views
 		if selection.ch_index then
 			if selection.device_index and selection.device_index > 0 then
 				command.run_and_register(command.removeEffect.new(selection.ch_index, selection.device_index))

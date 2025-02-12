@@ -188,40 +188,20 @@ function tuning.getName(p)
 end
 
 -- note: the various move commands all mutate `p` in-place
+-- TODO: these should be configurable, depending on tuning
+
 function tuning.moveDiatonic(p, steps)
-	local n_i = (p[2] + 1)
-	n_i = n_i % #tuning.circle_of_fifths
+	local n = 1 + 7 * p[1] + 4 * p[2]
 
-	local semi = false
+	local p_o = tuning.fromDiatonic(n)
+	local p_new = tuning.fromDiatonic(n + steps)
 
-	if steps > 0 and n_i >= #tuning.circle_of_fifths - 2 then
-		semi = true
-	end
-
-	if steps < 0 and n_i <= 1 then
-		semi = true
-	end
-
-	if semi then
-		-- move by diatonic semitone
-		p[1] = p[1] + 3 * steps
-		p[2] = p[2] - 5 * steps
-	else
-		-- move by diatonic whole tone
-		p[1] = p[1] - steps
-		p[2] = p[2] + 2 * steps
+	for i, _ in ipairs(p_new) do
+		p[i] = p[i] + p_new[i] - p_o[i]
 	end
 end
 
 function tuning.moveChromatic(p, steps)
-	-- local n = 12 * (p[1] + 5) + 7 * p[2]
-
-	-- local new_p = tuning.fromMidi(n + steps)
-
-	-- for i, v in ipairs(new_p) do
-	-- 	p[i] = v
-	-- end
-
 	-- apotome
 	p[1] = p[1] - 4 * steps
 	p[2] = p[2] + 7 * steps
@@ -234,7 +214,6 @@ end
 function tuning.moveComma(p, steps)
 	-- hardcoded to Pythagorean comma for now
 	-- which is equal to a diesis in meantone (and flipped in size)
-	-- TODO: should depend on tuning
 
 	-- Pythagorean comma
 	p[1] = p[1] + 7 * steps
