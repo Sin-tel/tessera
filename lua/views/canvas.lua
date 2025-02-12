@@ -6,11 +6,11 @@ local Transform = require("views/transform")
 local select_rect = require("tools/select_rect")
 local pan = require("tools/pan")
 
-local Song = View:derive("Song")
+local Canvas = View:derive("Canvas")
 
 -- TODO: factor out view/zoom transform
 
-function Song:new()
+function Canvas:new()
 	local new = {}
 	setmetatable(new, self)
 	self.__index = self
@@ -26,7 +26,7 @@ function Song:new()
 	return new
 end
 
-function Song:update()
+function Canvas:update()
 	self.transform:update()
 
 	if self:focus() then
@@ -55,7 +55,7 @@ function Song:update()
 	end
 end
 
-function Song:draw()
+function Canvas:draw()
 	love.graphics.setColor(theme.bg_nested)
 	love.graphics.rectangle("fill", 0, 0, self.w, self.h)
 
@@ -202,7 +202,7 @@ function Song:draw()
 	self.current_tool:draw(self)
 end
 
-function Song:keypressed(key)
+function Canvas:keypressed(key)
 	local zoom_factor
 	local move_up
 	local move_right
@@ -266,7 +266,7 @@ function Song:keypressed(key)
 	end
 end
 
-function Song:mousepressed()
+function Canvas:mousepressed()
 	if mouse.button == 3 then
 		self.current_tool = pan
 	else
@@ -276,8 +276,8 @@ function Song:mousepressed()
 	self.current_tool:mousepressed(self)
 end
 
-function Song:mousereleased()
+function Canvas:mousereleased()
 	self.current_tool:mousereleased(self)
 end
 
-return Song
+return Canvas

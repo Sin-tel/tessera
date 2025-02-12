@@ -5,8 +5,8 @@ local select_rect = {}
 select_rect.ox = 0
 select_rect.oy = 0
 
-function select_rect:mousepressed(song)
-	local mx, my = song:getMouse()
+function select_rect:mousepressed(canvas)
+	local mx, my = canvas:getMouse()
 
 	self.ox = mx
 	self.oy = my
@@ -14,12 +14,12 @@ function select_rect:mousepressed(song)
 	self.active = true
 end
 
-function select_rect:mousedown(song)
+function select_rect:mousedown(canvas)
 	--
 end
 
-function select_rect:mousereleased(song)
-	local mx, my = song:getMouse()
+function select_rect:mousereleased(canvas)
+	local mx, my = canvas:getMouse()
 
 	self.active = false
 
@@ -35,8 +35,8 @@ function select_rect:mousereleased(song)
 	for i, v in ipairs(project.channels[ch_index].notes) do
 		local t_start = v.time
 		local p_start = tuning.getPitch(v.pitch)
-		local x0 = song.transform:time(t_start)
-		local y0 = song.transform:pitch(p_start)
+		local x0 = canvas.transform:time(t_start)
+		local y0 = canvas.transform:pitch(p_start)
 
 		if x1 < x0 and x0 < x2 and y1 < y0 and y0 < y2 then
 			mask[v] = true
@@ -46,8 +46,8 @@ function select_rect:mousereleased(song)
 	selection.set(mask)
 end
 
-function select_rect:draw(song)
-	local mx, my = song:getMouse()
+function select_rect:draw(canvas)
+	local mx, my = canvas:getMouse()
 
 	if self.active then
 		love.graphics.setColor(util.color_alpha(theme.selection, 0.02))
