@@ -154,7 +154,7 @@ function love.load()
 	local top_right, bottom_rigth = right:split(0.35, false)
 
 	top_left:setView(views.Scope:new(false))
-	middle_left:setView(views.Song:new())
+	middle_left:setView(views.Canvas:new())
 	-- middle_left:setView(views.Debug:new())
 	top_right:setView(views.Channels:new())
 	bottom_rigth:setView(views.ChannelSettings:new())
