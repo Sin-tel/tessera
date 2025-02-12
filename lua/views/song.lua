@@ -218,6 +218,17 @@ function Song:keypressed(key)
 		move_right = 1
 	elseif key == "left" then
 		move_right = -1
+	elseif key == "delete" then
+		local ch_index = 1
+		-- remove selected notes
+		-- TODO: fix ch_index
+		local notes = project.channels[ch_index].notes
+		for i = #notes, 1, -1 do
+			if selection.mask[notes[i]] then
+				table.remove(notes, i)
+			end
+		end
+		return true
 	end
 
 	if zoom_factor then
