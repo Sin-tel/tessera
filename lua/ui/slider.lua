@@ -1,18 +1,17 @@
 local SliderValue = require("ui/slider_value")
 
-local Slider = {}
-
 local CORNER_RADIUS = 6
 
-function Slider:new(options)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+local Slider = {}
+Slider.__index = Slider
 
-	new.value = SliderValue:new(options)
-	new.drag_start = 0.0
+function Slider.new(options)
+	local self = setmetatable({}, Slider)
 
-	return new
+	self.value = SliderValue.new(options)
+	self.drag_start = 0.0
+
+	return self
 end
 
 function Slider:update(ui, target, key)

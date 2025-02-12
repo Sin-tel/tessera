@@ -2,21 +2,20 @@ local View = require("view")
 local backend = require("backend")
 local Ui = require("ui/ui")
 local widgets = require("ui/widgets")
-local Scope = View:derive("Scope")
+local Scope = View.derive("Scope")
+Scope.__index = Scope
 
-function Scope:new(spectrum)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function Scope.new(spectrum)
+	local self = setmetatable({}, Scope)
 
 	self.index = 1
 	if spectrum then
 		self.index = 2
 	end
 
-	new.ui = Ui:new(new)
+	self.ui = Ui.new(self)
 
-	new.selector = widgets.Selector:new({ "scope", "spectrum" })
+	self.selector = widgets.Selector.new({ "scope", "spectrum" })
 
 	self.lines = {}
 	for i = 1, 7 do
@@ -28,7 +27,7 @@ function Scope:new(spectrum)
 		self.average[i] = 0
 	end
 
-	return new
+	return self
 end
 
 function Scope:update()

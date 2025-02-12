@@ -1,16 +1,15 @@
 local Ui = require("ui/ui")
 
 local Toggle = {}
+Toggle.__index = Toggle
 
-function Toggle:new(text, options)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function Toggle.new(text, options)
+	local self = setmetatable({}, Toggle)
 
-	new.text = text
-	new.style = options.style or "checkbox"
+	self.text = text
+	self.style = options.style or "checkbox"
 
-	return new
+	return self
 end
 
 function Toggle:update(ui, target, key)

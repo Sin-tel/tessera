@@ -1,17 +1,16 @@
 local Ui = require("ui/ui")
 
 local Collapse = {}
+Collapse.__index = Collapse
 
-function Collapse:new(text)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function Collapse.new(text)
+	local self = setmetatable({}, Collapse)
 
-	new.text = text
-	new.open = true
-	new.angle = 0
+	self.text = text
+	self.open = true
+	self.angle = 0
 
-	return new
+	return self
 end
 
 function Collapse:update(ui)

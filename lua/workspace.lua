@@ -4,18 +4,17 @@ local ui = require("ui/ui")
 local workspace = {}
 
 local Box = {}
+Box.__index = Box
 
-function Box:new(x, y, w, h)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function Box.new(x, y, w, h)
+	local self = setmetatable({}, Box)
 
-	new.x = x or 0
-	new.y = y or 0
-	new.w = w or width
-	new.h = h or height
+	self.x = x or 0
+	self.y = y or 0
+	self.w = w or width
+	self.h = h or height
 
-	return new
+	return self
 end
 
 function Box:stencil()
@@ -231,12 +230,12 @@ function Box:split(r, vertical)
 	self.vertical = vertical
 	if vertical then
 		self.r = self.w * r
-		table.insert(self.children, Box:new())
-		table.insert(self.children, Box:new())
+		table.insert(self.children, Box.new())
+		table.insert(self.children, Box.new())
 	else
 		self.r = self.h * r
-		table.insert(self.children, Box:new())
-		table.insert(self.children, Box:new())
+		table.insert(self.children, Box.new())
+		table.insert(self.children, Box.new())
 	end
 
 	self:recalc()
@@ -285,7 +284,7 @@ end
 function workspace:load()
 	self.w = width
 	self.h = height
-	self.box = Box:new(0, ui.RIBBON_HEIGHT, width, height - ui.RIBBON_HEIGHT)
+	self.box = Box.new(0, ui.RIBBON_HEIGHT, width, height - ui.RIBBON_HEIGHT)
 
 	self.cpu_load = 0
 	self.meter = { l = -math.huge, r = -math.huge }

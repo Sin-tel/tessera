@@ -1,15 +1,14 @@
 local Ui = require("ui/ui")
 
 local Layout = {}
+Layout.__index = Layout
 
 -- TODO: automatic layout for columns
 -- TODO: max layout for columns (fill rest of columns)
 -- TODO: make width and height seperate from row_width for easier auto layouts
 
-function Layout:new(w, h)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function Layout.new(w, h)
+	local self = setmetatable({}, Layout)
 
 	self.x = 0
 	self.y = 0
@@ -23,7 +22,7 @@ function Layout:new(w, h)
 
 	self.column_mode = false
 
-	return new
+	return self
 end
 
 function Layout:padding(pad)

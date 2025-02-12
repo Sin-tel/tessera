@@ -1,28 +1,29 @@
 local Ui = require("ui/ui")
 
 local Button = {}
+Button.__index = Button
 
 local Dropdown = {}
-function Dropdown:new(options)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+Dropdown.__index = Dropdown
 
-	new.title = options.title
-	new.open = false
+function Dropdown.new(options)
+	local self = setmetatable({}, Dropdown)
 
-	new.has_state = options.has_state
+	self.title = options.title
+	self.open = false
 
-	if not new.has_state then
-		assert(new.title)
+	self.has_state = options.has_state
+
+	if not self.has_state then
+		assert(self.title)
 	end
 
-	new.list = {}
+	self.list = {}
 	for _, v in ipairs(options.list) do
-		table.insert(new.list, Button:new(v))
+		table.insert(self.list, Button.new(v))
 	end
 
-	return new
+	return self
 end
 
 function Dropdown:update(ui, target, key)
@@ -96,14 +97,12 @@ function Dropdown:draw(ui, label, x, y, w, h)
 	util.drawText(label, x, y, w, h, "center", true)
 end
 
-function Button:new(text)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function Button.new(text)
+	local self = setmetatable({}, Button)
 
-	new.text = text
+	self.text = text
 
-	return new
+	return self
 end
 
 function Button:update(ui, x, y, w, h)

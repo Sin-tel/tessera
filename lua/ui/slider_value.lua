@@ -1,46 +1,45 @@
 local SliderValue = {}
+SliderValue.__index = SliderValue
 
 -- TODO: bipolar db scale
-function SliderValue:new(options)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function SliderValue.new(options)
+	local self = setmetatable({}, SliderValue)
 
-	new.t = options.t
-	new.centered = options.centered
+	self.t = options.t
+	self.centered = options.centered
 
-	if new.t == "dB" then
-		new.default = util.from_dB(options.default or 0)
-		new.min = 0
-		new.max = (options.max or 0)
-		new.fmt = options.fmt or "%0.1f dB"
+	if self.t == "dB" then
+		self.default = util.from_dB(options.default or 0)
+		self.min = 0
+		self.max = (options.max or 0)
+		self.fmt = options.fmt or "%0.1f dB"
 
 		assert(options.min == nil)
-		assert(new.default <= util.from_dB(new.max))
-	elseif new.t == "log" then
-		new.min = options.min
-		new.max = options.max
-		local default = options.default or math.sqrt(new.min * new.max)
-		new.default = default
-		new.fmt = options.fmt or "%0.2f"
-		assert(new.min <= new.max)
-		assert(new.min > 0)
-		assert(new.max > 0)
-		assert(new.min <= new.default)
-		assert(new.default <= new.max)
+		assert(self.default <= util.from_dB(self.max))
+	elseif self.t == "log" then
+		self.min = options.min
+		self.max = options.max
+		local default = options.default or math.sqrt(self.min * self.max)
+		self.default = default
+		self.fmt = options.fmt or "%0.2f"
+		assert(self.min <= self.max)
+		assert(self.min > 0)
+		assert(self.max > 0)
+		assert(self.min <= self.default)
+		assert(self.default <= self.max)
 	else
-		new.min = options.min or 0
-		new.max = options.max or 1
-		new.step = options.step
-		local default = options.default or 0.5 * (new.min + new.max)
-		new.default = default
-		new.fmt = options.fmt or "%0.2f"
-		assert(new.min < new.max)
-		assert(new.min <= new.default)
-		assert(new.default <= new.max)
+		self.min = options.min or 0
+		self.max = options.max or 1
+		self.step = options.step
+		local default = options.default or 0.5 * (self.min + self.max)
+		self.default = default
+		self.fmt = options.fmt or "%0.2f"
+		assert(self.min < self.max)
+		assert(self.min <= self.default)
+		assert(self.default <= self.max)
 	end
 
-	return new
+	return self
 end
 
 function SliderValue:fromNormal(value)

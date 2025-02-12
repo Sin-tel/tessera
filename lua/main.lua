@@ -153,11 +153,12 @@ function love.load()
 	local top_left, middle_left = left:split(0.2, false)
 	local top_right, bottom_rigth = right:split(0.35, false)
 
-	top_left:setView(views.Scope:new(false))
-	middle_left:setView(views.Canvas:new())
-	-- middle_left:setView(views.Debug:new())
-	top_right:setView(views.Channels:new())
-	bottom_rigth:setView(views.ChannelSettings:new())
+	-- top_left:setView(views.Scope.new(false))
+	top_left:setView(views.Canvas.new())
+	middle_left:setView(views.Canvas.new())
+	-- middle_left:setView(views.Debug.new())
+	top_right:setView(views.Channels.new())
+	bottom_rigth:setView(views.ChannelSettings.new())
 
 	-- load empty project
 	project = build.newProject()

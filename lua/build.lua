@@ -45,8 +45,8 @@ function build.channel(channel)
 
 	local channel_ui = { effects = {} }
 	table.insert(ui_channels, ch_index, channel_ui)
-	channel_ui.instrument = Device:new(channel.name, channel.instrument.state, options)
-	channel_ui.widget = widgets.Channel:new()
+	channel_ui.instrument = Device.new(channel.name, channel.instrument.state, options)
+	channel_ui.widget = widgets.Channel.new()
 
 	backend:insertChannel(ch_index, channel.instrument.name)
 
@@ -62,7 +62,7 @@ function build.effect(ch_index, effect_index, effect)
 	local options = deviceList.effects[effect.name]
 	assert(options)
 
-	local effect_ui = Device:new(effect.name, effect.state, options)
+	local effect_ui = Device.new(effect.name, effect.state, options)
 	table.insert(ui_channels[ch_index].effects, effect_ui)
 
 	backend:insertEffect(ch_index, effect_index, effect.name)

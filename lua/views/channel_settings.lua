@@ -3,23 +3,22 @@ local Ui = require("ui/ui")
 local widgets = require("ui/widgets")
 local deviceList = require("device_list")
 
-local ChannelSettings = View:derive("Channel settings")
+local ChannelSettings = View.derive("Channel settings")
+ChannelSettings.__index = ChannelSettings
 
-function ChannelSettings:new()
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function ChannelSettings.new()
+	local self = setmetatable({}, ChannelSettings)
 
-	new.ui = Ui:new(new)
+	self.ui = Ui.new(self)
 
-	new.effect_list = {}
+	self.effect_list = {}
 	for k, v in pairs(deviceList.effects) do
-		table.insert(new.effect_list, k)
+		table.insert(self.effect_list, k)
 	end
-	table.sort(new.effect_list)
-	new.dropdown = widgets.Dropdown:new({ title = "add effect", list = new.effect_list })
+	table.sort(self.effect_list)
+	self.dropdown = widgets.Dropdown.new({ title = "add effect", list = self.effect_list })
 
-	return new
+	return self
 end
 
 function ChannelSettings:update()

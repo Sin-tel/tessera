@@ -47,21 +47,21 @@ local function do_armed(ch_index)
 end
 
 local Button = {}
+Button.__index = Button
 
 local Channel = {}
+Channel.__index = Channel
 
-function Channel:new()
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function Channel.new()
+	local self = setmetatable({}, Channel)
 
-	new.button_mute = Button:new({ img_on = resources.icons.mute, color_on = theme.mute })
-	new.button_solo = Button:new({ img_on = resources.icons.solo, color_on = theme.solo })
-	new.button_armed = Button:new({ img_on = resources.icons.armed, color_on = theme.recording })
-	new.button_visible = Button:new({ img_on = resources.icons.visible, img_off = resources.icons.invisible })
-	new.button_lock = Button:new({ img_on = resources.icons.lock, img_off = resources.icons.unlock })
+	self.button_mute = Button.new({ img_on = resources.icons.mute, color_on = theme.mute })
+	self.button_solo = Button.new({ img_on = resources.icons.solo, color_on = theme.solo })
+	self.button_armed = Button.new({ img_on = resources.icons.armed, color_on = theme.recording })
+	self.button_visible = Button.new({ img_on = resources.icons.visible, img_off = resources.icons.invisible })
+	self.button_lock = Button.new({ img_on = resources.icons.lock, img_off = resources.icons.unlock })
 
-	return new
+	return self
 end
 
 function Channel:update(ui, ch_index)
@@ -121,17 +121,15 @@ function Channel:draw(ui, ch_index, x, y, w, h)
 	util.drawText(project.channels[ch_index].name, x, y, w, h, "left", true)
 end
 
-function Button:new(options)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function Button.new(options)
+	local self = setmetatable({}, Button)
 
-	new.img_on = options.img_on
-	new.img_off = options.img_off or options.img_on
-	new.color_on = options.color_on or theme.ui_text
-	new.color_off = theme.text_dim
+	self.img_on = options.img_on
+	self.img_off = options.img_off or options.img_on
+	self.color_on = options.color_on or theme.ui_text
+	self.color_off = theme.text_dim
 
-	return new
+	return self
 end
 
 function Button:update(ui, checked, x, y, w, h)

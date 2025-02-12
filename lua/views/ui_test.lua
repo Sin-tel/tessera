@@ -2,12 +2,11 @@ local View = require("view")
 local Ui = require("ui/ui")
 local widgets = require("ui/widgets")
 
-local UiTest = View:derive("UI test")
+local UiTest = View.derive("UI test")
+UiTest.__index = UiTest
 
-function UiTest:new()
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function UiTest.new()
+	local self = setmetatable({}, UiTest)
 
 	self.state = {
 		toggle = false,
@@ -15,16 +14,16 @@ function UiTest:new()
 		slider = 200,
 	}
 
-	new.ui = Ui:new(new)
+	self.ui = Ui.new(self)
 
-	new.button = widgets.Button:new("click me")
-	new.dropdown = widgets.Dropdown:new({ list = { "AAA", "BBB", "CCC" }, has_state = true })
-	new.slider = widgets.Slider:new({ min = 20, max = 20000, fmt = "Hz", t = "log" })
-	new.checkbox = widgets.Toggle:new("checkbox widget", {})
-	new.selector = widgets.Selector:new({ "one", "two", "three" })
-	new.toggle = widgets.Toggle:new("toggle widget", { style = "toggle" })
+	self.button = widgets.Button.new("click me")
+	self.dropdown = widgets.Dropdown.new({ list = { "AAA", "BBB", "CCC" }, has_state = true })
+	self.slider = widgets.Slider.new({ min = 20, max = 20000, fmt = "Hz", t = "log" })
+	self.checkbox = widgets.Toggle.new("checkbox widget", {})
+	self.selector = widgets.Selector.new({ "one", "two", "three" })
+	self.toggle = widgets.Toggle.new("toggle widget", { style = "toggle" })
 
-	return new
+	return self
 end
 
 function UiTest:update()

@@ -1,27 +1,23 @@
 local Ui = require("ui/ui")
 
 local View = {}
+View.__index = View
 
-function View:new()
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function View.new()
+	local self = setmetatable({}, View)
 
-	return new
+	return self
 end
 
-function View:derive(name)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function View.derive(name)
+	local self = setmetatable({}, View)
 
-	new.super = self
-	new.name = name
+	self.name = name
 
 	-- dummy values
-	new.w = 32
-	new.h = 32
-	return new
+	self.w = 32
+	self.h = 32
+	return self
 end
 
 function View:draw() end

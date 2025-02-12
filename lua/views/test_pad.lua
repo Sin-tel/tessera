@@ -1,19 +1,19 @@
 local View = require("view")
 local VoiceAlloc = require("voice_alloc")
-local TestPadView = View:derive("TestPad")
 local tuning = require("tuning")
 
-function TestPadView:new()
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+local TestPadView = View.derive("TestPad")
+TestPadView.__index = TestPadView
 
-	new.v = 0
-	new.f = 49
+function TestPadView.new()
+	local self = setmetatable({}, TestPadView)
 
-	new.id = nil
+	self.v = 0
+	self.f = 49
 
-	return new
+	self.id = nil
+
+	return self
 end
 
 function TestPadView:draw()
