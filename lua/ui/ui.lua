@@ -2,6 +2,7 @@
 -- loosely inspired by egui (https://github.com/emilk/egui) and SUIT (https://github.com/vrld/suit/)
 local mouse = require("mouse")
 local Ui = {}
+Ui.__index = Ui
 
 Ui.RESIZE_W = 5
 Ui.MIN_SIZE = 32
@@ -18,30 +19,28 @@ Ui.CORNER_RADIUS = 4
 
 Ui.DEFAULT_PAD = 5
 
-function Ui:new(view)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function Ui.new(view)
+	local self = setmetatable({}, Ui)
 
-	new.draw_queue = {}
-	new.view = view
+	self.draw_queue = {}
+	self.view = view
 
-	new.hover = false
-	new.active = false
-	new.clicked = false
-	new.was_active = false
+	self.hover = false
+	self.active = false
+	self.clicked = false
+	self.was_active = false
 
-	new.bg_color = nil
-	new.bg_list = {}
+	self.bg_color = nil
+	self.bg_list = {}
 
-	new.scroll = 0
-	new.scroll_goal = 0
-	new.max_scroll = 0
+	self.scroll = 0
+	self.scroll_goal = 0
+	self.max_scroll = 0
 
 	local Layout = require("ui/layout")
-	new.layout = Layout:new()
+	self.layout = Layout.new()
 
-	return new
+	return self
 end
 
 function Ui:startFrame()

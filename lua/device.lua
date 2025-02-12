@@ -1,22 +1,21 @@
 local widgets = require("ui/widgets")
 local Device = {}
+Device.__index = Device
 
 -- options is a reference to an entry in device_list
-function Device:new(name, state, options)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function Device.new(name, state, options)
+	local self = setmetatable({}, Device)
 
-	new.number = options.number
-	new.name = name
+	self.number = options.number
+	self.name = name
 
-	new.state = state
+	self.state = state
 	-- copy of state that is already send to backend
-	new.state_old = {}
+	self.state_old = {}
 
 	-- UI stuff and parameter handlers
-	new.collapse = widgets.Collapse:new(new.name)
-	new.parameters = {}
+	self.collapse = widgets.Collapse.new(self.name)
+	self.parameters = {}
 	for _, v in ipairs(options.parameters) do
 		local p = {}
 		p.label = v[1]
@@ -24,20 +23,20 @@ function Device:new(name, state, options)
 		local widget_type = v[2]
 		local widget_options = v[3] or {}
 		if widget_type == "slider" then
-			p.widget = widgets.Slider:new(widget_options)
+			p.widget = widgets.Slider.new(widget_options)
 		elseif widget_type == "selector" then
-			p.widget = widgets.Selector:new(widget_options)
+			p.widget = widgets.Selector.new(widget_options)
 		elseif widget_type == "toggle" then
-			p.widget = widgets.Toggle:new(p.label, { style = "checkbox", default = widget_options.default })
+			p.widget = widgets.Toggle.new(p.label, { style = "checkbox", default = widget_options.default })
 			p.label = nil
 		else
 			error(widget_type .. " not supported!")
 		end
 
-		table.insert(new.parameters, p)
+		table.insert(self.parameters, p)
 	end
 
-	return new
+	return self
 end
 
 function Device:update(ui, index, w, w_label)

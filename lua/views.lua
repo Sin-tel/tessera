@@ -2,7 +2,7 @@ local View = require("view")
 
 local views = {}
 
-views.Default = View:derive("Empty")
+views.Default = View.derive("Empty")
 views.ChannelSettings = require("views/channel_settings")
 views.Channels = require("views/channels")
 views.Scope = require("views/scope")

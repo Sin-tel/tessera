@@ -1,24 +1,25 @@
 local Ui = require("ui/ui")
 
 local Button = {}
+Button.__index = Button
 
 -- TODO: middle mouse reset
 
 local Selector = {}
-function Selector:new(list, index)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+Selector.__index = Selector
 
-	new.list = {}
+function Selector.new(list, index)
+	local self = setmetatable({}, Selector)
+
+	self.list = {}
 	for _, v in ipairs(list) do
-		table.insert(new.list, Button:new(v))
+		table.insert(self.list, Button.new(v))
 	end
 
 	index = index or 1
 
-	new.list[index].checked = true
-	return new
+	self.list[index].checked = true
+	return self
 end
 
 function Selector:update(ui, target, key)
@@ -48,15 +49,13 @@ function Selector:update(ui, target, key)
 	return new_index
 end
 
-function Button:new(text)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function Button.new(text)
+	local self = setmetatable({}, Button)
 
-	new.text = text
-	new.checked = false
+	self.text = text
+	self.checked = false
 
-	return new
+	return self
 end
 
 function Button:update(ui, x, y, w, h)

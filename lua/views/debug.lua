@@ -1,7 +1,8 @@
 local View = require("view")
 local midi = require("midi")
 
-local Debug = View:derive("Debug")
+local Debug = View.derive("Debug")
+Debug.__index = Debug
 
 local function dump(t, indent)
 	indent = indent or 0

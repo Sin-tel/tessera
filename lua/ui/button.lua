@@ -1,15 +1,14 @@
 local Ui = require("ui/ui")
 
 local Button = {}
+Button.__index = Button
 
-function Button:new(text)
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function Button.new(text)
+	local self = setmetatable({}, Button)
 
-	new.text = text
+	self.text = text
 
-	return new
+	return self
 end
 
 function Button:update(ui)

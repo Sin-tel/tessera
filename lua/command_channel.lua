@@ -18,7 +18,7 @@ local function newDeviceData(name, options)
         local widget_options = v[3] or {}
 
         if widget_type == "slider" then
-            local sv = SliderValue:new(widget_options)
+            local sv = SliderValue.new(widget_options)
             state[i] = sv.default
         elseif widget_type == "selector" then
             state[i] = widget_options.default or 1

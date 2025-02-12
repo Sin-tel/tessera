@@ -1,7 +1,7 @@
 local Transform = {}
 Transform.__index = Transform
 
-function Transform.new(ch_index)
+function Transform.new()
 	local self = setmetatable({}, Transform)
 
 	self.sx = 90

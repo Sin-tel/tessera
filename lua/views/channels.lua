@@ -3,24 +3,23 @@ local deviceList = require("device_list")
 local widgets = require("ui/widgets")
 local View = require("view")
 
-local Channels = View:derive("Channels")
+local Channels = View.derive("Channels")
+Channels.__index = Channels
 
-function Channels:new()
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function Channels.new()
+	local self = setmetatable({}, Channels)
 
-	new.ui = Ui:new(new)
+	self.ui = Ui.new(self)
 
-	new.intrument_list = {}
+	self.intrument_list = {}
 	for k, v in pairs(deviceList.instruments) do
-		table.insert(new.intrument_list, k)
+		table.insert(self.intrument_list, k)
 	end
-	table.sort(new.intrument_list)
+	table.sort(self.intrument_list)
 
-	new.dropdown = widgets.Dropdown:new({ title = "add instrument", list = new.intrument_list, has_state = false })
+	self.dropdown = widgets.Dropdown.new({ title = "add instrument", list = self.intrument_list, has_state = false })
 
-	return new
+	return self
 end
 
 function Channels:update()

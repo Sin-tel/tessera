@@ -6,14 +6,13 @@ local Transform = require("views/transform")
 local select_rect = require("tools/select_rect")
 local pan = require("tools/pan")
 
-local Canvas = View:derive("Canvas")
+local Canvas = View.derive("Canvas")
+Canvas.__index = Canvas
 
 -- TODO: factor out view/zoom transform
 
-function Canvas:new()
-	local new = {}
-	setmetatable(new, self)
-	self.__index = self
+function Canvas.new()
+	local self = setmetatable({}, Canvas)
 
 	self.current_tool = pan
 	self.selected_tool = select_rect
@@ -23,7 +22,7 @@ function Canvas:new()
 
 	self.transform = Transform.new()
 
-	return new
+	return self
 end
 
 function Canvas:update()
