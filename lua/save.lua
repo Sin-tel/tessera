@@ -52,6 +52,7 @@ function save.readSetup()
 		local content = util.readfile(setup_path)
 		setup = setfenv(loadstring(content), {})()
 	else
+		-- build default setup and save it
 		setup = {}
 		setup.audio = {}
 		setup.audio.default_host = "default"

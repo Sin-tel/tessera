@@ -153,8 +153,8 @@ function love.load()
 	local top_left, middle_left = left:split(0.2, false)
 	local top_right, bottom_rigth = right:split(0.35, false)
 
-	-- top_left:setView(views.Scope.new(false))
-	top_left:setView(views.Canvas.new())
+	top_left:setView(views.Scope.new(false))
+	-- top_left:setView(views.Canvas.new())
 	middle_left:setView(views.Canvas.new())
 	-- middle_left:setView(views.Debug.new())
 	top_right:setView(views.Channels.new())
@@ -253,7 +253,7 @@ function love.textinput(t)
 	-- print(t)b
 end
 
-function love.keypressed(_, key)
+function love.keypressed(_, key, isrepeat)
 	if key == "lshift" or key == "rshift" then
 		modifier_keys.shift = true
 	elseif key == "lctrl" or key == "rctrl" then
@@ -272,7 +272,7 @@ function love.keypressed(_, key)
 		return
 	end
 
-	if not modifier_keys.any and note_input:keypressed(key) then
+	if not isrepeat and not modifier_keys.any and note_input:keypressed(key) then
 		return
 	end
 
