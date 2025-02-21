@@ -48,7 +48,6 @@ function save.writeSetup()
 end
 
 function save.readSetup()
-	local setup
 	if util.fileExists(setup_path) then
 		local content = util.readfile(setup_path)
 		setup = setfenv(loadstring(content), {})()
