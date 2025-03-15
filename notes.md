@@ -1,6 +1,28 @@
+FIX PAN
+
+rename channel -> layer?
+
+save transform in project
+
+allow only one instance of each view?
+ makes some logic easier
+
 basic selection and editing
+  rect select
+  'edit' tool routes rect select / move / pen based on click
+  left right:
+    - move by step based on zoom level
+    - shift: move by finer step
+  up/down:
+    - move by diatonic step
+    - shift: move octave
+    - ctrl: move by chroma
+    - alt: move by comma (can be enharmonic diesis in meantone, useful for septimals Bb down to A#)
 
 make tuning settings
+
+fix up undos for editing
+save undo history?
 
 sync polyphony / voice count somehow
 
@@ -19,7 +41,7 @@ piano roll playback
  - there is NO automatable bpm/speed setting
  - everything happens on the canvas *as is*.
  - makes things easier, at the expense of some tricks you can do by automating BPM
- - will need robust time manipuation tools to cope
+ - will need robust time manipulation tools to cope
  - (maybe a global speed mult because thats easy)
 
 ## envelope
