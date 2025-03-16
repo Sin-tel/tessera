@@ -12,6 +12,7 @@ function Roll.new(ch_index)
 
 	self.n_index = 1
 	self.note_table = {}
+	self.control_table = {}
 	self.voices = {}
 
 	self.rec_notes = {}
