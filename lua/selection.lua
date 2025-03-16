@@ -42,4 +42,11 @@ function selection.deselect()
 	selection.mask = {}
 end
 
+function selection.removeChannel(ch)
+	for _, v in ipairs(ch.notes) do
+		selection.mask[v] = nil
+	end
+	selection.refresh()
+end
+
 return selection
