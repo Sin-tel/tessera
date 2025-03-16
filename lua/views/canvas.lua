@@ -218,13 +218,15 @@ function Canvas:keypressed(key)
 	elseif key == "left" then
 		move_right = -1
 	elseif key == "delete" then
-		local ch_index = 1
 		-- remove selected notes
-		-- TODO: fix ch_index
-		local notes = project.channels[ch_index].notes
-		for i = #notes, 1, -1 do
-			if selection.mask[notes[i]] then
-				table.remove(notes, i)
+
+		for _, channel in ipairs(project.channels) do
+			if channel.visible and not channel.lock then
+				for i = #channel.notes, 1, -1 do
+					if selection.mask[channel.notes[i]] then
+						table.remove(channel.notes, i)
+					end
+				end
 			end
 		end
 		return true
