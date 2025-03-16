@@ -30,16 +30,18 @@ function select_rect:mousereleased(canvas)
 	local x2 = math.max(self.ox, mx)
 	local y2 = math.max(self.oy, my)
 
-	-- TODO: fix ch_index
-	local ch_index = 1
-	for i, v in ipairs(project.channels[ch_index].notes) do
-		local t_start = v.time
-		local p_start = tuning.getPitch(v.pitch)
-		local x0 = canvas.transform:time(t_start)
-		local y0 = canvas.transform:pitch(p_start)
+	for _, channel in ipairs(project.channels) do
+		if channel.visible and not channel.lock then
+			for i, v in ipairs(channel.notes) do
+				local t_start = v.time
+				local p_start = tuning.getPitch(v.pitch)
+				local x0 = canvas.transform:time(t_start)
+				local y0 = canvas.transform:pitch(p_start)
 
-		if x1 < x0 and x0 < x2 and y1 < y0 and y0 < y2 then
-			mask[v] = true
+				if x1 < x0 and x0 < x2 and y1 < y0 and y0 < y2 then
+					mask[v] = true
+				end
+			end
 		end
 	end
 

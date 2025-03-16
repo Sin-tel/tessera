@@ -84,9 +84,17 @@ function Channel:update(ui, ch_index)
 	end
 	if self.button_visible:update(ui, ch.visible, w - 2 * b, y + p, b, b) then
 		ch.visible = not ch.visible
+
+		if not ch.visible then
+			selection.removeChannel(ch)
+		end
 	end
 	if self.button_lock:update(ui, ch.lock, w - b, y + p, b, b) then
 		ch.lock = not ch.lock
+
+		if ch.lock then
+			selection.removeChannel(ch)
+		end
 	end
 	ui:pushDraw(self.draw, { self, ui, ch_index, x, y, w, h })
 
