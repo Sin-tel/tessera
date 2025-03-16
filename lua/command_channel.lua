@@ -3,13 +3,6 @@ local build = require("build")
 local SliderValue = require("ui/slider_value")
 local deviceList = require("device_list")
 
-local function refresh_channels()
-    for i, v in ipairs(ui_channels) do
-        v.voice_alloc.ch_index = i
-        v.roll.ch_index = i
-    end
-end
-
 local function newDeviceData(name, options)
     local state = {}
 
@@ -55,7 +48,7 @@ local function _removeChannel(ch_index)
     end
     table.remove(project.channels, ch_index)
     table.remove(ui_channels, ch_index)
-    refresh_channels()
+    build.refresh_channels()
     backend:removeChannel(ch_index)
 end
 
@@ -112,7 +105,7 @@ function newChannel:run()
     local channel = newChannelData(self.name, options)
     table.insert(project.channels, channel)
 
-    build.channel(channel)
+    build.channel(self.ch_index, channel)
 
     -- select it
     selection.ch_index = self.ch_index
@@ -143,7 +136,7 @@ end
 function removeChannel:reverse()
     local channel = util.clone(self.channel)
     table.insert(project.channels, self.ch_index, channel)
-    build.channel(channel)
+    build.channel(self.ch_index, channel)
 end
 
 --

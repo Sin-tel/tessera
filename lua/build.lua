@@ -25,8 +25,8 @@ function build.newProject()
 end
 
 function build.project()
-	for _, v in ipairs(project.channels) do
-		build.channel(v)
+	for i, v in ipairs(project.channels) do
+		build.channel(i, v)
 	end
 
 	assert(#ui_channels == #project.channels)
@@ -37,9 +37,7 @@ function build.project()
 	end
 end
 
-function build.channel(channel)
-	local ch_index = #ui_channels + 1
-
+function build.channel(ch_index, channel)
 	local options = deviceList.instruments[channel.instrument.name]
 	assert(options)
 
@@ -56,6 +54,8 @@ function build.channel(channel)
 
 	channel_ui.voice_alloc = VoiceAlloc.new(ch_index, options.n_voices)
 	channel_ui.roll = Roll.new(ch_index)
+
+	build.refresh_channels()
 end
 
 function build.effect(ch_index, effect_index, effect)
@@ -66,6 +66,13 @@ function build.effect(ch_index, effect_index, effect)
 	table.insert(ui_channels[ch_index].effects, effect_ui)
 
 	backend:insertEffect(ch_index, effect_index, effect.name)
+end
+
+function build.refresh_channels()
+	for i, v in ipairs(ui_channels) do
+		v.voice_alloc.ch_index = i
+		v.roll.ch_index = i
+	end
 end
 
 return build
