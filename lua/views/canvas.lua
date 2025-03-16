@@ -6,10 +6,10 @@ local Transform = require("views/transform")
 local select_rect = require("tools/select_rect")
 local pan = require("tools/pan")
 
+local hsluv = require("lib/hsluv")
+
 local Canvas = View.derive("Canvas")
 Canvas.__index = Canvas
-
--- TODO: factor out view/zoom transform
 
 function Canvas.new()
 	local self = setmetatable({}, Canvas)
@@ -105,6 +105,9 @@ function Canvas:draw()
 	love.graphics.setFont(resources.fonts.notes)
 	for ch_index, ch in ipairs(project.channels) do
 		if ch.visible then
+			local c_normal = hsluv.hsluv_to_rgb({ ch.hue, 70.0, 70.0 })
+			local c_select = hsluv.hsluv_to_rgb({ ch.hue, 50.0, 80.0 })
+
 			for _, note in ipairs(ch.notes) do
 				local t_start = note.time
 				local p_start = tuning.getPitch(note.pitch)
@@ -118,9 +121,9 @@ function Canvas:draw()
 				love.graphics.line(x0 - 2, y0 - vo, x0 + 2, y0 - vo)
 
 				-- note
-				local c = theme.note
+				local c = c_normal
 				if selection.mask[note] then
-					c = theme.note_select
+					c = c_select
 				end
 				for i = 1, #note.verts - 1 do
 					local x1 = self.transform:time(t_start + note.verts[i][1])
