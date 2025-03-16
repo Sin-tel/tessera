@@ -1,6 +1,7 @@
 local Ui = require("ui/ui")
 local util = require("util")
 local backend = require("backend")
+local hsluv = require("lib/hsluv")
 
 -- TODO: commands
 local function do_mute(ch_index, mute)
@@ -121,9 +122,12 @@ function Channel:draw(ui, ch_index, x, y, w, h)
 		love.graphics.rectangle("fill", x, y, w, h)
 	end
 
-	love.graphics.setColor(theme.ui_text)
+	local ch = project.channels[ch_index]
+
 	if selection.ch_index == ch_index then
-		love.graphics.setColor(theme.highlight)
+		love.graphics.setColor(hsluv.hsluv_to_rgb({ ch.hue, 50.0, 80.0 }))
+	else
+		love.graphics.setColor(hsluv.hsluv_to_rgb({ ch.hue, 70.0, 70.0 }))
 	end
 
 	util.drawText(project.channels[ch_index].name, x, y, w, h, "left", true)
