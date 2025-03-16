@@ -86,6 +86,11 @@ impl Render {
 		// Process all channels
 		for ch in &mut self.channels {
 			if !ch.mute {
+				// Zero buffer
+				for sample in buf_slice.iter_mut().flat_map(|s| s.iter_mut()) {
+					*sample = 0.0;
+				}
+
 				ch.instrument.process(buf_slice);
 				#[cfg(debug_assertions)]
 				check_fp(buf_slice);
