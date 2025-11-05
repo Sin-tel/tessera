@@ -28,6 +28,7 @@ log = "0.4"
 simplelog = "0.12"
 log-panics = { version = "2", features = ["with-backtrace"]}
 midir = "0.10"
+num-complex = "0.4"
 
 [profile.dev]
 # opt-level = 1
