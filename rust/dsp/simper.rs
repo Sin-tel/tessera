@@ -9,7 +9,7 @@
 
 use crate::dsp::smooth::SmoothLinear;
 use crate::dsp::*;
-use rustfft::num_complex::Complex;
+use num_complex::Complex;
 
 #[derive(Debug)]
 pub struct Filter {
