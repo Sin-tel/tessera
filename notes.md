@@ -1,5 +1,3 @@
-FIX PAN
-
 rename channel -> layer?
 
 save transform in project

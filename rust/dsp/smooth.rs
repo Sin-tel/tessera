@@ -58,15 +58,15 @@ pub struct SmoothLinear {
 impl SmoothLinear {
 	pub fn new(t: f32, sample_rate: f32) -> Self {
 		Self {
-			target: 0.01,
-			value: 0.01,
+			target: 0.,
+			value: 0.,
 			steps: (1. / time_constant_linear(t, sample_rate)) as usize,
 			step_size: 0.,
 			timer: 0,
 		}
 	}
 	pub fn new_steps(steps: usize) -> Self {
-		Self { target: 0.01, value: 0.01, step_size: 0., steps, timer: 0 }
+		Self { target: 0., value: 0., step_size: 0., steps, timer: 0 }
 	}
 
 	#[must_use]
