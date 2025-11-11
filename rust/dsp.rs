@@ -22,13 +22,13 @@ pub fn pow2_cheap(x: f32) -> f32 {
 
 	// rational pow2(x)-1 approximation in [0, 1], order (2,1)
 	// optimized for minimax error and exactness on bounds
-	let approx = -5.72481020 - 0.48945506 * z + 27.72846285 / (4.84356020 - z);
+	let approx = -5.72481 - 0.48945506 * z + 27.728462 / (4.84356 - z);
 
 	let resi = (A * (w + 127.0 + approx)) as u32;
 	f32::from_bits(resi)
 }
 
-// 0.0 evaluates to -126.999
+// 0.0 evaluates to -127.0
 // negative numbers don't evaluate to NaN but return garbage values
 pub fn log2_cheap(x: f32) -> f32 {
 	const MASK: u32 = !(255 << 23);
@@ -44,7 +44,7 @@ pub fn log2_cheap(x: f32) -> f32 {
 
 	// rational log2(x)+1 approximation in [1, 2], order (2,1)
 	// optimized for minimax error and exactness on bounds
-	let approx = 2.78358662 + 0.24918591 * z - 3.47080584 / (0.70742460 + z);
+	let approx = 2.7835867 + 0.2491859 * z - 3.470806 / (0.7074246 + z);
 
 	w + approx
 }
