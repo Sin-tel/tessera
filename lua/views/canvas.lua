@@ -106,7 +106,7 @@ function Canvas:draw()
 	love.graphics.setFont(resources.fonts.notes)
 	for ch_index, ch in ipairs(project.channels) do
 		if ch.visible then
-			local c_normal = hsluv.hsluv_to_rgb({ ch.hue, 70.0, 70.0 })
+			local c_normal = hsluv.hsluv_to_rgb({ ch.hue, 80.0, 60.0 })
 			local c_select = hsluv.hsluv_to_rgb({ ch.hue, 50.0, 80.0 })
 
 			for _, note in ipairs(ch.notes) do
@@ -221,6 +221,16 @@ function Canvas:keypressed(key)
 		move_right = 1
 	elseif key == "left" then
 		move_right = -1
+	elseif key == "a" and modifier_keys.ctrl then
+		-- select all in channel
+		local mask = {}
+		if selection.ch_index then
+			local channel = project.channels[selection.ch_index]
+			for i, v in ipairs(channel.notes) do
+				mask[v] = true
+			end
+		end
+		selection.setNormal(mask)
 	elseif key == "delete" then
 		-- remove selected notes
 
@@ -273,8 +283,9 @@ end
 
 function Canvas:find_closest_note(mx, my, max_distance)
 	local closest
+	local closest_ch
 	local dmax = max_distance or math.huge
-	for _, channel in ipairs(project.channels) do
+	for ch_index, channel in ipairs(project.channels) do
 		if channel.visible and not channel.lock then
 			for i, v in ipairs(channel.notes) do
 				local t_start = v.time
@@ -292,12 +303,13 @@ function Canvas:find_closest_note(mx, my, max_distance)
 				if d < dmax then
 					dmax = d
 					closest = v
+					closest_ch = ch_index
 				end
 			end
 		end
 	end
 
-	return closest
+	return closest, closest_ch
 end
 
 function Canvas:mousepressed()
@@ -307,7 +319,7 @@ function Canvas:mousepressed()
 		-- Check if click on note
 		local mx, my = self:getMouse()
 
-		local closest = self:find_closest_note(mx, my, 16)
+		local closest, closest_ch = self:find_closest_note(mx, my, 24)
 
 		-- If we click on a note, switch to drag mode instead of select
 		if closest then
@@ -316,7 +328,8 @@ function Canvas:mousepressed()
 
 			-- If not part of selection already, change selection to just the note we clicked
 			if not selection.mask[closest] then
-				selection.set({ [closest] = true })
+				selection.setNormal({ [closest] = true })
+				selection.ch_index = closest_ch
 			end
 		end
 	elseif mouse.button == 3 then
