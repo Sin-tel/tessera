@@ -5,6 +5,7 @@ local Transform = require("views/transform")
 
 local select_rect = require("tools/select_rect")
 local pan = require("tools/pan")
+local drag = require("tools/drag")
 
 local hsluv = require("lib/hsluv")
 
@@ -270,11 +271,56 @@ function Canvas:keypressed(key)
 	end
 end
 
+function Canvas:find_closest_note(mx, my, max_distance)
+	local closest
+	local dmax = max_distance or math.huge
+	for _, channel in ipairs(project.channels) do
+		if channel.visible and not channel.lock then
+			for i, v in ipairs(channel.notes) do
+				local t_start = v.time
+				local t_end = v.time + v.verts[#v.verts][1]
+				local p_start = tuning.getPitch(v.pitch)
+				local x0 = self.transform:time(t_start)
+				local x1 = self.transform:time(t_end)
+				local y0 = self.transform:pitch(p_start)
+
+				-- Assuming note is a horizontal line, project target onto it
+				local x_proj = util.clamp(mx, x0, x1)
+
+				-- Use projected distance, with distance to start as a tie-breaker
+				local d = util.dist(x_proj, y0, mx, my) + 0.1 * math.abs(x0 - mx)
+				if d < dmax then
+					dmax = d
+					closest = v
+				end
+			end
+		end
+	end
+
+	return closest
+end
+
 function Canvas:mousepressed()
-	if mouse.button == 3 then
+	self.current_tool = self.selected_tool
+
+	if mouse.button == 1 then
+		-- Check if click on note
+		local mx, my = self:getMouse()
+
+		local closest = self:find_closest_note(mx, my, 16)
+
+		-- If we click on a note, switch to drag mode instead of select
+		if closest then
+			drag:set_note_origin(closest)
+			self.current_tool = drag
+
+			-- If not part of selection already, change selection to just the note we clicked
+			if not selection.mask[closest] then
+				selection.set({ [closest] = true })
+			end
+		end
+	elseif mouse.button == 3 then
 		self.current_tool = pan
-	else
-		self.current_tool = self.selected_tool
 	end
 
 	self.current_tool:mousepressed(self)

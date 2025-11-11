@@ -187,6 +187,10 @@ function tuning.getName(p)
 	return n .. acc .. tostring(o)
 end
 
+function tuning.getDiatonicIndex(p)
+	return 1 + 7 * p[1] + 4 * p[2]
+end
+
 -- note: the various move commands all mutate `p` in-place
 -- TODO: these should be configurable, depending on tuning
 
