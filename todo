@@ -1,4 +1,4 @@
-Lua
+## Lua
 [x] luajit host w love2d
 [x] Simple settings text file
 [x] GUI Windowing 
@@ -15,8 +15,15 @@ Lua
 [x] Keyboard note playing
 [-] Harmonic coordinate logic
 [-] handle MPE input
-[ ] Static piano roll setup
-[ ] Basic piano roll keyboard editing
+[x] Static piano roll setup
+[ ] Basic selection and editing
+  [x] rect select
+  [-] edit tool routes rect select / move
+  [ ] pen tool
+  [x] move notes with keyboard
+  [x] move notes with keyboard
+  [ ] undo
+
 [ ] Project tempo
 [ ] Project grid / time division
 [ ] Add note internal vertices
@@ -41,9 +48,9 @@ Lua
 [ ] Parse tuning files
 [ ] Keybinding file
 [ ] Midi remapping 
-[ ] Rebuild backend from lua data
-[ ] Save project
-[ ] Undo
+[x] Rebuild backend from lua data
+[x] Save project
+[x] Undo
 [ ] Implement decorators
 [ ] Implement envelopes
 [ ] Envelope types
@@ -53,7 +60,8 @@ Lua
 [ ] Fuzzy search command palette
 [-] Panner view
 
-Rust
+
+## Rust
 [x] ASIO support
 [x] Midi input
 [x] Lockfree messaging system
@@ -75,8 +83,8 @@ Rust
 [ ] Chorus/vibrato
 [ ] Tremolo
 [ ] Tape saturation
-[ ] EQ
-[ ] Compressor
+[x] EQ
+[x] Compressor
 [ ] Limiter
 [ ] BBD delay
 [ ] Room reverb
@@ -84,7 +92,7 @@ Rust
 [ ] Multiband comp / OTT
 [x] Epiano
 [ ] Flute
-[ ] Plucked string
+[x] Plucked string
 [ ] Brass
 [ ] Sampler?
 [ ] Bowed string
