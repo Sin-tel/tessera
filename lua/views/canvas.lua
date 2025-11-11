@@ -6,6 +6,7 @@ local Transform = require("views/transform")
 local select_rect = require("tools/select_rect")
 local pan = require("tools/pan")
 local drag = require("tools/drag")
+local adjust_velocity = require("tools/adjust_velocity")
 
 local hsluv = require("lib/hsluv")
 
@@ -233,7 +234,6 @@ function Canvas:keypressed(key)
 		selection.setNormal(mask)
 	elseif key == "delete" then
 		-- remove selected notes
-
 		for _, channel in ipairs(project.channels) do
 			if channel.visible and not channel.lock then
 				for i = #channel.notes, 1, -1 do
@@ -316,6 +316,10 @@ function Canvas:mousepressed()
 	self.current_tool = self.selected_tool
 
 	if mouse.button == 1 then
+		if modifier_keys.alt then
+			self.current_tool = adjust_velocity
+		end
+
 		-- Check if click on note
 		local mx, my = self:getMouse()
 
@@ -323,8 +327,10 @@ function Canvas:mousepressed()
 
 		-- If we click on a note, switch to drag mode instead of select
 		if closest then
-			drag:set_note_origin(closest)
-			self.current_tool = drag
+			if not modifier_keys.alt then
+				drag:set_note_origin(closest)
+				self.current_tool = drag
+			end
 
 			-- If not part of selection already, change selection to just the note we clicked
 			if not selection.mask[closest] then
