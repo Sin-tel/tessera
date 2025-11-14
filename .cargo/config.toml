@@ -1,3 +1,5 @@
 [build]
 # disable this if you need some kind of portable build!
 # rustflags = "-C target-cpu=native"
+# rustflags = "-C target-cpu=x86-64-v3"
+rustflags = "-C target-feature=+avx2"

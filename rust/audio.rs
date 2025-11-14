@@ -21,11 +21,21 @@ static A: AllocDisabler = AllocDisabler;
 pub const MAX_BUF_SIZE: usize = 64;
 pub const SPECTRUM_SIZE: usize = 4096;
 
+pub fn check_architecture() -> Result<(), String> {
+	#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "avx2"))]
+	if !is_x86_feature_detected!("avx2") {
+		return Err("Your CPU is not supported! This release requires at least AVX2.".to_string());
+	}
+	Ok(())
+}
+
 pub fn run(
 	host_name: &str,
 	output_device_name: &str,
 	buffer_size: Option<u32>,
 ) -> Result<AudioContext, Box<dyn Error>> {
+	check_architecture()?;
+
 	let output_device = find_output_device(host_name, output_device_name)?;
 
 	let config = output_device.default_output_config()?;
