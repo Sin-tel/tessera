@@ -69,7 +69,7 @@ impl Effect for Delay {
 			let phase = if track.left { 0. } else { 0.25 };
 			let lfo = lfo_mod * sin_cheap(track.lfo_accum + phase);
 			track.lfo.set(lfo);
-			track.lfo.process_buffer(n);
+			track.lfo.process_block(n);
 
 			for (i, sample) in buf.iter_mut().enumerate() {
 				let input = *sample;

@@ -3,6 +3,14 @@
 use crate::dsp::prewarp;
 use crate::dsp::smooth::SmoothLinear;
 
+#[derive(Debug, Clone, Copy, Default)]
+pub enum FilterMode {
+	#[default]
+	Lowpass,
+	Bandpass,
+	Highpass,
+}
+
 #[derive(Debug)]
 pub struct Skf {
 	sample_rate: f32,
@@ -54,22 +62,27 @@ impl Skf {
 		(y2, y1 - y2, y0 - 2.0 * y1 + y2)
 	}
 
-	#[must_use]
-	pub fn process_lowpass(&mut self, x: f32) -> f32 {
-		let (lp, _, _) = self.process_all(x);
-		lp
-	}
-
-	#[must_use]
-	pub fn process_bandpass(&mut self, x: f32) -> f32 {
-		let (_, bp, _) = self.process_all(x);
-		bp
-	}
-
-	#[must_use]
-	pub fn process_highpass(&mut self, x: f32) -> f32 {
-		let (_, _, hp) = self.process_all(x);
-		hp
+	pub fn process_block(&mut self, buf: &mut [f32], filter_mode: FilterMode) {
+		match filter_mode {
+			FilterMode::Lowpass => {
+				for s in buf {
+					let (lp, _, _) = self.process_all(*s);
+					*s = lp;
+				}
+			},
+			FilterMode::Bandpass => {
+				for s in buf {
+					let (_, bp, _) = self.process_all(*s);
+					*s = bp;
+				}
+			},
+			FilterMode::Highpass => {
+				for s in buf {
+					let (_, _, hp) = self.process_all(*s);
+					*s = hp;
+				}
+			},
+		}
 	}
 
 	pub fn set(&mut self, cutoff: f32, res: f32) {

@@ -1,11 +1,10 @@
 use fastrand::Rng;
 use std::f32::consts::PI;
-use std::iter::zip;
 
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::env::*;
 use crate::dsp::resample_fir::{Downsampler, Downsampler31, Upsampler, Upsampler19};
-use crate::dsp::skf::Skf;
+use crate::dsp::skf::{FilterMode, Skf};
 use crate::dsp::smooth::{SmoothExp, SmoothLinear};
 use crate::dsp::*;
 use crate::instrument::*;
@@ -15,14 +14,6 @@ use crate::instrument::*;
 // TODO: env -> PWM, pitch
 
 const MAX_F: f32 = 20_000.0;
-
-#[derive(Debug, Default)]
-enum FilterMode {
-	#[default]
-	Lowpass,
-	Bandpass,
-	Highpass,
-}
 
 #[derive(Debug)]
 pub struct Analog {
@@ -58,9 +49,11 @@ pub struct Analog {
 
 impl Instrument for Analog {
 	fn new(sample_rate: f32) -> Self {
+		let mut gate = SmoothExp::new(2.0, sample_rate);
+		gate.set_immediate(0.);
 		Self {
 			freq: SmoothExp::new(8.0, sample_rate),
-			gate: SmoothExp::new(2.0, sample_rate),
+			gate,
 			pres: AttackRelease::new(50.0, 120.0, sample_rate),
 			sample_rate,
 			envelope: Adsr::new(sample_rate),
@@ -128,23 +121,7 @@ impl Instrument for Analog {
 
 		// Upsample + filter
 		self.upsampler.process_block(bl, &mut self.buf_up[..up_len]);
-		match self.vcf_mode {
-			FilterMode::Lowpass => {
-				for s in &mut self.buf_up[..up_len] {
-					*s = self.filter.process_lowpass(*s);
-				}
-			},
-			FilterMode::Bandpass => {
-				for s in &mut self.buf_up[..up_len] {
-					*s = self.filter.process_bandpass(*s);
-				}
-			},
-			FilterMode::Highpass => {
-				for s in &mut self.buf_up[..up_len] {
-					*s = self.filter.process_highpass(*s);
-				}
-			},
-		};
+		self.filter.process_block(&mut self.buf_up[..up_len], self.vcf_mode);
 		self.downsampler.process_block(&self.buf_up[..up_len], bl);
 
 		// Output processing
@@ -159,14 +136,11 @@ impl Instrument for Analog {
 			} else {
 				out *= env;
 			}
-			out = self.dc_killer.process(out);
-
 			*sample = out;
 		}
 
-		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
-			*r = *l;
-		}
+		self.dc_killer.process_block(bl);
+		br.copy_from_slice(bl);
 	}
 
 	fn pitch(&mut self, pitch: f32, _id: usize) {

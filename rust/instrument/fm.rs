@@ -1,5 +1,3 @@
-use std::iter::zip;
-
 use crate::dsp::env::*;
 use crate::dsp::smooth::*;
 use crate::dsp::*;
@@ -126,13 +124,8 @@ impl Instrument for Fm {
 			}
 		}
 
-		for s in bl.iter_mut() {
-			*s = self.dc_killer.process(*s);
-		}
-
-		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
-			*r = *l;
-		}
+		self.dc_killer.process_block(bl);
+		br.copy_from_slice(bl);
 	}
 
 	fn pitch(&mut self, pitch: f32, id: usize) {

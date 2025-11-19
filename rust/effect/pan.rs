@@ -1,5 +1,6 @@
 use crate::dsp::delayline::DelayLine;
 use crate::dsp::simper::Filter;
+use crate::dsp::smooth::SmoothExpBuffer;
 use crate::dsp::smooth::SmoothLinear;
 use crate::effect::*;
 
@@ -22,7 +23,7 @@ pub struct Pan {
 
 #[derive(Debug)]
 struct Track {
-	gain: SmoothLinear,
+	gain: SmoothExpBuffer,
 	delay: SmoothLinear,
 	filter: Filter,
 	delayline: DelayLine,
@@ -32,7 +33,7 @@ impl Track {
 	pub fn new(sample_rate: f32) -> Self {
 		let mut filter = Filter::new(sample_rate);
 		filter.set_highshelf(HEAD_CUTOFF, HEAD_Q, 0.0);
-		let mut gain = SmoothLinear::new(30.0, sample_rate);
+		let mut gain = SmoothExpBuffer::new(25.0, sample_rate);
 		gain.set_immediate(1.0);
 		Track {
 			gain,
@@ -74,22 +75,23 @@ impl Effect for Pan {
 		// 		}
 		// 	}
 		// } else {
+
 		for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
+			// delay
 			for sample in buf.iter_mut() {
-				let gain = track.gain.process();
 				let delay = track.delay.process();
 				let input = *sample;
 				track.delayline.push(input);
 
-				// delay
-				let mut s = track.delayline.go_back_cubic(delay);
-				// head shadow filter
-				s = track.filter.process(s);
-				// volume difference
-				s *= gain;
-
-				*sample = s;
+				*sample = track.delayline.go_back_cubic(delay);
 			}
+
+			// head shadow filter
+			track.filter.process_block(buf);
+
+			// volume difference
+			track.gain.process_block(buf.len());
+			track.gain.multiply_block(buf);
 		}
 		// }
 	}

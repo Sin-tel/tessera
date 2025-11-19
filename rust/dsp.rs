@@ -166,9 +166,17 @@ impl DcKiller {
 			f: TWO_PI * 10. / sample_rate,
 		}
 	}
+
+	#[must_use]
 	pub fn process(&mut self, s: f32) -> f32 {
 		let y_hp = s - self.z;
 		self.z += y_hp * self.f;
 		y_hp
+	}
+
+	pub fn process_block(&mut self, buf: &mut [f32]) {
+		for s in buf {
+			*s = self.process(*s);
+		}
 	}
 }

@@ -2,7 +2,6 @@ use crate::dsp::simper::Filter;
 use crate::dsp::*;
 use crate::instrument::*;
 use fastrand::Rng;
-use std::iter::zip;
 
 // TODO: replace differentiation with more gentle filter to reduce register difference
 // TODO: same note retrigger logic
@@ -131,13 +130,8 @@ impl Instrument for Epiano {
 			}
 		}
 
-		for s in bl.iter_mut() {
-			*s = self.dc_killer.process(*s);
-		}
-
-		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
-			*r = *l;
-		}
+		self.dc_killer.process_block(bl);
+		br.copy_from_slice(bl);
 	}
 
 	fn pitch(&mut self, _pres: f32, _id: usize) {}

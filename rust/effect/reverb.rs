@@ -87,12 +87,12 @@ impl Effect for Reverb {
 		self.accum1 += 0.851 * n as f32 / self.sample_rate;
 		self.accum1 -= self.accum1.floor();
 		self.lfo1.set(1.0 + 0.010 * self.mod_amount * sin_cheap(self.accum1));
-		self.lfo1.process_buffer(n);
+		self.lfo1.process_block(n);
 
 		self.accum2 += 0.497 * n as f32 / self.sample_rate;
 		self.accum2 -= self.accum2.floor();
 		self.lfo2.set(1.0 + 0.016 * self.mod_amount * sin_cheap(self.accum2));
-		self.lfo2.process_buffer(n);
+		self.lfo2.process_block(n);
 
 		for (j, (l, r)) in zip(bl.iter_mut(), br.iter_mut()).enumerate() {
 			let pre_delay = self.pre_delay.process();

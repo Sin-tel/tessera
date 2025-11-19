@@ -1,5 +1,3 @@
-use std::iter::zip;
-
 use crate::dsp::env::AttackRelease;
 use crate::dsp::smooth::*;
 use crate::dsp::*;
@@ -78,9 +76,7 @@ impl Instrument for Polysine {
 			*s = self.dc_killer.process(*s);
 		}
 
-		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
-			*r = *l;
-		}
+		br.copy_from_slice(bl);
 	}
 
 	fn pitch(&mut self, pitch: f32, id: usize) {

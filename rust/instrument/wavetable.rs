@@ -14,7 +14,6 @@ use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 use std::fs::File;
 use std::io::{BufReader, Read};
-use std::iter::zip;
 use std::sync::Arc;
 
 use crate::dsp::env::*;
@@ -97,7 +96,7 @@ impl Instrument for Wavetable {
 
 		let [bl, br] = buffer;
 
-		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
+		for sample in bl.iter_mut() {
 			self.interpolate += 1.0 / (0.05 * self.sample_rate); // update every 50ms
 
 			let _pres = self.pres.process();
@@ -125,9 +124,9 @@ impl Instrument for Wavetable {
 
 			out *= vel;
 
-			*l = out;
-			*r = out;
+			*sample = out;
 		}
+		br.copy_from_slice(bl);
 	}
 
 	fn pitch(&mut self, pitch: f32, _id: usize) {
