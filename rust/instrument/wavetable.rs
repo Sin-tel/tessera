@@ -38,7 +38,7 @@ pub struct Wavetable {
 	r2c: Arc<dyn RealToComplex<f32>>,
 	c2r_scratch: Vec<Complex<f32>>,
 	c2r: Arc<dyn ComplexToReal<f32>>,
-	table: [f32; 16384],
+	table: Vec<f32>,
 
 	depth_vel: f32,
 	depth_pres: f32,
@@ -59,7 +59,7 @@ impl Instrument for Wavetable {
 		// read binary file
 		let file = File::open("./res/wavetable.bin").unwrap();
 		let mut reader = BufReader::new(file);
-		let mut table = [0.0f32; WT_SIZE * WT_NUM];
+		let mut table = vec![0.0f32; WT_SIZE * WT_NUM];
 		let mut buffer = [0u8; 4];
 		for v in &mut table {
 			reader.read_exact(&mut buffer).unwrap();
