@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use std::iter::zip;
 
 use crate::dsp::env::*;
-use crate::dsp::resample::{Downsampler31, Upsampler19};
+use crate::dsp::resample_fir::{Downsampler, Upsampler, COEF_19, COEF_31};
 use crate::dsp::skf::Skf;
 use crate::dsp::smooth::{SmoothExp, SmoothLinear};
 use crate::dsp::*;
@@ -33,8 +33,8 @@ pub struct Analog {
 	z: f32,
 	rng: Rng,
 	filter: Skf,
-	upsampler: Upsampler19,
-	downsampler: Downsampler31,
+	upsampler: Upsampler<{ COEF_19.len() }>,
+	downsampler: Downsampler<{ COEF_31.len() }>,
 	dc_killer: DcKiller,
 	envelope: Adsr,
 	note_on: bool,
@@ -65,8 +65,8 @@ impl Instrument for Analog {
 			filter: Skf::new(2.0 * sample_rate),
 			dc_killer: DcKiller::new(sample_rate),
 			accum: 0.,
-			upsampler: Upsampler19::default(),
-			downsampler: Downsampler31::default(),
+			upsampler: Upsampler::<{ COEF_19.len() }>::new(&COEF_19),
+			downsampler: Downsampler::<{ COEF_31.len() }>::new(&COEF_31),
 			z: 0.,
 			rng: Rng::new(),
 			note_on: false,
