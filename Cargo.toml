@@ -20,8 +20,8 @@ bit_mask_ring_buf = "0.6"
 bencher = "0.1"
 rustfft = "6.1"
 realfft = "3.3"
-no_denormals = {version = "0.2"  }
-mlua = { version = "0.10", features = ["luajit", "module"] }
+no_denormals = "0.3"
+mlua = { version = "0.11", features = ["luajit", "module"] }
 fft-convolver = "0.2"
 hound = "3.5"
 log = "0.4"
