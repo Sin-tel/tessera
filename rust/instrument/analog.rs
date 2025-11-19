@@ -2,6 +2,7 @@ use fastrand::Rng;
 use std::f32::consts::PI;
 use std::iter::zip;
 
+use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::env::*;
 use crate::dsp::resample_fir::{Downsampler, Upsampler, COEF_19, COEF_31};
 use crate::dsp::skf::Skf;
@@ -38,6 +39,7 @@ pub struct Analog {
 	dc_killer: DcKiller,
 	envelope: Adsr,
 	note_on: bool,
+	buf_up: [f32; MAX_BUF_SIZE * 2],
 
 	// parameters
 	pulse_width: SmoothLinear,
@@ -67,6 +69,7 @@ impl Instrument for Analog {
 			accum: 0.,
 			upsampler: Upsampler::<{ COEF_19.len() }>::new(&COEF_19),
 			downsampler: Downsampler::<{ COEF_31.len() }>::new(&COEF_31),
+			buf_up: [0.0; MAX_BUF_SIZE * 2],
 			z: 0.,
 			rng: Rng::new(),
 			note_on: false,
@@ -88,11 +91,14 @@ impl Instrument for Analog {
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
+
+		let up_len = 2 * bl.len();
+
 		self.update_filter();
-		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
-			let env = self.envelope.process();
+
+		// Oscillator
+		for sample in bl.iter_mut() {
 			let _pres = self.pres.process();
-			let gate = self.gate.process();
 			let freq = self.freq.process();
 			let pulse_width = self.pulse_width.process();
 
@@ -117,22 +123,36 @@ impl Instrument for Analog {
 
 			let mix = self.z + self.mix_noise * (self.rng.f32() - 0.5);
 
-			let (mut s1, mut s2) = self.upsampler.process(mix * 0.20);
+			*sample = mix * 0.20;
+		}
 
-			// TODO: move match branch outside of inner loop
-			(s1, s2) = match self.vcf_mode {
-				FilterMode::Lowpass => {
-					(self.filter.process_lowpass(s1), self.filter.process_lowpass(s2))
-				},
-				FilterMode::Bandpass => {
-					(self.filter.process_bandpass(s1), self.filter.process_bandpass(s2))
-				},
-				FilterMode::Highpass => {
-					(self.filter.process_highpass(s1), self.filter.process_highpass(s2))
-				},
-			};
+		// Upsample + filter
+		self.upsampler.process_block(bl, &mut self.buf_up[..up_len]);
+		match self.vcf_mode {
+			FilterMode::Lowpass => {
+				for s in &mut self.buf_up[..up_len] {
+					*s = self.filter.process_lowpass(*s);
+				}
+			},
+			FilterMode::Bandpass => {
+				for s in &mut self.buf_up[..up_len] {
+					*s = self.filter.process_bandpass(*s);
+				}
+			},
+			FilterMode::Highpass => {
+				for s in &mut self.buf_up[..up_len] {
+					*s = self.filter.process_highpass(*s);
+				}
+			},
+		};
+		self.downsampler.process_block(&self.buf_up[..up_len], bl);
 
-			let mut out = self.downsampler.process(s1, s2);
+		// Output processing
+		for sample in bl.iter_mut() {
+			let gate = self.gate.process();
+			let env = self.envelope.process();
+
+			let mut out = *sample;
 			out *= 5.;
 			if self.use_gate {
 				out *= gate;
@@ -141,8 +161,11 @@ impl Instrument for Analog {
 			}
 			out = self.dc_killer.process(out);
 
-			*l = out;
-			*r = out;
+			*sample = out;
+		}
+
+		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
+			*r = *l;
 		}
 	}
 
