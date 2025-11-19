@@ -1,14 +1,15 @@
-local tuning = require("tuning")
-local engine = require("engine")
-local View = require("view")
 local Transform = require("views/transform")
-
-local select_rect = require("tools/select_rect")
-local pan = require("tools/pan")
-local drag = require("tools/drag")
-local adjust_velocity = require("tools/adjust_velocity")
-
+local View = require("view")
+local engine = require("engine")
 local hsluv = require("lib/hsluv")
+local tuning = require("tuning")
+
+-- sub tools
+local adjust_velocity = require("tools/adjust_velocity")
+local drag = require("tools/drag")
+local drag_end = require("tools/drag_end")
+local pan = require("tools/pan")
+local select_rect = require("tools/select_rect")
 
 local Canvas = View.derive("Canvas")
 Canvas.__index = Canvas
@@ -299,7 +300,32 @@ function Canvas:find_closest_note(mx, my, max_distance)
 				local x_proj = util.clamp(mx, x0, x1)
 
 				-- Use projected distance, with distance to start as a tie-breaker
-				local d = util.dist(x_proj, y0, mx, my) + 0.1 * math.abs(x0 - mx)
+				local d = util.dist(x_proj, y0, mx, my) + 0.001 * math.abs(x0 - mx)
+				if d < dmax then
+					dmax = d
+					closest = v
+					closest_ch = ch_index
+				end
+			end
+		end
+	end
+
+	return closest, closest_ch
+end
+
+function Canvas:find_closest_end(mx, my, max_distance)
+	local closest
+	local closest_ch
+	local dmax = max_distance or math.huge
+	for ch_index, channel in ipairs(project.channels) do
+		if channel.visible and not channel.lock then
+			for i, v in ipairs(channel.notes) do
+				local t_end = v.time + v.verts[#v.verts][1]
+				local p_start = tuning.getPitch(v.pitch)
+				local x0 = self.transform:time(t_end)
+				local y0 = self.transform:pitch(p_start)
+
+				local d = util.dist(x0, y0, mx, my)
 				if d < dmax then
 					dmax = d
 					closest = v
@@ -316,27 +342,33 @@ function Canvas:mousepressed()
 	self.current_tool = self.selected_tool
 
 	if mouse.button == 1 then
-		if modifier_keys.alt then
-			self.current_tool = adjust_velocity
-		end
-
 		-- Check if click on note
 		local mx, my = self:getMouse()
 
 		local closest, closest_ch = self:find_closest_note(mx, my, 24)
+		local closest_end, closest_ch_end = self:find_closest_end(mx, my, 24)
 
-		-- If we click on a note, switch to drag mode instead of select
-		if closest then
+		local select_note = closest
+		local select_ch = closest_ch
+
+		if modifier_keys.alt then
+			self.current_tool = adjust_velocity
+		elseif closest_end then
+			self.current_tool = drag_end
+
+			select_note = closest_end
+			select_ch = closest_ch_end
+		elseif closest then
 			if not modifier_keys.alt then
 				drag:set_note_origin(closest)
 				self.current_tool = drag
 			end
+		end
 
-			-- If not part of selection already, change selection to just the note we clicked
-			if not selection.mask[closest] then
-				selection.setNormal({ [closest] = true })
-				selection.ch_index = closest_ch
-			end
+		-- If not part of selection already, change selection to just the note we clicked
+		if select_note and not selection.mask[select_note] then
+			selection.setNormal({ [select_note] = true })
+			selection.ch_index = select_ch
 		end
 	elseif mouse.button == 3 then
 		self.current_tool = pan
