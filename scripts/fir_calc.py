@@ -2,7 +2,7 @@ import numpy as np
 
 k_taps = 13
 ntaps = k_taps * 4 - 1
-beta = 12  # 6
+beta = 12
 
 print("n taps", ntaps)
 
@@ -33,16 +33,17 @@ print("sum:", np.sum(out))
 
 out = out.astype(np.float32)
 
-print("downsampler coefs:")
+# print("downsampler coefs:")
+# print(
+#     np.array2string(
+#         out[0 : N // 2 : 2],
+#         separator=", ",
+#         floatmode="unique",
+#         max_line_width=5,
+#     )
+# )
+
+print(f"pub const COEF_{ntaps}: [f32; {k_taps}] = ")
 print(
-    np.array2string(
-        out[0 : N // 2 : 2],
-        separator=", ",
-        floatmode="unique",
-        max_line_width=5,
-    )
-)
-print("upsampler coefs:")
-print(
-    np.array2string(2.0 * out[0 : N // 2 : 2], separator=", ", floatmode="unique", max_line_width=5)
+    np.array2string(2.0 * out[0 : N // 2 : 2], separator=", ", floatmode="unique", max_line_width=5) + ";"
 )

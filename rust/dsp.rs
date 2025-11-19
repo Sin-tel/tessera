@@ -3,7 +3,7 @@ use std::f32::consts::*;
 pub mod delayline;
 pub mod env;
 pub mod onepole;
-pub mod resample;
+pub mod resample_fir;
 pub mod simper;
 pub mod skf;
 pub mod smooth;
