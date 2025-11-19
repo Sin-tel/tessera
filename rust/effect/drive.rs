@@ -1,6 +1,6 @@
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::onepole::OnePole;
-use crate::dsp::resample_fir::{Downsampler, Upsampler, COEF_19, COEF_51};
+use crate::dsp::resample_fir::{Downsampler, Downsampler51, Upsampler, Upsampler19};
 use crate::dsp::smooth::SmoothBuffer;
 use crate::dsp::*;
 use crate::effect::*;
@@ -24,8 +24,8 @@ pub struct Drive {
 #[derive(Debug)]
 struct Track {
 	prev: f32,
-	upsampler: Upsampler<{ COEF_19.len() }>,
-	downsampler: Downsampler<{ COEF_51.len() }>,
+	upsampler: Upsampler19,
+	downsampler: Downsampler51,
 	dc_killer: DcKiller,
 	pre_filter: OnePole,
 	post_filter: OnePole,
@@ -36,8 +36,8 @@ impl Track {
 	fn new(sample_rate: f32) -> Self {
 		Self {
 			prev: 0.,
-			upsampler: Upsampler::<{ COEF_19.len() }>::new(&COEF_19),
-			downsampler: Downsampler::<{ COEF_51.len() }>::new(&COEF_51),
+			upsampler: Upsampler::default(),
+			downsampler: Downsampler::default(),
 			dc_killer: DcKiller::new(sample_rate),
 			pre_filter: OnePole::new(sample_rate),
 			post_filter: OnePole::new(sample_rate),

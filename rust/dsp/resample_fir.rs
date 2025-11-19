@@ -58,7 +58,7 @@ impl<const N: usize> Downsampler<N> {
 		assert_eq!(coef_arr.len(), N, "Coefficient array size mismatch");
 
 		let mut coef = [0.0; N];
-		coef[..N].copy_from_slice(&coef_arr[..N]);
+		coef.copy_from_slice(coef_arr);
 
 		Self {
 			buf1: BitMaskRB::<f32>::new(2 * N, 0.0),
@@ -109,8 +109,9 @@ impl<const N: usize> Upsampler<N> {
 		assert_eq!(coef_arr.len(), N, "Coefficient array size mismatch");
 
 		let mut coef = [0.0; N];
-		coef[..N].copy_from_slice(&coef_arr[..N]);
-		Self { buf: BitMaskRB::<f32>::new(16, 0.0), pos: 0, coef }
+		coef.copy_from_slice(coef_arr);
+
+		Self { buf: BitMaskRB::<f32>::new(2 * N, 0.0), pos: 0, coef }
 	}
 
 	pub fn process(&mut self, s: f32) -> (f32, f32) {
@@ -127,7 +128,7 @@ impl<const N: usize> Upsampler<N> {
 			})
 			.sum::<f32>();
 
-		let s2 = self.buf[self.pos - 7];
+		let s2 = self.buf[self.pos + 1 - N as isize];
 
 		(s1, s2)
 	}
@@ -140,5 +141,53 @@ impl<const N: usize> Upsampler<N> {
 			chunk[0] = even;
 			chunk[1] = odd;
 		}
+	}
+}
+
+pub type Upsampler19 = Upsampler<{ COEF_19.len() }>;
+
+impl Default for Upsampler19 {
+	fn default() -> Self {
+		Self::new(&COEF_19)
+	}
+}
+
+pub type Upsampler31 = Upsampler<{ COEF_31.len() }>;
+
+impl Default for Upsampler31 {
+	fn default() -> Self {
+		Self::new(&COEF_31)
+	}
+}
+
+pub type Upsampler51 = Upsampler<{ COEF_51.len() }>;
+
+impl Default for Upsampler51 {
+	fn default() -> Self {
+		Self::new(&COEF_51)
+	}
+}
+
+pub type Downsampler19 = Downsampler<{ COEF_19.len() }>;
+
+impl Default for Downsampler19 {
+	fn default() -> Self {
+		Self::new(&COEF_19)
+	}
+}
+
+pub type Downsampler31 = Downsampler<{ COEF_31.len() }>;
+
+impl Default for Downsampler31 {
+	fn default() -> Self {
+		Self::new(&COEF_31)
+	}
+}
+
+pub type Downsampler51 = Downsampler<{ COEF_51.len() }>;
+
+impl Default for Downsampler51 {
+	fn default() -> Self {
+		Self::new(&COEF_51)
 	}
 }
