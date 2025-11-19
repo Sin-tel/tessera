@@ -89,7 +89,7 @@ impl<const N: usize> Downsampler<N> {
 	}
 
 	pub fn process_block(&mut self, input: &[f32], output: &mut [f32]) {
-		assert_eq!(output.len() * 2, input.len(), "Output must be twice the size of input.");
+		assert_eq!(output.len() * 2, input.len(), "Input must be twice the size of output.");
 
 		for (i, chunk) in input.chunks_exact(2).enumerate() {
 			output[i] = self.process(chunk[0], chunk[1]);
@@ -133,7 +133,7 @@ impl<const N: usize> Upsampler<N> {
 	}
 
 	pub fn process_block(&mut self, input: &[f32], output: &mut [f32]) {
-		assert_eq!(input.len() * 2, output.len(), "Input must be twice the size of output.");
+		assert_eq!(input.len() * 2, output.len(), "Output must be twice the size of input.");
 
 		for (i, chunk) in output.chunks_exact_mut(2).enumerate() {
 			let (even, odd) = self.process(input[i]);
