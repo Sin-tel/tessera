@@ -1,6 +1,6 @@
-local serialize = require("lib/serialize")
-local log = require("log")
 local build = require("build")
+local log = require("log")
+local serialize = require("lib/serialize")
 
 local save = {}
 

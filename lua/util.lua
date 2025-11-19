@@ -1,5 +1,5 @@
-local log = require("log")
 local Ui = require("ui/ui")
+local log = require("log")
 
 local util = {}
 

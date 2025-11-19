@@ -1,5 +1,4 @@
 local util = require("util")
-local tuning = require("tuning")
 
 local adjust_velocity = {}
 

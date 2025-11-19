@@ -15,12 +15,12 @@ VERSION.MINOR = "0"
 VERSION.PATCH = "1"
 
 local backend = require("backend")
+local build = require("build")
 local engine = require("engine")
 local midi = require("midi")
-local views = require("views")
-local save = require("save")
 local note_input = require("note_input")
-local build = require("build")
+local save = require("save")
+local views = require("views")
 
 workspace = require("workspace")
 mouse = require("mouse")

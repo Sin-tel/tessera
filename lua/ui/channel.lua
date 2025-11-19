@@ -1,7 +1,7 @@
 local Ui = require("ui/ui")
-local util = require("util")
 local backend = require("backend")
 local hsluv = require("lib/hsluv")
+local util = require("util")
 
 -- TODO: commands
 local function do_mute(ch_index, mute)

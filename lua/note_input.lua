@@ -1,5 +1,5 @@
-local tuning = require("tuning")
 local VoiceAlloc = require("voice_alloc")
+local tuning = require("tuning")
 
 local noteInput = {}
 
