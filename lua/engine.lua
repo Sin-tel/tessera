@@ -1,5 +1,5 @@
-local log = require("log")
 local backend = require("backend")
+local log = require("log")
 local midi = require("midi")
 
 local RENDER_BLOCK_SIZE = 64
@@ -89,9 +89,10 @@ function engine.render()
 
 	local dt = RENDER_BLOCK_SIZE / backend:getSampleRate()
 
-	local target_ms = 2
+	-- Try to hit 16 ms to keep things responsive
+	local target_ms = 16
 	local t_start = love.timer.getTime()
-	for i = 1, 300 do
+	for i = 1, 3000 do
 		local success = backend:renderBlock()
 		if not success then
 			log.error("Failed to render block.")
@@ -110,7 +111,7 @@ function engine.render()
 
 		local t_now = (love.timer.getTime() - t_start) * 1000
 		if t_now > target_ms then
-			print(i)
+			print(tostring(i) .. " blocks rendered")
 			break
 		end
 	end
