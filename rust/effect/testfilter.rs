@@ -66,6 +66,6 @@ impl Effect for TestFilter {
 			2 => self.gain = value,
 			3 => self.onepole = value > 0.5,
 			_ => log_warn!("Parameter with index {index} not found"),
-		};
+		}
 	}
 }
