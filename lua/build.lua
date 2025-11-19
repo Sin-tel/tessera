@@ -1,9 +1,9 @@
+local Device = require("device")
+local Roll = require("roll")
+local VoiceAlloc = require("voice_alloc")
 local backend = require("backend")
 local deviceList = require("device_list")
 local widgets = require("ui/widgets")
-local Device = require("device")
-local VoiceAlloc = require("voice_alloc")
-local Roll = require("roll")
 
 local build = {}
 

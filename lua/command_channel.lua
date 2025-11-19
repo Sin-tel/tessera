@@ -1,6 +1,6 @@
+local SliderValue = require("ui/slider_value")
 local backend = require("backend")
 local build = require("build")
-local SliderValue = require("ui/slider_value")
 local deviceList = require("device_list")
 
 local function minHueDist(hue)

@@ -1,7 +1,7 @@
-local View = require("view")
 local Ui = require("ui/ui")
-local widgets = require("ui/widgets")
+local View = require("view")
 local deviceList = require("device_list")
+local widgets = require("ui/widgets")
 
 local ChannelSettings = View.derive("Channel settings")
 ChannelSettings.__index = ChannelSettings

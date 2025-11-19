@@ -1,7 +1,7 @@
+local VoiceAlloc = require("voice_alloc")
 local backend = require("backend")
 local log = require("log")
 local tuning = require("tuning")
-local VoiceAlloc = require("voice_alloc")
 
 local midi = {}
 local devices = {}

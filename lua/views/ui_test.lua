@@ -1,5 +1,5 @@
-local View = require("view")
 local Ui = require("ui/ui")
+local View = require("view")
 local widgets = require("ui/widgets")
 
 local UiTest = View.derive("UI test")

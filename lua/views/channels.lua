@@ -1,7 +1,7 @@
 local Ui = require("ui/ui")
+local View = require("view")
 local deviceList = require("device_list")
 local widgets = require("ui/widgets")
-local View = require("view")
 
 local Channels = View.derive("Channels")
 Channels.__index = Channels
