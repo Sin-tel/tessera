@@ -1,5 +1,3 @@
-use std::iter::zip;
-
 use crate::dsp::delayline::DelayLine;
 use crate::dsp::env::AttackRelease;
 use crate::dsp::onepole::OnePole;
@@ -193,13 +191,8 @@ impl Instrument for Pluck {
 			}
 		}
 
-		for sample in bl.iter_mut() {
-			*sample = self.shelf.process(*sample);
-		}
-
-		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
-			*r = *l;
-		}
+		self.shelf.process_block(bl);
+		br.copy_from_slice(bl);
 	}
 
 	fn pitch(&mut self, pitch: f32, id: usize) {

@@ -85,4 +85,11 @@ impl OnePole {
 
 		mx * x + my * y
 	}
+
+	// Process block in-place
+	pub fn process_block(&mut self, buf: &mut [f32]) {
+		for s in buf {
+			*s = self.process(*s);
+		}
+	}
 }

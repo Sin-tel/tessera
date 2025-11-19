@@ -51,7 +51,7 @@ impl Instrument for Sine {
 			self.freq.set(self.fixed_freq);
 			self.vel.set(self.fixed_gain);
 		}
-		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
+		for sample in bl.iter_mut() {
 			let vel = self.vel.process();
 			let f = self.freq.process();
 
@@ -61,9 +61,10 @@ impl Instrument for Sine {
 			let mut out = (self.accum * TWO_PI).sin();
 			out *= vel;
 
-			*l = out;
-			*r = out;
+			*sample = out;
 		}
+
+		br.copy_from_slice(bl);
 	}
 
 	fn pitch(&mut self, pitch: f32, _id: usize) {

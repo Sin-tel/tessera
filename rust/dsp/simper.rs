@@ -182,6 +182,13 @@ impl Filter {
 		m0 * v0 + m1 * v1 + m2 * v2
 	}
 
+	// Process block in-place
+	pub fn process_block(&mut self, buf: &mut [f32]) {
+		for s in buf {
+			*s = self.process(*s);
+		}
+	}
+
 	#[must_use]
 	pub fn phase_delay(&self, f: f32) -> f32 {
 		let g = self.g;
