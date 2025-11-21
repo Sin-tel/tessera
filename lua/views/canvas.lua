@@ -370,6 +370,8 @@ function Canvas:mousepressed()
 			selection.setNormal({ [select_note] = true })
 			selection.ch_index = select_ch
 		end
+	elseif mouse.button == 2 then
+		return
 	elseif mouse.button == 3 then
 		self.current_tool = pan
 	end
@@ -378,6 +380,9 @@ function Canvas:mousepressed()
 end
 
 function Canvas:mousereleased()
+	if mouse.button == 2 then
+		return
+	end
 	self.current_tool:mousereleased(self)
 end
 
