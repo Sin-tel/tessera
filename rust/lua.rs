@@ -344,19 +344,9 @@ impl UserData for LuaData {
 			}
 		});
 
-		methods.add_method("midiListPorts", |_, _, ()| {
-			midi::list_ports();
-			Ok(())
-		});
-
-		methods.add_method("midiConnections", |_, data, ()| {
-			if let LuaData(Some(ud)) = data {
-				let list: Vec<String> =
-					ud.midi_connections.iter().map(|c| c.name.clone()).collect();
-				Ok(Some(list))
-			} else {
-				Ok(None)
-			}
+		methods.add_method("midiPorts", |_, _, ()| {
+			let list = midi::port_names();
+			Ok(list)
 		});
 
 		methods.add_method_mut("midiOpenConnection", |_, data, port_name: String| {
@@ -364,7 +354,7 @@ impl UserData for LuaData {
 				let connection = midi::connect(&port_name);
 				if let Some(c) = connection {
 					let name = c.name.clone();
-					let index = ud.midi_connections.len();
+					let index = ud.midi_connections.len() + 1;
 					ud.midi_connections.push(c);
 					return Ok((Some(name), Some(index)));
 				}
@@ -372,9 +362,22 @@ impl UserData for LuaData {
 			Ok((None, None))
 		});
 
+		methods.add_method_mut("midiCloseConnection", |_, data, connection_index: usize| {
+			if let LuaData(Some(ud)) = data {
+				if ud.midi_connections.len() < connection_index - 1 {
+					log_error!("Bad midi connection index: {connection_index}");
+				} else {
+					let connection = ud.midi_connections.remove(connection_index - 1);
+					connection.connection.close();
+					log_info!("Closed connection \"{0}\"", connection.name);
+				}
+			}
+			Ok(())
+		});
+
 		methods.add_method_mut("midiPoll", |_, data, connection_index: usize| {
 			if let LuaData(Some(ud)) = data {
-				let connection = ud.midi_connections.get_mut(connection_index);
+				let connection = ud.midi_connections.get_mut(connection_index - 1);
 				match connection {
 					Some(c) => {
 						let events: Vec<midi::Event> = c.midi_rx.pop_iter().collect();
