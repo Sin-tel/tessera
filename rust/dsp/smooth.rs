@@ -205,18 +205,18 @@ impl SmoothExpBuffer {
 
 	pub fn multiply_block(&self, buf: &mut [f32]) {
 		for (i, sample) in buf.iter_mut().enumerate() {
-			*sample = *sample * self.get(i);
+			*sample *= self.get(i);
 		}
 	}
 
 	pub fn add_block(&self, buf: &mut [f32]) {
 		for (i, sample) in buf.iter_mut().enumerate() {
-			*sample = *sample + self.get(i);
+			*sample += self.get(i);
 		}
 	}
 	pub fn subtract_block(&self, buf: &mut [f32]) {
 		for (i, sample) in buf.iter_mut().enumerate() {
-			*sample = *sample - self.get(i);
+			*sample -= self.get(i);
 		}
 	}
 
