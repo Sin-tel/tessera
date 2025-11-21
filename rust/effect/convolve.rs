@@ -36,7 +36,6 @@ impl Effect for Convolve {
 			.collect();
 
 		// for now we only allow short convolution samples
-		dbg!(impulse_response.len());
 		assert!(impulse_response.len() < 2048);
 
 		let sqr_sum = impulse_response.iter().fold(0.0, |sqr_sum, s| sqr_sum + s * s);
