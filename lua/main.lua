@@ -104,9 +104,7 @@ end
 local function audioSetup()
 	if not backend:ok() then
 		backend:setup(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
-		if setup.midi then
-			midi.load(setup.midi.inputs)
-		end
+		midi.load()
 	else
 		log.warn("Audio already set up")
 	end
@@ -172,8 +170,8 @@ function love.update(dt)
 	end
 	if audio_status == "render" then
 		engine.render()
-	else
-		midi.update()
+	elseif audio_status == "running" then
+		midi.update(dt)
 		engine.update(dt)
 	end
 end

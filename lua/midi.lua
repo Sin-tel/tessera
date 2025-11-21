@@ -4,33 +4,75 @@ local log = require("log")
 local tuning = require("tuning")
 
 local midi = {}
+
+-- this list should be in sync with backend midi_connections
 local devices = {}
+
+local scan_device_timer = 0
 
 -- unique index for a midi note
 local function eventNoteIndex(event)
 	return event.channel * 256 + event.note
 end
 
-function midi.load(input_ports)
+function midi.load()
 	devices = {}
-	backend:midiListPorts()
 
-	for _, v in ipairs(input_ports) do
-		-- TODO: 'default' should just open first port
-
-		local name, index = backend:midiOpenConnection(v.name)
-		if name then
-			assert(not devices[index])
-			devices[index] = midi.newDevice(v, name, index)
+	local ports = backend:midiPorts()
+	if #ports == 0 then
+		log.info("No midi input ports available.")
+	else
+		log.info("Available midi input ports:")
+		for i, name in ipairs(ports) do
+			log.info(" - " .. tostring(i) .. ': "' .. name .. '"')
 		end
 	end
 end
 
-function midi.newDevice(settings, name, index)
+function midi.scanPorts(input_ports)
+	-- TODO: 'default' should just open first port
+
+	local available_ports = backend:midiPorts()
+	local devices_open = {}
+
+	for _, v in ipairs(devices) do
+		local ok = false
+		for _, name in ipairs(available_ports) do
+			if name == v.name then
+				ok = true
+			end
+		end
+		if ok then
+			devices_open[v.config_name] = true
+		else
+			midi.closeDevice(v.index)
+		end
+	end
+
+	for _, v in ipairs(input_ports) do
+		local config_name = v.name
+
+		if not devices_open[config_name] then
+			local name, index = backend:midiOpenConnection(config_name)
+			if name then
+				assert(not devices[index])
+				devices[index] = midi.newDevice(v, name, index, config_name)
+			end
+		end
+	end
+end
+
+function midi.closeDevice(index)
+	backend:midiCloseConnection(index)
+	table.remove(devices, index)
+end
+
+function midi.newDevice(settings, name, index, config_name)
 	local new = {}
 	new.index = index
 	new.mpe = settings.mpe
 	new.name = name
+	new.config_name = config_name
 	new.pitchbend_range = 2
 	if new.mpe then
 		new.pitchbend_range = 48
@@ -40,14 +82,21 @@ function midi.newDevice(settings, name, index)
 	return new
 end
 
-function midi.update()
-	for _, device in pairs(devices) do
+function midi.update(dt)
+	scan_device_timer = scan_device_timer - dt
+	if scan_device_timer < 0 then
+		-- scan every .5 seconds
+		scan_device_timer = 0.5
+		midi.scanPorts(setup.midi.inputs)
+	end
+
+	for _, device in ipairs(devices) do
 		midi.updateDevice(device)
 	end
 end
 
 function midi.flush()
-	for _, device in pairs(devices) do
+	for _, device in ipairs(devices) do
 		backend:midiPoll(device.index)
 	end
 end

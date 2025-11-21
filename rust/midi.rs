@@ -21,26 +21,16 @@ pub enum Message {
 }
 
 pub struct Connection {
-	#[allow(dead_code)] // must be kept alive
-	connection: MidiInputConnection<HeapProd<Event>>,
-
+	pub connection: MidiInputConnection<HeapProd<Event>>,
 	pub midi_rx: HeapCons<Event>,
 	pub name: String,
 }
 
-pub fn list_ports() {
+pub fn port_names() -> Vec<String> {
 	let midi_in = MidiInput::new("midir test input").unwrap();
 	let ports = midi_in.ports();
 
-	if ports.is_empty() {
-		log_info!("No midi input ports available.");
-	} else {
-		log_info!("Available midi input ports:");
-		for (i, p) in ports.iter().enumerate() {
-			let name = midi_in.port_name(p).unwrap();
-			log_info!(" - {i}: \"{name}\"");
-		}
-	}
+	ports.iter().map(|p| midi_in.port_name(p).unwrap()).collect()
 }
 
 pub fn connect(port_name: &str) -> Option<Connection> {
@@ -58,7 +48,6 @@ pub fn connect(port_name: &str) -> Option<Connection> {
 				p,
 				"midir-test",
 				|_stamp, message, midi_rx| {
-					// println!("{message:?}");
 					let event = Event::from_bytes(message);
 					if let Some(e) = event {
 						if midi_rx.try_push(e).is_err() {
@@ -82,8 +71,6 @@ pub fn connect(port_name: &str) -> Option<Connection> {
 			}
 		}
 	}
-
-	log_warn!("Midi port \"{port_name}\" not found.");
 	None
 }
 
