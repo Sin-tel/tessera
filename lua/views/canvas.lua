@@ -228,9 +228,11 @@ function Canvas:keypressed(key)
 		end
 		selection.setNormal(mask)
 	elseif key == "delete" or (modifier_keys.ctrl and key == "x") then
-		local c = command.noteDelete.new()
-		command.run_and_register(c)
-		return true
+		if not selection.isEmpty() then
+			local c = command.noteDelete.new()
+			command.run_and_register(c)
+			return true
+		end
 	elseif key == "g" then
 		if not selection.isEmpty() then
 			self.current_tool = drag

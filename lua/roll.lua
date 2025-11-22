@@ -16,7 +16,8 @@ function Roll.new(ch_index)
 	self.control_table = {}
 	self.voices = {}
 
-	self.rec_notes = {}
+	self.active_notes = {}
+	self.recorded_notes = {}
 
 	return self
 end
@@ -72,13 +73,14 @@ end
 
 function Roll:stop()
 	-- any hanging notes shoud get a note off
-	for _, note in pairs(self.rec_notes) do
+	for _, note in pairs(self.active_notes) do
 		note.is_recording = nil
 		local t_offset = project.transport.time - note.time
 		table.insert(note.verts, { t_offset, 0, 0.3 })
 	end
 
-	self.rec_notes = {}
+	self.active_notes = {}
+	self.recorded_notes = {}
 end
 
 function Roll:playback()
@@ -144,10 +146,11 @@ function Roll:event(event)
 				is_recording = true,
 			}
 
-			self.rec_notes[event.id] = note
+			self.active_notes[event.id] = note
 			table.insert(project.channels[self.ch_index].notes, note)
+			table.insert(self.recorded_notes, note)
 		elseif event.name == "note_off" then
-			local note = self.rec_notes[event.id]
+			local note = self.active_notes[event.id]
 			if not note then
 				-- Note was pressed before recording started
 				return
@@ -162,11 +165,11 @@ function Roll:event(event)
 				offset = v_prev[2]
 			end
 
-			table.insert(self.rec_notes[event.id].verts, { t_offset, offset, pres })
+			table.insert(self.active_notes[event.id].verts, { t_offset, offset, pres })
 
-			self.rec_notes[event.id] = nil
+			self.active_notes[event.id] = nil
 		elseif event.name == "pitch" then
-			local note = self.rec_notes[event.id]
+			local note = self.active_notes[event.id]
 			local t_offset = time - note.time
 
 			local v_prev = note.verts[#note.verts]
@@ -175,13 +178,13 @@ function Roll:event(event)
 			local n_new = { t_offset, event.offset, v_prev[3] }
 			-- if t_offset - v_prev[1] >= 0.008 then
 			if t_offset - v_prev[1] >= 0.0 then
-				table.insert(self.rec_notes[event.id].verts, n_new)
+				table.insert(self.active_notes[event.id].verts, n_new)
 			else
 				-- note.verts[#note.verts] = n_new
 				note.verts[#note.verts][2] = event.offset
 			end
 		elseif event.name == "pressure" then
-			local note = self.rec_notes[event.id]
+			local note = self.active_notes[event.id]
 			local t_offset = time - note.time
 
 			local v_prev = note.verts[#note.verts]
@@ -189,7 +192,7 @@ function Roll:event(event)
 			local n_new = { t_offset, v_prev[2], event.pressure }
 
 			if t_offset - v_prev[1] >= 0.008 then
-				table.insert(self.rec_notes[event.id].verts, n_new)
+				table.insert(self.active_notes[event.id].verts, n_new)
 			else
 				-- note.verts[#note.verts] = n_new
 				note.verts[#note.verts][3] = event.pressure

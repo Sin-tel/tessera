@@ -22,9 +22,19 @@ end
 function engine.stop()
 	engine.playing = false
 
-	for _, v in ipairs(ui_channels) do
+	local added_notes = {}
+	local total = 0
+
+	for i, v in ipairs(ui_channels) do
 		v.voice_alloc:allNotesOff()
+
+		added_notes[i] = v.roll.recorded_notes
+		total = total + #added_notes[i]
 		v.roll:stop()
+	end
+	if total > 0 then
+		local c = command.noteAdd.new(added_notes)
+		command.register(c)
 	end
 end
 

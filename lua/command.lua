@@ -195,6 +195,44 @@ end
 
 command.noteDelete = noteDelete
 
+--
+local noteAdd = {}
+noteAdd.__index = noteAdd
+
+function noteAdd.new(notes)
+    local self = setmetatable({}, noteAdd)
+
+    self.notes = notes
+    self.mask = {}
+
+    for ch_index in ipairs(self.notes) do
+        for _, note in ipairs(self.notes[ch_index]) do
+            self.mask[note] = true
+        end
+    end
+    return self
+end
+
+function noteAdd:run()
+    for ch_index in ipairs(self.notes) do
+        for _, note in ipairs(self.notes[ch_index]) do
+            table.insert(project.channels[ch_index].notes, note)
+        end
+    end
+end
+
+function noteAdd:reverse()
+    for _, channel in ipairs(project.channels) do
+        for i = #channel.notes, 1, -1 do
+            if self.mask[channel.notes[i]] then
+                table.remove(channel.notes, i)
+            end
+        end
+    end
+end
+
+command.noteAdd = noteAdd
+
 command.newChannel, command.removeChannel, command.newEffect, command.removeEffect, command.reorderEffect =
     unpack(require("command_channel"))
 
