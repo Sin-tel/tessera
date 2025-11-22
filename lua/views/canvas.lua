@@ -8,6 +8,7 @@ local tuning = require("tuning")
 local drag = require("tools/drag")
 local edit = require("tools/edit")
 local pan = require("tools/pan")
+local scale = require("tools/scale")
 local set_transport_time = require("tools/set_transport_time")
 
 local Canvas = View.derive("Canvas")
@@ -16,8 +17,9 @@ Canvas.__index = Canvas
 function Canvas.new()
 	local self = setmetatable({}, Canvas)
 
-	self.current_tool = pan
 	self.selected_tool = edit
+	self.current_tool = self.selected_tool
+	self.tool_active = false
 
 	-- TODO: expose this as an option
 	self.follow = false
@@ -43,7 +45,7 @@ function Canvas:update()
 			end
 		end
 
-		if mouse.button then
+		if self.tool_active then
 			self.current_tool:mousedown(self)
 		end
 	end
@@ -225,11 +227,24 @@ function Canvas:keypressed(key)
 			end
 		end
 		selection.setNormal(mask)
-	elseif key == "delete" then
+	elseif key == "delete" or (modifier_keys.ctrl and key == "x") then
 		local c = command.noteDelete.new()
 		command.run_and_register(c)
-
 		return true
+	elseif key == "g" then
+		if not selection.isEmpty() then
+			self.current_tool = drag
+			self.current_tool:mousepressed(self)
+			self.tool_active = true
+			return true
+		end
+	elseif key == "s" then
+		if not selection.isEmpty() then
+			self.current_tool = scale
+			self.current_tool:mousepressed(self)
+			self.tool_active = true
+			return true
+		end
 	end
 
 	if zoom_factor then
@@ -332,6 +347,10 @@ function Canvas:find_closest_end(mx, my, max_distance)
 end
 
 function Canvas:mousepressed()
+	if self.tool_active then
+		return
+	end
+
 	self.current_tool = self.selected_tool
 
 	if mouse.button == 1 then
@@ -348,6 +367,7 @@ function Canvas:mousepressed()
 	end
 
 	self.current_tool:mousepressed(self)
+	self.tool_active = true
 end
 
 function Canvas:mousereleased()
@@ -355,6 +375,7 @@ function Canvas:mousereleased()
 		return
 	end
 	self.current_tool:mousereleased(self)
+	self.tool_active = false
 end
 
 return Canvas

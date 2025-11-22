@@ -3,6 +3,8 @@ local mouse = {}
 local DOUBLE_CLICK_TIME = 0.35
 local DRAG_DIST = 3
 
+mouse.DRAG_DIST = DRAG_DIST
+
 function mouse:load()
 	self.x = 0
 	self.y = 0

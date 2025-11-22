@@ -2,42 +2,44 @@ local util = require("util")
 
 local drag_end = {}
 
-drag_end.x_start = 0
-drag_end.y_start = 0
-
-local min_t = (1 / 16)
-
-function drag_end:set_note_origin(note_origin)
-	self.note_origin = util.clone(note_origin)
-end
+local t_min = (1 / 16)
 
 function drag_end:mousepressed(canvas)
+	self.ix, self.iy = mouse.x, mouse.y
 	self.start_x, self.start_y = canvas.transform:inverse(mouse.x, mouse.y)
 	self.prev_state = util.clone(selection.list)
+	self.edit = false
 end
 
 function drag_end:mousedown(canvas)
-	if not mouse.drag then
+	if not self.edit and util.dist(self.ix, self.iy, mouse.x, mouse.y) < mouse.DRAG_DIST then
 		return
+	else
+		self.edit = true
 	end
+
 	local mx, _ = canvas.transform:inverse(mouse.x, mouse.y)
 	local x = mx - self.start_x
 
-	-- if not modifier_keys.shift then
-	-- 	-- Snap time to grid
-	-- 	x = math.floor(x * 4 + 0.5) / 4
-	-- end
-
-	-- Update pitch and time of selected notes
 	for i, v in ipairs(selection.list) do
 		local n = #v.verts
-		local new_t = self.prev_state[i].verts[n][1] + x
-		v.verts[n][1] = math.max(min_t, new_t)
+		local t_end = self.prev_state[i].verts[n][1]
+
+		assert(t_end > 0)
+
+		local t_move = t_end + x
+		t_move = math.max(t_min, t_move)
+
+		for j in ipairs(v.verts) do
+			-- proportion to shift
+			local s = self.prev_state[i].verts[j][1] / t_end
+			v.verts[j][1] = s * t_move
+		end
 	end
 end
 
 function drag_end:mousereleased(canvas)
-	if mouse.drag then
+	if self.edit then
 		local c = command.noteUpdate.new(self.prev_state, selection.list)
 		command.register(c)
 		self.prev_state = nil
