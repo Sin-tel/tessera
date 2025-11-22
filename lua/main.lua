@@ -31,6 +31,7 @@ width, height = love.graphics.getDimensions()
 
 theme = require("settings/theme")
 selection = require("selection")
+clipboard = require("clipboard")
 setup = {}
 resources = {}
 

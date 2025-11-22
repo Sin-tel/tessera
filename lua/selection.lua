@@ -42,6 +42,21 @@ function selection.deselect()
 	selection.mask = {}
 end
 
+function selection.getNotes()
+	-- get selected notes as a table per channel
+
+	local notes = {}
+	for ch_index, channel in ipairs(project.channels) do
+		notes[ch_index] = {}
+		for _, note in ipairs(channel.notes) do
+			if selection.mask[note] then
+				table.insert(notes[ch_index], note)
+			end
+		end
+	end
+	return notes
+end
+
 function selection.removeChannel(ch)
 	for _, v in ipairs(ch.notes) do
 		selection.mask[v] = nil

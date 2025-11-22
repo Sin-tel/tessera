@@ -153,24 +153,18 @@ command.noteUpdate = noteUpdate
 local noteDelete = {}
 noteDelete.__index = noteDelete
 
-function noteDelete.new()
+function noteDelete.new(notes)
     local self = setmetatable({}, noteDelete)
 
+    assert(notes)
+    self.notes = notes
     self.mask = {}
-    self.notes = {}
 
-    for ch_index, channel in ipairs(project.channels) do
-        self.notes[ch_index] = {}
-        if channel.visible and not channel.lock then
-            for _, note in ipairs(channel.notes) do
-                if selection.mask[note] then
-                    self.mask[note] = true
-                    table.insert(self.notes[ch_index], note)
-                end
-            end
+    for ch_index in ipairs(self.notes) do
+        for _, note in ipairs(self.notes[ch_index]) do
+            self.mask[note] = true
         end
     end
-
     return self
 end
 

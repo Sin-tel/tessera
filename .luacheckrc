@@ -18,6 +18,7 @@ stds.justidaw = {
       -- runtime stuff
       "audio_status",
       "selection",
+      "clipboard",
       -- variables
       "release",
       "width",
