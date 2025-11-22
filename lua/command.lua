@@ -109,6 +109,92 @@ end
 
 command.newProject = newProject
 
+--
+local noteUpdate = {}
+noteUpdate.__index = noteUpdate
+
+function noteUpdate.new(prev_state, new_state)
+    local self = setmetatable({}, noteUpdate)
+
+    assert(prev_state)
+    assert(new_state)
+
+    -- keep ref to actual notes, state is just copies
+    self.notes = {}
+    for i, v in ipairs(new_state) do
+        table.insert(self.notes, v)
+    end
+
+    self.prev_state = prev_state
+    self.new_state = util.clone(new_state)
+
+    return self
+end
+
+function noteUpdate:run()
+    for i, v in ipairs(self.notes) do
+        for key, value in pairs(v) do
+            self.notes[i][key] = self.new_state[i][key]
+        end
+    end
+end
+
+function noteUpdate:reverse()
+    for i, v in ipairs(self.notes) do
+        for key, value in pairs(v) do
+            self.notes[i][key] = self.prev_state[i][key]
+        end
+    end
+end
+
+command.noteUpdate = noteUpdate
+
+--
+local noteDelete = {}
+noteDelete.__index = noteDelete
+
+function noteDelete.new()
+    local self = setmetatable({}, noteDelete)
+
+    self.mask = {}
+    self.notes = {}
+
+    for ch_index, channel in ipairs(project.channels) do
+        self.notes[ch_index] = {}
+        if channel.visible and not channel.lock then
+            for _, note in ipairs(channel.notes) do
+                if selection.mask[note] then
+                    self.mask[note] = true
+                    table.insert(self.notes[ch_index], note)
+                end
+            end
+        end
+    end
+
+    return self
+end
+
+function noteDelete:run()
+    -- remove selected notes
+    for _, channel in ipairs(project.channels) do
+        for i = #channel.notes, 1, -1 do
+            if self.mask[channel.notes[i]] then
+                table.remove(channel.notes, i)
+            end
+        end
+    end
+end
+
+function noteDelete:reverse()
+    for ch_index in ipairs(self.notes) do
+        for _, note in ipairs(self.notes[ch_index]) do
+            table.insert(project.channels[ch_index].notes, note)
+        end
+    end
+end
+
+command.noteDelete = noteDelete
+
 command.newChannel, command.removeChannel, command.newEffect, command.removeEffect, command.reorderEffect =
     unpack(require("command_channel"))
 

@@ -234,16 +234,9 @@ function Canvas:keypressed(key)
 		end
 		selection.setNormal(mask)
 	elseif key == "delete" then
-		-- remove selected notes
-		for _, channel in ipairs(project.channels) do
-			if channel.visible and not channel.lock then
-				for i = #channel.notes, 1, -1 do
-					if selection.mask[channel.notes[i]] then
-						table.remove(channel.notes, i)
-					end
-				end
-			end
-		end
+		local c = command.noteDelete.new()
+		command.run_and_register(c)
+
 		return true
 	end
 
@@ -253,6 +246,8 @@ function Canvas:keypressed(key)
 	end
 
 	if move_up then
+		local prev_state = util.clone(selection.list)
+
 		for k, v in ipairs(selection.list) do
 			if modifier_keys.shift then
 				tuning.moveOctave(v.pitch, move_up)
@@ -264,10 +259,14 @@ function Canvas:keypressed(key)
 				tuning.moveDiatonic(v.pitch, move_up)
 			end
 		end
+
+		command.register(command.noteUpdate.new(prev_state, selection.list))
 		return true
 	end
 
 	if move_right then
+		local prev_state = util.clone(selection.list)
+
 		local move_amt = 1
 		if modifier_keys.shift then
 			move_amt = 0.25
@@ -278,6 +277,8 @@ function Canvas:keypressed(key)
 		for k, v in ipairs(selection.list) do
 			v.time = v.time + move_right * move_amt
 		end
+
+		command.register(command.noteUpdate.new(prev_state, selection.list))
 		return true
 	end
 end
