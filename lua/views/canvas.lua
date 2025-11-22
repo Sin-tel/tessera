@@ -227,9 +227,30 @@ function Canvas:keypressed(key)
 			end
 		end
 		selection.setNormal(mask)
-	elseif key == "delete" or (modifier_keys.ctrl and key == "x") then
+	elseif modifier_keys.ctrl and key == "x" then
 		if not selection.isEmpty() then
-			local c = command.noteDelete.new()
+			local notes = selection.getNotes()
+			clipboard.set(notes)
+			local c = command.noteDelete.new(notes)
+			command.run_and_register(c)
+			return true
+		end
+	elseif modifier_keys.ctrl and key == "c" then
+		if not selection.isEmpty() then
+			local notes = selection.getNotes()
+			clipboard.set(notes)
+		end
+	elseif modifier_keys.ctrl and key == "v" then
+		if not clipboard.isEmpty() then
+			local notes = util.clone(clipboard.notes)
+			local c = command.noteAdd.new(notes)
+			command.run_and_register(c)
+			selection.setFromNotes(notes)
+		end
+	elseif key == "delete" then
+		if not selection.isEmpty() then
+			local notes = selection.getNotes()
+			local c = command.noteDelete.new(notes)
 			command.run_and_register(c)
 			return true
 		end
