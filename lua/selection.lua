@@ -4,25 +4,32 @@ selection.list = {}
 selection.mask = {}
 
 function selection.set(mask)
-	if modifier_keys.ctrl then
-		for k in pairs(mask) do
-			selection.mask[k] = nil
-		end
-	else
-		if modifier_keys.shift then
-			for k in pairs(mask) do
-				selection.mask[k] = true
-			end
-		else
-			selection.mask = mask
-		end
+	selection.mask = mask
+	selection.refresh()
+end
+
+function selection.subtract(mask)
+	for k in pairs(mask) do
+		selection.mask[k] = nil
 	end
 
 	selection.refresh()
 end
 
-function selection.setNormal(mask)
-	selection.mask = mask
+function selection.add(mask)
+	for k in pairs(mask) do
+		selection.mask[k] = true
+	end
+end
+
+function selection.setFromNotes(notes)
+	selection.mask = {}
+	for _, v in ipairs(notes) do
+		for _, note in ipairs(v) do
+			selection.mask[note] = true
+		end
+	end
+
 	selection.refresh()
 end
 

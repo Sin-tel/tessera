@@ -45,7 +45,13 @@ function select_rect:mousereleased(canvas)
 		end
 	end
 
-	selection.set(mask)
+	if modifier_keys.ctrl then
+		selection.subtract(mask)
+	elseif modifier_keys.shift then
+		selection.add(mask)
+	else
+		selection.set(mask)
+	end
 end
 
 function select_rect:draw(canvas)

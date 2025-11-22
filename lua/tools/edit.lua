@@ -16,7 +16,7 @@ function edit:mousepressed(canvas)
 	local closest, closest_ch = canvas:find_closest_note(mx, my, 24)
 	local closest_end, closest_ch_end = canvas:find_closest_end(mx, my, 24)
 
-	local select_note = closest
+	self.select_note = closest
 	local select_ch = closest_ch
 
 	if modifier_keys.alt then
@@ -24,15 +24,20 @@ function edit:mousepressed(canvas)
 	elseif closest_end then
 		self.tool = drag_end
 
-		select_note = closest_end
+		self.select_note = closest_end
 		select_ch = closest_ch_end
 	elseif closest then
 		self.tool = drag
 	end
 
 	-- If not part of selection already, change selection to just the note we clicked
-	if select_note and not selection.mask[select_note] then
-		selection.setNormal({ [select_note] = true })
+	if self.select_note and not selection.mask[self.select_note] then
+		local mask = { [self.select_note] = true }
+		if modifier_keys.shift then
+			selection.add(mask)
+		else
+			selection.set(mask)
+		end
 		selection.ch_index = select_ch
 	end
 
@@ -44,7 +49,10 @@ function edit:mousedown(canvas)
 end
 
 function edit:mousereleased(canvas)
-	self.tool:mousereleased(canvas)
+	local did_edit = self.tool:mousereleased(canvas)
+	if not did_edit and modifier_keys.ctrl and selection.mask[self.select_note] then
+		selection.subtract({ [self.select_note] = true })
+	end
 end
 
 function edit:draw(canvas)
