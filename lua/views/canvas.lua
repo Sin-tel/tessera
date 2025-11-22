@@ -5,11 +5,10 @@ local hsluv = require("lib/hsluv")
 local tuning = require("tuning")
 
 -- sub tools
-local adjust_velocity = require("tools/adjust_velocity")
 local drag = require("tools/drag")
-local drag_end = require("tools/drag_end")
+local edit = require("tools/edit")
 local pan = require("tools/pan")
-local select_rect = require("tools/select_rect")
+local set_transport_time = require("tools/set_transport_time")
 
 local Canvas = View.derive("Canvas")
 Canvas.__index = Canvas
@@ -18,7 +17,7 @@ function Canvas.new()
 	local self = setmetatable({}, Canvas)
 
 	self.current_tool = pan
-	self.selected_tool = select_rect
+	self.selected_tool = edit
 
 	-- TODO: expose this as an option
 	self.follow = false
@@ -44,14 +43,7 @@ function Canvas:update()
 			end
 		end
 
-		if mouse.button == 1 and my > 0 and my < 16 then
-			-- move playhead when clicking on ribbon
-			-- TODO: action should be triggered when mouse pressed in ribbon
-			local new_time = self.transform:time_inv(mx)
-
-			project.transport.start_time = new_time
-			engine.seek(new_time)
-		elseif mouse.button then
+		if mouse.button then
 			self.current_tool:mousedown(self)
 		end
 	end
@@ -343,33 +335,11 @@ function Canvas:mousepressed()
 	self.current_tool = self.selected_tool
 
 	if mouse.button == 1 then
-		-- Check if click on note
-		local mx, my = self:getMouse()
+		local _, my = self:getMouse()
 
-		local closest, closest_ch = self:find_closest_note(mx, my, 24)
-		local closest_end, closest_ch_end = self:find_closest_end(mx, my, 24)
-
-		local select_note = closest
-		local select_ch = closest_ch
-
-		if modifier_keys.alt then
-			self.current_tool = adjust_velocity
-		elseif closest_end then
-			self.current_tool = drag_end
-
-			select_note = closest_end
-			select_ch = closest_ch_end
-		elseif closest then
-			if not modifier_keys.alt then
-				drag:set_note_origin(closest)
-				self.current_tool = drag
-			end
-		end
-
-		-- If not part of selection already, change selection to just the note we clicked
-		if select_note and not selection.mask[select_note] then
-			selection.setNormal({ [select_note] = true })
-			selection.ch_index = select_ch
+		if my > 0 and my < 16 then
+			-- clicked on top ribbon
+			self.current_tool = set_transport_time
 		end
 	elseif mouse.button == 2 then
 		return

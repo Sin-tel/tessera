@@ -6,11 +6,11 @@ local drag = {}
 drag.x_start = 0
 drag.y_start = 0
 
-function drag:set_note_origin(note_origin)
-	self.note_origin = util.clone(note_origin)
-end
-
 function drag:mousepressed(canvas)
+	local mx, my = canvas:getMouse()
+	local closest, _ = canvas:find_closest_note(mx, my)
+	self.note_origin = util.clone(closest)
+
 	self.start_x, self.start_y = canvas.transform:inverse(mouse.x, mouse.y)
 	self.prev_state = util.clone(selection.list)
 
