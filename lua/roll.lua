@@ -1,5 +1,6 @@
 local VoiceAlloc = require("voice_alloc")
 local engine = require("engine")
+local log = require("log")
 
 local Roll = {}
 Roll.__index = Roll
@@ -147,6 +148,10 @@ function Roll:event(event)
 			table.insert(project.channels[self.ch_index].notes, note)
 		elseif event.name == "note_off" then
 			local note = self.rec_notes[event.id]
+			if not note then
+				-- Note was pressed before recording started
+				return
+			end
 			note.is_recording = nil
 			local t_offset = time - note.time
 

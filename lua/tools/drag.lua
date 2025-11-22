@@ -3,10 +3,8 @@ local util = require("util")
 
 local drag = {}
 
-drag.note_origin = nil
 drag.x_start = 0
 drag.y_start = 0
-drag.selection = {}
 
 function drag:set_note_origin(note_origin)
 	self.note_origin = util.clone(note_origin)
@@ -14,17 +12,24 @@ end
 
 function drag:mousepressed(canvas)
 	self.start_x, self.start_y = canvas.transform:inverse(mouse.x, mouse.y)
-	self.selection = util.clone(selection.list)
+	self.prev_state = util.clone(selection.list)
+
+	self.edit = false
 end
 
 function drag:mousedown(canvas)
+	if not mouse.drag then
+		return
+	end
 	local mx, my = canvas.transform:inverse(mouse.x, mouse.y)
+
 	local x = mx - self.start_x
 	local y = my - self.start_y
 
-	if not modifier_keys.shift then
+	if modifier_keys.shift then
 		-- Snap time to grid
-		x = math.floor(x * 4 + 0.5) / 4
+		local ix = self.note_origin.time
+		x = (math.floor((ix + x) * 4 + 0.5) / 4) - ix
 	end
 	-- Get pitch location in local frame
 	local n = tuning.getDiatonicIndex(self.note_origin.pitch)
@@ -40,15 +45,21 @@ function drag:mousedown(canvas)
 	-- Update pitch and time of selected notes
 	for i, v in ipairs(selection.list) do
 		for j, _ in ipairs(delta) do
-			v.pitch[j] = self.selection[i].pitch[j] + delta[j]
+			v.pitch[j] = self.prev_state[i].pitch[j] + delta[j]
 		end
 
-		v.time = self.selection[i].time + x
+		v.time = self.prev_state[i].time + x
 	end
 	-- canvas.transform:drag(px, py)
 end
 
-function drag:mousereleased(canvas) end
+function drag:mousereleased(canvas)
+	if mouse.drag then
+		local c = command.noteUpdate.new(self.prev_state, selection.list)
+		command.register(c)
+		self.prev_state = nil
+	end
+end
 
 function drag:draw(canvas) end
 
