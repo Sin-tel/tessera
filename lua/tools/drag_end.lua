@@ -43,6 +43,8 @@ function drag_end:mousereleased(canvas)
 		local c = command.noteUpdate.new(self.prev_state, selection.list)
 		command.register(c)
 		self.prev_state = nil
+
+		return true
 	end
 end
 
