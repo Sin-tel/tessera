@@ -268,14 +268,14 @@ function Canvas:keypressed(key)
 			command.run_and_register(c)
 			return true
 		end
-	elseif key == "g" then
+	elseif key == "g" and not modifier_keys.any then
 		if not selection.isEmpty() then
 			self.current_tool = drag
 			self.current_tool:mousepressed(self)
 			self.tool_active = true
 			return true
 		end
-	elseif key == "s" then
+	elseif key == "s" and not modifier_keys.any then
 		if not selection.isEmpty() then
 			self.current_tool = scale
 			self.current_tool:mousepressed(self)

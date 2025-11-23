@@ -14,7 +14,6 @@ function drag:mousepressed(canvas)
 	self.note_origin = util.clone(closest)
 
 	self.start_x, self.start_y = canvas.transform:inverse(mouse.x, mouse.y)
-	self.prev_state = util.clone(selection.list)
 
 	self.edit = false
 end
@@ -25,7 +24,6 @@ function drag:mousedown(canvas)
 			return
 		else
 			if self.clone then
-				print("CLONE")
 				local notes = util.clone(selection.getNotes())
 				for ch_index in ipairs(notes) do
 					for _, note in ipairs(notes[ch_index]) do
@@ -35,6 +33,7 @@ function drag:mousedown(canvas)
 				selection.setFromNotes(notes)
 			end
 
+			self.prev_state = util.clone(selection.list)
 			self.edit = true
 		end
 	end
