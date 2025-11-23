@@ -104,6 +104,7 @@ function Canvas:draw()
 		if ch.visible then
 			local c_normal = hsluv.hsluv_to_rgb({ ch.hue, 80.0, 60.0 })
 			local c_select = hsluv.hsluv_to_rgb({ ch.hue, 50.0, 80.0 })
+			local c_lock = hsluv.hsluv_to_rgb({ ch.hue, 40.0, 40.0 })
 
 			for _, note in ipairs(ch.notes) do
 				local t_start = note.time
@@ -119,6 +120,9 @@ function Canvas:draw()
 
 				-- note
 				local c = c_normal
+				if ch.lock then
+					c = c_lock
+				end
 				if selection.mask[note] then
 					c = c_select
 				end
