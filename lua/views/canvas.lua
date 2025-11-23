@@ -230,7 +230,7 @@ function Canvas:keypressed(key)
 				mask[v] = true
 			end
 		end
-		selection.setNormal(mask)
+		selection.set(mask)
 	elseif modifier_keys.ctrl and key == "x" then
 		if not selection.isEmpty() then
 			local notes = selection.getNotes()
@@ -243,13 +243,23 @@ function Canvas:keypressed(key)
 		if not selection.isEmpty() then
 			local notes = selection.getNotes()
 			clipboard.set(notes)
+			return true
 		end
 	elseif modifier_keys.ctrl and key == "v" then
 		if not clipboard.isEmpty() then
+			-- get notes and paste them
 			local notes = util.clone(clipboard.notes)
 			local c = command.noteAdd.new(notes)
 			command.run_and_register(c)
+
+			-- set selection to new notes
 			selection.setFromNotes(notes)
+
+			-- switch to drag mode
+			self.current_tool = drag
+			self.current_tool:mousepressed(self)
+			self.tool_active = true
+			return true
 		end
 	elseif key == "delete" then
 		if not selection.isEmpty() then

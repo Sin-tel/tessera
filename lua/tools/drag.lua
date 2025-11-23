@@ -3,6 +3,8 @@ local util = require("util")
 
 local drag = {}
 
+drag.clone = false
+
 function drag:mousepressed(canvas)
 	self.ix, self.iy = mouse.x, mouse.y
 
@@ -18,10 +20,23 @@ function drag:mousepressed(canvas)
 end
 
 function drag:mousedown(canvas)
-	if not self.edit and util.dist(self.ix, self.iy, mouse.x, mouse.y) < mouse.DRAG_DIST then
-		return
-	else
-		self.edit = true
+	if not self.edit then
+		if util.dist(self.ix, self.iy, mouse.x, mouse.y) < mouse.DRAG_DIST then
+			return
+		else
+			if self.clone then
+				print("CLONE")
+				local notes = util.clone(selection.getNotes())
+				for ch_index in ipairs(notes) do
+					for _, note in ipairs(notes[ch_index]) do
+						table.insert(project.channels[ch_index].notes, note)
+					end
+				end
+				selection.setFromNotes(notes)
+			end
+
+			self.edit = true
+		end
 	end
 
 	local mx, my = canvas.transform:inverse(mouse.x, mouse.y)
@@ -66,12 +81,21 @@ end
 
 function drag:mousereleased(canvas)
 	if self.edit then
-		local c = command.noteUpdate.new(self.prev_state, selection.list)
-		command.register(c)
-		self.prev_state = nil
+		if self.clone then
+			local notes = selection.getNotes()
+			local c = command.noteAdd.new(notes)
+			command.register(c)
+		else
+			local c = command.noteUpdate.new(self.prev_state, selection.list)
+			command.register(c)
+			self.prev_state = nil
+		end
 
+		self.clone = false
 		return true
 	end
+
+	self.clone = false
 end
 
 function drag:draw(canvas) end
