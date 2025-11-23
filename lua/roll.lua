@@ -26,7 +26,7 @@ local function sort_time(a, b)
 	return a.time < b.time
 end
 
-function Roll:start()
+function Roll:start(chase)
 	self.note_table = {}
 	self.control_table = {}
 	self.voices = {}
@@ -46,10 +46,10 @@ function Roll:start()
 	end
 	table.sort(self.control_table, sort_time)
 
-	self:seek()
+	self:seek(chase)
 end
 
-function Roll:seek()
+function Roll:seek(chase)
 	-- seek
 	self.n_index = 1
 	self.c_index = 1
@@ -57,9 +57,12 @@ function Roll:seek()
 	-- skip notes already played
 	while self.note_table[self.n_index] do
 		local note = self.note_table[self.n_index]
-		local vt = note.verts[#note.verts][1]
+		local end_time = 0
+		if chase then
+			end_time = note.verts[#note.verts][1]
+		end
 		-- TODO: some annoying edge cases here
-		if note.time + vt > project.transport.time then
+		if note.time + end_time > project.transport.time then
 			break
 		end
 		self.n_index = self.n_index + 1
@@ -76,7 +79,7 @@ function Roll:stop()
 	for _, note in pairs(self.active_notes) do
 		note.is_recording = nil
 		local t_offset = project.transport.time - note.time
-		table.insert(note.verts, { t_offset, 0, 0.3 })
+		table.insert(note.verts, { t_offset, 0, 0.0 })
 	end
 
 	self.active_notes = {}
@@ -86,7 +89,6 @@ end
 function Roll:playback()
 	while self.control_table[self.c_index] and project.transport.time > self.control_table[self.c_index].time do
 		local c = self.control_table[self.c_index]
-		-- print(util.pprint(c))
 		if c.name == "sustain" then
 			self.voice_alloc:event({ name = "sustain", sustain = c.value })
 		end
