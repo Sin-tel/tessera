@@ -11,11 +11,14 @@ engine.render_progress = 0
 engine.render_end = 8
 
 function engine.start()
-	engine.playing = true
 	engine.seek(project.transport.start_time)
+	engine.playing = true
+
+	-- TODO: expose option to chase midi notes
+	local chase = false
 
 	for _, v in ipairs(ui_channels) do
-		v.roll:start()
+		v.roll:start(chase)
 	end
 end
 
@@ -39,14 +42,8 @@ function engine.stop()
 end
 
 function engine.seek(time)
+	assert(not engine.playing)
 	project.transport.time = time
-
-	if engine.playing then
-		for _, v in ipairs(ui_channels) do
-			v.voice_alloc:allNotesOff()
-			v.roll:seek()
-		end
-	end
 end
 
 function engine.update(dt)
