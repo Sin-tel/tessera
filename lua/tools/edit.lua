@@ -28,6 +28,10 @@ function edit:mousepressed(canvas)
 		select_ch = closest_ch_end
 	elseif closest then
 		self.tool = drag
+
+		if modifier_keys.ctrl then
+			drag.clone = true
+		end
 	end
 
 	-- If not part of selection already, change selection to just the note we clicked
