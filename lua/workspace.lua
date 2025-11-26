@@ -17,14 +17,12 @@ function Box.new(x, y, w, h)
 	return self
 end
 
-function Box:stencil()
-	love.graphics.rectangle(
-		"fill",
+function Box:scissor()
+	love.graphics.setScissor(
 		self.x + ui.BORDER_SIZE,
 		self.y + ui.BORDER_SIZE,
 		self.w - (2 * ui.BORDER_SIZE),
-		self.h - (2 * ui.BORDER_SIZE),
-		ui.BORDER_RADIUS
+		self.h - (2 * ui.BORDER_SIZE)
 	)
 end
 
@@ -42,10 +40,7 @@ function Box:draw()
 			v:draw()
 		end
 	else
-		love.graphics.stencil(function()
-			self:stencil()
-		end, "replace", 2, false)
-		love.graphics.setStencilTest("greater", 1)
+		self:scissor()
 
 		love.graphics.setColor(theme.background)
 		love.graphics.rectangle("fill", self.x, self.y, self.w, self.h)
@@ -55,7 +50,8 @@ function Box:draw()
 		self.view:drawFull()
 		love.graphics.pop()
 
-		love.graphics.setStencilTest()
+		love.graphics.setScissor()
+
 		love.graphics.setColor(theme.borders)
 		love.graphics.rectangle(
 			"line",

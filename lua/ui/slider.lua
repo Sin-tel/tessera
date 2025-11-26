@@ -76,26 +76,33 @@ function Slider:update(ui, target, key)
 	return interact
 end
 
-local function stencil(x, y, w, h)
-	love.graphics.rectangle("fill", x, y, w, h, CORNER_RADIUS)
-end
-
 function Slider:draw(v, display, color_fill, color_line, x, y, w, h)
-	love.graphics.stencil(function()
-		stencil(x, y, w, h)
-	end, "increment", 1, true)
-	love.graphics.setStencilTest("greater", 2)
-
+	-- background fill
 	love.graphics.setColor(color_fill)
-	love.graphics.rectangle("fill", x, y, w, h)
-	love.graphics.setColor(theme.widget)
+	love.graphics.rectangle("fill", x, y, w, h, CORNER_RADIUS)
+
+	-- pop scissor
+	local sx, sy, sw, sh = love.graphics.getScissor()
+
+	local gx, gy = x, y
+	gx, gy = love.graphics.transformPoint(gx, gy)
+
 	if self.value.centered then
-		love.graphics.rectangle("fill", x + w * 0.5, y, w * (v - 0.5), h)
+		local x1 = gx + w * 0.5
+		local x2 = x1 + w * (v - 0.5)
+		if x2 < x1 then
+			x1, x2 = x2, x1
+		end
+		love.graphics.intersectScissor(x1, gy, x2 - x1, h)
 	else
-		love.graphics.rectangle("fill", x, y, w * v, h)
+		love.graphics.intersectScissor(gx, gy, w * v, h)
 	end
 
-	love.graphics.setStencilTest("greater", 1)
+	love.graphics.setColor(theme.widget)
+	love.graphics.rectangle("fill", x, y, w, h, CORNER_RADIUS)
+
+	-- push scissor
+	love.graphics.setScissor(sx, sy, sw, sh)
 
 	love.graphics.setColor(color_line)
 	love.graphics.rectangle("line", x, y, w, h, CORNER_RADIUS)
