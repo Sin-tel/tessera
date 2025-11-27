@@ -159,7 +159,7 @@ impl LuaUserData for Graphics {
 			path.rect(x, y, w, h);
 
 			let paint = Paint::image_tint(image.id, x, y, w, h, 0.0, state.current_color);
-			state.canvas.fill_path(&mut path, &paint);
+			state.canvas.fill_path(&path, &paint);
 
 			Ok(())
 		});
@@ -362,11 +362,11 @@ impl LuaUserData for Graphics {
 			let mut paint = Paint::color(state.current_color);
 			match mode.as_str() {
 				"fill" => {
-					state.canvas.fill_path(&mut path, &paint);
+					state.canvas.fill_path(&path, &paint);
 				},
 				"line" => {
 					paint.set_line_width(state.line_width);
-					state.canvas.stroke_path(&mut path, &paint);
+					state.canvas.stroke_path(&path, &paint);
 				},
 				m => panic!("Invalid draw mode {m}, expected one of: 'line', 'fill'"),
 			}

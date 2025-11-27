@@ -1,6 +1,5 @@
 local Ui = require("ui/ui")
 local View = require("view")
-local backend = require("backend")
 local widgets = require("ui/widgets")
 local Scope = View.derive("Scope")
 Scope.__index = Scope

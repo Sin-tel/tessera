@@ -14,7 +14,6 @@ VERSION.MAJOR = "0"
 VERSION.MINOR = "0"
 VERSION.PATCH = "1"
 
-local backend = require("backend")
 local build = require("build")
 local engine = require("engine")
 local midi = require("midi")

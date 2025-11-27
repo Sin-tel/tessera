@@ -1,4 +1,3 @@
-local backend = require("backend")
 local log = require("log")
 local midi = require("midi")
 
