@@ -7,9 +7,9 @@ extern crate bencher;
 use bencher::Bencher;
 use fastrand::Rng;
 use std::f32::consts::PI;
-use tessera::dsp::delayline::*;
-use tessera::dsp::resample::*;
-use tessera::dsp::*;
+use tessera_audio::dsp::delayline::*;
+use tessera_audio::dsp::resample::*;
+use tessera_audio::dsp::*;
 
 const ITERATIONS: u32 = 1000;
 const SAMPLE_RATE: f32 = 44100.0;
@@ -138,7 +138,7 @@ fn downsample_bench(bench: &mut Bencher) {
 }
 
 fn svf_bench(bench: &mut Bencher) {
-	let mut filter = tessera::dsp::simper::Filter::new(44100.0);
+	let mut filter = tessera_audio::dsp::simper::Filter::new(44100.0);
 	filter.set_lowpass(500.0, 0.7);
 	let mut i = 0;
 	run(bench, |x| {
@@ -152,13 +152,13 @@ fn svf_bench(bench: &mut Bencher) {
 }
 
 fn svf_phase_bench(bench: &mut Bencher) {
-	let mut filter = tessera::dsp::simper::Filter::new(44100.0);
+	let mut filter = tessera_audio::dsp::simper::Filter::new(44100.0);
 	filter.set_lowpass(500.0, 0.7);
 	run(bench, |x| filter.phase_delay(x))
 }
 
 fn onepole_bench(bench: &mut Bencher) {
-	let mut filter = tessera::dsp::onepole::OnePole::new(44100.0);
+	let mut filter = tessera_audio::dsp::onepole::OnePole::new(44100.0);
 	filter.set_lowpass(500.0);
 	let mut i = 0;
 	run(bench, |x| {
@@ -172,12 +172,12 @@ fn onepole_bench(bench: &mut Bencher) {
 }
 
 fn dckiller_bench(bench: &mut Bencher) {
-	let mut filter = tessera::dsp::DcKiller::new(44100.0);
+	let mut filter = tessera_audio::dsp::DcKiller::new(44100.0);
 	run(bench, |x| filter.process(x))
 }
 
 fn skf_bench(bench: &mut Bencher) {
-	let mut filter = tessera::dsp::skf::Skf::new(44100.0);
+	let mut filter = tessera_audio::dsp::skf::Skf::new(44100.0);
 	filter.set(500.0, 0.7);
 	let mut i = 0;
 	run(bench, |x| {

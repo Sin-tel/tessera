@@ -1,0 +1,32 @@
+[package]
+name = "tessera_audio"
+version = "0.1.0"
+edition = "2024"
+
+# ASIO requirements
+[target.'cfg(target_os = "windows")'.dependencies]
+cpal = { version = "0.16", features = ["asio"]}
+[target.'cfg(not(target_os = "windows"))'.dependencies]
+cpal = { version = "0.16"}
+
+[dependencies]
+ringbuf = "0.4"
+assert_no_alloc = {version = "1.1", features = ["warn_debug"]}
+fastrand = "2.0"
+bit_mask_ring_buf = "0.6"
+bencher = "0.1"
+rustfft = "6.1"
+realfft = "3.3"
+no_denormals = "0.3"
+mlua = { version = "0.11", features = ["luajit", "module"] }
+fft-convolver = "0.2"
+hound = "3.5"
+log = "0.4"
+simplelog = "0.12"
+log-panics = { version = "2", features = ["with-backtrace"]}
+midir = "0.10"
+num-complex = "0.4"
+
+[[bench]]
+name = "bench"
+harness = false
