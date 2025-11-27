@@ -10,21 +10,22 @@ pub fn init_logging() {
 	let config = ConfigBuilder::new()
 		.set_time_level(LevelFilter::Off)
 		.set_location_level(LevelFilter::Off)
-		.set_target_level(LevelFilter::Off)
+        .set_target_level(LevelFilter::Off)
 		.build();
 
 	let filename = "../out/out.log";
 
 	// create empty new file
 	File::create(filename).unwrap();
+
 	// append mode for atomic writes
-	let f = OpenOptions::new().append(true).open(filename).unwrap();
+	let f = OpenOptions::new().write(true).truncate(true).open(filename).unwrap();
 	// buffer lines
 	let f_write = LineWriter::new(f);
 
 	CombinedLogger::init(vec![
 		SimpleLogger::new(LevelFilter::Info, config.clone()),
-		WriteLogger::new(LevelFilter::Trace, config, f_write),
+		WriteLogger::new(LevelFilter::Debug, config, f_write),
 	])
 	.unwrap();
 	// Has to go last otherwise previous errors don't work

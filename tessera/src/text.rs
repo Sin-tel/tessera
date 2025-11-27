@@ -2,7 +2,9 @@ use crate::Renderer;
 use crate::text::imgref::Img;
 use crate::text::imgref::ImgRef;
 use crate::text::rgb::RGBA8;
+use cosmic_text::Align;
 use cosmic_text::CacheKey;
+use cosmic_text::Fallback;
 use cosmic_text::Family;
 use cosmic_text::SubpixelBin;
 use cosmic_text::fontdb;
@@ -19,6 +21,7 @@ use femtovg::rgb;
 use femtovg::{Canvas, Paint};
 use std::collections::HashMap;
 use swash::scale::image::Content;
+use unicode_script::Script;
 
 const TEXTURE_SIZE: usize = 512;
 
@@ -88,6 +91,11 @@ impl RenderCache {
 					// pick an atlas texture for our glyph
 					let content_w = rendered.placement.width as usize;
 					let content_h = rendered.placement.height as usize;
+
+					if content_w == 0 && content_h == 0 {
+						return None;
+					}
+
 					let mut found = None;
 					for (texture_index, glyph_atlas) in self.glyph_textures.iter_mut().enumerate() {
 						if let Some((x, y)) = glyph_atlas.atlas.add_rect(content_w, content_h) {
@@ -186,6 +194,21 @@ impl RenderCache {
 	}
 }
 
+struct MyFallback;
+impl Fallback for MyFallback {
+	fn common_fallback(&self) -> &[&'static str] {
+		&["Inter"]
+	}
+
+	fn forbidden_fallback(&self) -> &[&'static str] {
+		&[]
+	}
+
+	fn script_fallback(&self, _script: Script, _locale: &str) -> &[&'static str] {
+		&[]
+	}
+}
+
 pub struct TextEngine {
 	font_system: FontSystem,
 	glyph_cache: RenderCache,
@@ -194,11 +217,16 @@ pub struct TextEngine {
 
 impl TextEngine {
 	pub fn new() -> Self {
+		// let mut font_system = FontSystem::new();
+
 		let mut db = fontdb::Database::new();
 		db.load_font_data(include_bytes!("../../assets/font/inter.ttf").to_vec());
 		db.load_font_data(include_bytes!("../../assets/font/notes.ttf").to_vec());
 
-		let mut font_system = FontSystem::new_with_locale_and_db("en-US".into(), db);
+		let mut font_system =
+			FontSystem::new_with_locale_and_db_and_fallback("en-US".into(), db, MyFallback {});
+
+		// let mut font_system = FontSystem::new_with_locale_and_db("en-US".into(), db);
 
 		let mut scratch_buffer = Buffer::new(&mut font_system, Metrics::new(14.0, 20.0));
 		scratch_buffer.set_wrap(&mut font_system, cosmic_text::Wrap::None);
@@ -224,8 +252,14 @@ impl TextEngine {
 
 		let attrs = Attrs::new().family(Family::Name(font_name));
 
-		self.scratch_buffer
-			.set_text(&mut self.font_system, text, attrs, Shaping::Basic);
+		self.scratch_buffer.set_text(
+			&mut self.font_system,
+			text,
+			&attrs,
+			Shaping::Basic,
+			// Some(Align::Left),
+			None,
+		);
 
 		self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
 
@@ -243,8 +277,14 @@ impl TextEngine {
 		let metrics = Metrics::new(font_size, font_size * 1.2);
 		self.scratch_buffer.set_metrics(&mut self.font_system, metrics);
 
-		self.scratch_buffer
-			.set_text(&mut self.font_system, text, Attrs::new(), Shaping::Advanced);
+		self.scratch_buffer.set_text(
+			&mut self.font_system,
+			text,
+			&Attrs::new(),
+			Shaping::Advanced,
+			// Some(Align::Left),
+			None,
+		);
 		self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
 
 		self.scratch_buffer

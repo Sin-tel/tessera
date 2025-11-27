@@ -21,6 +21,8 @@ glutin =  "0.31.0"
 glutin-winit = "0.4.0"
 raw-window-handle = "0.5.0"
 
-cosmic-text = "0.12.1"
-swash = "0.1.19"
+cosmic-text = "0.15"
+swash = "0.2"
+unicode-script = "0.5.5"
+
 
