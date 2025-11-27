@@ -42,6 +42,7 @@ function mouse:load()
 	self.cursors.ibeam = love.mouse.getSystemCursor("ibeam")
 
 	self.cursor = self.cursors.default
+	self.pcursor = self.cursor
 end
 
 function mouse:pressed(x, y, button)
@@ -101,13 +102,16 @@ function mouse:endFrame()
 	self.scroll = false
 
 	love.mouse.setRelativeMode(self.relative)
-	self.relative = false
-	if self.cursor then
+	if self.cursor and not self.relative then
 		love.mouse.setVisible(true)
-		love.mouse.setCursor(self.cursor)
+		if self.pcursor ~= self.cursor then
+			love.mouse.setCursor(self.cursor)
+		end
+		self.pcursor = self.cursor
 	else
 		love.mouse.setVisible(false)
 	end
+	self.relative = false
 end
 
 function mouse:setCursor(c)
@@ -129,7 +133,7 @@ function mouse:setPosition(x, y)
 end
 
 function mouse:mousemoved(_, _, dx, dy)
-	if love.keyboard.isDown("lshift") then
+	if modifier_keys.shift then
 		self.dx = self.dx + 0.1 * dx
 		self.dy = self.dy + 0.1 * dy
 	else

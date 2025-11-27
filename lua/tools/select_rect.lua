@@ -14,9 +14,7 @@ function select_rect:mousepressed(canvas)
 	self.active = true
 end
 
-function select_rect:mousedown(canvas)
-	--
-end
+function select_rect:mousedown(canvas) end
 
 function select_rect:mousereleased(canvas)
 	local mx, my = canvas:getMouse()

@@ -4,7 +4,7 @@ if os.getenv("RELEASE") then
 end
 
 local log = require("log")
-require("lib/run")
+-- require("lib/run")
 
 if not release then
 	require("lib/strict")
@@ -100,9 +100,9 @@ function love.load()
 		log.info("Running in debug mode")
 	end
 
-	love.keyboard.setKeyRepeat(true)
+	-- love.keyboard.setKeyRepeat(true)
 	math.randomseed(os.time())
-	love.math.setRandomSeed(os.time())
+	-- love.math.setRandomSeed(os.time())
 
 	setup = save.readSetup()
 
@@ -194,11 +194,11 @@ function love.mousereleased(x, y, button)
 	mouse:released(x, y, button)
 end
 
-function love.mousemoved(x, y, dx, dy, istouch)
+function love.mousemoved(x, y, dx, dy)
 	if audio_status == "render" then
 		return
 	end
-	mouse:mousemoved(x, y, dx, dy, istouch)
+	mouse:mousemoved(x, y, dx, dy)
 end
 
 function love.wheelmoved(_, y)
