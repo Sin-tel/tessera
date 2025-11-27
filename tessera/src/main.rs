@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"]
 #![deny(unreachable_patterns)]
 #![warn(clippy::cast_lossless)]
 #![warn(clippy::uninlined_format_args)]
@@ -26,7 +27,6 @@
 mod backend;
 mod keycodes;
 mod love_api;
-mod love_config;
 mod opengl;
 mod text;
 
@@ -35,6 +35,7 @@ use mlua::prelude::*;
 use std::collections::HashSet;
 use std::fs;
 use std::path;
+use std::path::PathBuf;
 use std::time::Instant;
 use winit::keyboard::KeyCode;
 use winit::{
@@ -47,14 +48,11 @@ use backend::register_backend;
 use keycodes::keycode_to_love2d_key;
 use love_api::Font;
 use love_api::create_love_env;
-use love_config::Config;
 use opengl::Renderer;
 use opengl::Surface;
 use opengl::WindowSurface;
 use opengl::start;
 use text::TextEngine;
-
-const FAST_UPDATE: bool = true;
 
 struct Timer {
 	start: Instant,
@@ -96,6 +94,18 @@ impl Timer {
 	}
 }
 
+const INIT_WIDTH: u32 = 1280;
+const INIT_HEIGHT: u32 = 720;
+
+#[derive(Debug, Clone)]
+pub struct Config {
+	pub lua_dir: PathBuf,
+	pub width: u32,
+	pub height: u32,
+	pub title: String,
+	pub resizeable: bool,
+}
+
 pub struct State {
 	current_color: Color,
 	background_color: Color,
@@ -108,26 +118,11 @@ pub struct State {
 	window_size: (u32, u32),
 	exit: bool,
 	timer: Timer,
-	src_dir: String,
+	lua_dir: String,
 	transform_stack: Vec<femtovg::Transform2D>,
 	current_scissor: Option<(f32, f32, f32, f32)>,
 	canvas: Canvas<Renderer>,
 	window: Window,
-}
-
-fn main() -> LuaResult<()> {
-	// unsafe {
-	//     std::env::set_var("RUST_BACKTRACE", "1");
-	// }
-
-	// TODO: Should do everything relative to where the executable is
-	std::env::set_current_dir(env!("CARGO_WORKSPACE_DIR")).unwrap();
-	let lua_dir = path::absolute("./lua").unwrap();
-
-	let config = Config::read(lua_dir)?;
-
-	start(config);
-	Ok(())
 }
 
 fn do_nothing(lua: &Lua) -> LuaFunction {
@@ -141,13 +136,24 @@ fn wrap_call<T: IntoLuaMulti>(lua_fn: &LuaFunction, args: T) {
 	}
 }
 
+fn main() {
+	let (canvas, event_loop, demo_surface, window) = start();
+
+	if let Err(e) = run(canvas, event_loop, demo_surface, window) {
+		println!("{e}");
+	}
+}
+
 fn run(
 	canvas: Canvas<Renderer>,
 	event_loop: EventLoop<()>,
 	mut surface: Surface,
 	window: Window,
-	config: Config,
 ) -> LuaResult<()> {
+	// TODO: Should do everything relative to where the executable is
+	std::env::set_current_dir(env!("CARGO_WORKSPACE_DIR")).unwrap();
+	let lua_dir = path::absolute("./lua").unwrap();
+
 	let mut lua = create_love_env()?;
 
 	lua.set_app_data(State {
@@ -156,13 +162,13 @@ fn run(
 		keys_down: HashSet::new(),
 		mouse_down: HashSet::new(),
 		mouse_position: (0., 0.),
-		window_size: (config.width, config.height),
+		window_size: (INIT_WIDTH, INIT_HEIGHT),
 		line_width: 1.5,
 		font: Font { name: "Inter".to_string(), size: 14. },
 		text_engine: TextEngine::new(),
 		exit: false,
 		timer: Timer::new(),
-		src_dir: config.src_dir.display().to_string(),
+		lua_dir: lua_dir.display().to_string(),
 		transform_stack: Vec::new(),
 		current_scissor: None,
 		canvas,
@@ -170,11 +176,11 @@ fn run(
 	});
 
 	// set working directory so 'require' works
-	std::env::set_current_dir(&config.src_dir).unwrap();
+	std::env::set_current_dir(&lua_dir).unwrap();
 
 	register_backend(&mut lua)?;
 
-	let lua_main = fs::read_to_string(config.src_dir.join("main.lua")).unwrap();
+	let lua_main = fs::read_to_string(lua_dir.join("main.lua")).unwrap();
 	lua.load(lua_main).exec()?;
 
 	// Get main callbacks
@@ -199,10 +205,6 @@ fn run(
 			match event {
 				Event::WindowEvent { event, .. } => match event {
 					WindowEvent::RedrawRequested => {
-						if !FAST_UPDATE {
-							let dt = step_timer(&lua);
-							wrap_call(&love_update, dt);
-						}
 						render_start(&lua);
 						wrap_call(&love_draw, ());
 						render_end(&surface, &lua);
@@ -292,18 +294,16 @@ fn run(
 					wrap_call(&love_mousemoved, (x, y, dx, dy));
 				},
 				Event::AboutToWait => {
-					if FAST_UPDATE {
-						let mut accum = 0.0;
-						loop {
-							let dt = step_timer(&lua);
-							wrap_call(&love_update, dt);
+					let mut accum = 0.0;
+					loop {
+						let dt = step_timer(&lua);
+						wrap_call(&love_update, dt);
 
-							accum += dt;
-							if accum >= 1.0 / 60.0 {
-								break;
-							}
-							std::thread::sleep(std::time::Duration::from_micros(2000));
+						accum += dt;
+						if accum >= 1.0 / 60.0 {
+							break;
 						}
+						std::thread::sleep(std::time::Duration::from_micros(2000));
 					}
 
 					let app_state = lua.app_data_mut::<State>().unwrap();
