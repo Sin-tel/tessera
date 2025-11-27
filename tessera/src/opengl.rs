@@ -1,5 +1,6 @@
 use crate::INIT_HEIGHT;
 use crate::INIT_WIDTH;
+use winit::window::Icon;
 use winit::window::Window;
 
 #[allow(dead_code)]
@@ -48,14 +49,29 @@ impl WindowSurface for Surface {
 	}
 }
 
+fn load_icon() -> Icon {
+	let (icon_rgba, icon_width, icon_height) = {
+		let image = image::load_from_memory(include_bytes!("../../assets/icon.png"))
+			.unwrap()
+			.into_rgba8();
+		let (width, height) = image.dimensions();
+		let rgba = image.into_raw();
+		(rgba, width, height)
+	};
+	Icon::from_rgba(icon_rgba, icon_width, icon_height).expect("Failed to open icon")
+}
+
 pub fn start() -> (Canvas<Renderer>, EventLoop<()>, Surface, Window) {
 	let event_loop = EventLoop::new().unwrap();
+
+	let icon = Some(load_icon());
 
 	let (canvas, window, context, surface) = {
 		let window_builder = WindowBuilder::new()
 			.with_inner_size(winit::dpi::PhysicalSize::new(INIT_WIDTH, INIT_HEIGHT))
 			.with_min_inner_size(winit::dpi::PhysicalSize::new(400, 300))
 			.with_resizable(true)
+			.with_window_icon(icon)
 			.with_title("Tessera");
 
 		let template = ConfigTemplateBuilder::new().with_alpha_size(8);
