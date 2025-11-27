@@ -295,7 +295,7 @@ function workspace:resize(w, h)
 end
 
 function workspace:draw()
-	local ll = util.clamp(self.cpu_load, 0, 1)
+	local ll = util.clamp(self.cpu_load, 0.01, 1)
 	local hl_col = theme.cpu_meter
 	if self.cpu_load > 1.0 then
 		hl_col = theme.warning
@@ -325,8 +325,8 @@ function workspace:draw()
 	y1 = 0.5 * (ui.RIBBON_HEIGHT - h1)
 	x1 = self.w - 224 - y1
 
-	local ml = util.clamp((self.meter.l + 80) / 80, 0, 1)
-	local mr = util.clamp((self.meter.r + 80) / 80, 0, 1)
+	local ml = util.clamp((self.meter.l + 80) / 80, 0.01, 1)
+	local mr = util.clamp((self.meter.r + 80) / 80, 0.01, 1)
 
 	love.graphics.setColor(theme.widget_bg)
 	love.graphics.rectangle("fill", x1, y1, w1, h1, 2)

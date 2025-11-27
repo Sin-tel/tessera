@@ -133,9 +133,10 @@ function Canvas:draw()
 					local y2 = self.transform:pitch(p_start + note.verts[i + 1][2])
 					local w1 = note.verts[i][3] * w_scale
 					local w2 = note.verts[i + 1][3] * w_scale
-					love.graphics.setColor(0.3, 0.3, 0.3)
-
-					love.graphics.polygon("fill", x1, y1 + w1, x2, y2 + w2, x2, y2 - w2, x1, y1 - w1, x1, y1 + w1)
+					if w1 > 1.0 or w2 > 1.0 then
+						love.graphics.setColor(0.3, 0.3, 0.3)
+						love.graphics.polygon("fill", x1, y1 + w1, x2, y2 + w2, x2, y2 - w2, x1, y1 - w1, x1, y1 + w1)
+					end
 					love.graphics.setColor(c)
 					love.graphics.line(x1, y1, x2, y2)
 				end
@@ -149,8 +150,10 @@ function Canvas:draw()
 					local y2 = y1
 					local w1 = note.verts[n][3] * w_scale
 					local w2 = w1
-					love.graphics.setColor(0.3, 0.3, 0.3)
-					love.graphics.polygon("fill", x1, y1 + w1, x2, y2 + w2, x2, y2 - w2, x1, y1 - w1, x1, y1 + w1)
+					if w1 > 1.0 or w2 > 1.0 then
+						love.graphics.setColor(0.3, 0.3, 0.3)
+						love.graphics.polygon("fill", x1, y1 + w1, x2, y2 + w2, x2, y2 - w2, x1, y1 - w1, x1, y1 + w1)
+					end
 					love.graphics.setColor(c)
 					love.graphics.line(x1, y1, x2, y2)
 				end
