@@ -17,9 +17,9 @@ use winit::{
 	window::Window,
 };
 
-use backend::opengl::Surface;
 use backend::Renderer;
 use backend::WindowSurface;
+use backend::opengl::Surface;
 use keycodes::keycode_to_love2d_key;
 use love_api::create_love_env;
 use love_config::Config;

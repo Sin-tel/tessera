@@ -202,11 +202,7 @@ impl UserData for LuaData {
 		});
 
 		methods.add_method("isRendering", |_, data, ()| {
-			if let LuaData(Some(ud)) = data {
-				Ok(ud.is_rendering)
-			} else {
-				Ok(true)
-			}
+			if let LuaData(Some(ud)) = data { Ok(ud.is_rendering) } else { Ok(true) }
 		});
 
 		methods.add_method_mut(
@@ -322,11 +318,7 @@ impl UserData for LuaData {
 			Ok(())
 		});
 		methods.add_method("getSpectrum", |_, data, ()| {
-			if let LuaData(Some(ud)) = data {
-				Ok(Some(ud.scope.get_spectrum()))
-			} else {
-				Ok(None)
-			}
+			if let LuaData(Some(ud)) = data { Ok(Some(ud.scope.get_spectrum())) } else { Ok(None) }
 		});
 		methods.add_method("getScope", |_, data, ()| {
 			if let LuaData(Some(ud)) = data {
@@ -337,11 +329,7 @@ impl UserData for LuaData {
 		});
 
 		methods.add_method_mut("pop", |_, data, ()| {
-			if let LuaData(Some(ud)) = data {
-				Ok(ud.lua_rx.try_pop())
-			} else {
-				Ok(None)
-			}
+			if let LuaData(Some(ud)) = data { Ok(ud.lua_rx.try_pop()) } else { Ok(None) }
 		});
 
 		methods.add_method("midiPorts", |_, _, ()| {

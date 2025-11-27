@@ -1,7 +1,7 @@
 use crate::log::{log_error, log_info, log_warn};
 use midir::{Ignore, MidiInput, MidiInputConnection};
-use mlua::prelude::*;
 use mlua::Value;
+use mlua::prelude::*;
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd, HeapRb};
 

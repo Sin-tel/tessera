@@ -1,7 +1,7 @@
 use bit_mask_ring_buf::BitMaskRB;
 use realfft::{RealFftPlanner, RealToComplex};
-use ringbuf::traits::*;
 use ringbuf::HeapCons;
+use ringbuf::traits::*;
 use std::sync::Arc;
 
 use crate::audio::SPECTRUM_SIZE;
