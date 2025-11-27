@@ -250,10 +250,10 @@ fn find_output_device(
 		output_device = host.default_output_device();
 	} else {
 		for device in host.output_devices().map_err(|_| "No output devices found.")? {
-			if let Ok(name) = device.name() {
-				if name.to_lowercase().contains(&output_device_name.to_lowercase()) {
-					output_device = Some(device);
-				}
+			if let Ok(name) = device.name()
+				&& name.to_lowercase().contains(&output_device_name.to_lowercase())
+			{
+				output_device = Some(device);
 			}
 		}
 	}

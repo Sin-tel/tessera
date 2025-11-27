@@ -126,6 +126,6 @@ pub fn start(config: Config) {
 
 	println!("Running openGL backend.");
 	if let Err(e) = run(canvas, event_loop, demo_surface, window, config) {
-		println!("{}", e);
+		println!("{e}");
 	}
 }

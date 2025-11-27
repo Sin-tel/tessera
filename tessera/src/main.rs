@@ -1,3 +1,28 @@
+#![deny(unreachable_patterns)]
+#![warn(clippy::cast_lossless)]
+#![warn(clippy::uninlined_format_args)]
+#![warn(clippy::semicolon_if_nothing_returned)]
+#![warn(clippy::explicit_iter_loop)]
+#![warn(clippy::items_after_statements)]
+#![warn(clippy::ignored_unit_patterns)]
+#![warn(clippy::redundant_else)]
+#![warn(clippy::match_same_arms)]
+#![warn(clippy::single_match_else)]
+#![warn(clippy::unnested_or_patterns)]
+#![warn(clippy::inconsistent_struct_constructor)]
+#![warn(clippy::unused_self)]
+#![warn(clippy::needless_borrow)]
+#![warn(clippy::match_wildcard_for_single_variants)]
+#![warn(clippy::manual_assert)]
+#![warn(clippy::manual_let_else)]
+#![warn(clippy::unnecessary_semicolon)]
+#![warn(clippy::large_stack_arrays)]
+#![allow(clippy::match_like_matches_macro)]
+#![allow(clippy::enum_variant_names)]
+#![allow(clippy::new_without_default)]
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::get_first)]
+
 mod backend;
 mod keycodes;
 mod love_api;
@@ -61,13 +86,13 @@ impl Timer {
 			self.fps = (self.frames as f64 / time_since_last).round();
 			self.last_update_fps = now;
 			self.frames = 0;
-		};
+		}
 
 		dt
 	}
 
 	fn get_time(&self) -> f64 {
-		return (std::time::Instant::now() - self.start).as_secs_f64();
+		(std::time::Instant::now() - self.start).as_secs_f64()
 	}
 }
 
@@ -198,14 +223,14 @@ fn run(
 							ElementState::Pressed => {
 								app_state.keys_down.insert(keycode);
 								drop(app_state);
-								wrap_call(&love_keypressed, (key, key, repeat))
+								wrap_call(&love_keypressed, (key, key, repeat));
 							},
 							ElementState::Released => {
 								app_state.keys_down.remove(&keycode);
 								drop(app_state);
-								wrap_call(&love_keyreleased, (key, key, repeat))
+								wrap_call(&love_keyreleased, (key, key, repeat));
 							},
-						};
+						}
 					},
 					WindowEvent::CursorMoved { position, .. } => {
 						let mut app_state = lua.app_data_mut::<State>().unwrap();
@@ -221,7 +246,7 @@ fn run(
 							let mut app_state = lua.app_data_mut::<State>().unwrap();
 							app_state.window_size = (w, h);
 							drop(app_state);
-							wrap_call(&love_resize, (w, h))
+							wrap_call(&love_resize, (w, h));
 						}
 					},
 					WindowEvent::MouseInput { state, button, .. } => {
@@ -240,34 +265,31 @@ fn run(
 								app_state.mouse_down.insert(button);
 								drop(app_state);
 
-								wrap_call(&love_mousepressed, (x, y, button_number))
+								wrap_call(&love_mousepressed, (x, y, button_number));
 							},
 							ElementState::Released => {
 								let mut app_state = lua.app_data_mut::<State>().unwrap();
 								app_state.mouse_down.remove(&button);
 								drop(app_state);
 
-								wrap_call(&love_mousereleased, (x, y, button_number))
+								wrap_call(&love_mousereleased, (x, y, button_number));
 							},
-						};
+						}
 					},
 					WindowEvent::MouseWheel { delta, .. } => {
 						let (x, y) = match delta {
 							MouseScrollDelta::LineDelta(x, y) => (x, y),
 							MouseScrollDelta::PixelDelta(d) => d.into(),
 						};
-						wrap_call(&love_wheelmoved, (x, y))
+						wrap_call(&love_wheelmoved, (x, y));
 					},
 					WindowEvent::CloseRequested => target.exit(),
 					_ => {},
 				},
-				Event::DeviceEvent { event, .. } => match event {
-					DeviceEvent::MouseMotion { delta } => {
-						let (x, y) = lua.app_data_ref::<State>().unwrap().mouse_position;
-						let (dx, dy) = delta;
-						wrap_call(&love_mousemoved, (x, y, dx, dy));
-					},
-					_ => {},
+				Event::DeviceEvent { event: DeviceEvent::MouseMotion { delta }, .. } => {
+					let (x, y) = lua.app_data_ref::<State>().unwrap().mouse_position;
+					let (dx, dy) = delta;
+					wrap_call(&love_mousemoved, (x, y, dx, dy));
 				},
 				Event::AboutToWait => {
 					if FAST_UPDATE {
@@ -286,7 +308,7 @@ fn run(
 
 					let app_state = lua.app_data_mut::<State>().unwrap();
 					if app_state.exit {
-						target.exit()
+						target.exit();
 					}
 
 					app_state.window.request_redraw();
@@ -321,7 +343,7 @@ fn render_start(lua: &Lua) {
 
 fn render_end(surface: &Surface, lua: &Lua) {
 	let mut state = lua.app_data_mut::<State>().unwrap();
-	assert!(state.transform_stack.len() == 0);
+	assert!(state.transform_stack.is_empty());
 
 	state.canvas.reset_scissor();
 	state.current_scissor = None;
