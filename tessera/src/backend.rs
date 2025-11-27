@@ -1,80 +1,36 @@
 use mlua::prelude::*;
-use mlua::{UserData, UserDataMethods, Value};
+use mlua::{UserData, UserDataMethods};
 use no_denormals::no_denormals;
 use ringbuf::traits::*;
-use ringbuf::{HeapCons, HeapProd};
 use std::error::Error;
-use std::sync::{Arc, Mutex};
+use tessera_audio::audio;
+use tessera_audio::context::{AudioContext, AudioMessage};
+use tessera_audio::log::{init_logging, log_error, log_info};
+use tessera_audio::midi;
 
-use crate::audio;
-use crate::log::{init_logging, log_error, log_info, log_warn};
-use crate::midi;
-use crate::render::Render;
-use crate::scope::Scope;
+struct Backend(Option<AudioContext>);
 
-struct LuaData(Option<AudioContext>);
-
-pub struct AudioContext {
-	pub stream: cpal::Stream,
-	pub audio_tx: HeapProd<AudioMessage>,
-	pub stream_tx: HeapProd<bool>,
-	pub lua_rx: HeapCons<LuaMessage>,
-	pub m_render: Arc<Mutex<Render>>,
-	pub scope: Scope,
-	pub is_rendering: bool,
-	pub sample_rate: u32,
-	pub midi_connections: Vec<midi::Connection>,
-	pub render_buffer: Vec<f32>,
-}
-
-// Message struct to pass to audio thread
-// Should not contain any boxed values
-#[derive(Debug)]
-pub enum AudioMessage {
-	Panic,
-	NoteOn(usize, f32, f32, usize),
-	NoteOff(usize, usize),
-	Pitch(usize, f32, usize),
-	Pressure(usize, f32, usize),
-	Parameter(usize, usize, usize, f32),
-	Mute(usize, bool),
-	Bypass(usize, usize, bool),
-	ReorderEffect(usize, usize, usize),
-	// Swap(?),
-}
-
-#[derive(Debug)]
-pub enum LuaMessage {
-	Cpu(f32),
-	Meter(f32, f32),
-}
-
-impl Drop for AudioContext {
-	fn drop(&mut self) {
-		log_info!("Stream dropped");
-	}
-}
-
-#[allow(clippy::unnecessary_wraps)]
-fn init(_: &Lua, _: ()) -> LuaResult<LuaData> {
+pub fn register_backend(lua: &mut Lua) -> LuaResult<()> {
 	init_logging();
 	log_info!("Backend initialized");
-	Ok(LuaData(None))
+	lua.globals().set("backend", Backend(None))?;
+
+	Ok(())
 }
 
-impl UserData for LuaData {
+impl UserData for Backend {
 	fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
 		methods.add_method_mut(
 			"setup",
 			|_, data, (host_name, device_name, buffer_size): (String, String, Option<u32>)| {
 				match audio::run(&host_name, &device_name, buffer_size) {
 					Ok(ud) => {
-						*data = LuaData(Some(ud));
+						*data = Backend(Some(ud));
 						Ok(())
 					},
 					Err(e) => {
 						log_error!("{e}");
-						*data = LuaData(None);
+						*data = Backend(None);
 						Ok(())
 					},
 				}
@@ -82,12 +38,12 @@ impl UserData for LuaData {
 		);
 
 		methods.add_method_mut("quit", |_, data, ()| {
-			*data = LuaData(None);
+			*data = Backend(None);
 			Ok(())
 		});
 
 		methods.add_method_mut("panic", |_, data, ()| {
-			if let LuaData(Some(ud)) = data {
+			if let Backend(Some(ud)) = data {
 				ud.send_message(AudioMessage::Panic);
 			}
 			Ok(())
@@ -100,11 +56,11 @@ impl UserData for LuaData {
 
 		methods.add_method_mut("ok", |_, data, ()| {
 			check_lock_poison(data);
-			let LuaData(data) = data;
+			let Backend(data) = data;
 			Ok(data.is_some())
 		});
 
-		methods.add_method("getSampleRate", |_, LuaData(data), ()| {
+		methods.add_method("getSampleRate", |_, Backend(data), ()| {
 			if let Some(ud) = data {
 				return Ok(Some(ud.sample_rate));
 			}
@@ -114,7 +70,7 @@ impl UserData for LuaData {
 		methods.add_method_mut(
 			"pitch",
 			|_, data, (channel_index, pitch, voice): (usize, f32, usize)| {
-				if let LuaData(Some(ud)) = data {
+				if let Backend(Some(ud)) = data {
 					ud.send_message(AudioMessage::Pitch(channel_index - 1, pitch, voice - 1));
 				}
 				Ok(())
@@ -124,7 +80,7 @@ impl UserData for LuaData {
 		methods.add_method_mut(
 			"pressure",
 			|_, data, (channel_index, pressure, voice): (usize, f32, usize)| {
-				if let LuaData(Some(ud)) = data {
+				if let Backend(Some(ud)) = data {
 					ud.send_message(AudioMessage::Pressure(channel_index - 1, pressure, voice - 1));
 				}
 				Ok(())
@@ -134,7 +90,7 @@ impl UserData for LuaData {
 		methods.add_method_mut(
 			"noteOn",
 			|_, data, (channel_index, pitch, vel, voice): (usize, f32, f32, usize)| {
-				if let LuaData(Some(ud)) = data {
+				if let Backend(Some(ud)) = data {
 					ud.send_message(AudioMessage::NoteOn(channel_index - 1, pitch, vel, voice - 1));
 				}
 				Ok(())
@@ -142,14 +98,14 @@ impl UserData for LuaData {
 		);
 
 		methods.add_method_mut("noteOff", |_, data, (channel_index, voice): (usize, usize)| {
-			if let LuaData(Some(ud)) = data {
+			if let Backend(Some(ud)) = data {
 				ud.send_message(AudioMessage::NoteOff(channel_index - 1, voice - 1));
 			}
 			Ok(())
 		});
 
 		methods.add_method_mut("sendMute", |_, data, (channel_index, mute): (usize, bool)| {
-			if let LuaData(Some(ud)) = data {
+			if let Backend(Some(ud)) = data {
 				ud.send_message(AudioMessage::Mute(channel_index - 1, mute));
 			}
 			Ok(())
@@ -158,7 +114,7 @@ impl UserData for LuaData {
 		methods.add_method_mut(
 			"sendParameter",
 			|_, data, (channel_index, device_index, index, value): (usize, usize, usize, f32)| {
-				if let LuaData(Some(ud)) = data {
+				if let Backend(Some(ud)) = data {
 					ud.send_message(AudioMessage::Parameter(
 						channel_index - 1,
 						device_index, // don't need -1 here since device index is 0 for instrument and 1.. for fx
@@ -173,7 +129,7 @@ impl UserData for LuaData {
 		methods.add_method_mut(
 			"bypass",
 			|_, data, (channel_index, device_index, bypass): (usize, usize, bool)| {
-				if let LuaData(Some(ud)) = data {
+				if let Backend(Some(ud)) = data {
 					ud.send_message(AudioMessage::Bypass(channel_index, device_index, bypass));
 				}
 				Ok(())
@@ -183,7 +139,7 @@ impl UserData for LuaData {
 		methods.add_method_mut(
 			"reorderEffect",
 			|_, data, (channel_index, old_index, new_index): (usize, usize, usize)| {
-				if let LuaData(Some(ud)) = data {
+				if let Backend(Some(ud)) = data {
 					ud.send_message(AudioMessage::ReorderEffect(
 						channel_index - 1,
 						old_index - 1,
@@ -195,21 +151,21 @@ impl UserData for LuaData {
 		);
 
 		methods.add_method_mut("setRendering", |_, data, rendering: bool| {
-			if let LuaData(Some(ud)) = data {
+			if let Backend(Some(ud)) = data {
 				ud.send_rendering(rendering);
 			}
 			Ok(())
 		});
 
 		methods.add_method("isRendering", |_, data, ()| {
-			if let LuaData(Some(ud)) = data { Ok(ud.is_rendering) } else { Ok(true) }
+			if let Backend(Some(ud)) = data { Ok(ud.is_rendering) } else { Ok(true) }
 		});
 
 		methods.add_method_mut(
 			"insertChannel",
 			|_, data, (index, instrument_name): (usize, String)| {
 				check_lock_poison(data);
-				if let LuaData(Some(ud)) = data {
+				if let Backend(Some(ud)) = data {
 					let mut render = ud.m_render.lock().expect("Failed to get lock.");
 					render.insert_channel(index - 1, &instrument_name);
 				}
@@ -219,7 +175,7 @@ impl UserData for LuaData {
 
 		methods.add_method_mut("removeChannel", |_, data, index: usize| {
 			check_lock_poison(data);
-			if let LuaData(Some(ud)) = data {
+			if let Backend(Some(ud)) = data {
 				let mut render = ud.m_render.lock().expect("Failed to get lock.");
 				render.remove_channel(index - 1);
 			}
@@ -230,7 +186,7 @@ impl UserData for LuaData {
 			"insertEffect",
 			|_, data, (channel_index, effect_index, name): (usize, usize, String)| {
 				check_lock_poison(data);
-				if let LuaData(Some(ud)) = data {
+				if let Backend(Some(ud)) = data {
 					let mut render = ud.m_render.lock().expect("Failed to get lock.");
 					render.insert_effect(channel_index - 1, effect_index - 1, &name);
 				}
@@ -242,7 +198,7 @@ impl UserData for LuaData {
 			"removeEffect",
 			|_, data, (channel_index, effect_index): (usize, usize)| {
 				check_lock_poison(data);
-				if let LuaData(Some(ud)) = data {
+				if let Backend(Some(ud)) = data {
 					let mut render = ud.m_render.lock().expect("Failed to get lock.");
 					render.remove_effect(channel_index - 1, effect_index - 1);
 				}
@@ -252,7 +208,7 @@ impl UserData for LuaData {
 
 		methods.add_method_mut("renderBlock", |_, data, ()| {
 			check_lock_poison(data);
-			if let LuaData(Some(ud)) = data {
+			if let Backend(Some(ud)) = data {
 				let len = 64;
 				let buffer: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
 
@@ -274,7 +230,7 @@ impl UserData for LuaData {
 		});
 
 		methods.add_method_mut("renderFinish", |_, data, ()| {
-			if let LuaData(Some(ud)) = data {
+			if let Backend(Some(ud)) = data {
 				let filename = "../out/render.wav";
 				let sample_rate = ud.sample_rate;
 
@@ -296,7 +252,7 @@ impl UserData for LuaData {
 		});
 
 		methods.add_method_mut("renderCancel", |_, data, ()| {
-			if let LuaData(Some(ud)) = data {
+			if let Backend(Some(ud)) = data {
 				ud.render_buffer = Vec::new();
 			}
 			Ok(())
@@ -304,7 +260,7 @@ impl UserData for LuaData {
 
 		methods.add_method_mut("flush", |_, data, ()| {
 			check_lock_poison(data);
-			if let LuaData(Some(ud)) = data {
+			if let Backend(Some(ud)) = data {
 				let mut render = ud.m_render.lock().expect("Failed to get lock.");
 				render.flush();
 			}
@@ -312,16 +268,16 @@ impl UserData for LuaData {
 		});
 
 		methods.add_method_mut("updateScope", |_, data, ()| {
-			if let LuaData(Some(ud)) = data {
+			if let Backend(Some(ud)) = data {
 				ud.scope.update();
 			}
 			Ok(())
 		});
 		methods.add_method("getSpectrum", |_, data, ()| {
-			if let LuaData(Some(ud)) = data { Ok(Some(ud.scope.get_spectrum())) } else { Ok(None) }
+			if let Backend(Some(ud)) = data { Ok(Some(ud.scope.get_spectrum())) } else { Ok(None) }
 		});
 		methods.add_method("getScope", |_, data, ()| {
-			if let LuaData(Some(ud)) = data {
+			if let Backend(Some(ud)) = data {
 				Ok(Some(ud.scope.get_oscilloscope()))
 			} else {
 				Ok(None)
@@ -329,7 +285,7 @@ impl UserData for LuaData {
 		});
 
 		methods.add_method_mut("pop", |_, data, ()| {
-			if let LuaData(Some(ud)) = data { Ok(ud.lua_rx.try_pop()) } else { Ok(None) }
+			if let Backend(Some(ud)) = data { Ok(ud.lua_rx.try_pop()) } else { Ok(None) }
 		});
 
 		methods.add_method("midiPorts", |_, _, ()| {
@@ -338,7 +294,7 @@ impl UserData for LuaData {
 		});
 
 		methods.add_method_mut("midiOpenConnection", |_, data, port_name: String| {
-			if let LuaData(Some(ud)) = data {
+			if let Backend(Some(ud)) = data {
 				let connection = midi::connect(&port_name);
 				if let Some(c) = connection {
 					let name = c.name.clone();
@@ -351,7 +307,7 @@ impl UserData for LuaData {
 		});
 
 		methods.add_method_mut("midiCloseConnection", |_, data, connection_index: usize| {
-			if let LuaData(Some(ud)) = data {
+			if let Backend(Some(ud)) = data {
 				if ud.midi_connections.len() < connection_index - 1 {
 					log_error!("Bad midi connection index: {connection_index}");
 				} else {
@@ -364,7 +320,7 @@ impl UserData for LuaData {
 		});
 
 		methods.add_method_mut("midiPoll", |_, data, connection_index: usize| {
-			if let LuaData(Some(ud)) = data {
+			if let Backend(Some(ud)) = data {
 				let connection = ud.midi_connections.get_mut(connection_index - 1);
 				match connection {
 					Some(c) => {
@@ -381,12 +337,11 @@ impl UserData for LuaData {
 	}
 }
 
-#[mlua::lua_module]
-fn tessera(lua: &Lua) -> LuaResult<LuaTable> {
-	let exports = lua.create_table()?;
-	exports.set("init", lua.create_function(init)?)?;
-	Ok(exports)
-}
+// fn tessera(lua: &Lua) -> LuaResult<LuaTable> {
+// 	let exports = lua.create_table()?;
+// 	exports.set("init", lua.create_function(init)?)?;
+// 	Ok(exports)
+// }
 
 fn write_wav(filename: &str, samples: &[f32], sample_rate: u32) -> Result<(), Box<dyn Error>> {
 	let spec = hound::WavSpec {
@@ -412,48 +367,11 @@ fn convert_sample_wav(x: f32) -> i16 {
 	(if x >= 0.0 { x * f32::from(i16::MAX) } else { -x * f32::from(i16::MIN) }) as i16
 }
 
-fn check_lock_poison(data: &mut LuaData) {
-	if let LuaData(Some(ud)) = data {
+fn check_lock_poison(data: &mut Backend) {
+	if let Backend(Some(ud)) = data {
 		if ud.m_render.is_poisoned() {
 			log_error!("Lock was poisoned. Killing backend.");
-			*data = LuaData(None);
+			*data = Backend(None);
 		}
-	}
-}
-
-impl AudioContext {
-	fn send_message(&mut self, m: AudioMessage) {
-		if self.audio_tx.try_push(m).is_err() {
-			log_warn!("Queue full. Dropped message!");
-		}
-	}
-
-	fn send_rendering(&mut self, is_rendering: bool) {
-		self.is_rendering = is_rendering;
-		if self.stream_tx.try_push(is_rendering).is_err() {
-			log_warn!("Stream queue full. Dropped message!");
-		}
-	}
-}
-
-impl IntoLua for LuaMessage {
-	fn into_lua(self, lua: &Lua) -> LuaResult<Value> {
-		use LuaMessage::*;
-
-		let table = Lua::create_table(lua)?;
-
-		match self {
-			Cpu(cpu_load) => {
-				table.set("tag", "cpu")?;
-				table.set("cpu_load", cpu_load)?;
-			},
-			Meter(l, r) => {
-				table.set("tag", "meter")?;
-				table.set("l", l)?;
-				table.set("r", r)?;
-			},
-		}
-
-		Ok(Value::Table(table))
 	}
 }

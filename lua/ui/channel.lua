@@ -1,5 +1,4 @@
 local Ui = require("ui/ui")
-local backend = require("backend")
 local hsluv = require("lib/hsluv")
 local util = require("util")
 

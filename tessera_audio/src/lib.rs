@@ -42,13 +42,13 @@
 // #![allow(clippy::struct_field_names)]
 // #![allow(clippy::module_name_repetitions)]
 
-mod audio;
+pub mod audio;
+pub mod context;
 mod effect;
 mod instrument;
-mod lua;
-mod midi;
-mod render;
-mod scope;
+pub mod midi;
+pub mod render;
+pub mod scope;
 
 #[allow(dead_code)]
 // needs to be public for benches
@@ -56,4 +56,4 @@ pub mod dsp;
 
 #[allow(unused_macros)]
 #[allow(unused_imports)]
-mod log;
+pub mod log;

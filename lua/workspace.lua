@@ -1,4 +1,3 @@
-local backend = require("backend")
 local ui = require("ui/ui")
 
 local workspace = {}

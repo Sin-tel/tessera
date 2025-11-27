@@ -2,12 +2,12 @@ use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd};
 
 use crate::audio::MAX_BUF_SIZE;
+use crate::context::{AudioMessage, LuaMessage};
 use crate::dsp::env::AttackRelease;
 use crate::effect::*;
 use crate::instrument;
 use crate::instrument::*;
 use crate::log::log_warn;
-use crate::lua::{AudioMessage, LuaMessage};
 
 pub struct Channel {
 	pub instrument: Box<dyn Instrument + Send>,

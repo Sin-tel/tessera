@@ -1,4 +1,3 @@
-local backend = require("backend")
 local build = require("build")
 
 local command = {}

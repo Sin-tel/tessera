@@ -18,7 +18,7 @@ bencher = "0.1"
 rustfft = "6.1"
 realfft = "3.3"
 no_denormals = "0.3"
-mlua = { version = "0.11", features = ["luajit", "module"] }
+mlua = { version = "0.11", features = ["luajit", "vendored"] }
 fft-convolver = "0.2"
 hound = "3.5"
 log = "0.4"

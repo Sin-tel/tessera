@@ -8,9 +8,9 @@ use std::panic;
 use std::panic::AssertUnwindSafe;
 use std::sync::{Arc, Mutex};
 
+use crate::context::{AudioContext, AudioMessage, LuaMessage};
 use crate::dsp::env::AttackRelease;
 use crate::log::{log_error, log_info, log_warn};
-use crate::lua::{AudioContext, AudioMessage, LuaMessage};
 use crate::render::Render;
 use crate::scope::Scope;
 

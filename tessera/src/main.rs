@@ -1,3 +1,4 @@
+mod backend;
 mod keycodes;
 mod love_api;
 mod love_config;
@@ -17,6 +18,7 @@ use winit::{
 	window::Window,
 };
 
+use backend::register_backend;
 use keycodes::keycode_to_love2d_key;
 use love_api::Font;
 use love_api::create_love_env;
@@ -27,7 +29,7 @@ use opengl::WindowSurface;
 use opengl::start;
 use text::TextEngine;
 
-const FAST_UPDATE: bool = false;
+const FAST_UPDATE: bool = true;
 
 struct Timer {
 	start: Instant,
@@ -93,9 +95,11 @@ fn main() -> LuaResult<()> {
 	//     std::env::set_var("RUST_BACKTRACE", "1");
 	// }
 
-	let src_dir = path::absolute("../lua").unwrap();
+	// TODO: Should do everything relative to where the executable is
+	std::env::set_current_dir(env!("CARGO_WORKSPACE_DIR")).unwrap();
+	let lua_dir = path::absolute("./lua").unwrap();
 
-	let config = Config::read(src_dir)?;
+	let config = Config::read(lua_dir)?;
 
 	start(config);
 	Ok(())
@@ -119,7 +123,7 @@ fn run(
 	window: Window,
 	config: Config,
 ) -> LuaResult<()> {
-	let lua = create_love_env()?;
+	let mut lua = create_love_env()?;
 
 	lua.set_app_data(State {
 		current_color: Color::white(),
@@ -143,8 +147,9 @@ fn run(
 	// set working directory so 'require' works
 	std::env::set_current_dir(&config.src_dir).unwrap();
 
-	let lua_main = fs::read_to_string(config.src_dir.join("main.lua")).unwrap();
+	register_backend(&mut lua)?;
 
+	let lua_main = fs::read_to_string(config.src_dir.join("main.lua")).unwrap();
 	lua.load(lua_main).exec()?;
 
 	// Get main callbacks

@@ -17,7 +17,6 @@ use femtovg::Quad;
 use femtovg::imgref;
 use femtovg::rgb;
 use femtovg::{Canvas, Paint};
-use resource::resource;
 use std::collections::HashMap;
 use swash::scale::image::Content;
 
@@ -196,8 +195,8 @@ pub struct TextEngine {
 impl TextEngine {
 	pub fn new() -> Self {
 		let mut db = fontdb::Database::new();
-		db.load_font_data(resource!("../assets/font/inter.ttf").to_vec());
-		db.load_font_data(resource!("../assets/font/notes.ttf").to_vec());
+		db.load_font_data(include_bytes!("../../assets/font/inter.ttf").to_vec());
+		db.load_font_data(include_bytes!("../../assets/font/notes.ttf").to_vec());
 
 		let mut font_system = FontSystem::new_with_locale_and_db("en-US".into(), db);
 
