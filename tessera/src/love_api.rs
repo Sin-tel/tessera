@@ -83,15 +83,38 @@ impl FromLua for Image {
 }
 
 // Font shim
-pub struct Font;
+#[derive(Clone)]
+pub struct Font {
+	pub name: String,
+	pub size: f32,
+}
 
 impl LuaUserData for Font {
 	fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
-		methods.add_method("getHeight", |_lua, _this, ()| Ok(18.));
+		methods.add_method("getHeight", |lua, _this, ()| {
+			let state = lua.app_data_ref::<State>().unwrap();
+			Ok(state.font.size * 1.2)
+		});
 		methods.add_method("getWidth", |lua, _this, text: String| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
-			let width = state.text_engine.measure_width(&text, state.font_size);
+			let width = state.text_engine.measure_width(&text, state.font.size);
 			Ok(width)
+		})
+	}
+}
+
+impl FromLua for Font {
+	fn from_lua(value: LuaValue, _lua: &Lua) -> LuaResult<Self> {
+		if let LuaValue::UserData(ref ud) = value {
+			if let Ok(font_ref) = ud.borrow::<Font>() {
+				return Ok(font_ref.clone());
+			}
+		}
+
+		Err(LuaError::FromLuaConversionError {
+			from: value.type_name(),
+			to: "Font".to_string(),
+			message: Some("Expected an Font object".to_string()),
 		})
 	}
 }
@@ -101,18 +124,16 @@ pub struct Graphics;
 impl LuaUserData for Graphics {
 	fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
 		// Resources
-		methods.add_function("newFont", |_lua, ()| {
-			// TODO
-			Ok(())
+		methods.add_function("newFont", |_, (name, size): (String, f32)| Ok(Font { name, size }));
+
+		methods.add_function("getFont", |lua, ()| {
+			let state = lua.app_data_ref::<State>().unwrap();
+			Ok(state.font.clone())
 		});
 
-		methods.add_function("getFont", |_lua, ()| {
-			// TODO
-			Ok(Font {})
-		});
-
-		methods.add_function("setFont", |_lua, ()| {
-			// TODO
+		methods.add_function("setFont", |lua, font: Font| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			state.font = font;
 			Ok(())
 		});
 
@@ -120,8 +141,7 @@ impl LuaUserData for Graphics {
 
 		// love.graphics.newImage(filename)
 		methods.add_function("newImage", |lua, filename: String| {
-			let mut state_guard = lua.app_data_mut::<State>().unwrap();
-			let state = &mut *state_guard;
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
 
 			let image_id = state.canvas.load_image_file(&filename, ImageFlags::empty()).unwrap();
 
@@ -130,8 +150,7 @@ impl LuaUserData for Graphics {
 		});
 
 		methods.add_function("draw", |lua, (image, x, y): (Image, f32, f32)| {
-			let mut state_guard = lua.app_data_mut::<State>().unwrap();
-			let state = &mut *state_guard;
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
 
 			let w = image.width as f32;
 			let h = image.height as f32;
@@ -270,9 +289,11 @@ impl LuaUserData for Graphics {
 		methods.add_function("print", |lua, (text, x, y): (String, f32, f32)| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 
-			let paint = Paint::color(state.current_color).with_font_size(state.font_size);
+			let paint = Paint::color(state.current_color).with_font_size(state.font.size);
 
-			state.text_engine.draw_text(&mut state.canvas, &text, x, y, &paint);
+			state
+				.text_engine
+				.draw_text(&mut state.canvas, &text, x, y, &paint, &state.font.name);
 
 			Ok(())
 		});
