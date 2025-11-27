@@ -1,4 +1,4 @@
-use crate::backend::Renderer;
+use crate::Renderer;
 use crate::text::imgref::Img;
 use crate::text::imgref::ImgRef;
 use crate::text::rgb::RGBA8;

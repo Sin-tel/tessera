@@ -1,7 +1,16 @@
 use crate::Config;
-use std::num::NonZeroU32;
+use crate::run;
 
-use super::{WindowSurface, run};
+#[allow(dead_code)]
+pub trait WindowSurface {
+	type Renderer: femtovg::Renderer + 'static;
+	fn resize(&mut self, width: u32, height: u32);
+	fn present(&self, canvas: &mut femtovg::Canvas<Self::Renderer>);
+}
+
+pub type Renderer = femtovg::renderer::OpenGl;
+
+use std::num::NonZeroU32;
 
 use femtovg::{Canvas, renderer::OpenGl};
 use glutin::{
@@ -38,7 +47,7 @@ impl WindowSurface for Surface {
 	}
 }
 
-pub fn start_opengl(config: Config) {
+pub fn start(config: Config) {
 	let event_loop = EventLoop::new().unwrap();
 
 	let (canvas, window, context, surface) = {

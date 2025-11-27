@@ -1,7 +1,7 @@
-mod backend;
 mod keycodes;
 mod love_api;
 mod love_config;
+mod opengl;
 mod text;
 
 use femtovg::{Canvas, Color};
@@ -17,13 +17,14 @@ use winit::{
 	window::Window,
 };
 
-use backend::Renderer;
-use backend::WindowSurface;
-use backend::opengl::Surface;
 use keycodes::keycode_to_love2d_key;
 use love_api::Font;
 use love_api::create_love_env;
 use love_config::Config;
+use opengl::Renderer;
+use opengl::Surface;
+use opengl::WindowSurface;
+use opengl::start;
 use text::TextEngine;
 
 const FAST_UPDATE: bool = false;
@@ -96,7 +97,7 @@ fn main() -> LuaResult<()> {
 
 	let config = Config::read(src_dir)?;
 
-	backend::start(config);
+	start(config);
 	Ok(())
 }
 
