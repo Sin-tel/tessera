@@ -27,7 +27,7 @@ pub fn init_logging() {
 		WriteLogger::new(LevelFilter::Trace, config, f_write),
 	])
 	.unwrap();
-    // Has to go last otherwise previous errors don't work
+	// Has to go last otherwise previous errors don't work
 	log_panics::init();
 }
 

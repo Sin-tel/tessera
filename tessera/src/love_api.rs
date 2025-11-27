@@ -22,7 +22,6 @@ fn opt_f32(value: &LuaValue) -> Option<f32> {
 	match value {
 		LuaValue::Number(n) => Some(*n as f32),
 		LuaValue::Integer(i) => Some(*i as f32),
-		LuaValue::Nil => None,
 		_ => None,
 	}
 }
@@ -68,10 +67,10 @@ impl LuaUserData for Image {
 
 impl FromLua for Image {
 	fn from_lua(value: LuaValue, _lua: &Lua) -> LuaResult<Self> {
-		if let LuaValue::UserData(ref ud) = value {
-			if let Ok(img_ref) = ud.borrow::<Image>() {
-				return Ok(*img_ref);
-			}
+		if let LuaValue::UserData(ref ud) = value
+			&& let Ok(img_ref) = ud.borrow::<Image>()
+		{
+			return Ok(*img_ref);
 		}
 
 		Err(LuaError::FromLuaConversionError {
@@ -99,16 +98,16 @@ impl LuaUserData for Font {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 			let width = state.text_engine.measure_width(&text, state.font.size);
 			Ok(width)
-		})
+		});
 	}
 }
 
 impl FromLua for Font {
 	fn from_lua(value: LuaValue, _lua: &Lua) -> LuaResult<Self> {
-		if let LuaValue::UserData(ref ud) = value {
-			if let Ok(font_ref) = ud.borrow::<Font>() {
-				return Ok(font_ref.clone());
-			}
+		if let LuaValue::UserData(ref ud) = value
+			&& let Ok(font_ref) = ud.borrow::<Font>()
+		{
+			return Ok(font_ref.clone());
 		}
 
 		Err(LuaError::FromLuaConversionError {

@@ -368,10 +368,10 @@ fn convert_sample_wav(x: f32) -> i16 {
 }
 
 fn check_lock_poison(data: &mut Backend) {
-	if let Backend(Some(ud)) = data {
-		if ud.m_render.is_poisoned() {
-			log_error!("Lock was poisoned. Killing backend.");
-			*data = Backend(None);
-		}
+	if let Backend(Some(ud)) = data
+		&& ud.m_render.is_poisoned()
+	{
+		log_error!("Lock was poisoned. Killing backend.");
+		*data = Backend(None);
 	}
 }
