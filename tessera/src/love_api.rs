@@ -588,7 +588,7 @@ pub fn create_love_env() -> LuaResult<Lua> {
 	let filesystem = lua.create_table()?;
 	let get_source = lua.create_function(|lua, ()| {
 		let state = lua.app_data_mut::<State>().unwrap();
-		Ok(state.src_dir.clone())
+		Ok(state.lua_dir.clone())
 	})?;
 	filesystem.set("getSource", get_source)?;
 	love.set("filesystem", filesystem)?;

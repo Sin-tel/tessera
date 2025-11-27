@@ -54,6 +54,14 @@ impl UserData for Backend {
 			Ok(())
 		});
 
+		methods.add_method_mut("isRelease", |_, _, ()| {
+			#[cfg(debug_assertions)]
+			return Ok(false);
+
+			#[cfg(not(debug_assertions))]
+			return Ok(true);
+		});
+
 		methods.add_method_mut("ok", |_, data, ()| {
 			check_lock_poison(data);
 			let Backend(data) = data;

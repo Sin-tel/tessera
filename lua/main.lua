@@ -1,10 +1,6 @@
-release = false
-if os.getenv("RELEASE") then
-	release = true
-end
+release = backend:isRelease()
 
 local log = require("log")
--- require("lib/run")
 
 if not release then
 	require("lib/strict")

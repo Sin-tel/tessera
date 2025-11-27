@@ -1,5 +1,6 @@
-use crate::Config;
-use crate::run;
+use crate::INIT_HEIGHT;
+use crate::INIT_WIDTH;
+use winit::window::Window;
 
 #[allow(dead_code)]
 pub trait WindowSurface {
@@ -47,14 +48,15 @@ impl WindowSurface for Surface {
 	}
 }
 
-pub fn start(config: Config) {
+pub fn start() -> (Canvas<Renderer>, EventLoop<()>, Surface, Window) {
 	let event_loop = EventLoop::new().unwrap();
 
 	let (canvas, window, context, surface) = {
 		let window_builder = WindowBuilder::new()
-			.with_inner_size(winit::dpi::PhysicalSize::new(config.width, config.height))
-			.with_resizable(config.resizeable)
-			.with_title(config.title.clone());
+			.with_inner_size(winit::dpi::PhysicalSize::new(INIT_WIDTH, INIT_HEIGHT))
+			.with_min_inner_size(winit::dpi::PhysicalSize::new(400, 300))
+			.with_resizable(true)
+			.with_title("Tessera");
 
 		let template = ConfigTemplateBuilder::new().with_alpha_size(8);
 
@@ -124,8 +126,5 @@ pub fn start(config: Config) {
 
 	let demo_surface = Surface { context, surface };
 
-	println!("Running openGL backend.");
-	if let Err(e) = run(canvas, event_loop, demo_surface, window, config) {
-		println!("{e}");
-	}
+	(canvas, event_loop, demo_surface, window)
 }
