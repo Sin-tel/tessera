@@ -2,12 +2,11 @@ use crate::backend::Renderer;
 use crate::text::imgref::Img;
 use crate::text::imgref::ImgRef;
 use crate::text::rgb::RGBA8;
-use cosmic_text::fontdb;
 use cosmic_text::CacheKey;
+use cosmic_text::Family;
 use cosmic_text::SubpixelBin;
+use cosmic_text::fontdb;
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping, SwashCache};
-use femtovg::imgref;
-use femtovg::rgb;
 use femtovg::Atlas;
 use femtovg::DrawCommand;
 use femtovg::GlyphDrawCommands;
@@ -15,6 +14,8 @@ use femtovg::ImageFlags;
 use femtovg::ImageId;
 use femtovg::ImageSource;
 use femtovg::Quad;
+use femtovg::imgref;
+use femtovg::rgb;
 use femtovg::{Canvas, Paint};
 use resource::resource;
 use std::collections::HashMap;
@@ -194,13 +195,11 @@ pub struct TextEngine {
 
 impl TextEngine {
 	pub fn new() -> Self {
-		// let mut font_system = FontSystem::new();
+		let mut db = fontdb::Database::new();
+		db.load_font_data(resource!("../assets/font/inter.ttf").to_vec());
+		db.load_font_data(resource!("../assets/font/notes.ttf").to_vec());
 
-		let mut font_system =
-			FontSystem::new_with_locale_and_db("en-US".into(), fontdb::Database::new());
-
-		let font_data = std::fs::read("../assets/inter.ttf").unwrap();
-		font_system.db_mut().load_font_data(font_data);
+		let mut font_system = FontSystem::new_with_locale_and_db("en-US".into(), db);
 
 		let mut scratch_buffer = Buffer::new(&mut font_system, Metrics::new(14.0, 20.0));
 		scratch_buffer.set_wrap(&mut font_system, cosmic_text::Wrap::None);
@@ -215,16 +214,19 @@ impl TextEngine {
 		x: f32,
 		y: f32,
 		paint: &Paint,
+		font_name: &str,
 	) {
 		let font_size = paint.font_size();
-		let line_height = font_size * 1.2; // Standard approx
+		let line_height = font_size * 1.2;
 
 		let metrics = Metrics::new(font_size, line_height);
 
 		self.scratch_buffer.set_metrics(&mut self.font_system, metrics);
 
+		let attrs = Attrs::new().family(Family::Name(font_name));
+
 		self.scratch_buffer
-			.set_text(&mut self.font_system, text, Attrs::new(), Shaping::Advanced);
+			.set_text(&mut self.font_system, text, attrs, Shaping::Basic);
 
 		self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
 

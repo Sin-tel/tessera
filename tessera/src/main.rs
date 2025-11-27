@@ -21,6 +21,7 @@ use backend::Renderer;
 use backend::WindowSurface;
 use backend::opengl::Surface;
 use keycodes::keycode_to_love2d_key;
+use love_api::Font;
 use love_api::create_love_env;
 use love_config::Config;
 use text::TextEngine;
@@ -71,7 +72,7 @@ pub struct State {
 	current_color: Color,
 	background_color: Color,
 	line_width: f32,
-	font_size: f32,
+	font: Font,
 	text_engine: TextEngine,
 	keys_down: HashSet<KeyCode>,
 	mouse_down: HashSet<MouseButton>,
@@ -127,7 +128,7 @@ fn run(
 		mouse_position: (0., 0.),
 		window_size: (config.width, config.height),
 		line_width: 1.5,
-		font_size: 14.,
+		font: Font { name: "Inter".to_string(), size: 14. },
 		text_engine: TextEngine::new(),
 		exit: false,
 		timer: Timer::new(),
