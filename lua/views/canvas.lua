@@ -45,6 +45,10 @@ function Canvas:update()
 			end
 		end
 
+		if self.current_tool.update then
+			self.current_tool:update(self)
+		end
+
 		if self.tool_active then
 			self.current_tool:mousedown(self)
 		end
@@ -190,6 +194,8 @@ function Canvas:draw()
 			end
 		end
 	end
+	love.graphics.setLineWidth(1)
+
 	-- top 'ribbon'
 	love.graphics.setColor(theme.background)
 	love.graphics.rectangle("fill", 0, -1, self.w, 16)
@@ -416,6 +422,7 @@ function Canvas:mousereleased()
 	end
 	self.current_tool:mousereleased(self)
 	self.tool_active = false
+	self.current_tool = self.selected_tool
 end
 
 return Canvas

@@ -3,18 +3,21 @@ local drag = require("tools/drag")
 local drag_end = require("tools/drag_end")
 local select_rect = require("tools/select_rect")
 
+local DRAG_END_DIST = 12
+local NOTE_EDIT_DIST = 12
+
 local edit = {}
 
 edit.tool = select_rect
 
+edit.name = "edit"
+
 function edit:mousepressed(canvas)
 	local mx, my = canvas:getMouse()
 
-	self.tool = select_rect
-
 	-- Check if click on note
-	local closest, closest_ch = canvas:find_closest_note(mx, my, 24)
-	local closest_end, closest_ch_end = canvas:find_closest_end(mx, my, 24)
+	local closest, closest_ch = canvas:find_closest_note(mx, my, NOTE_EDIT_DIST)
+	local closest_end, closest_ch_end = canvas:find_closest_end(mx, my, DRAG_END_DIST)
 
 	self.select_note = closest
 	local select_ch = closest_ch
@@ -56,6 +59,22 @@ function edit:mousereleased(canvas)
 	local did_edit = self.tool:mousereleased(canvas)
 	if not did_edit and modifier_keys.ctrl and selection.mask[self.select_note] then
 		selection.subtract({ [self.select_note] = true })
+	end
+
+	self.tool = select_rect
+end
+
+function edit:update(canvas)
+	local mx, my = canvas:getMouse()
+	local closest, _ = canvas:find_closest_note(mx, my, NOTE_EDIT_DIST)
+	local closest_end, _ = canvas:find_closest_end(mx, my, DRAG_END_DIST)
+
+	if modifier_keys.alt then
+		mouse:setCursor("h")
+	elseif closest_end or self.tool == drag_end then
+		mouse:setCursor("v")
+	elseif closest or self.tool == drag then
+		mouse:setCursor("move")
 	end
 end
 

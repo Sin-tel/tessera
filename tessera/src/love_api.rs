@@ -456,31 +456,29 @@ impl LuaUserData for Mouse {
 			Ok(state.mouse_position)
 		});
 
-		// love.mouse.getSystemCursor("hand")
-		// Just return the string, so we don't have to implement userdata for it.
-		methods.add_function("getSystemCursor", |_lua, name: String| Ok(name));
-
 		// love.mouse.setCursor(cursor)
 		// Option<String> handles the case where Lua calls setCursor() to reset default.
 		methods.add_function("setCursor", |lua, cursor_name: Option<String>| {
 			let state = lua.app_data_ref::<State>().unwrap();
 
 			// If nil/None passed, default to Arrow. Otherwise parse the string.
-			let icon_name = cursor_name.as_deref().unwrap_or("arrow");
+			let icon_name = cursor_name.as_deref().unwrap_or("default");
 
 			let icon = match icon_name {
-				"arrow" => CursorIcon::Default,
-				"hand" => CursorIcon::Pointer,
-				"ibeam" => CursorIcon::Text,
-				"crosshair" => CursorIcon::Crosshair,
+				"default" => CursorIcon::Default,
+				"v" => CursorIcon::EwResize,
+				"h" => CursorIcon::NsResize,
 				"wait" => CursorIcon::Wait,
-				"waitarrow" => CursorIcon::Progress,
-				"sizenwse" => CursorIcon::NwseResize,
-				"sizenesw" => CursorIcon::NeswResize,
-				"sizewe" => CursorIcon::ColResize,
-				"sizens" => CursorIcon::RowResize,
-				"sizeall" => CursorIcon::Move,
+				"text" => CursorIcon::Text,
+				"move" => CursorIcon::Move,
+				"grab" => CursorIcon::Grab,
+				"crosshair" => CursorIcon::Crosshair,
+				"progress" => CursorIcon::Progress,
+				"help" => CursorIcon::Help,
 				"no" => CursorIcon::NotAllowed,
+				"hand" => CursorIcon::Pointer,
+				"nwse" => CursorIcon::NwseResize,
+				"nesw" => CursorIcon::NeswResize,
 				e => panic!("Unknown cursor \"{e}\""),
 			};
 
