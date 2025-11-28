@@ -160,6 +160,10 @@ function Box:recalc(x, y, w, h)
 			self.children[2]:recalc(self.x, self.y + self.r, self.w, self.h - self.r)
 		end
 	end
+
+	if self.view then
+		self.view:setDimensions()
+	end
 end
 
 function Box:get_bound_left()
