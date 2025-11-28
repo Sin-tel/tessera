@@ -30,18 +30,7 @@ function mouse:load()
 
 	self.scroll = false
 
-	self.cursors = {}
-
-	self.cursors.default = love.mouse.getSystemCursor("arrow")
-	self.cursors.v = love.mouse.getSystemCursor("sizewe")
-	self.cursors.h = love.mouse.getSystemCursor("sizens")
-	self.cursors.size = love.mouse.getSystemCursor("sizeall")
-	self.cursors.hand = love.mouse.getSystemCursor("hand")
-	self.cursors.cross = love.mouse.getSystemCursor("crosshair")
-	self.cursors.wait = love.mouse.getSystemCursor("wait")
-	self.cursors.ibeam = love.mouse.getSystemCursor("ibeam")
-
-	self.cursor = self.cursors.default
+	self.cursor = "default"
 	self.pcursor = self.cursor
 end
 
@@ -93,7 +82,7 @@ function mouse:update(x, y)
 		end
 	end
 
-	self.cursor = self.cursors.default
+	self.cursor = "default"
 end
 
 function mouse:endFrame()
@@ -115,7 +104,7 @@ function mouse:endFrame()
 end
 
 function mouse:setCursor(c)
-	self.cursor = self.cursors[c]
+	self.cursor = c
 end
 
 function mouse:setRelative(r)
