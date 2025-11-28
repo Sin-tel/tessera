@@ -26,8 +26,6 @@ function View:drawFull()
 	love.graphics.push()
 	love.graphics.translate(Ui.BORDER_SIZE, Ui.HEADER + Ui.BORDER_SIZE)
 
-	self.w = self.box.w - 2 * Ui.BORDER_SIZE
-	self.h = self.box.h - Ui.HEADER - 2 * Ui.BORDER_SIZE
 	self:draw()
 	love.graphics.pop()
 
@@ -60,6 +58,11 @@ end
 function View:getOrigin()
 	-- TODO: this should be in sync with the translate() calls in both box and view
 	return self.box.x + Ui.BORDER_SIZE, self.box.y + Ui.HEADER + Ui.BORDER_SIZE
+end
+
+function View:setDimensions()
+	self.w = self.box.w - 2 * Ui.BORDER_SIZE
+	self.h = self.box.h - Ui.HEADER - 2 * Ui.BORDER_SIZE
 end
 
 return View
