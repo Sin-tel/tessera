@@ -1,12 +1,10 @@
 use crate::State;
-use crate::api::keycodes::love2d_key_to_keycode;
 use femtovg::ImageFlags;
 use femtovg::ImageId;
 use femtovg::{Color, Paint, Path};
 use mlua::Variadic;
 use mlua::prelude::*;
 use winit::dpi::LogicalPosition;
-use winit::event::MouseButton;
 use winit::window::{CursorGrabMode, CursorIcon};
 
 fn to_f32(value: &LuaValue) -> LuaResult<f32> {
@@ -435,22 +433,6 @@ pub struct Mouse;
 
 impl LuaUserData for Mouse {
 	fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
-		methods.add_function("isDown", |lua, button_number: u16| {
-			let button = match button_number {
-				1 => MouseButton::Left,
-				2 => MouseButton::Right,
-				3 => MouseButton::Middle,
-				4 => MouseButton::Back,
-				5 => MouseButton::Forward,
-				i => MouseButton::Other(i),
-			};
-			let state = lua.app_data_ref::<State>().unwrap();
-			if state.mouse_down.contains(&button) {
-				return Ok(true);
-			}
-			Ok(false)
-		});
-
 		methods.add_function("getPosition", |lua, ()| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			Ok(state.mouse_position)
@@ -545,20 +527,6 @@ pub fn create_love_env() -> LuaResult<Lua> {
 	// love.mouse
 	let mouse = Mouse {};
 	love.set("mouse", mouse)?;
-
-	// love.keyboard
-	let keyboard = lua.create_table()?;
-	let is_down = lua.create_function(|lua: &Lua, key: String| {
-		if let Some(code) = love2d_key_to_keycode(&key) {
-			let state = lua.app_data_ref::<State>().unwrap();
-			if state.keys_down.contains(&code) {
-				return Ok(true);
-			}
-		}
-		Ok(false)
-	})?;
-	keyboard.set("isDown", is_down)?;
-	love.set("keyboard", keyboard)?;
 
 	// love.event
 	let event = lua.create_table()?;

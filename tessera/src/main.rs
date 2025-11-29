@@ -30,14 +30,12 @@ mod text;
 
 use femtovg::{Canvas, Color};
 use mlua::prelude::*;
-use std::collections::HashSet;
 use std::fs;
 use std::path;
 use std::path::PathBuf;
 use std::time::Instant;
 use tessera_audio::context::AudioContext;
 use tessera_audio::log::{init_logging, log_error};
-use winit::keyboard::KeyCode;
 use winit::{
 	event::{DeviceEvent, ElementState, Event, MouseButton, MouseScrollDelta, WindowEvent},
 	event_loop::EventLoop,
@@ -112,8 +110,6 @@ pub struct State {
 	line_width: f32,
 	font: Font,
 	text_engine: TextEngine,
-	keys_down: HashSet<KeyCode>,
-	mouse_down: HashSet<MouseButton>,
 	mouse_position: (f32, f32),
 	window_size: (u32, u32),
 	exit: bool,
@@ -173,8 +169,6 @@ fn run(
 	lua.set_app_data(State {
 		current_color: Color::white(),
 		background_color: Color::black(),
-		keys_down: HashSet::new(),
-		mouse_down: HashSet::new(),
 		mouse_position: (0., 0.),
 		window_size: (INIT_WIDTH, INIT_HEIGHT),
 		line_width: 1.5,
@@ -237,16 +231,11 @@ fn run(
 						..
 					} => {
 						let key = keycode_to_love2d_key(keycode);
-						let mut app_state = lua.app_data_mut::<State>().unwrap();
 						match state {
 							ElementState::Pressed => {
-								app_state.keys_down.insert(keycode);
-								drop(app_state);
 								wrap_call(&love_keypressed, (key, key, repeat));
 							},
 							ElementState::Released => {
-								app_state.keys_down.remove(&keycode);
-								drop(app_state);
 								wrap_call(&love_keyreleased, (key, key, repeat));
 							},
 						}
@@ -280,17 +269,9 @@ fn run(
 						let (x, y) = lua.app_data_ref::<State>().unwrap().mouse_position;
 						match state {
 							ElementState::Pressed => {
-								let mut app_state = lua.app_data_mut::<State>().unwrap();
-								app_state.mouse_down.insert(button);
-								drop(app_state);
-
 								wrap_call(&love_mousepressed, (x, y, button_number));
 							},
 							ElementState::Released => {
-								let mut app_state = lua.app_data_mut::<State>().unwrap();
-								app_state.mouse_down.remove(&button);
-								drop(app_state);
-
 								wrap_call(&love_mousereleased, (x, y, button_number));
 							},
 						}
