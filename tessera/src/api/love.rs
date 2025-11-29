@@ -1,5 +1,5 @@
 use crate::State;
-use crate::keycodes::love2d_key_to_keycode;
+use crate::api::keycodes::love2d_key_to_keycode;
 use femtovg::ImageFlags;
 use femtovg::ImageId;
 use femtovg::{Color, Paint, Path};
@@ -526,14 +526,16 @@ impl LuaUserData for Mouse {
 }
 
 pub fn create_love_env() -> LuaResult<Lua> {
-	// let lua = unsafe { Lua::unsafe_new() };
+	#[cfg(debug_assertions)]
 	let lua = unsafe {
 		Lua::unsafe_new_with(
-			// mlua::StdLib::FFI | mlua::StdLib::DEBUG | mlua::StdLib::ALL_SAFE,
-			mlua::StdLib::ALL,
+			mlua::StdLib::DEBUG | mlua::StdLib::ALL_SAFE,
 			mlua::LuaOptions::default(),
 		)
 	};
+
+	#[cfg(not(debug_assertions))]
+	let lua = Lua::new();
 
 	// love.graphics
 	let love = lua.create_table()?;

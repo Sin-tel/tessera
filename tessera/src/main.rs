@@ -24,9 +24,7 @@
 #![allow(clippy::needless_range_loop)]
 #![allow(clippy::get_first)]
 
-mod backend;
-mod keycodes;
-mod love_api;
+mod api;
 mod opengl;
 mod text;
 
@@ -46,10 +44,10 @@ use winit::{
 	window::Window,
 };
 
-use backend::Backend;
-use keycodes::keycode_to_love2d_key;
-use love_api::Font;
-use love_api::create_love_env;
+use api::backend::Backend;
+use api::keycodes::keycode_to_love2d_key;
+use api::love::Font;
+use api::love::create_love_env;
 use opengl::Renderer;
 use opengl::Surface;
 use opengl::WindowSurface;
