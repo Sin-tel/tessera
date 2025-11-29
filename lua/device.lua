@@ -10,7 +10,7 @@ function Device.new(name, state, options)
 	self.name = name
 
 	self.state = state
-	-- copy of state that is already send to backend
+	-- copy of state that is already sent to backend
 	self.state_old = {}
 
 	-- UI stuff and parameter handlers
@@ -63,6 +63,10 @@ function Device:update(ui, index, w, w_label)
 	-- detect hit anywhere inside of the device
 	local end_y = ui.layout.y
 	return ui:hit_area(start_x, start_y, w, end_y - start_y) and mouse.button_released
+end
+
+function Device:reset()
+	self.state_old = {}
 end
 
 return Device

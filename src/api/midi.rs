@@ -14,7 +14,7 @@ impl UserData for Midi {
 		});
 
 		methods.add_function("open_connection", |lua, port_name: String| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				let connection = midi::connect(&port_name);
 				if let Some(c) = connection {
 					let name = c.name.clone();
@@ -27,7 +27,7 @@ impl UserData for Midi {
 		});
 
 		methods.add_function("close_connection", |lua, connection_index: usize| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				if ctx.midi_connections.len() < connection_index - 1 {
 					log_error!("Bad midi connection index: {connection_index}");
 				} else {
@@ -40,7 +40,7 @@ impl UserData for Midi {
 		});
 
 		methods.add_function("poll", |lua, connection_index: usize| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				let connection = ctx.midi_connections.get_mut(connection_index - 1);
 				match connection {
 					Some(c) => {

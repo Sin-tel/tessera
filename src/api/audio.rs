@@ -36,7 +36,7 @@ impl UserData for Audio {
 		});
 
 		methods.add_function("panic", |lua, ()| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				ctx.send_message(AudioMessage::Panic);
 			}
 			Ok(())
@@ -50,19 +50,18 @@ impl UserData for Audio {
 			return Ok(true);
 		});
 
-		methods.add_function("ok", |lua, ()| {
-			Ok(lua.app_data_mut::<State>().unwrap().audio_mut().is_some())
-		});
+		methods
+			.add_function("ok", |lua, ()| Ok(lua.app_data_mut::<State>().unwrap().audio.is_some()));
 
 		methods.add_function("get_samplerate", |lua, ()| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &lua.app_data_ref::<State>().unwrap().audio {
 				return Ok(Some(ctx.sample_rate));
 			}
 			Ok(None)
 		});
 
 		methods.add_function("pitch", |lua, (channel_index, pitch, voice): (usize, f32, usize)| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				ctx.send_message(AudioMessage::Pitch(channel_index - 1, pitch, voice - 1));
 			}
 			Ok(())
@@ -71,7 +70,7 @@ impl UserData for Audio {
 		methods.add_function(
 			"pressure",
 			|lua, (channel_index, pressure, voice): (usize, f32, usize)| {
-				if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 					ctx.send_message(AudioMessage::Pressure(
 						channel_index - 1,
 						pressure,
@@ -85,7 +84,7 @@ impl UserData for Audio {
 		methods.add_function(
 			"note_on",
 			|lua, (channel_index, pitch, vel, voice): (usize, f32, f32, usize)| {
-				if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 					ctx.send_message(AudioMessage::NoteOn(
 						channel_index - 1,
 						pitch,
@@ -98,14 +97,14 @@ impl UserData for Audio {
 		);
 
 		methods.add_function("note_off", |lua, (channel_index, voice): (usize, usize)| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				ctx.send_message(AudioMessage::NoteOff(channel_index - 1, voice - 1));
 			}
 			Ok(())
 		});
 
 		methods.add_function("send_mute", |lua, (channel_index, mute): (usize, bool)| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				ctx.send_message(AudioMessage::Mute(channel_index - 1, mute));
 			}
 			Ok(())
@@ -114,7 +113,7 @@ impl UserData for Audio {
 		methods.add_function(
 			"send_parameter",
 			|lua, (channel_index, device_index, index, value): (usize, usize, usize, f32)| {
-				if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 					ctx.send_message(AudioMessage::Parameter(
 						channel_index - 1,
 						device_index, // don't need -1 here since device index is 0 for instrument and 1.. for fx
@@ -129,7 +128,7 @@ impl UserData for Audio {
 		methods.add_function(
 			"bypass",
 			|lua, (channel_index, device_index, bypass): (usize, usize, bool)| {
-				if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 					ctx.send_message(AudioMessage::Bypass(channel_index, device_index, bypass));
 				}
 				Ok(())
@@ -139,7 +138,7 @@ impl UserData for Audio {
 		methods.add_function(
 			"reorder_effect",
 			|lua, (channel_index, old_index, new_index): (usize, usize, usize)| {
-				if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 					ctx.send_message(AudioMessage::ReorderEffect(
 						channel_index - 1,
 						old_index - 1,
@@ -151,14 +150,14 @@ impl UserData for Audio {
 		);
 
 		methods.add_function("set_rendering", |lua, rendering: bool| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				ctx.send_rendering(rendering);
 			}
 			Ok(())
 		});
 
 		methods.add_function("is_rendering", |lua, ()| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				Ok(ctx.is_rendering)
 			} else {
 				Ok(true)
@@ -166,16 +165,16 @@ impl UserData for Audio {
 		});
 
 		methods.add_function("insert_channel", |lua, (index, instrument_name): (usize, String)| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
-				let mut render = ctx.m_render.lock().expect("Failed to get lock.");
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let mut render = ctx.m_render.lock();
 				render.insert_channel(index - 1, &instrument_name);
 			}
 			Ok(())
 		});
 
 		methods.add_function("remove_channel", |lua, index: usize| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
-				let mut render = ctx.m_render.lock().expect("Failed to get lock.");
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let mut render = ctx.m_render.lock();
 				render.remove_channel(index - 1);
 			}
 			Ok(())
@@ -184,8 +183,8 @@ impl UserData for Audio {
 		methods.add_function(
 			"insert_effect",
 			|lua, (channel_index, effect_index, name): (usize, usize, String)| {
-				if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
-					let mut render = ctx.m_render.lock().expect("Failed to get lock.");
+				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+					let mut render = ctx.m_render.lock();
 					render.insert_effect(channel_index - 1, effect_index - 1, &name);
 				}
 				Ok(())
@@ -195,8 +194,8 @@ impl UserData for Audio {
 		methods.add_function(
 			"remove_effect",
 			|lua, (channel_index, effect_index): (usize, usize)| {
-				if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
-					let mut render = ctx.m_render.lock().expect("Failed to get lock.");
+				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+					let mut render = ctx.m_render.lock();
 					render.remove_effect(channel_index - 1, effect_index - 1);
 				}
 				Ok(())
@@ -204,11 +203,11 @@ impl UserData for Audio {
 		);
 
 		methods.add_function("render_block", |lua, ()| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				let len = 64;
 				let buffer: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
 
-				let mut render = ctx.m_render.lock().expect("Failed to get lock.");
+				let mut render = ctx.m_render.lock();
 				// TODO: need to check here if the stream is *actually* paused
 
 				render.parse_messages();
@@ -226,7 +225,7 @@ impl UserData for Audio {
 		});
 
 		methods.add_function("render_finish", |lua, ()| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				let filename = "out/render.wav";
 				let sample_rate = ctx.sample_rate;
 
@@ -248,35 +247,35 @@ impl UserData for Audio {
 		});
 
 		methods.add_function("render_cancel", |lua, ()| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				ctx.render_buffer = Vec::new();
 			}
 			Ok(())
 		});
 
 		methods.add_function("flush", |lua, ()| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
-				let mut render = ctx.m_render.lock().expect("Failed to get lock.");
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let mut render = ctx.m_render.lock();
 				render.flush();
 			}
 			Ok(())
 		});
 
 		methods.add_function("update_scope", |lua, ()| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				ctx.scope.update();
 			}
 			Ok(())
 		});
 		methods.add_function("get_spectrum", |lua, ()| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				Ok(Some(ctx.scope.get_spectrum()))
 			} else {
 				Ok(None)
 			}
 		});
 		methods.add_function("get_scope", |lua, ()| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				Ok(Some(ctx.scope.get_oscilloscope()))
 			} else {
 				Ok(None)
@@ -284,7 +283,7 @@ impl UserData for Audio {
 		});
 
 		methods.add_function("pop", |lua, ()| {
-			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				Ok(ctx.lua_rx.try_pop())
 			} else {
 				Ok(None)

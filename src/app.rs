@@ -1,6 +1,8 @@
+use crate::audio::AUDIO_PANIC;
 use crate::context::AudioContext;
-use crate::log::log_error;
+use crate::log::log_warn;
 use femtovg::{Canvas, Color};
+use std::sync::atomic::Ordering;
 use std::time::Instant;
 use winit::window::Window;
 
@@ -29,13 +31,11 @@ pub struct State {
 }
 
 impl State {
-	pub fn audio_mut(&mut self) -> Option<&mut AudioContext> {
-		if let Some(ud) = &self.audio
-			&& ud.m_render.is_poisoned()
-		{
-			log_error!("Lock was poisoned. Killing backend.");
+	pub fn check_audio_status(&mut self) {
+		if self.audio.is_some() && AUDIO_PANIC.load(Ordering::Relaxed) {
+			log_warn!("Killing backend!");
+			AUDIO_PANIC.store(false, Ordering::Relaxed);
 			self.audio = None;
 		}
-		self.audio.as_mut()
 	}
 }

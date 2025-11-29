@@ -40,6 +40,7 @@ raw-window-handle = "0.5.0"
 cosmic-text = "0.15"
 swash = "0.2"
 unicode-script = "0.5.5"
+parking_lot = "0.12.5"
 
 [[bench]]
 name = "bench"
