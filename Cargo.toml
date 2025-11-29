@@ -1,6 +1,49 @@
-[workspace]
-resolver = "3"
-members = ["tessera_audio", "tessera"]
+[package]
+name = "tessera"
+version = "0.1.0"
+edition = "2024"
+
+# ASIO requirements
+[target.'cfg(target_os = "windows")'.dependencies]
+cpal = { version = "0.16", features = ["asio"]}
+[target.'cfg(not(target_os = "windows"))'.dependencies]
+cpal = { version = "0.16"}
+
+[dependencies]
+assert_no_alloc = {version = "1.1", features = ["warn_debug"]}
+no_denormals = "0.3"
+ringbuf = "0.4"
+fastrand = "2.0"
+bit_mask_ring_buf = "0.6"
+bencher = "0.1"
+rustfft = "6.1"
+realfft = "3.3"
+fft-convolver = "0.2"
+hound = "3.5"
+midir = "0.10"
+num-complex = "0.4"
+
+standard_log = { package = "log", version = "0.4" }
+simplelog = "0.12"
+# log-panics = { version = "2", features = ["with-backtrace"]}
+log-panics = { version = "2"}
+
+mlua = { version = "0.11", features = ["luajit", "vendored"] }
+
+winit = "0.29"
+femtovg = {version="0.19.3", default-features = false, features=["image-loading"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+glutin =  "0.31.0"
+glutin-winit = "0.4.0"
+raw-window-handle = "0.5.0"
+
+cosmic-text = "0.15"
+swash = "0.2"
+unicode-script = "0.5.5"
+
+[[bench]]
+name = "bench"
+harness = false
 
 [profile.dev]
 # opt-level = 1

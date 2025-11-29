@@ -32,8 +32,8 @@ use femtovg::{Canvas, Color};
 use mlua::prelude::*;
 use std::fs;
 use std::time::Instant;
-use tessera_audio::context::AudioContext;
-use tessera_audio::log::{init_logging, log_error};
+use tessera::context::AudioContext;
+use tessera::log::{init_logging, log_error};
 use winit::{
 	event::{DeviceEvent, ElementState, Event, MouseButton, MouseScrollDelta, WindowEvent},
 	event_loop::EventLoop,

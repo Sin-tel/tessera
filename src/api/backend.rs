@@ -4,10 +4,10 @@ use mlua::{UserData, UserDataMethods};
 use no_denormals::no_denormals;
 use ringbuf::traits::*;
 use std::error::Error;
-use tessera_audio::audio;
-use tessera_audio::context::AudioMessage;
-use tessera_audio::log::{log_error, log_info};
-use tessera_audio::midi;
+use tessera::audio;
+use tessera::context::AudioMessage;
+use tessera::log::{log_error, log_info};
+use tessera::midi;
 
 pub struct Backend;
 

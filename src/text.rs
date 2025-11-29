@@ -1,4 +1,4 @@
-use crate::Renderer;
+use crate::opengl::Renderer;
 use crate::text::imgref::Img;
 use crate::text::imgref::ImgRef;
 use crate::text::rgb::RGBA8;
@@ -219,8 +219,8 @@ impl TextEngine {
 		// let mut font_system = FontSystem::new();
 
 		let mut db = fontdb::Database::new();
-		db.load_font_data(include_bytes!("../../assets/font/inter.ttf").to_vec());
-		db.load_font_data(include_bytes!("../../assets/font/notes.ttf").to_vec());
+		db.load_font_data(include_bytes!("../assets/font/inter.ttf").to_vec());
+		db.load_font_data(include_bytes!("../assets/font/notes.ttf").to_vec());
 
 		let mut font_system =
 			FontSystem::new_with_locale_and_db_and_fallback("en-US".into(), db, MyFallback {});
