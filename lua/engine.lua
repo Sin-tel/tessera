@@ -48,7 +48,7 @@ end
 function engine.update(dt)
 	if engine.playing then
 		project.transport.time = project.transport.time + dt
-		if backend:ok() then
+		if backend.ok() then
 			for _, v in ipairs(ui_channels) do
 				v.roll:playback()
 			end
@@ -59,10 +59,10 @@ function engine.update(dt)
 end
 
 function engine.renderStart()
-	backend:flush()
+	backend.flush()
 	midi.flush()
 
-	if not backend:ok() then
+	if not backend.ok() then
 		log.error("Can't render, backend offline.")
 		return
 	end
@@ -83,7 +83,7 @@ function engine.renderStart()
 	mouse:setCursor("wait")
 	mouse:endFrame()
 
-	backend:setRendering(true)
+	backend.setRendering(true)
 
 	-- sleep for a bit to make sure the audio thread is done
 	-- TODO: find something better
@@ -91,15 +91,15 @@ function engine.renderStart()
 end
 
 function engine.render()
-	assert(backend:isRendering())
+	assert(backend.isRendering())
 
-	local dt = RENDER_BLOCK_SIZE / backend:getSampleRate()
+	local dt = RENDER_BLOCK_SIZE / backend.getSampleRate()
 
 	-- Try to hit 16 ms to keep things responsive
 	local target_ms = 16
 	local t_start = love.timer.getTime()
 	for i = 1, 3000 do
-		local success = backend:renderBlock()
+		local success = backend.renderBlock()
 		if not success then
 			log.error("Failed to render block.")
 			engine.renderCancel()
@@ -110,7 +110,7 @@ function engine.render()
 		engine.render_progress = engine.render_progress + dt
 		if engine.render_progress >= engine.render_end then
 			log.info("Finished render.")
-			backend:renderFinish()
+			backend.renderFinish()
 			engine.renderEnd()
 			break
 		end
@@ -126,7 +126,7 @@ end
 function engine.renderEnd()
 	midi.flush()
 
-	backend:setRendering(false)
+	backend.setRendering(false)
 	mouse:setCursor("default")
 	audio_status = "running"
 	engine.stop()
@@ -135,7 +135,7 @@ end
 -- update UI with messages from backend
 function engine.parseMessages()
 	while true do
-		local p = backend:pop()
+		local p = backend.pop()
 		if p == nil then
 			return
 		end

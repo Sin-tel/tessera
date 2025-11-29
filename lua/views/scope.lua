@@ -38,7 +38,7 @@ end
 
 function Scope:draw()
 	if self.index == 2 then
-		local spectrum = backend:getSpectrum()
+		local spectrum = backend.getSpectrum()
 		if spectrum then
 			local n = #spectrum
 
@@ -75,7 +75,7 @@ function Scope:draw()
 			end
 		end
 	else
-		local scope = backend:getScope()
+		local scope = backend.getScope()
 		if scope then
 			local n = #scope
 

@@ -1,4 +1,4 @@
-release = backend:isRelease()
+release = backend.isRelease()
 
 local log = require("log")
 
@@ -63,14 +63,14 @@ local function load_project()
 end
 
 local function audioSetup()
-	if not backend:ok() then
-		backend:setup(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
+	if not backend.ok() then
+		backend.setup(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
 		midi.load()
 	else
 		log.warn("Audio already set up")
 	end
 
-	if backend:ok() then
+	if backend.ok() then
 		audio_status = "running"
 	else
 		log.error("Audio setup failed")
@@ -125,7 +125,7 @@ function love.load()
 end
 
 function love.update(dt)
-	if not backend:ok() and (audio_status == "render" or audio_status == "running") then
+	if not backend.ok() and (audio_status == "render" or audio_status == "running") then
 		log.warn("Backend died.")
 		audio_status = "dead"
 	end
@@ -145,13 +145,13 @@ function love.draw()
 		audio_status = "request"
 	end
 
-	backend:updateScope()
+	backend.updateScope()
 	if audio_status ~= "render" then
 		mouse:update()
 		workspace:update()
 		mouse:endFrame()
 
-		if backend:ok() then
+		if backend.ok() then
 			sendParameters()
 		end
 	end
@@ -224,7 +224,7 @@ function love.keypressed(_, key, isrepeat)
 
 	if audio_status == "render" then
 		if (key == "c" and modifier_keys.ctrl) or key == "escape" then
-			backend:renderCancel()
+			backend.renderCancel()
 			engine.renderEnd()
 		end
 
@@ -248,16 +248,16 @@ function love.keypressed(_, key, isrepeat)
 			engine.start()
 		end
 	elseif modifier_keys.ctrl and key == "k" then
-		if backend:ok() then
+		if backend.ok() then
 			audio_status = "dead"
 			midi.quit()
-			backend:quit()
+			backend.quit()
 		else
 			audio_status = "request"
 		end
 	elseif modifier_keys.ctrl and key == "w" then
 		-- for testing panic recovery
-		backend:panic()
+		backend.panic()
 	elseif key == "z" and modifier_keys.ctrl then
 		command.undo()
 	elseif key == "y" and modifier_keys.ctrl then
@@ -319,7 +319,7 @@ end
 
 function love.quit()
 	-- save.writeSetup()
-	backend:quit()
+	backend.quit()
 end
 
 local function toNumber(x)
@@ -339,7 +339,7 @@ function sendParameters()
 			local old_value = ch.instrument.state_old[l]
 			if old_value ~= new_value then
 				local value = toNumber(new_value)
-				backend:sendParameter(k, 0, l, value)
+				backend.sendParameter(k, 0, l, value)
 				ch.instrument.state_old[l] = new_value
 			end
 		end
@@ -350,7 +350,7 @@ function sendParameters()
 				local old_value = fx.state_old[l]
 				if old_value ~= new_value then
 					local value = toNumber(new_value)
-					backend:sendParameter(k, e, l, value)
+					backend.sendParameter(k, e, l, value)
 					fx.state_old[l] = new_value
 				end
 			end

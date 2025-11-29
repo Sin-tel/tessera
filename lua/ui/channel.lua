@@ -10,7 +10,7 @@ local function do_mute(ch_index, mute)
 	end
 	if ch.mute ~= mute then
 		ch.mute = mute
-		backend:sendMute(ch_index, mute)
+		backend.sendMute(ch_index, mute)
 	end
 end
 
