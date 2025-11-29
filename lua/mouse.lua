@@ -1,7 +1,7 @@
 local mouse = {}
 
 local DOUBLE_CLICK_TIME = 0.35
-local DRAG_DIST = 3
+local DRAG_DIST = 5
 
 mouse.DRAG_DIST = DRAG_DIST
 
@@ -15,11 +15,10 @@ function mouse:load()
 	self.drag = false
 	self.relative = false
 
-	self.ix = 0
-	self.iy = 0
-
 	self.dx = 0
 	self.dy = 0
+
+	self.drag_dist = 0
 
 	self.button = false
 
@@ -38,8 +37,7 @@ function mouse:pressed(x, y, button)
 	self.x, self.y = x, y
 
 	if not self.button then -- ignore buttons while other is pressed
-		self.ix = x
-		self.iy = y
+		self.drag_dist = 0
 		self.dx = 0
 		self.dy = 0
 		self.drag = false
@@ -75,9 +73,8 @@ end
 
 function mouse:update(x, y)
 	self.x, self.y = tessera.mouse.get_position()
-
 	if self.button then
-		if math.sqrt((self.x - self.ix) ^ 2 + (self.y - self.iy) ^ 2) > DRAG_DIST then
+		if self.drag_dist > DRAG_DIST then
 			self.drag = true
 		end
 	end
@@ -90,17 +87,19 @@ function mouse:end_frame()
 	self.button_released = false
 	self.scroll = false
 
-	tessera.mouse.set_relative_mode(self.relative)
-	if self.cursor and not self.relative then
-		tessera.mouse.set_visible(true)
-		if self.pcursor ~= self.cursor then
-			tessera.mouse.set_cursor(self.cursor)
-		end
-		self.pcursor = self.cursor
-	else
-		tessera.mouse.set_visible(false)
+	-- swap cursor only if changed
+	if self.pcursor ~= self.cursor then
+		tessera.mouse.set_cursor(self.cursor)
 	end
+	self.pcursor = self.cursor
+
+	tessera.mouse.set_relative_mode(self.relative)
 	self.relative = false
+
+	if self.new_x then
+		tessera.mouse.set_position(self.new_x, self.new_y)
+		self.new_x, self.new_y = nil, nil
+	end
 end
 
 function mouse:set_cursor(c)
@@ -108,17 +107,13 @@ function mouse:set_cursor(c)
 end
 
 function mouse:set_relative(r)
-	-- TODO: some weird issue with sliders
-	--   Dragging them and then right clicking does not
-	--   register if the mouse hasn't moved since turning
-	--   off relative mode.
 	self.relative = true
 end
 
 function mouse:set_position(x, y)
 	self.x = x
 	self.y = y
-	tessera.mouse.set_position(x, y)
+	self.new_x, self.new_y = x, y
 end
 
 function mouse:mousemoved(_, _, dx, dy)
@@ -129,6 +124,7 @@ function mouse:mousemoved(_, _, dx, dy)
 		self.dx = self.dx + dx
 		self.dy = self.dy + dy
 	end
+	self.drag_dist = self.drag_dist + util.length(self.dx, self.dy)
 end
 
 function mouse:wheelmoved(y)
