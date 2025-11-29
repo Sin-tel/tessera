@@ -56,15 +56,6 @@ pub fn create_lua() -> LuaResult<Lua> {
 
 	love.set("timer", timer)?;
 
-	// love.filesystem
-	let filesystem = lua.create_table()?;
-	let get_source = lua.create_function(|lua, ()| {
-		let state = lua.app_data_mut::<State>().unwrap();
-		Ok(state.lua_dir.clone())
-	})?;
-	filesystem.set("getSource", get_source)?;
-	love.set("filesystem", filesystem)?;
-
 	lua.globals().set("love", love)?;
 
 	Ok(lua)

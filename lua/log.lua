@@ -2,7 +2,7 @@ io.stdout:setvbuf("no")
 
 local log = {}
 
-local file = io.open("../out/out.log", "a")
+local file = io.open("out/out.log", "a")
 assert(file, "Failed to create log file")
 file:setvbuf("full")
 

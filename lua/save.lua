@@ -40,7 +40,7 @@ function save.read(filename)
 	return false
 end
 
-local setup_path = love.filesystem.getSource() .. "/settings/setup.lua"
+local setup_path = "settings/setup.lua"
 
 function save.writeSetup()
 	local content = serialize(setup, "setup")

@@ -31,7 +31,6 @@ mod text;
 use femtovg::{Canvas, Color};
 use mlua::prelude::*;
 use std::fs;
-use std::path;
 use std::time::Instant;
 use tessera_audio::context::AudioContext;
 use tessera_audio::log::{init_logging, log_error};
@@ -64,7 +63,6 @@ pub struct State {
 	window_size: (u32, u32),
 	exit: bool,
 	start_time: Instant,
-	lua_dir: String,
 	transform_stack: Vec<femtovg::Transform2D>,
 	current_scissor: Option<(f32, f32, f32, f32)>,
 	audio: Option<AudioContext>,
@@ -87,7 +85,7 @@ impl State {
 fn wrap_call<T: IntoLuaMulti>(lua_fn: &LuaFunction, args: T) {
 	if let Err(e) = lua_fn.call::<()>(args) {
 		// For now we just panic
-		panic!("{}", e);
+		panic!("{e}");
 		// log_error!("{e}");
 		// println!("{e}");
 	}
@@ -107,10 +105,6 @@ fn run(
 	mut surface: Surface,
 	window: Window,
 ) -> LuaResult<()> {
-	// TODO: Should do everything relative to where the executable is
-	std::env::set_current_dir(env!("CARGO_WORKSPACE_DIR")).unwrap();
-	let lua_dir = path::absolute("./lua").unwrap();
-
 	let mut lua = create_lua()?;
 	lua.set_app_data(State {
 		current_color: Color::white(),
@@ -122,7 +116,6 @@ fn run(
 		text_engine: TextEngine::new(),
 		exit: false,
 		start_time: std::time::Instant::now(),
-		lua_dir: lua_dir.display().to_string(),
 		transform_stack: Vec::new(),
 		current_scissor: None,
 		audio: None,
@@ -131,14 +124,14 @@ fn run(
 	});
 
 	// set working directory so 'require' works
-	std::env::set_current_dir(&lua_dir).unwrap();
+	lua.load("package.path = package.path .. ';lua/?.lua;'").exec()?;
 
 	init_logging();
 
 	Backend::register(&mut lua)?;
 
-	let lua_main = fs::read_to_string(lua_dir.join("main.lua")).unwrap();
-	lua.load(lua_main).exec()?;
+	let lua_main = fs::read_to_string("lua/main.lua").unwrap();
+	lua.load(lua_main).set_name("@lua/main.lua").exec()?;
 
 	// Get main callbacks
 	let love: LuaTable = lua.globals().get("love")?;
