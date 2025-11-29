@@ -113,7 +113,6 @@ pub fn keycode_to_str(keycode: KeyCode) -> Option<&'static str> {
 		KeyCode::F16 => Some("f16"),
 		KeyCode::F17 => Some("f17"),
 		KeyCode::F18 => Some("f18"),
-		// F19-F35 are not in Love2D spec
 
 		// Modifier keys
 		KeyCode::NumLock => Some("numlock"),
