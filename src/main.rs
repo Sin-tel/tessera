@@ -31,9 +31,9 @@ fn wrap_call<T: IntoLuaMulti>(lua_fn: &LuaFunction, args: T) {
 }
 
 fn main() {
-	let (canvas, event_loop, demo_surface, window) = setup_window();
+	let (canvas, event_loop, surface, window) = setup_window();
 
-	if let Err(e) = run(canvas, event_loop, demo_surface, window) {
+	if let Err(e) = run(canvas, event_loop, surface, window) {
 		println!("{e}");
 	}
 }
@@ -94,6 +94,11 @@ fn run(
 			target.set_control_flow(winit::event_loop::ControlFlow::Poll);
 
 			match event {
+				Event::Resumed => {
+					// Only show window after initializing state to prevent blank screen
+					let app_state = lua.app_data_mut::<State>().unwrap();
+					app_state.window.set_visible(true);
+				},
 				Event::WindowEvent { event, .. } => match event {
 					WindowEvent::RedrawRequested => {
 						render_start(&lua);
@@ -174,6 +179,8 @@ fn run(
 				Event::AboutToWait => {
 					let mut accum = 0.0;
 					loop {
+						lua.app_data_mut::<State>().unwrap().check_audio_status();
+
 						let now = std::time::Instant::now();
 						let dt = (now - last_update).as_secs_f64();
 						last_update = now;
@@ -226,5 +233,7 @@ fn render_end(surface: &Surface, lua: &Lua) {
 
 	state.canvas.reset_scissor();
 	state.current_scissor = None;
+
+	state.window.pre_present_notify();
 	surface.present(&mut state.canvas);
 }

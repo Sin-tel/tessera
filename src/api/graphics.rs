@@ -133,8 +133,6 @@ impl LuaUserData for Graphics {
 		});
 
 		// Image
-
-		// tessera.graphics.newImage(filename)
 		methods.add_function("new_image", |lua, filename: String| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 

@@ -72,7 +72,8 @@ pub fn setup_window() -> (Canvas<Renderer>, EventLoop<()>, Surface, Window) {
 			.with_min_inner_size(winit::dpi::PhysicalSize::new(400, 300))
 			.with_resizable(true)
 			.with_window_icon(icon)
-			.with_title("Tessera");
+			.with_title("Tessera")
+			.with_visible(false);
 
 		let template = ConfigTemplateBuilder::new().with_alpha_size(8);
 
