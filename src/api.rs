@@ -4,10 +4,6 @@ pub mod keycodes;
 mod midi;
 mod mouse;
 
-use crate::api::audio::Audio;
-use crate::api::graphics::Graphics;
-use crate::api::midi::Midi;
-use crate::api::mouse::Mouse;
 use crate::app::State;
 use mlua::prelude::*;
 
@@ -23,22 +19,20 @@ pub fn create_lua() -> LuaResult<Lua> {
 	#[cfg(not(debug_assertions))]
 	let lua = Lua::new();
 
-	// tessera.graphics
+	// main tessera table
 	let tessera = lua.create_table()?;
-	let graphics = Graphics {};
-	tessera.set("graphics", graphics)?;
+
+	// tessera.graphics
+	tessera.set("graphics", graphics::create(&lua)?)?;
 
 	// tessera.mouse
-	let mouse = Mouse {};
-	tessera.set("mouse", mouse)?;
+	tessera.set("mouse", mouse::create(&lua)?)?;
 
 	// tessera.midi
-	let midi = Midi {};
-	tessera.set("midi", midi)?;
+	tessera.set("midi", midi::create(&lua)?)?;
 
 	// tessera.audio
-	let audio = Audio {};
-	tessera.set("audio", audio)?;
+	tessera.set("audio", audio::create(&lua)?)?;
 
 	// tessera.event
 	let event = lua.create_table()?;

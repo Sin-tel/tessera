@@ -1,19 +1,23 @@
 use crate::app::State;
 use crate::log::{log_error, log_info};
 use crate::midi;
-use mlua::{UserData, UserDataMethods};
+use mlua::prelude::*;
 use ringbuf::traits::*;
 
-pub struct Midi;
+pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
+	let midi = lua.create_table()?;
 
-impl UserData for Midi {
-	fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
-		methods.add_function("ports", |_, ()| {
+	midi.set(
+		"ports",
+		lua.create_function(|_, ()| {
 			let list = midi::port_names();
 			Ok(list)
-		});
+		})?,
+	)?;
 
-		methods.add_function("open_connection", |lua, port_name: String| {
+	midi.set(
+		"open_connection",
+		lua.create_function(|lua, port_name: String| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				let connection = midi::connect(&port_name);
 				if let Some(c) = connection {
@@ -24,9 +28,12 @@ impl UserData for Midi {
 				}
 			}
 			Ok((None, None))
-		});
+		})?,
+	)?;
 
-		methods.add_function("close_connection", |lua, connection_index: usize| {
+	midi.set(
+		"close_connection",
+		lua.create_function(|lua, connection_index: usize| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				if ctx.midi_connections.len() < connection_index - 1 {
 					log_error!("Bad midi connection index: {connection_index}");
@@ -37,9 +44,12 @@ impl UserData for Midi {
 				}
 			}
 			Ok(())
-		});
+		})?,
+	)?;
 
-		methods.add_function("poll", |lua, connection_index: usize| {
+	midi.set(
+		"poll",
+		lua.create_function(|lua, connection_index: usize| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				let connection = ctx.midi_connections.get_mut(connection_index - 1);
 				match connection {
@@ -53,6 +63,8 @@ impl UserData for Midi {
 				}
 			}
 			Ok(None)
-		});
-	}
+		})?,
+	)?;
+
+	Ok(midi)
 }

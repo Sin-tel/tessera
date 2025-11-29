@@ -49,7 +49,7 @@ function Box:draw()
 		self.view:draw_full()
 		tessera.graphics.pop()
 
-		tessera.graphics.set_scissor()
+		tessera.graphics.reset_scissor()
 
 		tessera.graphics.set_color(theme.borders)
 		tessera.graphics.rectangle(

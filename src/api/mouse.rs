@@ -3,18 +3,22 @@ use mlua::prelude::*;
 use winit::dpi::LogicalPosition;
 use winit::window::{CursorGrabMode, CursorIcon};
 
-pub struct Mouse;
+pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
+	let mouse = lua.create_table()?;
 
-impl LuaUserData for Mouse {
-	fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
-		methods.add_function("get_position", |lua, ()| {
+	mouse.set(
+		"get_position",
+		lua.create_function(|lua, ()| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			Ok(state.mouse_position)
-		});
+		})?,
+	)?;
 
-		// tessera.mouse.set_cursor(cursor)
-		// Option<String> handles the case where Lua calls set_cursor() to reset default.
-		methods.add_function("set_cursor", |lua, cursor_name: Option<String>| {
+	// tessera.mouse.set_cursor(cursor)
+	// Option<String> handles the case where Lua calls set_cursor() to reset default.
+	mouse.set(
+		"set_cursor",
+		lua.create_function(|lua, cursor_name: Option<String>| {
 			let state = lua.app_data_ref::<State>().unwrap();
 
 			// If nil/None passed, default to Arrow. Otherwise parse the string.
@@ -40,10 +44,13 @@ impl LuaUserData for Mouse {
 
 			state.window.set_cursor(icon);
 			Ok(())
-		});
+		})?,
+	)?;
 
-		// tessera.mouse.set_relative_mode(bool)
-		methods.add_function("set_relative_mode", |lua, enable: bool| {
+	// tessera.mouse.set_relative_mode(bool)
+	mouse.set(
+		"set_relative_mode",
+		lua.create_function(|lua, enable: bool| {
 			let state = lua.app_data_ref::<State>().unwrap();
 
 			if enable {
@@ -63,20 +70,28 @@ impl LuaUserData for Mouse {
 				state.window.set_cursor_visible(true);
 				Ok(())
 			}
-		});
+		})?,
+	)?;
 
-		// tessera.mouse.setVisible(bool)
-		methods.add_function("set_visible", |lua, visible: bool| {
+	// tessera.mouse.set_visible(bool)
+	mouse.set(
+		"set_visible",
+		lua.create_function(|lua, visible: bool| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			state.window.set_cursor_visible(visible);
 			Ok(())
-		});
+		})?,
+	)?;
 
-		// tessera.mouse.setPosition(x, y)
-		methods.add_function("set_position", |lua, (x, y): (f32, f32)| {
+	// tessera.mouse.set_position(x, y)
+	mouse.set(
+		"set_position",
+		lua.create_function(|lua, (x, y): (f32, f32)| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			state.window.set_cursor_position(LogicalPosition::new(x, y)).unwrap();
 			Ok(())
-		});
-	}
+		})?,
+	)?;
+
+	Ok(mouse)
 }

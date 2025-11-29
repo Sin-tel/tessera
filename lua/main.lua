@@ -44,6 +44,19 @@ modifier_keys.any = false
 local load_last_save = true
 local last_save_location = "out/lastsave.sav"
 
+local _set_color = tessera.graphics.set_color
+tessera.graphics.set_color = function(r, g, b, a)
+	if type(r) == "table" then
+		_set_color(unpack(r))
+	else
+		_set_color(r, g, b, a)
+	end
+end
+
+-- tessera.graphics.set_color_t = function(t)
+-- 	tessera.graphics.set_color(unpack(t))
+-- end
+
 local function load_project()
 	local success = false
 	if load_last_save and util.file_exists(last_save_location) then
@@ -146,16 +159,12 @@ function tessera.draw()
 	end
 
 	--- draw ---
-	tessera.graphics.clear()
 	tessera.graphics.set_color(theme.borders)
 	tessera.graphics.rectangle("fill", 0, 0, width, height)
 
 	workspace:draw()
 
 	if audio_status == "render" then
-		tessera.graphics.set_color(0, 0, 0, 0.7)
-		tessera.graphics.rectangle("fill", 0, 0, width, height)
-
 		tessera.graphics.set_color(theme.background)
 		tessera.graphics.rectangle("fill", width * 0.3, height * 0.5 - 16, width * 0.4, 32)
 		tessera.graphics.set_color(theme.widget)

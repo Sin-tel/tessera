@@ -15,7 +15,6 @@ pub const INIT_HEIGHT: u32 = 720;
 
 pub struct State {
 	pub current_color: Color,
-	pub background_color: Color,
 	pub line_width: f32,
 	pub font: Font,
 	pub text_engine: TextEngine,

@@ -5,48 +5,6 @@ use femtovg::{Color, Paint, Path};
 use mlua::Variadic;
 use mlua::prelude::*;
 
-fn to_f32(value: &LuaValue) -> LuaResult<f32> {
-	match value {
-		LuaValue::Number(n) => Ok(*n as f32),
-		LuaValue::Integer(i) => Ok(*i as f32),
-		LuaValue::Nil => Err(LuaError::RuntimeError("missing value".into())),
-		_ => Err(LuaError::RuntimeError("expected number".into())),
-	}
-}
-
-fn opt_f32(value: &LuaValue) -> Option<f32> {
-	match value {
-		LuaValue::Number(n) => Some(*n as f32),
-		LuaValue::Integer(i) => Some(*i as f32),
-		_ => None,
-	}
-}
-
-fn parse_color(args: LuaMultiValue) -> LuaResult<Color> {
-	if let Some(LuaValue::Table(table)) = args.get(0) {
-		let r = to_f32(&table.get(1)?)?;
-		let g = to_f32(&table.get(2)?)?;
-		let b = to_f32(&table.get(3)?)?;
-		let a = opt_f32(&table.get(4)?).unwrap_or(1.0);
-		Ok(Color::rgbaf(r, g, b, a))
-	} else {
-		let r = to_f32(
-			args.get(0)
-				.ok_or_else(|| LuaError::RuntimeError("missing r".into()))?,
-		)?;
-		let g = to_f32(
-			args.get(1)
-				.ok_or_else(|| LuaError::RuntimeError("missing g".into()))?,
-		)?;
-		let b = to_f32(
-			args.get(2)
-				.ok_or_else(|| LuaError::RuntimeError("missing b".into()))?,
-		)?;
-		let a = args.get(3).and_then(opt_f32).unwrap_or(1.0);
-		Ok(Color::rgbaf(r, g, b, a))
-	}
-}
-
 #[derive(Clone, Copy)]
 pub struct Image {
 	id: ImageId,
@@ -114,35 +72,48 @@ impl FromLua for Font {
 	}
 }
 
-pub struct Graphics;
+pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
+	let graphics = lua.create_table()?;
 
-impl LuaUserData for Graphics {
-	fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
-		// Resources
-		methods.add_function("new_font", |_, (name, size): (String, f32)| Ok(Font { name, size }));
+	// Resources
+	graphics.set(
+		"new_font",
+		lua.create_function(|_, (name, size): (String, f32)| Ok(Font { name, size }))?,
+	)?;
 
-		methods.add_function("get_font", |lua, ()| {
+	graphics.set(
+		"get_font",
+		lua.create_function(|lua, ()| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			Ok(state.font.clone())
-		});
+		})?,
+	)?;
 
-		methods.add_function("set_font", |lua, font: Font| {
+	graphics.set(
+		"set_font",
+		lua.create_function(|lua, font: Font| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 			state.font = font;
 			Ok(())
-		});
+		})?,
+	)?;
 
-		// Image
-		methods.add_function("new_image", |lua, filename: String| {
+	// Image
+	graphics.set(
+		"new_image",
+		lua.create_function(|lua, filename: String| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 
 			let image_id = state.canvas.load_image_file(&filename, ImageFlags::empty()).unwrap();
 
 			let info = state.canvas.image_info(image_id).unwrap();
 			Ok(Image { id: image_id, width: info.width(), height: info.height() })
-		});
+		})?,
+	)?;
 
-		methods.add_function("draw", |lua, (image, x, y): (Image, f32, f32)| {
+	graphics.set(
+		"draw",
+		lua.create_function(|lua, (image, x, y): (Image, f32, f32)| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 
 			let w = image.width as f32;
@@ -155,36 +126,44 @@ impl LuaUserData for Graphics {
 			state.canvas.fill_path(&path, &paint);
 
 			Ok(())
-		});
+		})?,
+	)?;
 
-		//
+	//
 
-		methods.add_function("get_dimensions", |lua, ()| {
+	graphics.set(
+		"get_dimensions",
+		lua.create_function(|lua, ()| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			Ok(state.window_size)
-		});
+		})?,
+	)?;
 
-		methods.add_function("set_background_color", |lua, (r, g, b): (f32, f32, f32)| {
+	graphics.set(
+		"set_color",
+		lua.create_function(|lua, (r, g, b, a): (f32, f32, f32, Option<f32>)| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
-			state.background_color = Color::rgbf(r, g, b);
-			Ok(())
-		});
 
-		methods.add_function("set_color", |lua, args: LuaMultiValue| {
-			let mut state = lua.app_data_mut::<State>().unwrap();
-			state.current_color = parse_color(args)?;
+			let a = a.unwrap_or(1.0);
+			state.current_color = Color::rgbaf(r, g, b, a);
 			Ok(())
-		});
+		})?,
+	)?;
 
-		methods.add_function("set_line_width", |lua, w: f32| {
+	graphics.set(
+		"set_line_width",
+		lua.create_function(|lua, w: f32| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 
 			state.line_width = w + 0.5;
 			Ok(())
-		});
+		})?,
+	)?;
 
-		// Scissor
-		methods.add_function("get_scissor", |lua, ()| {
+	// Scissor
+	graphics.set(
+		"get_scissor",
+		lua.create_function(|lua, ()| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			// Return current scissor rect, or nil if none
 			if let Some((x, y, w, h)) = state.current_scissor {
@@ -192,29 +171,36 @@ impl LuaUserData for Graphics {
 			} else {
 				lua.pack_multi(())
 			}
-		});
+		})?,
+	)?;
 
-		methods.add_function("set_scissor", |lua, args: LuaMultiValue| {
+	graphics.set(
+		"reset_scissor",
+		lua.create_function(|lua, ()| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 
-			if args.is_empty() {
-				state.canvas.reset_scissor();
-				state.current_scissor = None;
-			} else {
-				let x = to_f32(args.get(0).unwrap())?;
-				let y = to_f32(args.get(1).unwrap())?;
-				let w = to_f32(args.get(2).unwrap())?;
-				let h = to_f32(args.get(3).unwrap())?;
-
-				let (sx, sy) = state.canvas.transform().inverse().transform_point(x, y);
-
-				state.canvas.scissor(sx, sy, w, h);
-				state.current_scissor = Some((x, y, w, h));
-			}
+			state.canvas.reset_scissor();
+			state.current_scissor = None;
 			Ok(())
-		});
+		})?,
+	)?;
 
-		methods.add_function("intersect_scissor", |lua, (x, y, w, h): (f32, f32, f32, f32)| {
+	graphics.set(
+		"set_scissor",
+		lua.create_function(|lua, (x, y, w, h): (f32, f32, f32, f32)| {
+			let mut state = lua.app_data_mut::<State>().unwrap();
+
+			let (sx, sy) = state.canvas.transform().inverse().transform_point(x, y);
+
+			state.canvas.scissor(sx, sy, w, h);
+			state.current_scissor = Some((x, y, w, h));
+			Ok(())
+		})?,
+	)?;
+
+	graphics.set(
+		"intersect_scissor",
+		lua.create_function(|lua, (x, y, w, h): (f32, f32, f32, f32)| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 
 			let (new_x, new_y, new_w, new_h) = if let Some((sx, sy, sw, sh)) = state.current_scissor
@@ -234,11 +220,13 @@ impl LuaUserData for Graphics {
 			state.canvas.scissor(sx, sy, new_w, new_h);
 			state.current_scissor = Some((new_x, new_y, new_w, new_h));
 			Ok(())
-		});
+		})?,
+	)?;
 
-		// Draw functions
-		methods.add_function(
-			"rectangle",
+	// Draw functions
+	graphics.set(
+		"rectangle",
+		lua.create_function(
 			|lua, (mode, x, y, w, h, r): (String, f32, f32, f32, f32, Option<f32>)| {
 				let mut state = lua.app_data_mut::<State>().unwrap();
 
@@ -263,9 +251,12 @@ impl LuaUserData for Graphics {
 
 				Ok(())
 			},
-		);
+		)?,
+	)?;
 
-		methods.add_function("line", |lua, (x1, y1, x2, y2): (f32, f32, f32, f32)| {
+	graphics.set(
+		"line",
+		lua.create_function(|lua, (x1, y1, x2, y2): (f32, f32, f32, f32)| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 
 			let mut path = Path::new();
@@ -277,9 +268,12 @@ impl LuaUserData for Graphics {
 
 			state.canvas.stroke_path(&path, &paint);
 			Ok(())
-		});
+		})?,
+	)?;
 
-		methods.add_function("print", |lua, (text, x, y): (String, f32, f32)| {
+	graphics.set(
+		"print",
+		lua.create_function(|lua, (text, x, y): (String, f32, f32)| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 
 			let paint = Paint::color(state.current_color).with_font_size(state.font.size);
@@ -289,9 +283,12 @@ impl LuaUserData for Graphics {
 				.draw_text(&mut state.canvas, &text, x, y, &paint, &state.font.name);
 
 			Ok(())
-		});
+		})?,
+	)?;
 
-		methods.add_function("circle", |lua, (mode, x, y, r): (String, f32, f32, f32)| {
+	graphics.set(
+		"circle",
+		lua.create_function(|lua, (mode, x, y, r): (String, f32, f32, f32)| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 
 			let mut path = Path::new();
@@ -311,9 +308,12 @@ impl LuaUserData for Graphics {
 			}
 
 			Ok(())
-		});
+		})?,
+	)?;
 
-		methods.add_function("ellipse", |lua, (mode, x, y, w, h): (String, f32, f32, f32, f32)| {
+	graphics.set(
+		"ellipse",
+		lua.create_function(|lua, (mode, x, y, w, h): (String, f32, f32, f32, f32)| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 
 			let mut path = Path::new();
@@ -333,9 +333,12 @@ impl LuaUserData for Graphics {
 			}
 
 			Ok(())
-		});
+		})?,
+	)?;
 
-		methods.add_function("polygon", |lua, (mode, points): (String, Variadic<f32>)| {
+	graphics.set(
+		"polygon",
+		lua.create_function(|lua, (mode, points): (String, Variadic<f32>)| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 
 			if points.len() < 4 || points.len() % 2 != 0 {
@@ -365,33 +368,23 @@ impl LuaUserData for Graphics {
 			}
 
 			Ok(())
-		});
+		})?,
+	)?;
 
-		methods.add_function("clear", |lua, ()| {
-			let mut state = lua.app_data_mut::<State>().unwrap();
-
-			let size = state.window.inner_size();
-
-			let bg_color = state.background_color;
-			state.canvas.clear_rect(0, 0, size.width, size.height, bg_color);
-			Ok(())
-		});
-
-		// Transform
-		methods.add_function("origin", |lua, ()| {
-			let mut state = lua.app_data_mut::<State>().unwrap();
-			state.canvas.reset_transform();
-			Ok(())
-		});
-
-		methods.add_function("push", |lua, ()| {
+	// Transform
+	graphics.set(
+		"push",
+		lua.create_function(|lua, ()| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 			let current = state.canvas.transform();
 			state.transform_stack.push(current);
 			Ok(())
-		});
+		})?,
+	)?;
 
-		methods.add_function("pop", |lua, ()| {
+	graphics.set(
+		"pop",
+		lua.create_function(|lua, ()| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 			let transform = state
 				.transform_stack
@@ -400,27 +393,38 @@ impl LuaUserData for Graphics {
 			state.canvas.reset_transform();
 			state.canvas.set_transform(&transform);
 			Ok(())
-		});
+		})?,
+	)?;
 
-		methods.add_function("translate", |lua, (x, y): (f32, f32)| {
+	graphics.set(
+		"translate",
+		lua.create_function(|lua, (x, y): (f32, f32)| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 			// This should compose with current transform
 			state.canvas.translate(x, y);
 			Ok(())
-		});
+		})?,
+	)?;
 
-		methods.add_function("rotate", |lua, angle: f32| {
+	graphics.set(
+		"rotate",
+		lua.create_function(|lua, angle: f32| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 			// This should also compose with current transform
 			state.canvas.rotate(angle);
 			Ok(())
-		});
+		})?,
+	)?;
 
-		methods.add_function("transform_point", |lua, (x, y): (f32, f32)| {
+	graphics.set(
+		"transform_point",
+		lua.create_function(|lua, (x, y): (f32, f32)| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			let (sx, sy) = state.canvas.transform().transform_point(x, y);
 
 			Ok((sx, sy))
-		});
-	}
+		})?,
+	)?;
+
+	Ok(graphics)
 }
