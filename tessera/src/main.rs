@@ -42,9 +42,9 @@ use winit::{
 };
 
 use api::backend::Backend;
+use api::create_lua;
+use api::graphics::Font;
 use api::keycodes::keycode_to_love2d_key;
-use api::love::Font;
-use api::love::create_love_env;
 use opengl::Renderer;
 use opengl::Surface;
 use opengl::WindowSurface;
@@ -111,7 +111,7 @@ fn run(
 	std::env::set_current_dir(env!("CARGO_WORKSPACE_DIR")).unwrap();
 	let lua_dir = path::absolute("./lua").unwrap();
 
-	let mut lua = create_love_env()?;
+	let mut lua = create_lua()?;
 	lua.set_app_data(State {
 		current_color: Color::white(),
 		background_color: Color::black(),
