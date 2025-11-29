@@ -1,86 +1,26 @@
 #![windows_subsystem = "windows"]
-#![deny(unreachable_patterns)]
-#![warn(clippy::cast_lossless)]
-#![warn(clippy::uninlined_format_args)]
-#![warn(clippy::semicolon_if_nothing_returned)]
-#![warn(clippy::explicit_iter_loop)]
-#![warn(clippy::items_after_statements)]
-#![warn(clippy::ignored_unit_patterns)]
-#![warn(clippy::redundant_else)]
-#![warn(clippy::match_same_arms)]
-#![warn(clippy::single_match_else)]
-#![warn(clippy::unnested_or_patterns)]
-#![warn(clippy::inconsistent_struct_constructor)]
-#![warn(clippy::unused_self)]
-#![warn(clippy::needless_borrow)]
-#![warn(clippy::match_wildcard_for_single_variants)]
-#![warn(clippy::manual_assert)]
-#![warn(clippy::manual_let_else)]
-#![warn(clippy::unnecessary_semicolon)]
-#![warn(clippy::large_stack_arrays)]
-#![allow(clippy::match_like_matches_macro)]
-#![allow(clippy::enum_variant_names)]
-#![allow(clippy::new_without_default)]
-#![allow(clippy::needless_range_loop)]
-#![allow(clippy::get_first)]
-
-mod api;
-mod opengl;
-mod text;
 
 use femtovg::{Canvas, Color};
 use mlua::prelude::*;
 use std::fs;
-use std::time::Instant;
-use tessera::context::AudioContext;
-use tessera::log::{init_logging, log_error};
+use tessera::app::State;
+use tessera::app::{INIT_HEIGHT, INIT_WIDTH};
+use tessera::log::init_logging;
 use winit::{
 	event::{DeviceEvent, ElementState, Event, MouseButton, MouseScrollDelta, WindowEvent},
 	event_loop::EventLoop,
 	window::Window,
 };
 
-use api::backend::Backend;
-use api::create_lua;
-use api::graphics::Font;
-use api::keycodes::keycode_to_love2d_key;
-use opengl::Renderer;
-use opengl::Surface;
-use opengl::WindowSurface;
-use opengl::setup_window;
-use text::TextEngine;
-
-const INIT_WIDTH: u32 = 1280;
-const INIT_HEIGHT: u32 = 720;
-
-pub struct State {
-	current_color: Color,
-	background_color: Color,
-	line_width: f32,
-	font: Font,
-	text_engine: TextEngine,
-	mouse_position: (f32, f32),
-	window_size: (u32, u32),
-	exit: bool,
-	start_time: Instant,
-	transform_stack: Vec<femtovg::Transform2D>,
-	current_scissor: Option<(f32, f32, f32, f32)>,
-	audio: Option<AudioContext>,
-	canvas: Canvas<Renderer>,
-	window: Window,
-}
-
-impl State {
-	pub fn audio_mut(&mut self) -> Option<&mut AudioContext> {
-		if let Some(ud) = &self.audio
-			&& ud.m_render.is_poisoned()
-		{
-			log_error!("Lock was poisoned. Killing backend.");
-			self.audio = None;
-		}
-		self.audio.as_mut()
-	}
-}
+use tessera::api::backend::Backend;
+use tessera::api::create_lua;
+use tessera::api::graphics::Font;
+use tessera::api::keycodes::keycode_to_love2d_key;
+use tessera::opengl::Renderer;
+use tessera::opengl::Surface;
+use tessera::opengl::WindowSurface;
+use tessera::opengl::setup_window;
+use tessera::text::TextEngine;
 
 fn wrap_call<T: IntoLuaMulti>(lua_fn: &LuaFunction, args: T) {
 	if let Err(e) = lua_fn.call::<()>(args) {

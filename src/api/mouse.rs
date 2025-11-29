@@ -1,4 +1,4 @@
-use crate::State;
+use crate::app::State;
 use mlua::prelude::*;
 use winit::dpi::LogicalPosition;
 use winit::window::{CursorGrabMode, CursorIcon};

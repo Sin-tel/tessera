@@ -1,4 +1,4 @@
-use crate::State;
+use crate::app::State;
 use femtovg::ImageFlags;
 use femtovg::ImageId;
 use femtovg::{Color, Paint, Path};
