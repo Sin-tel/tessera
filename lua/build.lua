@@ -62,7 +62,7 @@ function build.effect(ch_index, effect_index, effect)
 	assert(options)
 
 	local effect_ui = Device.new(effect.name, effect.state, options)
-	table.insert(ui_channels[ch_index].effects, effect_ui)
+	table.insert(ui_channels[ch_index].effects, effect_index, effect_ui)
 
 	tessera.audio.insert_effect(ch_index, effect_index, effect.name)
 end
