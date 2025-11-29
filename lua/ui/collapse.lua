@@ -31,13 +31,13 @@ function Collapse:update(ui)
 		self.angle = -0.5 * math.pi
 	end
 
-	ui:pushDraw(self.draw, { self, x, y, w, h })
+	ui:push_draw(self.draw, { self, x, y, w, h })
 
 	return self.open
 end
 
 function Collapse:draw(x, y, w, h)
-	tessera.graphics.setColor(theme.ui_text)
+	tessera.graphics.set_color(theme.ui_text)
 	local left_pad = h * 0.8 + Ui.DEFAULT_PAD
 
 	local tw = h * 0.15
@@ -52,7 +52,7 @@ function Collapse:draw(x, y, w, h)
 	tessera.graphics.polygon("fill", x1, y1, x2, y2, x3, y3)
 	tessera.graphics.polygon("line", x1, y1, x2, y2, x3, y3)
 	tessera.graphics.pop()
-	util.drawText(self.text, x + left_pad, y, w - left_pad, h)
+	util.draw_text(self.text, x + left_pad, y, w - left_pad, h)
 end
 
 return Collapse

@@ -22,7 +22,7 @@ function selection.add(mask)
 	end
 end
 
-function selection.setFromNotes(notes)
+function selection.set_from_notes(notes)
 	selection.mask = {}
 	for _, v in ipairs(notes) do
 		for _, note in ipairs(v) do
@@ -40,7 +40,7 @@ function selection.refresh()
 	end
 end
 
-function selection.isEmpty()
+function selection.is_empty()
 	return #selection.list == 0
 end
 
@@ -49,7 +49,7 @@ function selection.deselect()
 	selection.mask = {}
 end
 
-function selection.getNotes()
+function selection.get_notes()
 	-- get selected notes as a table per channel
 
 	local notes = {}
@@ -64,7 +64,7 @@ function selection.getNotes()
 	return notes
 end
 
-function selection.removeChannel(ch)
+function selection.remove_channel(ch)
 	for _, v in ipairs(ch.notes) do
 		selection.mask[v] = nil
 	end

@@ -8,7 +8,7 @@ drag.clone = false
 function drag:mousepressed(canvas)
 	self.ix, self.iy = mouse.x, mouse.y
 
-	local mx, my = canvas:getMouse()
+	local mx, my = canvas:get_mouse()
 
 	local closest, _ = canvas:find_closest_note(mx, my)
 	self.note_origin = util.clone(closest)
@@ -24,13 +24,13 @@ function drag:mousedown(canvas)
 			return
 		else
 			if self.clone then
-				local notes = util.clone(selection.getNotes())
+				local notes = util.clone(selection.get_notes())
 				for ch_index in ipairs(notes) do
 					for _, note in ipairs(notes[ch_index]) do
 						table.insert(project.channels[ch_index].notes, note)
 					end
 				end
-				selection.setFromNotes(notes)
+				selection.set_from_notes(notes)
 			end
 
 			self.prev_state = util.clone(selection.list)
@@ -58,12 +58,12 @@ function drag:mousedown(canvas)
 	end
 
 	-- Get pitch location in local frame
-	local n = tuning.getDiatonicIndex(self.note_origin.pitch)
+	local n = tuning.get_diatonic_index(self.note_origin.pitch)
 
 	-- Calculate base pitch offset
 	local steps = math.floor(y * (7 / 12) + 0.5)
-	local p_origin = tuning.fromDiatonic(n)
-	local delta = tuning.fromDiatonic(n + steps)
+	local p_origin = tuning.from_diatonic(n)
+	local delta = tuning.from_diatonic(n + steps)
 	for i, _ in ipairs(delta) do
 		delta[i] = delta[i] - p_origin[i]
 	end
@@ -81,11 +81,11 @@ end
 function drag:mousereleased(canvas)
 	if self.edit then
 		if self.clone then
-			local notes = selection.getNotes()
-			local c = command.noteAdd.new(notes)
+			local notes = selection.get_notes()
+			local c = command.NoteAdd.new(notes)
 			command.register(c)
 		else
-			local c = command.noteUpdate.new(self.prev_state, selection.list)
+			local c = command.NoteUpdate.new(self.prev_state, selection.list)
 			command.register(c)
 			self.prev_state = nil
 		end

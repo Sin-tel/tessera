@@ -56,8 +56,8 @@ pub struct Image {
 
 impl LuaUserData for Image {
 	fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
-		methods.add_method("getHeight", |_lua, this, ()| Ok(this.height));
-		methods.add_method("getWidth", |_lua, this, ()| Ok(this.width));
+		methods.add_method("get_height", |_lua, this, ()| Ok(this.height));
+		methods.add_method("get_width", |_lua, this, ()| Ok(this.width));
 	}
 }
 
@@ -86,11 +86,11 @@ pub struct Font {
 
 impl LuaUserData for Font {
 	fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
-		methods.add_method("getHeight", |lua, _this, ()| {
+		methods.add_method("get_height", |lua, _this, ()| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			Ok(state.font.size * 1.2)
 		});
-		methods.add_method("getWidth", |lua, _this, text: String| {
+		methods.add_method("get_width", |lua, _this, text: String| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 			let width = state.text_engine.measure_width(&text, state.font.size);
 			Ok(width)
@@ -119,14 +119,14 @@ pub struct Graphics;
 impl LuaUserData for Graphics {
 	fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
 		// Resources
-		methods.add_function("newFont", |_, (name, size): (String, f32)| Ok(Font { name, size }));
+		methods.add_function("new_font", |_, (name, size): (String, f32)| Ok(Font { name, size }));
 
-		methods.add_function("getFont", |lua, ()| {
+		methods.add_function("get_font", |lua, ()| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			Ok(state.font.clone())
 		});
 
-		methods.add_function("setFont", |lua, font: Font| {
+		methods.add_function("set_font", |lua, font: Font| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 			state.font = font;
 			Ok(())
@@ -135,7 +135,7 @@ impl LuaUserData for Graphics {
 		// Image
 
 		// tessera.graphics.newImage(filename)
-		methods.add_function("newImage", |lua, filename: String| {
+		methods.add_function("new_image", |lua, filename: String| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 
 			let image_id = state.canvas.load_image_file(&filename, ImageFlags::empty()).unwrap();
@@ -161,24 +161,24 @@ impl LuaUserData for Graphics {
 
 		//
 
-		methods.add_function("getDimensions", |lua, ()| {
+		methods.add_function("get_dimensions", |lua, ()| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			Ok(state.window_size)
 		});
 
-		methods.add_function("setBackgroundColor", |lua, (r, g, b): (f32, f32, f32)| {
+		methods.add_function("set_background_color", |lua, (r, g, b): (f32, f32, f32)| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 			state.background_color = Color::rgbf(r, g, b);
 			Ok(())
 		});
 
-		methods.add_function("setColor", |lua, args: LuaMultiValue| {
+		methods.add_function("set_color", |lua, args: LuaMultiValue| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 			state.current_color = parse_color(args)?;
 			Ok(())
 		});
 
-		methods.add_function("setLineWidth", |lua, w: f32| {
+		methods.add_function("set_line_width", |lua, w: f32| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 
 			state.line_width = w + 0.5;
@@ -186,7 +186,7 @@ impl LuaUserData for Graphics {
 		});
 
 		// Scissor
-		methods.add_function("getScissor", |lua, ()| {
+		methods.add_function("get_scissor", |lua, ()| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			// Return current scissor rect, or nil if none
 			if let Some((x, y, w, h)) = state.current_scissor {
@@ -196,7 +196,7 @@ impl LuaUserData for Graphics {
 			}
 		});
 
-		methods.add_function("setScissor", |lua, args: LuaMultiValue| {
+		methods.add_function("set_scissor", |lua, args: LuaMultiValue| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 
 			if args.is_empty() {
@@ -216,7 +216,7 @@ impl LuaUserData for Graphics {
 			Ok(())
 		});
 
-		methods.add_function("intersectScissor", |lua, (x, y, w, h): (f32, f32, f32, f32)| {
+		methods.add_function("intersect_scissor", |lua, (x, y, w, h): (f32, f32, f32, f32)| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 
 			let (new_x, new_y, new_w, new_h) = if let Some((sx, sy, sw, sh)) = state.current_scissor
@@ -418,7 +418,7 @@ impl LuaUserData for Graphics {
 			Ok(())
 		});
 
-		methods.add_function("transformPoint", |lua, (x, y): (f32, f32)| {
+		methods.add_function("transform_point", |lua, (x, y): (f32, f32)| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			let (sx, sy) = state.canvas.transform().transform_point(x, y);
 

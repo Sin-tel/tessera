@@ -6,7 +6,7 @@ function clipboard.set(notes)
 	clipboard.notes = util.clone(notes)
 end
 
-function clipboard.isEmpty()
+function clipboard.is_empty()
 	local total = 0
 
 	for i, v in ipairs(clipboard.notes) do

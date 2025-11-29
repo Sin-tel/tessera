@@ -28,14 +28,14 @@ function engine.stop()
 	local total = 0
 
 	for i, v in ipairs(ui_channels) do
-		v.voice_alloc:allNotesOff()
+		v.voice_alloc:all_notes_off()
 
 		added_notes[i] = v.roll.recorded_notes
 		total = total + #added_notes[i]
 		v.roll:stop()
 	end
 	if total > 0 then
-		local c = command.noteAdd.new(added_notes)
+		local c = command.note_add.new(added_notes)
 		command.register(c)
 	end
 end
@@ -55,10 +55,10 @@ function engine.update(dt)
 		end
 	end
 
-	engine.parseMessages()
+	engine.parse_messages()
 end
 
-function engine.renderStart()
+function engine.render_start()
 	tessera.audio.flush()
 	midi.flush()
 
@@ -70,7 +70,7 @@ function engine.renderStart()
 	assert(audio_status == "running")
 	audio_status = "render"
 
-	engine.render_end = engine.endTime() + 2.0
+	engine.render_end = engine.end_time() + 2.0
 	engine.render_progress = 0
 
 	if engine.playing then
@@ -80,10 +80,10 @@ function engine.renderStart()
 
 	log.info("Start render.")
 
-	mouse:setCursor("wait")
-	mouse:endFrame()
+	mouse:set_cursor("wait")
+	mouse:end_frame()
 
-	tessera.audio.setRendering(true)
+	tessera.audio.set_rendering(true)
 
 	-- sleep for a bit to make sure the audio thread is done
 	-- TODO: find something better
@@ -91,15 +91,15 @@ function engine.renderStart()
 end
 
 function engine.render()
-	assert(tessera.audio.isRendering())
+	assert(tessera.audio.is_rendering())
 
-	local dt = RENDER_BLOCK_SIZE / tessera.audio.getSampleRate()
+	local dt = RENDER_BLOCK_SIZE / tessera.audio.get_samplerate()
 
 	-- Try to hit 16 ms to keep things responsive
 	local target_ms = 16
-	local t_start = tessera.timer.getTime()
+	local t_start = tessera.timer.get_time()
 	for i = 1, 3000 do
-		local success = tessera.audio.renderBlock()
+		local success = tessera.audio.render_block()
 		if not success then
 			log.error("Failed to render block.")
 			engine.renderCancel()
@@ -110,12 +110,12 @@ function engine.render()
 		engine.render_progress = engine.render_progress + dt
 		if engine.render_progress >= engine.render_end then
 			log.info("Finished render.")
-			tessera.audio.renderFinish()
-			engine.renderEnd()
+			tessera.audio.render_finish()
+			engine.render_finish()
 			break
 		end
 
-		local t_now = (tessera.timer.getTime() - t_start) * 1000
+		local t_now = (tessera.timer.get_time() - t_start) * 1000
 		if t_now > target_ms then
 			print(tostring(i) .. " blocks rendered")
 			break
@@ -123,17 +123,17 @@ function engine.render()
 	end
 end
 
-function engine.renderEnd()
+function engine.render_finish()
 	midi.flush()
 
-	tessera.audio.setRendering(false)
-	mouse:setCursor("default")
+	tessera.audio.set_rendering(false)
+	mouse:set_cursor("default")
 	audio_status = "running"
 	engine.stop()
 end
 
 -- update UI with messages from tessera.audio
-function engine.parseMessages()
+function engine.parse_messages()
 	while true do
 		local p = tessera.audio.pop()
 		if p == nil then
@@ -148,7 +148,7 @@ function engine.parseMessages()
 	end
 end
 
-function engine.endTime()
+function engine.end_time()
 	local t_end = 0.0
 	for _, ch in ipairs(project.channels) do
 		for _, v in ipairs(ch.notes) do

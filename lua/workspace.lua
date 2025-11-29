@@ -17,7 +17,7 @@ function Box.new(x, y, w, h)
 end
 
 function Box:scissor()
-	tessera.graphics.setScissor(
+	tessera.graphics.set_scissor(
 		self.x + ui.BORDER_SIZE,
 		self.y + ui.BORDER_SIZE,
 		self.w - (2 * ui.BORDER_SIZE),
@@ -25,11 +25,11 @@ function Box:scissor()
 	)
 end
 
-function Box:forAll(f)
+function Box:for_all(f)
 	f(self)
 	if self.children then
-		self.children[1]:forAll(f)
-		self.children[2]:forAll(f)
+		self.children[1]:for_all(f)
+		self.children[2]:for_all(f)
 	end
 end
 
@@ -41,17 +41,17 @@ function Box:draw()
 	else
 		self:scissor()
 
-		tessera.graphics.setColor(theme.background)
+		tessera.graphics.set_color(theme.background)
 		tessera.graphics.rectangle("fill", self.x, self.y, self.w, self.h)
 
 		tessera.graphics.push()
 		tessera.graphics.translate(self.x, self.y)
-		self.view:drawFull()
+		self.view:draw_full()
 		tessera.graphics.pop()
 
-		tessera.graphics.setScissor()
+		tessera.graphics.set_scissor()
 
-		tessera.graphics.setColor(theme.borders)
+		tessera.graphics.set_color(theme.borders)
 		tessera.graphics.rectangle(
 			"line",
 			self.x + ui.BORDER_SIZE,
@@ -63,7 +63,7 @@ function Box:draw()
 	end
 end
 
-function Box:getDivider()
+function Box:get_divider()
 	local mx = mouse.x - self.x
 	local my = mouse.y - self.y
 	if mx < 0 or my < 0 or mx > self.w or my > self.h then
@@ -74,11 +74,11 @@ function Box:getDivider()
 			if math.abs(self.r - mx) < ui.RESIZE_W then
 				return self
 			else
-				local d1 = self.children[1]:getDivider()
+				local d1 = self.children[1]:get_divider()
 				if d1 then
 					return d1
 				end
-				local d2 = self.children[2]:getDivider()
+				local d2 = self.children[2]:get_divider()
 				if d2 then
 					return d2
 				end
@@ -87,11 +87,11 @@ function Box:getDivider()
 			if math.abs(self.r - my) < ui.RESIZE_W then
 				return self
 			else
-				local d1 = self.children[1]:getDivider()
+				local d1 = self.children[1]:get_divider()
 				if d1 then
 					return d1
 				end
-				local d2 = self.children[2]:getDivider()
+				local d2 = self.children[2]:get_divider()
 				if d2 then
 					return d2
 				end
@@ -162,7 +162,7 @@ function Box:recalc(x, y, w, h)
 	end
 
 	if self.view then
-		self.view:setDimensions()
+		self.view:set_dimensions()
 	end
 end
 
@@ -273,7 +273,7 @@ function Box:resize(x, y, w, h)
 	end
 end
 
-function Box:setView(view)
+function Box:set_view(view)
 	if not self.children then
 		self.view = view
 		view.box = self
@@ -309,19 +309,19 @@ function workspace:draw()
 	local y1 = 0.5 * (ui.RIBBON_HEIGHT - h1)
 	local x1 = self.w - 64 - y1
 
-	tessera.graphics.setColor(theme.widget_bg)
+	tessera.graphics.set_color(theme.widget_bg)
 	tessera.graphics.rectangle("fill", x1, y1, w1, h1, 2)
-	tessera.graphics.setColor(hl_col)
+	tessera.graphics.set_color(hl_col)
 	tessera.graphics.rectangle("fill", x1, y1, w1 * ll, h1)
-	tessera.graphics.setColor(theme.line)
+	tessera.graphics.set_color(theme.line)
 	tessera.graphics.rectangle("line", x1, y1, w1, h1, 2)
-	tessera.graphics.setColor(theme.ui_text)
+	tessera.graphics.set_color(theme.ui_text)
 	if tessera.audio.ok() then
-		util.drawText(string.format("%d %%", 100 * self.cpu_load), x1, 0, w1, ui.RIBBON_HEIGHT, "center")
+		util.draw_text(string.format("%d %%", 100 * self.cpu_load), x1, 0, w1, ui.RIBBON_HEIGHT, "center")
 	else
-		util.drawText("offline", x1, 0, w1, ui.RIBBON_HEIGHT, "center")
+		util.draw_text("offline", x1, 0, w1, ui.RIBBON_HEIGHT, "center")
 	end
-	util.drawText("CPU: ", x1 - w1, 0, w1, ui.RIBBON_HEIGHT, "right")
+	util.draw_text("CPU: ", x1 - w1, 0, w1, ui.RIBBON_HEIGHT, "right")
 
 	w1 = 96
 	h1 = 16
@@ -331,46 +331,46 @@ function workspace:draw()
 	local ml = util.clamp((self.meter.l + 80) / 80, 0.01, 1)
 	local mr = util.clamp((self.meter.r + 80) / 80, 0.01, 1)
 
-	tessera.graphics.setColor(theme.widget_bg)
+	tessera.graphics.set_color(theme.widget_bg)
 	tessera.graphics.rectangle("fill", x1, y1, w1, h1, 2)
-	tessera.graphics.setColor(ml < 1.0 and theme.meter or theme.meter_clip)
+	tessera.graphics.set_color(ml < 1.0 and theme.meter or theme.meter_clip)
 	tessera.graphics.rectangle("fill", x1, y1, w1 * ml, 0.5 * h1 - 1)
-	tessera.graphics.setColor(mr < 1.0 and theme.meter or theme.meter_clip)
+	tessera.graphics.set_color(mr < 1.0 and theme.meter or theme.meter_clip)
 	tessera.graphics.rectangle("fill", x1, y1 + 0.5 * h1, w1 * mr, 0.5 * h1)
-	tessera.graphics.setColor(theme.line)
+	tessera.graphics.set_color(theme.line)
 	tessera.graphics.rectangle("line", x1, y1, w1, h1, 2)
-	tessera.graphics.setColor(theme.ui_text)
+	tessera.graphics.set_color(theme.ui_text)
 
 	self.box:draw()
 end
 
 function workspace:update()
-	if self.dragDiv and mouse.drag then
-		self.dragDiv:set_split(mouse.x, mouse.y)
+	if self.drag_div and mouse.drag then
+		self.drag_div:set_split(mouse.x, mouse.y)
 	end
 	-- update
-	self.box:forAll(function(b)
+	self.box:for_all(function(b)
 		if b.view then
 			b.view:update()
 		end
 	end)
 
-	local div = self.dragDiv
-	if not mouse.isDown then
-		div = div or self.box:getDivider()
-		self.box:forAll(function(b)
+	local div = self.drag_div
+	if not mouse.is_down then
+		div = div or self.box:get_divider()
+		self.box:for_all(function(b)
 			b.focus = false
 		end)
 		self.focus = nil
 	end
 	if div then
 		if div.vertical then
-			mouse:setCursor("v")
+			mouse:set_cursor("v")
 		else
-			mouse:setCursor("h")
+			mouse:set_cursor("h")
 		end
 	else
-		if not mouse.isDown then
+		if not mouse.is_down then
 			local b = self.box:get()
 			if b then
 				b.focus = true
@@ -383,9 +383,9 @@ end
 function workspace:mousepressed()
 	local div = false
 	if mouse.button == 1 then
-		div = self.box:getDivider(mouse.x, mouse.y)
+		div = self.box:get_divider(mouse.x, mouse.y)
 		if div then
-			self.dragDiv = div
+			self.drag_div = div
 		end
 	end
 
@@ -395,7 +395,7 @@ function workspace:mousepressed()
 end
 
 function workspace:mousereleased()
-	self.dragDiv = nil
+	self.drag_div = nil
 	if self.focus then
 		self.focus:mousereleased()
 	end

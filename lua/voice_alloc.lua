@@ -8,7 +8,7 @@ VoiceAlloc.__index = VoiceAlloc
 
 local id_ = 0
 
-local function newVoice()
+local function new_voice()
 	local new = {}
 	new.id = 0
 	new.pitch = 0
@@ -36,13 +36,13 @@ function VoiceAlloc.new(ch_index, n_voices)
 
 	self.voices = {}
 	for i = 1, self.n_voices do
-		self.voices[i] = newVoice()
+		self.voices[i] = new_voice()
 	end
 
 	return self
 end
 
-function VoiceAlloc:findVoice(id)
+function VoiceAlloc:find_voice(id)
 	for i, v in ipairs(self.voices) do
 		if v.id == id then
 			return i, v
@@ -52,9 +52,9 @@ end
 
 function VoiceAlloc:event(event)
 	if event.name == "note_on" then
-		self:noteOn(event.id, event.pitch, event.vel)
+		self:note_on(event.id, event.pitch, event.vel)
 	elseif event.name == "note_off" then
-		self:noteOff(event.id)
+		self:note_off(event.id)
 	elseif event.name == "cv" then
 		self:cv(event.id, event.offset, event.pres)
 	elseif event.name == "pitch" then
@@ -62,18 +62,18 @@ function VoiceAlloc:event(event)
 	elseif event.name == "pressure" then
 		self:pressure(event.id, event.pressure)
 	elseif event.name == "sustain" then
-		self:setSustain(event.sustain)
+		self:set_sustain(event.sustain)
 	else
 		log.warn("unhandled event: ", util.pprint(event))
 	end
 end
 
-function VoiceAlloc:noteOn(id, pitch_coord, vel)
+function VoiceAlloc:note_on(id, pitch_coord, vel)
 	-- voice stealing logic
 	-- if theres are voices free, use the oldest one,
 	-- if not, steal a playing one. Priority goes to closest one in pitch
 
-	local pitch = tuning.getPitch(pitch_coord)
+	local pitch = tuning.get_pitch(pitch_coord)
 
 	local playing_dist, playing_i = math.huge, nil
 	local released_age, released_i = -1, nil
@@ -105,7 +105,7 @@ function VoiceAlloc:noteOn(id, pitch_coord, vel)
 
 	if self.voices[new_i].key_down then
 		table.insert(self.queue, self.voices[new_i])
-		self.voices[new_i] = newVoice()
+		self.voices[new_i] = new_voice()
 	end
 
 	local voice = self.voices[new_i]
@@ -118,11 +118,11 @@ function VoiceAlloc:noteOn(id, pitch_coord, vel)
 	voice.key_down = true
 
 	local v_curve = util.velocity_curve(vel)
-	tessera.audio.noteOn(self.ch_index, pitch, v_curve, new_i)
+	tessera.audio.note_on(self.ch_index, pitch, v_curve, new_i)
 end
 
-function VoiceAlloc:noteOff(id)
-	local i, v = self:findVoice(id)
+function VoiceAlloc:note_off(id)
+	local i, v = self:find_voice(id)
 	if not v then
 		-- voice was already dead
 		for j, b in ipairs(self.queue) do
@@ -137,18 +137,18 @@ function VoiceAlloc:noteOff(id)
 	if #self.queue == 0 then
 		v.key_down = false
 		if not self.sustain then
-			tessera.audio.noteOff(self.ch_index, i)
+			tessera.audio.note_off(self.ch_index, i)
 		end
 	else
 		-- pop
 		local old_voice = table.remove(self.queue)
 		self.voices[i] = old_voice
-		tessera.audio.noteOn(self.ch_index, old_voice.pitch, old_voice.vel, i)
+		tessera.audio.note_on(self.ch_index, old_voice.pitch, old_voice.vel, i)
 	end
 end
 
 function VoiceAlloc:cv(id, offset, pres)
-	local i, v = self:findVoice(id)
+	local i, v = self:find_voice(id)
 	if not v then
 		return
 	end
@@ -159,7 +159,7 @@ function VoiceAlloc:cv(id, offset, pres)
 end
 
 function VoiceAlloc:pitch(id, offset)
-	local i, v = self:findVoice(id)
+	local i, v = self:find_voice(id)
 	if not v then
 		return
 	end
@@ -168,7 +168,7 @@ function VoiceAlloc:pitch(id, offset)
 end
 
 function VoiceAlloc:pressure(id, pres)
-	local i, v = self:findVoice(id)
+	local i, v = self:find_voice(id)
 	if not v then
 		return
 	end
@@ -176,25 +176,25 @@ function VoiceAlloc:pressure(id, pres)
 	tessera.audio.pressure(self.ch_index, v.pres, i)
 end
 
-function VoiceAlloc:setSustain(s)
+function VoiceAlloc:set_sustain(s)
 	self.sustain = s
 	if not s then
 		for i, v in ipairs(self.voices) do
 			if not v.key_down then
 				v.key_down = false
-				tessera.audio.noteOff(self.ch_index, i)
+				tessera.audio.note_off(self.ch_index, i)
 			end
 		end
 	end
 end
 
-function VoiceAlloc:allNotesOff()
-	self:setSustain(false)
+function VoiceAlloc:all_notes_off()
+	self:set_sustain(false)
 	for i, v in ipairs(self.voices) do
 		if v.key_down then
-			tessera.audio.noteOff(self.ch_index, i)
+			tessera.audio.note_off(self.ch_index, i)
 		end
-		self.voices[i] = newVoice()
+		self.voices[i] = new_voice()
 	end
 end
 

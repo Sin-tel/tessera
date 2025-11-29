@@ -30,7 +30,7 @@ function adjust_velocity:mousedown(canvas)
 end
 
 function adjust_velocity:mousereleased(canvas)
-	local c = command.noteUpdate.new(self.prev_state, selection.list)
+	local c = command.NoteUpdate.new(self.prev_state, selection.list)
 	command.register(c)
 	self.prev_state = nil
 end

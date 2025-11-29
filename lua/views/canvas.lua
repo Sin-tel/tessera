@@ -33,7 +33,7 @@ function Canvas:update()
 	self.transform:update()
 
 	if self:focus() then
-		local mx, my = self:getMouse()
+		local mx, my = self:get_mouse()
 
 		if mouse.scroll then
 			local zoom_factor = math.exp(0.15 * mouse.scroll)
@@ -56,7 +56,7 @@ function Canvas:update()
 end
 
 function Canvas:draw()
-	tessera.graphics.setColor(theme.bg_nested)
+	tessera.graphics.set_color(theme.bg_nested)
 	tessera.graphics.rectangle("fill", 0, 0, self.w, self.h)
 
 	-- draw grid
@@ -67,29 +67,29 @@ function Canvas:draw()
 	local oct = tuning.generators[1]
 	for i = math.floor((ey - 60) / oct), math.floor((iy - 60) / oct) do
 		if self.transform.sy < -60 then
-			tessera.graphics.setColor(theme.grid)
+			tessera.graphics.set_color(theme.grid)
 			for j, _ in ipairs(tuning.chromatic_table) do
-				local py = self.transform:pitch(tuning.getPitch(tuning.fromMidi(j + 12 * i + 60)))
+				local py = self.transform:pitch(tuning.get_pitch(tuning.from_midi(j + 12 * i + 60)))
 				tessera.graphics.line(0, py, self.w, py)
 			end
 		elseif self.transform.sy < -20 then
-			tessera.graphics.setColor(theme.grid)
+			tessera.graphics.set_color(theme.grid)
 			for j, _ in ipairs(tuning.diatonic_table) do
-				local py = self.transform:pitch(tuning.getPitch(tuning.fromDiatonic(j, i)))
+				local py = self.transform:pitch(tuning.get_pitch(tuning.from_diatonic(j, i)))
 				tessera.graphics.line(0, py, self.w, py)
 			end
 		end
-		tessera.graphics.setColor(theme.grid_highlight)
-		local py = self.transform:pitch(tuning.getPitch({ i }))
+		tessera.graphics.set_color(theme.grid_highlight)
+		local py = self.transform:pitch(tuning.get_pitch({ i }))
 		tessera.graphics.line(0, py, self.w, py)
 	end
 
 	-- time grid
 	local grid_t_res = 4 ^ math.floor(3.5 - math.log(self.transform.sx, 4))
 	for i = math.floor(ix / grid_t_res) + 1, math.floor(ex / grid_t_res) do
-		tessera.graphics.setColor(theme.grid)
+		tessera.graphics.set_color(theme.grid)
 		if i % 4 == 0 then
-			tessera.graphics.setColor(theme.grid_highlight)
+			tessera.graphics.set_color(theme.grid_highlight)
 		end
 		local px = self.transform:time(i * grid_t_res)
 		tessera.graphics.line(px, 0, px, self.h)
@@ -103,7 +103,7 @@ function Canvas:draw()
 	local w_scale = math.min(12, -self.transform.sy)
 
 	-- draw notes
-	tessera.graphics.setFont(resources.fonts.notes)
+	tessera.graphics.set_font(resources.fonts.notes)
 	for ch_index, ch in ipairs(project.channels) do
 		if ch.visible then
 			local c_normal = hsluv.hsluv_to_rgb({ ch.hue, 80.0, 60.0 })
@@ -112,12 +112,12 @@ function Canvas:draw()
 
 			for _, note in ipairs(ch.notes) do
 				local t_start = note.time
-				local p_start = tuning.getPitch(note.pitch)
+				local p_start = tuning.get_pitch(note.pitch)
 				local x0 = self.transform:time(t_start)
 				local y0 = self.transform:pitch(p_start)
 
 				-- velocity
-				tessera.graphics.setColor(0.6, 0.6, 0.6)
+				tessera.graphics.set_color(0.6, 0.6, 0.6)
 				local vo = 32 * note.vel
 				tessera.graphics.line(x0, y0, x0, y0 - vo)
 				tessera.graphics.line(x0 - 2, y0 - vo, x0 + 2, y0 - vo)
@@ -138,7 +138,7 @@ function Canvas:draw()
 					local w1 = note.verts[i][3] * w_scale
 					local w2 = note.verts[i + 1][3] * w_scale
 					if w1 > 1.0 or w2 > 1.0 then
-						tessera.graphics.setColor(0.3, 0.3, 0.3)
+						tessera.graphics.set_color(0.3, 0.3, 0.3)
 						tessera.graphics.polygon(
 							"fill",
 							x1,
@@ -153,7 +153,7 @@ function Canvas:draw()
 							y1 + w1
 						)
 					end
-					tessera.graphics.setColor(c)
+					tessera.graphics.set_color(c)
 					tessera.graphics.line(x1, y1, x2, y2)
 				end
 
@@ -167,7 +167,7 @@ function Canvas:draw()
 					local w1 = note.verts[n][3] * w_scale
 					local w2 = w1
 					if w1 > 1.0 or w2 > 1.0 then
-						tessera.graphics.setColor(0.3, 0.3, 0.3)
+						tessera.graphics.set_color(0.3, 0.3, 0.3)
 						tessera.graphics.polygon(
 							"fill",
 							x1,
@@ -182,21 +182,21 @@ function Canvas:draw()
 							y1 + w1
 						)
 					end
-					tessera.graphics.setColor(c)
+					tessera.graphics.set_color(c)
 					tessera.graphics.line(x1, y1, x2, y2)
 				end
 
 				-- note head
-				tessera.graphics.setColor(theme.bg_nested)
+				tessera.graphics.set_color(theme.bg_nested)
 				tessera.graphics.circle("fill", x0, y0, 3)
-				tessera.graphics.setColor(c)
+				tessera.graphics.set_color(c)
 				tessera.graphics.circle("line", x0, y0, 3)
 
 				-- note names
 				if self.transform.sy < -20 then
-					tessera.graphics.setColor(c)
-					local note_name = tuning.getName(note.pitch)
-					util.drawText(note_name, x0 + 5, y0 - 10, self.w, 0)
+					tessera.graphics.set_color(c)
+					local note_name = tuning.get_name(note.pitch)
+					util.draw_text(note_name, x0 + 5, y0 - 10, self.w, 0)
 				end
 			end
 
@@ -211,27 +211,27 @@ function Canvas:draw()
 					if c.value and not c2.value then
 						local x1 = self.transform:time(c.time)
 						local x2 = self.transform:time(c2.time)
-						tessera.graphics.setColor(0.3, 0.3, 0.3)
+						tessera.graphics.set_color(0.3, 0.3, 0.3)
 						tessera.graphics.rectangle("fill", x1, y, x2 - x1, w)
 					end
 				end
 			end
 		end
 	end
-	tessera.graphics.setLineWidth(1)
+	tessera.graphics.set_line_width(1)
 
 	-- top 'ribbon'
-	tessera.graphics.setColor(theme.background)
+	tessera.graphics.set_color(theme.background)
 	tessera.graphics.rectangle("fill", 0, -1, self.w, 16)
-	tessera.graphics.setColor(theme.background)
+	tessera.graphics.set_color(theme.background)
 	tessera.graphics.rectangle("line", 0, 0, self.w, 16)
 
 	-- playhead
 	local px = self.transform:time(project.transport.time)
 	if project.transport.recording then
-		tessera.graphics.setColor(theme.recording)
+		tessera.graphics.set_color(theme.recording)
 	else
-		tessera.graphics.setColor(theme.widget)
+		tessera.graphics.set_color(theme.widget)
 	end
 	tessera.graphics.line(px, 0, px, self.h)
 
@@ -265,28 +265,28 @@ function Canvas:keypressed(key)
 		end
 		selection.set(mask)
 	elseif modifier_keys.ctrl and key == "x" then
-		if not selection.isEmpty() then
-			local notes = selection.getNotes()
+		if not selection.is_empty() then
+			local notes = selection.get_notes()
 			clipboard.set(notes)
-			local c = command.noteDelete.new(notes)
+			local c = command.NoteDelete.new(notes)
 			command.run_and_register(c)
 			return true
 		end
 	elseif modifier_keys.ctrl and key == "c" then
-		if not selection.isEmpty() then
-			local notes = selection.getNotes()
+		if not selection.is_empty() then
+			local notes = selection.get_notes()
 			clipboard.set(notes)
 			return true
 		end
 	elseif modifier_keys.ctrl and key == "v" then
-		if not clipboard.isEmpty() then
+		if not clipboard.is_empty() then
 			-- get notes and paste them
 			local notes = util.clone(clipboard.notes)
-			local c = command.noteAdd.new(notes)
+			local c = command.NoteAdd.new(notes)
 			command.run_and_register(c)
 
 			-- set selection to new notes
-			selection.setFromNotes(notes)
+			selection.set_from_notes(notes)
 
 			-- switch to drag mode
 			self.current_tool = drag
@@ -295,21 +295,21 @@ function Canvas:keypressed(key)
 			return true
 		end
 	elseif key == "delete" then
-		if not selection.isEmpty() then
-			local notes = selection.getNotes()
-			local c = command.noteDelete.new(notes)
+		if not selection.is_empty() then
+			local notes = selection.get_notes()
+			local c = command.NoteDelete.new(notes)
 			command.run_and_register(c)
 			return true
 		end
 	elseif key == "g" and not modifier_keys.any then
-		if not selection.isEmpty() then
+		if not selection.is_empty() then
 			self.current_tool = drag
 			self.current_tool:mousepressed(self)
 			self.tool_active = true
 			return true
 		end
 	elseif key == "s" and not modifier_keys.any then
-		if not selection.isEmpty() then
+		if not selection.is_empty() then
 			self.current_tool = scale
 			self.current_tool:mousepressed(self)
 			self.tool_active = true
@@ -327,17 +327,17 @@ function Canvas:keypressed(key)
 
 		for k, v in ipairs(selection.list) do
 			if modifier_keys.shift then
-				tuning.moveOctave(v.pitch, move_up)
+				tuning.move_octave(v.pitch, move_up)
 			elseif modifier_keys.ctrl then
-				tuning.moveChromatic(v.pitch, move_up)
+				tuning.move_chromatic(v.pitch, move_up)
 			elseif modifier_keys.alt then
-				tuning.moveComma(v.pitch, move_up)
+				tuning.move_comma(v.pitch, move_up)
 			else
-				tuning.moveDiatonic(v.pitch, move_up)
+				tuning.move_diatonic(v.pitch, move_up)
 			end
 		end
 
-		command.register(command.noteUpdate.new(prev_state, selection.list))
+		command.register(command.NoteUpdate.new(prev_state, selection.list))
 		return true
 	end
 
@@ -355,7 +355,7 @@ function Canvas:keypressed(key)
 			v.time = v.time + move_right * move_amt
 		end
 
-		command.register(command.noteUpdate.new(prev_state, selection.list))
+		command.register(command.NoteUpdate.new(prev_state, selection.list))
 		return true
 	end
 end
@@ -369,7 +369,7 @@ function Canvas:find_closest_note(mx, my, max_distance)
 			for i, v in ipairs(channel.notes) do
 				local t_start = v.time
 				local t_end = v.time + v.verts[#v.verts][1]
-				local p_start = tuning.getPitch(v.pitch)
+				local p_start = tuning.get_pitch(v.pitch)
 				local x0 = self.transform:time(t_start)
 				local x1 = self.transform:time(t_end)
 				local y0 = self.transform:pitch(p_start)
@@ -399,7 +399,7 @@ function Canvas:find_closest_end(mx, my, max_distance)
 		if channel.visible and not channel.lock then
 			for i, v in ipairs(channel.notes) do
 				local t_end = v.time + v.verts[#v.verts][1]
-				local p_start = tuning.getPitch(v.pitch)
+				local p_start = tuning.get_pitch(v.pitch)
 				local x0 = self.transform:time(t_end)
 				local y0 = self.transform:pitch(p_start)
 
@@ -424,7 +424,7 @@ function Canvas:mousepressed()
 	self.current_tool = self.selected_tool
 
 	if mouse.button == 1 then
-		local _, my = self:getMouse()
+		local _, my = self:get_mouse()
 
 		if my > 0 and my < 16 then
 			-- clicked on top ribbon

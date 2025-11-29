@@ -10,11 +10,11 @@ doesn't support functions, userdata, circular references, and probably a lot of 
 local infinity = math.huge
 local writer = {}
 
-local function getWriter(value)
+local function get_writer(value)
 	return writer[type(value)]
 end
 
-local function writeNan(n)
+local function write_nan(n)
 	return tostring(n) == tostring(0 / 0) and "0/0" or "-(0/0)"
 end
 
@@ -22,7 +22,7 @@ end
 function writer.number(value)
 	return value == infinity and "1/0"
 		or value == -infinity and "-1/0"
-		or value ~= value and writeNan(value)
+		or value ~= value and write_nan(value)
 		or ("%.17G"):format(value)
 end
 
@@ -48,7 +48,7 @@ local function is_array(t)
 	return true
 end
 
-local function writeTable(t, depth)
+local function write_table(t, depth)
 	local depth = depth or 0
 	local s = ""
 
@@ -58,22 +58,22 @@ local function writeTable(t, depth)
 	for k, v in pairs(t) do
 		if type(v) == "table" then
 			if type(k) == "string" then
-				s = s .. ("\t"):rep(depth) .. ("%s"):format(k) .. " = {\n" .. writeTable(v, depth) .. ",\n"
+				s = s .. ("\t"):rep(depth) .. ("%s"):format(k) .. " = {\n" .. write_table(v, depth) .. ",\n"
 			else
 				if arr then
-					s = s .. ("\t"):rep(depth) .. "{\n" .. writeTable(v, depth) .. ",\n"
+					s = s .. ("\t"):rep(depth) .. "{\n" .. write_table(v, depth) .. ",\n"
 				else
-					s = s .. ("\t"):rep(depth) .. ("[%s]"):format(k) .. " = {\n" .. writeTable(v, depth) .. ",\n"
+					s = s .. ("\t"):rep(depth) .. ("[%s]"):format(k) .. " = {\n" .. write_table(v, depth) .. ",\n"
 				end
 			end
 		else
 			if type(k) == "string" then
-				local writeValue = getWriter(v)
-				local value = writeValue(v)
+				local write_value = get_writer(v)
+				local value = write_value(v)
 				s = s .. ("\t"):rep(depth) .. ("%s = %s,\n"):format(k, value)
 			else
-				local writeKey, writeValue = getWriter(k), getWriter(v)
-				local key, value = writeKey(k), writeValue(v)
+				local writeKey, write_value = get_writer(k), get_writer(v)
+				local key, value = writeKey(k), write_value(v)
 				if arr then
 					--[[if type(v) == "number" then
 						if k == 1 then
@@ -95,25 +95,25 @@ local function writeTable(t, depth)
 	return s
 end
 
-local function writeTable2(t, var)
+local function write_table2(t, var)
 	local s = ""
 
 	s = s .. (var .. " = {}\n")
 	for k, v in pairs(t) do
 		if type(v) == "table" then
 			if type(k) == "string" then
-				s = s .. writeTable2(v, ("%s.%s"):format(var, k))
+				s = s .. write_table2(v, ("%s.%s"):format(var, k))
 			else
-				s = s .. writeTable2(v, ("%s[%s]"):format(var, k))
+				s = s .. write_table2(v, ("%s[%s]"):format(var, k))
 			end
 		else
 			if type(k) == "string" then
-				local writeValue = getWriter(v)
-				local value = writeValue(v)
+				local write_value = get_writer(v)
+				local value = write_value(v)
 				s = s .. ("%s.%s = %s\n"):format(var, k, value)
 			else
-				local writeKey, writeValue = getWriter(k), getWriter(v)
-				local key, value = writeKey(k), writeValue(v)
+				local writeKey, write_value = get_writer(k), get_writer(v)
+				local key, value = writeKey(k), write_value(v)
 				s = s .. ("%s[%s] = %s\n"):format(var, key, value)
 			end
 		end
@@ -126,7 +126,7 @@ local function serialize(t, var)
 	local var = var or "t"
 
 	local s = "local " .. var .. " = {\n"
-	s = s .. writeTable(t)
+	s = s .. write_table(t)
 	s = s .. "\nreturn " .. var
 	return s
 end

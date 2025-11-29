@@ -6,7 +6,7 @@ select_rect.ox = 0
 select_rect.oy = 0
 
 function select_rect:mousepressed(canvas)
-	local mx, my = canvas:getMouse()
+	local mx, my = canvas:get_mouse()
 
 	self.ox = mx
 	self.oy = my
@@ -17,7 +17,7 @@ end
 function select_rect:mousedown(canvas) end
 
 function select_rect:mousereleased(canvas)
-	local mx, my = canvas:getMouse()
+	local mx, my = canvas:get_mouse()
 
 	self.active = false
 
@@ -32,7 +32,7 @@ function select_rect:mousereleased(canvas)
 		if channel.visible and not channel.lock then
 			for i, v in ipairs(channel.notes) do
 				local t_start = v.time
-				local p_start = tuning.getPitch(v.pitch)
+				local p_start = tuning.get_pitch(v.pitch)
 				local x0 = canvas.transform:time(t_start)
 				local y0 = canvas.transform:pitch(p_start)
 
@@ -53,12 +53,12 @@ function select_rect:mousereleased(canvas)
 end
 
 function select_rect:draw(canvas)
-	local mx, my = canvas:getMouse()
+	local mx, my = canvas:get_mouse()
 
 	if self.active then
-		tessera.graphics.setColor(util.color_alpha(theme.selection, 0.02))
+		tessera.graphics.set_color(util.color_alpha(theme.selection, 0.02))
 		tessera.graphics.rectangle("fill", self.ox, self.oy, mx - self.ox, my - self.oy)
-		tessera.graphics.setColor(theme.selection)
+		tessera.graphics.set_color(theme.selection)
 
 		tessera.graphics.rectangle("line", self.ox + 0.5, self.oy + 0.5, mx - self.ox, my - self.oy)
 	end

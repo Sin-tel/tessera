@@ -95,7 +95,7 @@ end
 
 util.clone = clone
 
-function util.drawText(str, x, y, w, h, align, pad)
+function util.draw_text(str, x, y, w, h, align, pad)
 	align = align or "left"
 
 	assert(type(str) == "string", type(str))
@@ -106,16 +106,16 @@ function util.drawText(str, x, y, w, h, align, pad)
 		w = w - 2 * p
 	end
 
-	local f = tessera.graphics.getFont()
+	local f = tessera.graphics.get_font()
 	local str2 = str
-	local fh = f:getHeight()
+	local fh = f:get_height()
 
 	local oy = 0.5 * (h - fh)
 
 	local l = str:len()
 	local strip = false
 	while true do
-		local fw = f:getWidth(str2)
+		local fw = f:get_width(str2)
 		if fw < w then
 			if align == "left" or strip then
 				tessera.graphics.print(str2, math.floor(x), math.floor(y + oy))
@@ -186,7 +186,7 @@ function util.readfile(filename)
 	return content
 end
 
-function util.fileExists(filename)
+function util.file_exists(filename)
 	local f = io.open(filename, "r")
 	if f ~= nil then
 		io.close(f)

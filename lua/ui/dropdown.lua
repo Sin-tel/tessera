@@ -44,7 +44,7 @@ function Dropdown:update(ui, target, key)
 		end
 
 		if new_index and self.has_state then
-			command.run_and_register(command.change.new(target, key, new_index))
+			command.run_and_register(command.Change.new(target, key, new_index))
 		end
 
 		if mouse.button_released then
@@ -63,7 +63,7 @@ function Dropdown:update(ui, target, key)
 		label = self.list[index].text
 	end
 
-	ui:pushDraw(self.draw, { self, ui, label, x, y, w, h })
+	ui:push_draw(self.draw, { self, ui, label, x, y, w, h })
 
 	return new_index
 end
@@ -85,16 +85,16 @@ function Dropdown:draw(ui, label, x, y, w, h)
 	end
 
 	if color_fill then
-		tessera.graphics.setColor(color_fill)
+		tessera.graphics.set_color(color_fill)
 		tessera.graphics.rectangle("fill", x, y, w, th, Ui.CORNER_RADIUS)
 	end
 	if color_line then
-		tessera.graphics.setColor(color_line)
+		tessera.graphics.set_color(color_line)
 		tessera.graphics.rectangle("line", x, y, w, th, Ui.CORNER_RADIUS)
 	end
 
-	tessera.graphics.setColor(theme.ui_text)
-	util.drawText(label, x, y, w, h, "center", true)
+	tessera.graphics.set_color(theme.ui_text)
+	util.draw_text(label, x, y, w, h, "center", true)
 end
 
 function Button.new(text)
@@ -107,7 +107,7 @@ end
 
 function Button:update(ui, x, y, w, h)
 	ui:hitbox(self, x, y, w, h)
-	ui:pushDraw(self.draw, { self, ui, x, y, w, h })
+	ui:push_draw(self.draw, { self, ui, x, y, w, h })
 	return ui.clicked == self
 end
 
@@ -123,16 +123,16 @@ function Button:draw(ui, x, y, w, h)
 	end
 
 	if color_fill then
-		tessera.graphics.setColor(color_fill)
+		tessera.graphics.set_color(color_fill)
 		tessera.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
 	end
 	if color_line then
-		tessera.graphics.setColor(color_line)
+		tessera.graphics.set_color(color_line)
 		tessera.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
 	end
 
-	tessera.graphics.setColor(theme.ui_text)
-	util.drawText(self.text, x, y, w, h, "center", true)
+	tessera.graphics.set_color(theme.ui_text)
+	util.draw_text(self.text, x, y, w, h, "center", true)
 end
 
 return Dropdown
