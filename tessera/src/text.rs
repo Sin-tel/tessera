@@ -2,7 +2,6 @@ use crate::Renderer;
 use crate::text::imgref::Img;
 use crate::text::imgref::ImgRef;
 use crate::text::rgb::RGBA8;
-use cosmic_text::Align;
 use cosmic_text::CacheKey;
 use cosmic_text::Fallback;
 use cosmic_text::Family;

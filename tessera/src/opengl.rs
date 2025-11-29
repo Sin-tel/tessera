@@ -61,7 +61,7 @@ fn load_icon() -> Icon {
 	Icon::from_rgba(icon_rgba, icon_width, icon_height).expect("Failed to open icon")
 }
 
-pub fn start() -> (Canvas<Renderer>, EventLoop<()>, Surface, Window) {
+pub fn setup_window() -> (Canvas<Renderer>, EventLoop<()>, Surface, Window) {
 	let event_loop = EventLoop::new().unwrap();
 
 	let icon = Some(load_icon());
