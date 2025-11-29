@@ -38,7 +38,7 @@ function View:draw_full()
 	tessera.graphics.set_font(resources.fonts.main)
 	tessera.graphics.set_color(theme.ui_text)
 
-	util.draw_text(self.name, 0, 0, self.box.w, Ui.HEADER, "left", true)
+	util.draw_text(self.name, 4, 0, self.box.w, Ui.HEADER, "left", true)
 end
 
 function View:mousepressed() end

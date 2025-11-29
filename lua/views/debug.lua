@@ -26,6 +26,11 @@ local function dump(t, indent)
 	end
 end
 
+function Debug.new()
+	local self = setmetatable({}, Debug)
+	return self
+end
+
 function Debug:draw()
 	local ix, iy = 32, 32
 

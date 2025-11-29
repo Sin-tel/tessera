@@ -1,4 +1,5 @@
 use crate::app::State;
+use cosmic_text::Align;
 use femtovg::ImageFlags;
 use femtovg::ImageId;
 use femtovg::{Color, Paint, Path};
@@ -278,12 +279,62 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 
 			let paint = Paint::color(state.current_color).with_font_size(state.font.size);
 
-			state
-				.text_engine
-				.draw_text(&mut state.canvas, &text, x, y, &paint, &state.font.name);
+			state.text_engine.draw_text(
+				&mut state.canvas,
+				&text,
+				x,
+				y,
+				None,
+				None,
+				None,
+				&paint,
+				&state.font.name,
+			);
 
 			Ok(())
 		})?,
+	)?;
+
+	graphics.set(
+		"draw_text",
+		lua.create_function(
+			|lua, (text, x, y, w, h, align): (String, f32, f32, f32, f32, Option<String>)| {
+				let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+				let paint = Paint::color(state.current_color).with_font_size(state.font.size);
+
+				// let align = match align {
+				// 	Some(s) => match s.as_str() {
+				// 		"left" => Some(Align::Left),
+				// 		"center" => Some(Align::Center),
+				// 		"right" => Some(Align::Right),
+				// 		e => panic!("Invalid align mode {e}"),
+				// 	},
+				// 	None => None,
+				// };
+
+				let align = align.map(|s| match s.as_str() {
+					"left" => Align::Left,
+					"center" => Align::Center,
+					"right" => Align::Right,
+					e => panic!("Invalid align mode {e}"),
+				});
+
+				state.text_engine.draw_text(
+					&mut state.canvas,
+					&text,
+					x,
+					y,
+					Some(w),
+					Some(h),
+					align,
+					&paint,
+					&state.font.name,
+				);
+
+				Ok(())
+			},
+		)?,
 	)?;
 
 	graphics.set(

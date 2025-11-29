@@ -96,43 +96,11 @@ end
 util.clone = clone
 
 function util.draw_text(str, x, y, w, h, align, pad)
-	align = align or "left"
-
-	assert(type(str) == "string", type(str))
-
 	if pad then
-		local p = Ui.DEFAULT_PAD
-		x = x + p
-		w = w - 2 * p
+		x = x + Ui.DEFAULT_PAD
+		w = w - 2 * Ui.DEFAULT_PAD
 	end
-
-	local f = tessera.graphics.get_font()
-	local str2 = str
-	local fh = f:get_height()
-
-	local oy = 0.5 * (h - fh)
-
-	local l = str:len()
-	local strip = false
-	while true do
-		local fw = f:get_width(str2)
-		if fw < w then
-			if align == "left" or strip then
-				tessera.graphics.print(str2, math.floor(x), math.floor(y + oy))
-			elseif align == "center" then
-				tessera.graphics.print(str2, math.floor(x + 0.5 * (w - fw)), math.floor(y + oy))
-			elseif align == "right" then
-				tessera.graphics.print(str2, math.floor(x + w - fw), math.floor(y + oy))
-			end
-			break
-		end
-		l = l - 1
-		if l <= 0 then
-			break
-		end
-		str2 = str:sub(1, l) .. "..."
-		strip = true
-	end
+	tessera.graphics.draw_text(str, x, y, w, h, align)
 end
 
 function util.average(t)

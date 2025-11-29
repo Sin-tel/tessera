@@ -1,23 +1,16 @@
 use crate::opengl::Renderer;
-use crate::text::imgref::Img;
-use crate::text::imgref::ImgRef;
+use crate::text::imgref::{Img, ImgRef};
 use crate::text::rgb::RGBA8;
-use cosmic_text::CacheKey;
-use cosmic_text::Fallback;
-use cosmic_text::Family;
-use cosmic_text::SubpixelBin;
 use cosmic_text::fontdb;
-use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping, SwashCache};
-use femtovg::Atlas;
-use femtovg::DrawCommand;
-use femtovg::GlyphDrawCommands;
-use femtovg::ImageFlags;
-use femtovg::ImageId;
-use femtovg::ImageSource;
-use femtovg::Quad;
+use cosmic_text::{
+	Align, Attrs, Buffer, CacheKey, Fallback, Family, FontSystem, Metrics, Shaping, SubpixelBin,
+	SwashCache, Wrap,
+};
 use femtovg::imgref;
 use femtovg::rgb;
-use femtovg::{Canvas, Paint};
+use femtovg::{
+	Atlas, Canvas, DrawCommand, GlyphDrawCommands, ImageFlags, ImageId, ImageSource, Paint, Quad,
+};
 use std::collections::HashMap;
 use swash::scale::image::Content;
 use unicode_script::Script;
@@ -91,7 +84,7 @@ impl RenderCache {
 					let content_w = rendered.placement.width as usize;
 					let content_h = rendered.placement.height as usize;
 
-					if content_w == 0 && content_h == 0 {
+					if content_w == 0 || content_h == 0 {
 						return None;
 					}
 
@@ -228,7 +221,7 @@ impl TextEngine {
 		// let mut font_system = FontSystem::new_with_locale_and_db("en-US".into(), db);
 
 		let mut scratch_buffer = Buffer::new(&mut font_system, Metrics::new(14.0, 20.0));
-		scratch_buffer.set_wrap(&mut font_system, cosmic_text::Wrap::None);
+		scratch_buffer.set_wrap(&mut font_system, Wrap::None);
 
 		Self { font_system, glyph_cache: RenderCache::new(), scratch_buffer }
 	}
@@ -239,11 +232,14 @@ impl TextEngine {
 		text: &str,
 		x: f32,
 		y: f32,
+		w: Option<f32>,
+		h: Option<f32>,
+		align: Option<Align>,
 		paint: &Paint,
 		font_name: &str,
 	) {
 		let font_size = paint.font_size();
-		let line_height = font_size * 1.2;
+		let line_height = font_size;
 
 		let metrics = Metrics::new(font_size, line_height);
 
@@ -251,22 +247,23 @@ impl TextEngine {
 
 		let attrs = Attrs::new().family(Family::Name(font_name));
 
-		self.scratch_buffer.set_text(
-			&mut self.font_system,
-			text,
-			&attrs,
-			Shaping::Basic,
-			// Some(Align::Left),
-			None,
-		);
+		self.scratch_buffer
+			.set_text(&mut self.font_system, text, &attrs, Shaping::Basic, align);
+
+		self.scratch_buffer.set_size(&mut self.font_system, w, h);
 
 		self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
+
+		let mut oy = 0.;
+		if let Some(h) = h {
+			oy = 0.5 * (h - font_size);
+		}
 
 		let cmds = self.glyph_cache.fill_to_cmds(
 			&mut self.font_system,
 			canvas,
 			&self.scratch_buffer,
-			(x, y),
+			(x, y + oy),
 		);
 
 		canvas.draw_glyph_commands(cmds, paint);
