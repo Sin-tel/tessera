@@ -575,11 +575,19 @@ pub fn create_love_env() -> LuaResult<Lua> {
 		Ok(state.timer.fps)
 	})?;
 	timer.set("getFPS", get_fps)?;
+
 	let get_time = lua.create_function(|lua, ()| {
 		let state = lua.app_data_ref::<State>().unwrap();
 		Ok(state.timer.get_time())
 	})?;
 	timer.set("getTime", get_time)?;
+
+	let sleep = lua.create_function(|_, time: f64| {
+		std::thread::sleep(std::time::Duration::from_secs_f64(time));
+		Ok(())
+	})?;
+	timer.set("sleep", sleep)?;
+
 	love.set("timer", timer)?;
 
 	// love.filesystem
