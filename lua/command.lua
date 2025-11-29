@@ -89,7 +89,7 @@ function newProject:run()
     -- cleanup current project
     if project.channels then
         for i = #project.channels, 1, -1 do
-            backend.removeChannel(i)
+            tessera.audio.removeChannel(i)
         end
     end
 

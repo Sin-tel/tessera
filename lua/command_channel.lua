@@ -77,7 +77,7 @@ local function _removeChannel(ch_index)
     table.remove(project.channels, ch_index)
     table.remove(ui_channels, ch_index)
     build.refresh_channels()
-    backend.removeChannel(ch_index)
+    tessera.audio.removeChannel(ch_index)
 end
 
 local function _removeEffect(ch_index, effect_index)
@@ -87,7 +87,7 @@ local function _removeEffect(ch_index, effect_index)
 
     table.remove(project.channels[ch_index].effects, effect_index)
     table.remove(ui_channels[ch_index].effects, effect_index)
-    backend.removeEffect(ch_index, effect_index)
+    tessera.audio.removeEffect(ch_index, effect_index)
 end
 
 local function _reorderEffect(ch_index, old_index, new_index)
@@ -103,7 +103,7 @@ local function _reorderEffect(ch_index, old_index, new_index)
             temp = table.remove(ch.effects, old_index)
             table.insert(ch.effects, new_index, temp)
 
-            backend.reorderEffect(ch_index, old_index, new_index)
+            tessera.audio.reorderEffect(ch_index, old_index, new_index)
 
             if selection.ch_index == ch_index and selection.device_index == old_index then
                 selection.device_index = new_index

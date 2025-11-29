@@ -79,15 +79,15 @@ function Button:draw(ui, x, y, w, h)
 		color_line = theme.widget
 	end
 	if color_fill then
-		love.graphics.setColor(color_fill)
-		love.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
+		tessera.graphics.setColor(color_fill)
+		tessera.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
 	end
 	if color_line then
-		love.graphics.setColor(color_line)
-		love.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
+		tessera.graphics.setColor(color_line)
+		tessera.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
 	end
 
-	love.graphics.setColor(theme.ui_text)
+	tessera.graphics.setColor(theme.ui_text)
 	util.drawText(self.text, x, y, w, h, "center", true)
 end
 

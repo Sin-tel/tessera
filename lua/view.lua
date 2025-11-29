@@ -23,20 +23,20 @@ end
 function View:draw() end
 
 function View:drawFull()
-	love.graphics.push()
-	love.graphics.translate(Ui.BORDER_SIZE, Ui.HEADER + Ui.BORDER_SIZE)
+	tessera.graphics.push()
+	tessera.graphics.translate(Ui.BORDER_SIZE, Ui.HEADER + Ui.BORDER_SIZE)
 
 	self:draw()
-	love.graphics.pop()
+	tessera.graphics.pop()
 
-	love.graphics.setColor(theme.header)
+	tessera.graphics.setColor(theme.header)
 	if self.box.focus then
-		love.graphics.setColor(theme.header_focus)
+		tessera.graphics.setColor(theme.header_focus)
 	end
-	love.graphics.rectangle("fill", 0, 0, self.box.w, Ui.HEADER)
+	tessera.graphics.rectangle("fill", 0, 0, self.box.w, Ui.HEADER)
 
-	love.graphics.setFont(resources.fonts.main)
-	love.graphics.setColor(theme.ui_text)
+	tessera.graphics.setFont(resources.fonts.main)
+	tessera.graphics.setColor(theme.ui_text)
 
 	util.drawText(self.name, 0, 0, self.box.w, Ui.HEADER, "left", true)
 end

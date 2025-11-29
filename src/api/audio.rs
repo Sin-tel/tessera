@@ -2,23 +2,14 @@ use crate::app::State;
 use crate::audio;
 use crate::context::AudioMessage;
 use crate::log::{log_error, log_info};
-use mlua::prelude::*;
 use mlua::{UserData, UserDataMethods};
 use no_denormals::no_denormals;
 use ringbuf::traits::*;
 use std::error::Error;
 
-pub struct Backend;
+pub struct Audio;
 
-impl Backend {
-	pub fn register(lua: &mut Lua) -> LuaResult<()> {
-		log_info!("Backend initialized");
-		lua.globals().set("backend", Backend {})?;
-		Ok(())
-	}
-}
-
-impl UserData for Backend {
+impl UserData for Audio {
 	fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
 		methods.add_function(
 			"setup",

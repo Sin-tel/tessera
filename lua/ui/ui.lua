@@ -83,7 +83,7 @@ function Ui:next()
 end
 
 local function drawLabel(text, align, x, y, w, h)
-	love.graphics.setColor(theme.ui_text)
+	tessera.graphics.setColor(theme.ui_text)
 	util.drawText(text, x, y, w, h, align)
 end
 
@@ -131,8 +131,8 @@ end
 
 function Ui:draw()
 	for _, b in ipairs(self.bg_list) do
-		love.graphics.setColor(b[3])
-		love.graphics.rectangle("fill", 0, b[1], self.view.w, b[2])
+		tessera.graphics.setColor(b[3])
+		tessera.graphics.rectangle("fill", 0, b[1], self.view.w, b[2])
 	end
 
 	-- draw in reverse order to handle overlaps

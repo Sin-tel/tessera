@@ -45,7 +45,7 @@ function build.channel(ch_index, channel)
 	channel_ui.instrument = Device.new(channel.name, channel.instrument.state, options)
 	channel_ui.widget = widgets.Channel.new()
 
-	backend.insertChannel(ch_index, channel.instrument.name)
+	tessera.audio.insertChannel(ch_index, channel.instrument.name)
 
 	for i, v in ipairs(channel.effects) do
 		build.effect(ch_index, i, v)
@@ -64,7 +64,7 @@ function build.effect(ch_index, effect_index, effect)
 	local effect_ui = Device.new(effect.name, effect.state, options)
 	table.insert(ui_channels[ch_index].effects, effect_ui)
 
-	backend.insertEffect(ch_index, effect_index, effect.name)
+	tessera.audio.insertEffect(ch_index, effect_index, effect.name)
 end
 
 function build.refresh_channels()

@@ -118,7 +118,7 @@ function VoiceAlloc:noteOn(id, pitch_coord, vel)
 	voice.key_down = true
 
 	local v_curve = util.velocity_curve(vel)
-	backend.noteOn(self.ch_index, pitch, v_curve, new_i)
+	tessera.audio.noteOn(self.ch_index, pitch, v_curve, new_i)
 end
 
 function VoiceAlloc:noteOff(id)
@@ -137,13 +137,13 @@ function VoiceAlloc:noteOff(id)
 	if #self.queue == 0 then
 		v.key_down = false
 		if not self.sustain then
-			backend.noteOff(self.ch_index, i)
+			tessera.audio.noteOff(self.ch_index, i)
 		end
 	else
 		-- pop
 		local old_voice = table.remove(self.queue)
 		self.voices[i] = old_voice
-		backend.noteOn(self.ch_index, old_voice.pitch, old_voice.vel, i)
+		tessera.audio.noteOn(self.ch_index, old_voice.pitch, old_voice.vel, i)
 	end
 end
 
@@ -154,8 +154,8 @@ function VoiceAlloc:cv(id, offset, pres)
 	end
 	v.offset = offset
 	v.pres = pres
-	backend.pitch(self.ch_index, v.pitch + v.offset, i)
-	backend.pressure(self.ch_index, pres, i)
+	tessera.audio.pitch(self.ch_index, v.pitch + v.offset, i)
+	tessera.audio.pressure(self.ch_index, pres, i)
 end
 
 function VoiceAlloc:pitch(id, offset)
@@ -164,7 +164,7 @@ function VoiceAlloc:pitch(id, offset)
 		return
 	end
 	v.offset = offset
-	backend.pitch(self.ch_index, v.pitch + v.offset, i)
+	tessera.audio.pitch(self.ch_index, v.pitch + v.offset, i)
 end
 
 function VoiceAlloc:pressure(id, pres)
@@ -173,7 +173,7 @@ function VoiceAlloc:pressure(id, pres)
 		return
 	end
 	v.pres = pres
-	backend.pressure(self.ch_index, v.pres, i)
+	tessera.audio.pressure(self.ch_index, v.pres, i)
 end
 
 function VoiceAlloc:setSustain(s)
@@ -182,7 +182,7 @@ function VoiceAlloc:setSustain(s)
 		for i, v in ipairs(self.voices) do
 			if not v.key_down then
 				v.key_down = false
-				backend.noteOff(self.ch_index, i)
+				tessera.audio.noteOff(self.ch_index, i)
 			end
 		end
 	end
@@ -192,7 +192,7 @@ function VoiceAlloc:allNotesOff()
 	self:setSustain(false)
 	for i, v in ipairs(self.voices) do
 		if v.key_down then
-			backend.noteOff(self.ch_index, i)
+			tessera.audio.noteOff(self.ch_index, i)
 		end
 		self.voices[i] = newVoice()
 	end

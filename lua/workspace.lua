@@ -17,7 +17,7 @@ function Box.new(x, y, w, h)
 end
 
 function Box:scissor()
-	love.graphics.setScissor(
+	tessera.graphics.setScissor(
 		self.x + ui.BORDER_SIZE,
 		self.y + ui.BORDER_SIZE,
 		self.w - (2 * ui.BORDER_SIZE),
@@ -41,18 +41,18 @@ function Box:draw()
 	else
 		self:scissor()
 
-		love.graphics.setColor(theme.background)
-		love.graphics.rectangle("fill", self.x, self.y, self.w, self.h)
+		tessera.graphics.setColor(theme.background)
+		tessera.graphics.rectangle("fill", self.x, self.y, self.w, self.h)
 
-		love.graphics.push()
-		love.graphics.translate(self.x, self.y)
+		tessera.graphics.push()
+		tessera.graphics.translate(self.x, self.y)
 		self.view:drawFull()
-		love.graphics.pop()
+		tessera.graphics.pop()
 
-		love.graphics.setScissor()
+		tessera.graphics.setScissor()
 
-		love.graphics.setColor(theme.borders)
-		love.graphics.rectangle(
+		tessera.graphics.setColor(theme.borders)
+		tessera.graphics.rectangle(
 			"line",
 			self.x + ui.BORDER_SIZE,
 			self.y + ui.BORDER_SIZE,
@@ -309,14 +309,14 @@ function workspace:draw()
 	local y1 = 0.5 * (ui.RIBBON_HEIGHT - h1)
 	local x1 = self.w - 64 - y1
 
-	love.graphics.setColor(theme.widget_bg)
-	love.graphics.rectangle("fill", x1, y1, w1, h1, 2)
-	love.graphics.setColor(hl_col)
-	love.graphics.rectangle("fill", x1, y1, w1 * ll, h1)
-	love.graphics.setColor(theme.line)
-	love.graphics.rectangle("line", x1, y1, w1, h1, 2)
-	love.graphics.setColor(theme.ui_text)
-	if backend.ok() then
+	tessera.graphics.setColor(theme.widget_bg)
+	tessera.graphics.rectangle("fill", x1, y1, w1, h1, 2)
+	tessera.graphics.setColor(hl_col)
+	tessera.graphics.rectangle("fill", x1, y1, w1 * ll, h1)
+	tessera.graphics.setColor(theme.line)
+	tessera.graphics.rectangle("line", x1, y1, w1, h1, 2)
+	tessera.graphics.setColor(theme.ui_text)
+	if tessera.audio.ok() then
 		util.drawText(string.format("%d %%", 100 * self.cpu_load), x1, 0, w1, ui.RIBBON_HEIGHT, "center")
 	else
 		util.drawText("offline", x1, 0, w1, ui.RIBBON_HEIGHT, "center")
@@ -331,15 +331,15 @@ function workspace:draw()
 	local ml = util.clamp((self.meter.l + 80) / 80, 0.01, 1)
 	local mr = util.clamp((self.meter.r + 80) / 80, 0.01, 1)
 
-	love.graphics.setColor(theme.widget_bg)
-	love.graphics.rectangle("fill", x1, y1, w1, h1, 2)
-	love.graphics.setColor(ml < 1.0 and theme.meter or theme.meter_clip)
-	love.graphics.rectangle("fill", x1, y1, w1 * ml, 0.5 * h1 - 1)
-	love.graphics.setColor(mr < 1.0 and theme.meter or theme.meter_clip)
-	love.graphics.rectangle("fill", x1, y1 + 0.5 * h1, w1 * mr, 0.5 * h1)
-	love.graphics.setColor(theme.line)
-	love.graphics.rectangle("line", x1, y1, w1, h1, 2)
-	love.graphics.setColor(theme.ui_text)
+	tessera.graphics.setColor(theme.widget_bg)
+	tessera.graphics.rectangle("fill", x1, y1, w1, h1, 2)
+	tessera.graphics.setColor(ml < 1.0 and theme.meter or theme.meter_clip)
+	tessera.graphics.rectangle("fill", x1, y1, w1 * ml, 0.5 * h1 - 1)
+	tessera.graphics.setColor(mr < 1.0 and theme.meter or theme.meter_clip)
+	tessera.graphics.rectangle("fill", x1, y1 + 0.5 * h1, w1 * mr, 0.5 * h1)
+	tessera.graphics.setColor(theme.line)
+	tessera.graphics.rectangle("line", x1, y1, w1, h1, 2)
+	tessera.graphics.setColor(theme.ui_text)
 
 	self.box:draw()
 end

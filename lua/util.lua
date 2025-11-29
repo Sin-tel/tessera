@@ -106,7 +106,7 @@ function util.drawText(str, x, y, w, h, align, pad)
 		w = w - 2 * p
 	end
 
-	local f = love.graphics.getFont()
+	local f = tessera.graphics.getFont()
 	local str2 = str
 	local fh = f:getHeight()
 
@@ -118,11 +118,11 @@ function util.drawText(str, x, y, w, h, align, pad)
 		local fw = f:getWidth(str2)
 		if fw < w then
 			if align == "left" or strip then
-				love.graphics.print(str2, math.floor(x), math.floor(y + oy))
+				tessera.graphics.print(str2, math.floor(x), math.floor(y + oy))
 			elseif align == "center" then
-				love.graphics.print(str2, math.floor(x + 0.5 * (w - fw)), math.floor(y + oy))
+				tessera.graphics.print(str2, math.floor(x + 0.5 * (w - fw)), math.floor(y + oy))
 			elseif align == "right" then
-				love.graphics.print(str2, math.floor(x + w - fw), math.floor(y + oy))
+				tessera.graphics.print(str2, math.floor(x + w - fw), math.floor(y + oy))
 			end
 			break
 		end

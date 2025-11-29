@@ -30,11 +30,11 @@ function Button:draw(ui, x, y, w, h)
 		if ui.hover == self and ui.active ~= self then
 			color_line = theme.line_hover
 		end
-		love.graphics.setColor(color_fill)
-		love.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
-		love.graphics.setColor(color_line)
-		love.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
-		love.graphics.setColor(theme.ui_text)
+		tessera.graphics.setColor(color_fill)
+		tessera.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
+		tessera.graphics.setColor(color_line)
+		tessera.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
+		tessera.graphics.setColor(theme.ui_text)
 		util.drawText(self.text, x, y, w, h, "center")
 	end
 end

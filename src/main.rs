@@ -12,10 +12,9 @@ use winit::{
 	window::Window,
 };
 
-use tessera::api::backend::Backend;
 use tessera::api::create_lua;
 use tessera::api::graphics::Font;
-use tessera::api::keycodes::keycode_to_love2d_key;
+use tessera::api::keycodes::keycode_to_str;
 use tessera::opengl::Renderer;
 use tessera::opengl::Surface;
 use tessera::opengl::WindowSurface;
@@ -45,7 +44,7 @@ fn run(
 	mut surface: Surface,
 	window: Window,
 ) -> LuaResult<()> {
-	let mut lua = create_lua()?;
+	let lua = create_lua()?;
 	lua.set_app_data(State {
 		current_color: Color::white(),
 		background_color: Color::black(),
@@ -68,28 +67,26 @@ fn run(
 
 	init_logging();
 
-	Backend::register(&mut lua)?;
-
 	let lua_main = fs::read_to_string("lua/main.lua").unwrap();
 	lua.load(lua_main).set_name("@lua/main.lua").exec()?;
 
 	// Get main callbacks
-	let love: LuaTable = lua.globals().get("love")?;
-	let love_load: LuaFunction = love.get("load").unwrap();
-	let love_update: LuaFunction = love.get("update").unwrap();
-	let love_draw: LuaFunction = love.get("draw").unwrap();
-	let love_keypressed: LuaFunction = love.get("keypressed").unwrap();
-	let love_keyreleased: LuaFunction = love.get("keyreleased").unwrap();
-	let love_mousepressed: LuaFunction = love.get("mousepressed").unwrap();
-	let love_mousereleased: LuaFunction = love.get("mousereleased").unwrap();
-	let love_mousemoved: LuaFunction = love.get("mousemoved").unwrap();
-	let love_wheelmoved: LuaFunction = love.get("wheelmoved").unwrap();
-	let love_resize: LuaFunction = love.get("resize").unwrap();
+	let tessera: LuaTable = lua.globals().get("tessera")?;
+	let tessera_load: LuaFunction = tessera.get("load").unwrap();
+	let tessera_update: LuaFunction = tessera.get("update").unwrap();
+	let tessera_draw: LuaFunction = tessera.get("draw").unwrap();
+	let tessera_keypressed: LuaFunction = tessera.get("keypressed").unwrap();
+	let tessera_keyreleased: LuaFunction = tessera.get("keyreleased").unwrap();
+	let tessera_mousepressed: LuaFunction = tessera.get("mousepressed").unwrap();
+	let tessera_mousereleased: LuaFunction = tessera.get("mousereleased").unwrap();
+	let tessera_mousemoved: LuaFunction = tessera.get("mousemoved").unwrap();
+	let tessera_wheelmoved: LuaFunction = tessera.get("wheelmoved").unwrap();
+	let tessera_resize: LuaFunction = tessera.get("resize").unwrap();
 
 	let _start = std::time::Instant::now();
 	let mut last_update = std::time::Instant::now();
 
-	wrap_call(&love_load, ());
+	wrap_call(&tessera_load, ());
 
 	event_loop
 		.run(move |event, target| {
@@ -99,7 +96,7 @@ fn run(
 				Event::WindowEvent { event, .. } => match event {
 					WindowEvent::RedrawRequested => {
 						render_start(&lua);
-						wrap_call(&love_draw, ());
+						wrap_call(&tessera_draw, ());
 						render_end(&surface, &lua);
 					},
 					WindowEvent::KeyboardInput {
@@ -112,20 +109,20 @@ fn run(
 							},
 						..
 					} => {
-						let key = keycode_to_love2d_key(keycode);
+						let key = keycode_to_str(keycode);
 						match state {
 							ElementState::Pressed => {
-								wrap_call(&love_keypressed, (key, key, repeat));
+								wrap_call(&tessera_keypressed, (key, key, repeat));
 							},
 							ElementState::Released => {
-								wrap_call(&love_keyreleased, (key, key, repeat));
+								wrap_call(&tessera_keyreleased, (key, key, repeat));
 							},
 						}
 					},
 					WindowEvent::CursorMoved { position, .. } => {
 						let mut app_state = lua.app_data_mut::<State>().unwrap();
 						app_state.mouse_position = position.into();
-						// love.mousemoved gets called in DeviceEvent::MouseMotion
+						// tessera.mousemoved gets called in DeviceEvent::MouseMotion
 					},
 					WindowEvent::Resized(physical_size) => {
 						let (w, h) = physical_size.into();
@@ -136,7 +133,7 @@ fn run(
 							let mut app_state = lua.app_data_mut::<State>().unwrap();
 							app_state.window_size = (w, h);
 							drop(app_state);
-							wrap_call(&love_resize, (w, h));
+							wrap_call(&tessera_resize, (w, h));
 						}
 					},
 					WindowEvent::MouseInput { state, button, .. } => {
@@ -151,10 +148,10 @@ fn run(
 						let (x, y) = lua.app_data_ref::<State>().unwrap().mouse_position;
 						match state {
 							ElementState::Pressed => {
-								wrap_call(&love_mousepressed, (x, y, button_number));
+								wrap_call(&tessera_mousepressed, (x, y, button_number));
 							},
 							ElementState::Released => {
-								wrap_call(&love_mousereleased, (x, y, button_number));
+								wrap_call(&tessera_mousereleased, (x, y, button_number));
 							},
 						}
 					},
@@ -163,7 +160,7 @@ fn run(
 							MouseScrollDelta::LineDelta(x, y) => (x, y),
 							MouseScrollDelta::PixelDelta(d) => d.into(),
 						};
-						wrap_call(&love_wheelmoved, (x, y));
+						wrap_call(&tessera_wheelmoved, (x, y));
 					},
 					WindowEvent::CloseRequested => target.exit(),
 					_ => {},
@@ -171,7 +168,7 @@ fn run(
 				Event::DeviceEvent { event: DeviceEvent::MouseMotion { delta }, .. } => {
 					let (x, y) = lua.app_data_ref::<State>().unwrap().mouse_position;
 					let (dx, dy) = delta;
-					wrap_call(&love_mousemoved, (x, y, dx, dy));
+					wrap_call(&tessera_mousemoved, (x, y, dx, dy));
 				},
 				Event::AboutToWait => {
 					let mut accum = 0.0;
@@ -180,7 +177,7 @@ fn run(
 						let dt = (now - last_update).as_secs_f64();
 						last_update = now;
 
-						wrap_call(&love_update, dt);
+						wrap_call(&tessera_update, dt);
 
 						accum += dt;
 						if accum >= 1.0 / 60.0 {

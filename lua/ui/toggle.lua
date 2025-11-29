@@ -48,21 +48,21 @@ end
 
 function Toggle:draw_toggle(color_fill, color_line, x, y, w, h)
 	if w > 10 then
-		love.graphics.setColor(color_fill)
-		love.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
-		love.graphics.setColor(color_line)
-		love.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
-		love.graphics.setColor(theme.ui_text)
+		tessera.graphics.setColor(color_fill)
+		tessera.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
+		tessera.graphics.setColor(color_line)
+		tessera.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
+		tessera.graphics.setColor(theme.ui_text)
 		util.drawText(self.text, x, y, w, h, "center", true)
 	end
 end
 
 function Toggle:draw_checkbox(color_fill, color_line, x, y, w, h)
-	love.graphics.setColor(color_fill)
-	love.graphics.rectangle("fill", x, y, h, h, Ui.CORNER_RADIUS)
-	love.graphics.setColor(color_line)
-	love.graphics.rectangle("line", x, y, h, h, Ui.CORNER_RADIUS)
-	love.graphics.setColor(theme.ui_text)
+	tessera.graphics.setColor(color_fill)
+	tessera.graphics.rectangle("fill", x, y, h, h, Ui.CORNER_RADIUS)
+	tessera.graphics.setColor(color_line)
+	tessera.graphics.rectangle("line", x, y, h, h, Ui.CORNER_RADIUS)
+	tessera.graphics.setColor(theme.ui_text)
 	local left_pad = h + Ui.DEFAULT_PAD
 	util.drawText(self.text, x + left_pad, y, w - left_pad, h)
 end

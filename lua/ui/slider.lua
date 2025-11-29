@@ -78,14 +78,14 @@ end
 
 function Slider:draw(v, display, color_fill, color_line, x, y, w, h)
 	-- background fill
-	love.graphics.setColor(color_fill)
-	love.graphics.rectangle("fill", x, y, w, h, CORNER_RADIUS)
+	tessera.graphics.setColor(color_fill)
+	tessera.graphics.rectangle("fill", x, y, w, h, CORNER_RADIUS)
 
 	-- pop scissor
-	local sx, sy, sw, sh = love.graphics.getScissor()
+	local sx, sy, sw, sh = tessera.graphics.getScissor()
 
 	local gx, gy = x, y
-	gx, gy = love.graphics.transformPoint(gx, gy)
+	gx, gy = tessera.graphics.transformPoint(gx, gy)
 
 	if self.value.centered then
 		local x1 = gx + w * 0.5
@@ -93,21 +93,21 @@ function Slider:draw(v, display, color_fill, color_line, x, y, w, h)
 		if x2 < x1 then
 			x1, x2 = x2, x1
 		end
-		love.graphics.intersectScissor(x1, gy, x2 - x1, h)
+		tessera.graphics.intersectScissor(x1, gy, x2 - x1, h)
 	else
-		love.graphics.intersectScissor(gx, gy, w * v, h)
+		tessera.graphics.intersectScissor(gx, gy, w * v, h)
 	end
 
-	love.graphics.setColor(theme.widget)
-	love.graphics.rectangle("fill", x, y, w, h, CORNER_RADIUS)
+	tessera.graphics.setColor(theme.widget)
+	tessera.graphics.rectangle("fill", x, y, w, h, CORNER_RADIUS)
 
 	-- push scissor
-	love.graphics.setScissor(sx, sy, sw, sh)
+	tessera.graphics.setScissor(sx, sy, sw, sh)
 
-	love.graphics.setColor(color_line)
-	love.graphics.rectangle("line", x, y, w, h, CORNER_RADIUS)
+	tessera.graphics.setColor(color_line)
+	tessera.graphics.rectangle("line", x, y, w, h, CORNER_RADIUS)
 
-	love.graphics.setColor(theme.ui_text)
+	tessera.graphics.setColor(theme.ui_text)
 	util.drawText(display, x, y, w, h, "center")
 end
 

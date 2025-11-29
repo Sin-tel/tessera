@@ -48,7 +48,7 @@ end
 function engine.update(dt)
 	if engine.playing then
 		project.transport.time = project.transport.time + dt
-		if backend.ok() then
+		if tessera.audio.ok() then
 			for _, v in ipairs(ui_channels) do
 				v.roll:playback()
 			end
@@ -59,11 +59,11 @@ function engine.update(dt)
 end
 
 function engine.renderStart()
-	backend.flush()
+	tessera.audio.flush()
 	midi.flush()
 
-	if not backend.ok() then
-		log.error("Can't render, backend offline.")
+	if not tessera.audio.ok() then
+		log.error("Can't render, tessera.audio offline.")
 		return
 	end
 
@@ -83,23 +83,23 @@ function engine.renderStart()
 	mouse:setCursor("wait")
 	mouse:endFrame()
 
-	backend.setRendering(true)
+	tessera.audio.setRendering(true)
 
 	-- sleep for a bit to make sure the audio thread is done
 	-- TODO: find something better
-	love.timer.sleep(0.01)
+	tessera.timer.sleep(0.01)
 end
 
 function engine.render()
-	assert(backend.isRendering())
+	assert(tessera.audio.isRendering())
 
-	local dt = RENDER_BLOCK_SIZE / backend.getSampleRate()
+	local dt = RENDER_BLOCK_SIZE / tessera.audio.getSampleRate()
 
 	-- Try to hit 16 ms to keep things responsive
 	local target_ms = 16
-	local t_start = love.timer.getTime()
+	local t_start = tessera.timer.getTime()
 	for i = 1, 3000 do
-		local success = backend.renderBlock()
+		local success = tessera.audio.renderBlock()
 		if not success then
 			log.error("Failed to render block.")
 			engine.renderCancel()
@@ -110,12 +110,12 @@ function engine.render()
 		engine.render_progress = engine.render_progress + dt
 		if engine.render_progress >= engine.render_end then
 			log.info("Finished render.")
-			backend.renderFinish()
+			tessera.audio.renderFinish()
 			engine.renderEnd()
 			break
 		end
 
-		local t_now = (love.timer.getTime() - t_start) * 1000
+		local t_now = (tessera.timer.getTime() - t_start) * 1000
 		if t_now > target_ms then
 			print(tostring(i) .. " blocks rendered")
 			break
@@ -126,16 +126,16 @@ end
 function engine.renderEnd()
 	midi.flush()
 
-	backend.setRendering(false)
+	tessera.audio.setRendering(false)
 	mouse:setCursor("default")
 	audio_status = "running"
 	engine.stop()
 end
 
--- update UI with messages from backend
+-- update UI with messages from tessera.audio
 function engine.parseMessages()
 	while true do
-		local p = backend.pop()
+		local p = tessera.audio.pop()
 		if p == nil then
 			return
 		end
