@@ -5,7 +5,7 @@ use mlua::prelude::*;
 use std::fs;
 use tessera::app::State;
 use tessera::app::{INIT_HEIGHT, INIT_WIDTH};
-use tessera::log::init_logging;
+use tessera::log::{init_logging, log_error};
 use winit::application::ApplicationHandler;
 use winit::event::DeviceId;
 use winit::event::{DeviceEvent, ElementState, MouseButton, MouseScrollDelta, WindowEvent};
@@ -29,13 +29,18 @@ fn wrap_call<T: IntoLuaMulti>(lua_fn: &LuaFunction, args: T) {
 	}
 }
 
-fn main() -> LuaResult<()> {
+fn main() {
+	if let Err(e) = run() {
+		log_error!("{e}");
+	}
+}
+
+fn run() -> LuaResult<()> {
 	let (canvas, event_loop, surface, window) = setup_window();
 
 	let lua = create_lua()?;
 	lua.set_app_data(State {
 		current_color: Color::white(),
-		background_color: Color::black(),
 		mouse_position: (0., 0.),
 		window_size: (INIT_WIDTH, INIT_HEIGHT),
 		line_width: 1.5,
@@ -90,7 +95,9 @@ fn main() -> LuaResult<()> {
 		quit,
 	};
 
-	event_loop.run_app(&mut app).unwrap();
+	if let Err(e) = event_loop.run_app(&mut app) {
+		log_error!("{e}");
+	}
 	Ok(())
 }
 
@@ -259,8 +266,7 @@ fn render_start(lua: &Lua) {
 	let scale_factor = state.window.scale_factor() as f32;
 	state.canvas.set_size(size.width, size.height, scale_factor);
 
-	let bg_color = state.background_color;
-	state.canvas.clear_rect(0, 0, size.width, size.height, bg_color);
+	state.canvas.clear_rect(0, 0, size.width, size.height, Color::black());
 }
 
 fn render_end(surface: &Surface, lua: &Lua) {
