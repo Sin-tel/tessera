@@ -55,9 +55,9 @@ local function load_project()
 
 	if not success then
 		log.info("Loading default project")
-		command.new_channel.new("pluck"):run()
-		-- command.newChannel.new("epiano"):run()
-		-- command.newChannel.new("polysine"):run()
+		command.NewChannel.new("pluck"):run()
+		-- command.NewChannel.new("epiano"):run()
+		-- command.NewChannel.new("polysine"):run()
 		project.channels[1].armed = true
 	end
 end

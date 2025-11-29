@@ -35,7 +35,7 @@ function engine.stop()
 		v.roll:stop()
 	end
 	if total > 0 then
-		local c = command.note_add.new(added_notes)
+		local c = command.NoteAdd.new(added_notes)
 		command.register(c)
 	end
 end
