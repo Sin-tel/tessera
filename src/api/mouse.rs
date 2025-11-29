@@ -12,8 +12,8 @@ impl LuaUserData for Mouse {
 			Ok(state.mouse_position)
 		});
 
-		// tessera.mouse.setCursor(cursor)
-		// Option<String> handles the case where Lua calls setCursor() to reset default.
+		// tessera.mouse.set_cursor(cursor)
+		// Option<String> handles the case where Lua calls set_cursor() to reset default.
 		methods.add_function("set_cursor", |lua, cursor_name: Option<String>| {
 			let state = lua.app_data_ref::<State>().unwrap();
 
@@ -42,7 +42,7 @@ impl LuaUserData for Mouse {
 			Ok(())
 		});
 
-		// tessera.mouse.setRelativeMode(bool)
+		// tessera.mouse.set_relative_mode(bool)
 		methods.add_function("set_relative_mode", |lua, enable: bool| {
 			let state = lua.app_data_ref::<State>().unwrap();
 
