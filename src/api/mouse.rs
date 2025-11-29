@@ -38,7 +38,7 @@ impl LuaUserData for Mouse {
 				e => panic!("Unknown cursor \"{e}\""),
 			};
 
-			state.window.set_cursor_icon(icon);
+			state.window.set_cursor(icon);
 			Ok(())
 		});
 

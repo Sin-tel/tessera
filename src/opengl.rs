@@ -23,8 +23,8 @@ use glutin::{
 	surface::SurfaceAttributesBuilder,
 };
 use glutin_winit::DisplayBuilder;
-use raw_window_handle::HasRawWindowHandle;
-use winit::{event_loop::EventLoop, window::WindowBuilder};
+use raw_window_handle::HasWindowHandle;
+use winit::event_loop::EventLoop;
 
 pub struct Surface {
 	context: glutin::context::PossiblyCurrentContext,
@@ -67,7 +67,7 @@ pub fn setup_window() -> (Canvas<Renderer>, EventLoop<()>, Surface, Window) {
 	let icon = Some(load_icon());
 
 	let (canvas, window, context, surface) = {
-		let window_builder = WindowBuilder::new()
+		let window_attributes = Window::default_attributes()
 			.with_inner_size(winit::dpi::PhysicalSize::new(INIT_WIDTH, INIT_HEIGHT))
 			.with_min_inner_size(winit::dpi::PhysicalSize::new(400, 300))
 			.with_resizable(true)
@@ -77,7 +77,7 @@ pub fn setup_window() -> (Canvas<Renderer>, EventLoop<()>, Surface, Window) {
 
 		let template = ConfigTemplateBuilder::new().with_alpha_size(8);
 
-		let display_builder = DisplayBuilder::new().with_window_builder(Some(window_builder));
+		let display_builder = DisplayBuilder::new().with_window_attributes(Some(window_attributes));
 
 		let (window, gl_config) = display_builder
 			.build(&event_loop, template, |configs| {
@@ -100,7 +100,7 @@ pub fn setup_window() -> (Canvas<Renderer>, EventLoop<()>, Surface, Window) {
 
 		let window = window.unwrap();
 
-		let raw_window_handle = Some(window.raw_window_handle());
+		let raw_window_handle = window.window_handle().ok().map(|wh| wh.as_raw());
 
 		let gl_display = gl_config.display();
 
@@ -119,9 +119,8 @@ pub fn setup_window() -> (Canvas<Renderer>, EventLoop<()>, Surface, Window) {
 		});
 
 		let (width, height): (u32, u32) = window.inner_size().into();
-		let raw_window_handle = window.raw_window_handle();
 		let attrs = SurfaceAttributesBuilder::<glutin::surface::WindowSurface>::new().build(
-			raw_window_handle,
+			raw_window_handle.unwrap(),
 			NonZeroU32::new(width).unwrap(),
 			NonZeroU32::new(height).unwrap(),
 		);
