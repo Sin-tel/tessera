@@ -117,7 +117,7 @@ function Canvas:draw()
 				local y0 = self.transform:pitch(p_start)
 
 				-- velocity
-				tessera.graphics.set_color(0.6, 0.6, 0.6)
+				tessera.graphics.set_color_f(0.6, 0.6, 0.6)
 				local vo = 32 * note.vel
 				tessera.graphics.line(x0, y0, x0, y0 - vo)
 				tessera.graphics.line(x0 - 2, y0 - vo, x0 + 2, y0 - vo)
@@ -138,7 +138,7 @@ function Canvas:draw()
 					local w1 = note.verts[i][3] * w_scale
 					local w2 = note.verts[i + 1][3] * w_scale
 					if w1 > 1.0 or w2 > 1.0 then
-						tessera.graphics.set_color(0.3, 0.3, 0.3)
+						tessera.graphics.set_color_f(0.3, 0.3, 0.3)
 						tessera.graphics.polygon(
 							"fill",
 							x1,
@@ -167,7 +167,7 @@ function Canvas:draw()
 					local w1 = note.verts[n][3] * w_scale
 					local w2 = w1
 					if w1 > 1.0 or w2 > 1.0 then
-						tessera.graphics.set_color(0.3, 0.3, 0.3)
+						tessera.graphics.set_color_f(0.3, 0.3, 0.3)
 						tessera.graphics.polygon(
 							"fill",
 							x1,
@@ -211,7 +211,7 @@ function Canvas:draw()
 					if c.value and not c2.value then
 						local x1 = self.transform:time(c.time)
 						local x2 = self.transform:time(c2.time)
-						tessera.graphics.set_color(0.3, 0.3, 0.3)
+						tessera.graphics.set_color_f(0.3, 0.3, 0.3)
 						tessera.graphics.rectangle("fill", x1, y, x2 - x1, w)
 					end
 				end
