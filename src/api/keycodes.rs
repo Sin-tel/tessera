@@ -1,8 +1,6 @@
 use winit::keyboard::KeyCode;
 
-/// Converts a KeyCode to its Love2D KeyConstant string representation.
-/// Returns None for keys that don't have a Love2D equivalent.
-pub fn keycode_to_love2d_key(keycode: KeyCode) -> Option<&'static str> {
+pub fn keycode_to_str(keycode: KeyCode) -> Option<&'static str> {
 	match keycode {
 		// Character keys (lowercase a-z)
 		KeyCode::KeyA => Some("a"),

@@ -1,11 +1,9 @@
 exclude_files = { "**/lib/*.lua" }
 
-std = "max+justidaw+love"
-stds.love = {
-   globals = { "love" },
-}
-stds.justidaw = {
+std = "max+tessera"
+stds.tessera = {
    globals = {
+      "tessera",
       "util",
       -- tables / modules
       "resources",

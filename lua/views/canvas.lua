@@ -56,8 +56,8 @@ function Canvas:update()
 end
 
 function Canvas:draw()
-	love.graphics.setColor(theme.bg_nested)
-	love.graphics.rectangle("fill", 0, 0, self.w, self.h)
+	tessera.graphics.setColor(theme.bg_nested)
+	tessera.graphics.rectangle("fill", 0, 0, self.w, self.h)
 
 	-- draw grid
 	local ix, iy = self.transform:inverse(0, 0)
@@ -67,32 +67,32 @@ function Canvas:draw()
 	local oct = tuning.generators[1]
 	for i = math.floor((ey - 60) / oct), math.floor((iy - 60) / oct) do
 		if self.transform.sy < -60 then
-			love.graphics.setColor(theme.grid)
+			tessera.graphics.setColor(theme.grid)
 			for j, _ in ipairs(tuning.chromatic_table) do
 				local py = self.transform:pitch(tuning.getPitch(tuning.fromMidi(j + 12 * i + 60)))
-				love.graphics.line(0, py, self.w, py)
+				tessera.graphics.line(0, py, self.w, py)
 			end
 		elseif self.transform.sy < -20 then
-			love.graphics.setColor(theme.grid)
+			tessera.graphics.setColor(theme.grid)
 			for j, _ in ipairs(tuning.diatonic_table) do
 				local py = self.transform:pitch(tuning.getPitch(tuning.fromDiatonic(j, i)))
-				love.graphics.line(0, py, self.w, py)
+				tessera.graphics.line(0, py, self.w, py)
 			end
 		end
-		love.graphics.setColor(theme.grid_highlight)
+		tessera.graphics.setColor(theme.grid_highlight)
 		local py = self.transform:pitch(tuning.getPitch({ i }))
-		love.graphics.line(0, py, self.w, py)
+		tessera.graphics.line(0, py, self.w, py)
 	end
 
 	-- time grid
 	local grid_t_res = 4 ^ math.floor(3.5 - math.log(self.transform.sx, 4))
 	for i = math.floor(ix / grid_t_res) + 1, math.floor(ex / grid_t_res) do
-		love.graphics.setColor(theme.grid)
+		tessera.graphics.setColor(theme.grid)
 		if i % 4 == 0 then
-			love.graphics.setColor(theme.grid_highlight)
+			tessera.graphics.setColor(theme.grid_highlight)
 		end
 		local px = self.transform:time(i * grid_t_res)
-		love.graphics.line(px, 0, px, self.h)
+		tessera.graphics.line(px, 0, px, self.h)
 	end
 
 	-- if self.follow and px > self.w * 0.9 then
@@ -103,7 +103,7 @@ function Canvas:draw()
 	local w_scale = math.min(12, -self.transform.sy)
 
 	-- draw notes
-	love.graphics.setFont(resources.fonts.notes)
+	tessera.graphics.setFont(resources.fonts.notes)
 	for ch_index, ch in ipairs(project.channels) do
 		if ch.visible then
 			local c_normal = hsluv.hsluv_to_rgb({ ch.hue, 80.0, 60.0 })
@@ -117,10 +117,10 @@ function Canvas:draw()
 				local y0 = self.transform:pitch(p_start)
 
 				-- velocity
-				love.graphics.setColor(0.6, 0.6, 0.6)
+				tessera.graphics.setColor(0.6, 0.6, 0.6)
 				local vo = 32 * note.vel
-				love.graphics.line(x0, y0, x0, y0 - vo)
-				love.graphics.line(x0 - 2, y0 - vo, x0 + 2, y0 - vo)
+				tessera.graphics.line(x0, y0, x0, y0 - vo)
+				tessera.graphics.line(x0 - 2, y0 - vo, x0 + 2, y0 - vo)
 
 				-- note
 				local c = c_normal
@@ -138,11 +138,23 @@ function Canvas:draw()
 					local w1 = note.verts[i][3] * w_scale
 					local w2 = note.verts[i + 1][3] * w_scale
 					if w1 > 1.0 or w2 > 1.0 then
-						love.graphics.setColor(0.3, 0.3, 0.3)
-						love.graphics.polygon("fill", x1, y1 + w1, x2, y2 + w2, x2, y2 - w2, x1, y1 - w1, x1, y1 + w1)
+						tessera.graphics.setColor(0.3, 0.3, 0.3)
+						tessera.graphics.polygon(
+							"fill",
+							x1,
+							y1 + w1,
+							x2,
+							y2 + w2,
+							x2,
+							y2 - w2,
+							x1,
+							y1 - w1,
+							x1,
+							y1 + w1
+						)
 					end
-					love.graphics.setColor(c)
-					love.graphics.line(x1, y1, x2, y2)
+					tessera.graphics.setColor(c)
+					tessera.graphics.line(x1, y1, x2, y2)
 				end
 
 				-- draw temp lines for notes that are not yet finished
@@ -155,22 +167,34 @@ function Canvas:draw()
 					local w1 = note.verts[n][3] * w_scale
 					local w2 = w1
 					if w1 > 1.0 or w2 > 1.0 then
-						love.graphics.setColor(0.3, 0.3, 0.3)
-						love.graphics.polygon("fill", x1, y1 + w1, x2, y2 + w2, x2, y2 - w2, x1, y1 - w1, x1, y1 + w1)
+						tessera.graphics.setColor(0.3, 0.3, 0.3)
+						tessera.graphics.polygon(
+							"fill",
+							x1,
+							y1 + w1,
+							x2,
+							y2 + w2,
+							x2,
+							y2 - w2,
+							x1,
+							y1 - w1,
+							x1,
+							y1 + w1
+						)
 					end
-					love.graphics.setColor(c)
-					love.graphics.line(x1, y1, x2, y2)
+					tessera.graphics.setColor(c)
+					tessera.graphics.line(x1, y1, x2, y2)
 				end
 
 				-- note head
-				love.graphics.setColor(theme.bg_nested)
-				love.graphics.circle("fill", x0, y0, 3)
-				love.graphics.setColor(c)
-				love.graphics.circle("line", x0, y0, 3)
+				tessera.graphics.setColor(theme.bg_nested)
+				tessera.graphics.circle("fill", x0, y0, 3)
+				tessera.graphics.setColor(c)
+				tessera.graphics.circle("line", x0, y0, 3)
 
 				-- note names
 				if self.transform.sy < -20 then
-					love.graphics.setColor(c)
+					tessera.graphics.setColor(c)
 					local note_name = tuning.getName(note.pitch)
 					util.drawText(note_name, x0 + 5, y0 - 10, self.w, 0)
 				end
@@ -187,29 +211,29 @@ function Canvas:draw()
 					if c.value and not c2.value then
 						local x1 = self.transform:time(c.time)
 						local x2 = self.transform:time(c2.time)
-						love.graphics.setColor(0.3, 0.3, 0.3)
-						love.graphics.rectangle("fill", x1, y, x2 - x1, w)
+						tessera.graphics.setColor(0.3, 0.3, 0.3)
+						tessera.graphics.rectangle("fill", x1, y, x2 - x1, w)
 					end
 				end
 			end
 		end
 	end
-	love.graphics.setLineWidth(1)
+	tessera.graphics.setLineWidth(1)
 
 	-- top 'ribbon'
-	love.graphics.setColor(theme.background)
-	love.graphics.rectangle("fill", 0, -1, self.w, 16)
-	love.graphics.setColor(theme.background)
-	love.graphics.rectangle("line", 0, 0, self.w, 16)
+	tessera.graphics.setColor(theme.background)
+	tessera.graphics.rectangle("fill", 0, -1, self.w, 16)
+	tessera.graphics.setColor(theme.background)
+	tessera.graphics.rectangle("line", 0, 0, self.w, 16)
 
 	-- playhead
 	local px = self.transform:time(project.transport.time)
 	if project.transport.recording then
-		love.graphics.setColor(theme.recording)
+		tessera.graphics.setColor(theme.recording)
 	else
-		love.graphics.setColor(theme.widget)
+		tessera.graphics.setColor(theme.widget)
 	end
-	love.graphics.line(px, 0, px, self.h)
+	tessera.graphics.line(px, 0, px, self.h)
 
 	self.current_tool:draw(self)
 end

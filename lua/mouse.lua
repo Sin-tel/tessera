@@ -60,7 +60,7 @@ function mouse:released(x, y, button)
 
 		-- double click detect
 		self.double = false
-		local new_timer = love.timer.getTime()
+		local new_timer = tessera.timer.getTime()
 		if new_timer - self.timer < DOUBLE_CLICK_TIME and self.pbutton == button then
 			self.double = true
 		end
@@ -74,7 +74,7 @@ function mouse:released(x, y, button)
 end
 
 function mouse:update(x, y)
-	self.x, self.y = love.mouse.getPosition()
+	self.x, self.y = tessera.mouse.getPosition()
 
 	if self.button then
 		if math.sqrt((self.x - self.ix) ^ 2 + (self.y - self.iy) ^ 2) > DRAG_DIST then
@@ -90,15 +90,15 @@ function mouse:endFrame()
 	self.button_released = false
 	self.scroll = false
 
-	love.mouse.setRelativeMode(self.relative)
+	tessera.mouse.setRelativeMode(self.relative)
 	if self.cursor and not self.relative then
-		love.mouse.setVisible(true)
+		tessera.mouse.setVisible(true)
 		if self.pcursor ~= self.cursor then
-			love.mouse.setCursor(self.cursor)
+			tessera.mouse.setCursor(self.cursor)
 		end
 		self.pcursor = self.cursor
 	else
-		love.mouse.setVisible(false)
+		tessera.mouse.setVisible(false)
 	end
 	self.relative = false
 end
@@ -118,7 +118,7 @@ end
 function mouse:setPosition(x, y)
 	self.x = x
 	self.y = y
-	love.mouse.setPosition(x, y)
+	tessera.mouse.setPosition(x, y)
 end
 
 function mouse:mousemoved(_, _, dx, dy)

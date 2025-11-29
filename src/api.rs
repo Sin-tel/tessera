@@ -1,9 +1,10 @@
-pub mod backend;
+mod audio;
 pub mod graphics;
 pub mod keycodes;
-pub mod midi;
+mod midi;
 mod mouse;
 
+use crate::api::audio::Audio;
 use crate::api::graphics::Graphics;
 use crate::api::midi::Midi;
 use crate::api::mouse::Mouse;
@@ -22,20 +23,24 @@ pub fn create_lua() -> LuaResult<Lua> {
 	#[cfg(not(debug_assertions))]
 	let lua = Lua::new();
 
-	// love.graphics
-	let love = lua.create_table()?;
+	// tessera.graphics
+	let tessera = lua.create_table()?;
 	let graphics = Graphics {};
-	love.set("graphics", graphics)?;
+	tessera.set("graphics", graphics)?;
 
-	// love.mouse
+	// tessera.mouse
 	let mouse = Mouse {};
-	love.set("mouse", mouse)?;
+	tessera.set("mouse", mouse)?;
 
-	// love.midi
+	// tessera.midi
 	let midi = Midi {};
-	love.set("midi", midi)?;
+	tessera.set("midi", midi)?;
 
-	// love.event
+	// tessera.audio
+	let audio = Audio {};
+	tessera.set("audio", audio)?;
+
+	// tessera.event
 	let event = lua.create_table()?;
 	let quit = lua.create_function(|lua, ()| {
 		let mut state = lua.app_data_mut::<State>().unwrap();
@@ -43,9 +48,9 @@ pub fn create_lua() -> LuaResult<Lua> {
 		Ok(())
 	})?;
 	event.set("quit", quit)?;
-	love.set("event", event)?;
+	tessera.set("event", event)?;
 
-	// love.timer
+	// tessera.timer
 	let timer = lua.create_table()?;
 	let get_time = lua.create_function(|lua, ()| {
 		let state = lua.app_data_ref::<State>().unwrap();
@@ -60,9 +65,9 @@ pub fn create_lua() -> LuaResult<Lua> {
 	})?;
 	timer.set("sleep", sleep)?;
 
-	love.set("timer", timer)?;
+	tessera.set("timer", timer)?;
 
-	lua.globals().set("love", love)?;
+	lua.globals().set("tessera", tessera)?;
 
 	Ok(lua)
 }

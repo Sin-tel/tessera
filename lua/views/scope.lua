@@ -38,7 +38,7 @@ end
 
 function Scope:draw()
 	if self.index == 2 then
-		local spectrum = backend.getSpectrum()
+		local spectrum = tessera.audio.getSpectrum()
 		if spectrum then
 			local n = #spectrum
 
@@ -51,19 +51,19 @@ function Scope:draw()
 			local sx = (self.w * 0.9) / n
 			local sy = self.h * 0.5
 
-			love.graphics.setColor(theme.bg_focus)
+			tessera.graphics.setColor(theme.bg_focus)
 			for i, v in ipairs(self.lines) do
 				local y = 0.2 * (math.log(v))
-				love.graphics.line(0, ty - sy * y, self.w, ty - sy * y)
+				tessera.graphics.line(0, ty - sy * y, self.w, ty - sy * y)
 			end
 
 			for i = -9, 0 do
 				-- gridline should hit C4
 				local x = 200 * i - 79
-				love.graphics.line(tx + x * sx, 0, tx + x * sx, self.h)
+				tessera.graphics.line(tx + x * sx, 0, tx + x * sx, self.h)
 			end
 
-			love.graphics.setColor(theme.ui_text)
+			tessera.graphics.setColor(theme.ui_text)
 			for i = 1, n - 1 do
 				local x1 = 200 * math.log((i - 1) / (n - 1), 2)
 				local x2 = 200 * math.log(i / (n - 1), 2)
@@ -71,11 +71,11 @@ function Scope:draw()
 				local y1 = 0.2 * (math.log(self.average[i]))
 				local y2 = 0.2 * (math.log(self.average[i + 1]))
 
-				love.graphics.line(tx + x1 * sx, ty - sy * y1, tx + x2 * sx, ty - sy * y2)
+				tessera.graphics.line(tx + x1 * sx, ty - sy * y1, tx + x2 * sx, ty - sy * y2)
 			end
 		end
 	else
-		local scope = backend.getScope()
+		local scope = tessera.audio.getScope()
 		if scope then
 			local n = #scope
 
@@ -114,9 +114,9 @@ function Scope:draw()
 					end
 				end
 			end
-			love.graphics.setColor(theme.ui_text)
+			tessera.graphics.setColor(theme.ui_text)
 			for i = 1, n - 1 do
-				love.graphics.line(
+				tessera.graphics.line(
 					tx + i * sx - x_first,
 					ty - sy * scope[i],
 					tx + (i + 1) * sx - x_first,

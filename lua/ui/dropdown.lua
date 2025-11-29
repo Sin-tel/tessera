@@ -85,15 +85,15 @@ function Dropdown:draw(ui, label, x, y, w, h)
 	end
 
 	if color_fill then
-		love.graphics.setColor(color_fill)
-		love.graphics.rectangle("fill", x, y, w, th, Ui.CORNER_RADIUS)
+		tessera.graphics.setColor(color_fill)
+		tessera.graphics.rectangle("fill", x, y, w, th, Ui.CORNER_RADIUS)
 	end
 	if color_line then
-		love.graphics.setColor(color_line)
-		love.graphics.rectangle("line", x, y, w, th, Ui.CORNER_RADIUS)
+		tessera.graphics.setColor(color_line)
+		tessera.graphics.rectangle("line", x, y, w, th, Ui.CORNER_RADIUS)
 	end
 
-	love.graphics.setColor(theme.ui_text)
+	tessera.graphics.setColor(theme.ui_text)
 	util.drawText(label, x, y, w, h, "center", true)
 end
 
@@ -123,15 +123,15 @@ function Button:draw(ui, x, y, w, h)
 	end
 
 	if color_fill then
-		love.graphics.setColor(color_fill)
-		love.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
+		tessera.graphics.setColor(color_fill)
+		tessera.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
 	end
 	if color_line then
-		love.graphics.setColor(color_line)
-		love.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
+		tessera.graphics.setColor(color_line)
+		tessera.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
 	end
 
-	love.graphics.setColor(theme.ui_text)
+	tessera.graphics.setColor(theme.ui_text)
 	util.drawText(self.text, x, y, w, h, "center", true)
 end
 

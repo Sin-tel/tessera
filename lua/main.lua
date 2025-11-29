@@ -1,4 +1,4 @@
-release = backend.isRelease()
+release = tessera.audio.isRelease()
 
 local log = require("log")
 
@@ -22,7 +22,7 @@ mouse = require("mouse")
 command = require("command")
 util = require("util")
 
-width, height = love.graphics.getDimensions()
+width, height = tessera.graphics.getDimensions()
 
 theme = require("settings/theme")
 selection = require("selection")
@@ -63,14 +63,14 @@ local function load_project()
 end
 
 local function audioSetup()
-	if not backend.ok() then
-		backend.setup(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
+	if not tessera.audio.ok() then
+		tessera.audio.setup(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
 		midi.load()
 	else
 		log.warn("Audio already set up")
 	end
 
-	if backend.ok() then
+	if tessera.audio.ok() then
 		audio_status = "running"
 	else
 		log.error("Audio setup failed")
@@ -81,13 +81,13 @@ local function audioSetup()
 		load_project()
 		project.needs_init = false
 	else
-		-- restore backend
+		-- restore tessera.audio
 		ui_channels = {}
 		build.project()
 	end
 end
 
-function love.load()
+function tessera.load()
 	log.info("Tessera v" .. VERSION.MAJOR .. "." .. VERSION.MINOR .. "." .. VERSION.PATCH)
 	if release then
 		log.info("Running in release mode")
@@ -95,9 +95,7 @@ function love.load()
 		log.info("Running in debug mode")
 	end
 
-	-- love.keyboard.setKeyRepeat(true)
 	math.randomseed(os.time())
-	-- love.math.setRandomSeed(os.time())
 
 	setup = save.readSetup()
 
@@ -124,8 +122,8 @@ function love.load()
 	project.needs_init = true
 end
 
-function love.update(dt)
-	if not backend.ok() and (audio_status == "render" or audio_status == "running") then
+function tessera.update(dt)
+	if not tessera.audio.ok() and (audio_status == "render" or audio_status == "running") then
 		log.warn("Backend died.")
 		audio_status = "dead"
 	end
@@ -137,7 +135,7 @@ function love.update(dt)
 	end
 end
 
-function love.draw()
+function tessera.draw()
 	--- update ---
 	if audio_status == "request" then
 		audioSetup()
@@ -145,74 +143,74 @@ function love.draw()
 		audio_status = "request"
 	end
 
-	backend.updateScope()
+	tessera.audio.updateScope()
 	if audio_status ~= "render" then
 		mouse:update()
 		workspace:update()
 		mouse:endFrame()
 
-		if backend.ok() then
+		if tessera.audio.ok() then
 			sendParameters()
 		end
 	end
 
 	--- draw ---
-	love.graphics.clear()
-	love.graphics.setColor(theme.borders)
-	love.graphics.rectangle("fill", 0, 0, width, height)
+	tessera.graphics.clear()
+	tessera.graphics.setColor(theme.borders)
+	tessera.graphics.rectangle("fill", 0, 0, width, height)
 
 	workspace:draw()
 
 	if audio_status == "render" then
-		love.graphics.setColor(0, 0, 0, 0.7)
-		love.graphics.rectangle("fill", 0, 0, width, height)
+		tessera.graphics.setColor(0, 0, 0, 0.7)
+		tessera.graphics.rectangle("fill", 0, 0, width, height)
 
-		love.graphics.setColor(theme.background)
-		love.graphics.rectangle("fill", width * 0.3, height * 0.5 - 16, width * 0.4, 32)
-		love.graphics.setColor(theme.widget)
+		tessera.graphics.setColor(theme.background)
+		tessera.graphics.rectangle("fill", width * 0.3, height * 0.5 - 16, width * 0.4, 32)
+		tessera.graphics.setColor(theme.widget)
 		local p = engine.render_progress / engine.render_end
-		love.graphics.rectangle("fill", width * 0.3 + 4, height * 0.5 - 12, (width * 0.4 - 8) * p, 24)
+		tessera.graphics.rectangle("fill", width * 0.3 + 4, height * 0.5 - 12, (width * 0.4 - 8) * p, 24)
 	end
 end
 
-function love.mousepressed(x, y, button)
+function tessera.mousepressed(x, y, button)
 	if audio_status == "render" then
 		return
 	end
 	mouse:pressed(x, y, button)
 end
 
-function love.mousereleased(x, y, button)
+function tessera.mousereleased(x, y, button)
 	if audio_status == "render" then
 		return
 	end
 	mouse:released(x, y, button)
 end
 
-function love.mousemoved(x, y, dx, dy)
+function tessera.mousemoved(x, y, dx, dy)
 	if audio_status == "render" then
 		return
 	end
 	mouse:mousemoved(x, y, dx, dy)
 end
 
-function love.wheelmoved(_, y)
+function tessera.wheelmoved(_, y)
 	if audio_status == "render" then
 		return
 	end
 	mouse:wheelmoved(y)
 end
 
-function love.textinput(t)
+function tessera.textinput(t)
 	if audio_status == "render" then
 		return
 	end
-	-- should we handle love.textedited? (for IMEs)
+	-- should we handle tessera.textedited? (for IMEs)
 	-- TODO: handle utf-8
 	-- print(t)b
 end
 
-function love.keypressed(_, key, isrepeat)
+function tessera.keypressed(_, key, isrepeat)
 	if key == "lshift" or key == "rshift" then
 		modifier_keys.shift = true
 	elseif key == "lctrl" or key == "rctrl" then
@@ -224,7 +222,7 @@ function love.keypressed(_, key, isrepeat)
 
 	if audio_status == "render" then
 		if (key == "c" and modifier_keys.ctrl) or key == "escape" then
-			backend.renderCancel()
+			tessera.audio.renderCancel()
 			engine.renderEnd()
 		end
 
@@ -240,7 +238,7 @@ function love.keypressed(_, key, isrepeat)
 	end
 
 	if key == "escape" then
-		love.event.quit()
+		tessera.event.quit()
 	elseif key == "space" then
 		if engine.playing then
 			engine.stop()
@@ -248,16 +246,16 @@ function love.keypressed(_, key, isrepeat)
 			engine.start()
 		end
 	elseif modifier_keys.ctrl and key == "k" then
-		if backend.ok() then
+		if tessera.audio.ok() then
 			audio_status = "dead"
 			midi.quit()
-			backend.quit()
+			tessera.audio.quit()
 		else
 			audio_status = "request"
 		end
 	elseif modifier_keys.ctrl and key == "w" then
 		-- for testing panic recovery
-		backend.panic()
+		tessera.audio.panic()
 	elseif key == "z" and modifier_keys.ctrl then
 		command.undo()
 	elseif key == "y" and modifier_keys.ctrl then
@@ -292,7 +290,7 @@ function love.keypressed(_, key, isrepeat)
 	end
 end
 
-function love.keyreleased(_, key)
+function tessera.keyreleased(_, key)
 	if key == "lshift" or key == "rshift" then
 		modifier_keys.shift = false
 	elseif key == "lctrl" or key == "rctrl" then
@@ -310,16 +308,16 @@ function love.keyreleased(_, key)
 	end
 end
 
-function love.resize(w, h)
+function tessera.resize(w, h)
 	width = w
 	height = h
 
 	workspace:resize(width, height)
 end
 
-function love.quit()
+function tessera.quit()
 	-- save.writeSetup()
-	backend.quit()
+	tessera.audio.quit()
 end
 
 local function toNumber(x)
@@ -339,7 +337,7 @@ function sendParameters()
 			local old_value = ch.instrument.state_old[l]
 			if old_value ~= new_value then
 				local value = toNumber(new_value)
-				backend.sendParameter(k, 0, l, value)
+				tessera.audio.sendParameter(k, 0, l, value)
 				ch.instrument.state_old[l] = new_value
 			end
 		end
@@ -350,7 +348,7 @@ function sendParameters()
 				local old_value = fx.state_old[l]
 				if old_value ~= new_value then
 					local value = toNumber(new_value)
-					backend.sendParameter(k, e, l, value)
+					tessera.audio.sendParameter(k, e, l, value)
 					fx.state_old[l] = new_value
 				end
 			end

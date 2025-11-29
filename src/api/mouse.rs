@@ -12,7 +12,7 @@ impl LuaUserData for Mouse {
 			Ok(state.mouse_position)
 		});
 
-		// love.mouse.setCursor(cursor)
+		// tessera.mouse.setCursor(cursor)
 		// Option<String> handles the case where Lua calls setCursor() to reset default.
 		methods.add_function("setCursor", |lua, cursor_name: Option<String>| {
 			let state = lua.app_data_ref::<State>().unwrap();
@@ -42,7 +42,7 @@ impl LuaUserData for Mouse {
 			Ok(())
 		});
 
-		// love.mouse.setRelativeMode(bool)
+		// tessera.mouse.setRelativeMode(bool)
 		methods.add_function("setRelativeMode", |lua, enable: bool| {
 			let state = lua.app_data_ref::<State>().unwrap();
 
@@ -65,14 +65,14 @@ impl LuaUserData for Mouse {
 			}
 		});
 
-		// love.mouse.setVisible(bool)
+		// tessera.mouse.setVisible(bool)
 		methods.add_function("setVisible", |lua, visible: bool| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			state.window.set_cursor_visible(visible);
 			Ok(())
 		});
 
-		// love.mouse.setPosition(x, y)
+		// tessera.mouse.setPosition(x, y)
 		methods.add_function("setPosition", |lua, (x, y): (f32, f32)| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			state.window.set_cursor_position(LogicalPosition::new(x, y)).unwrap();

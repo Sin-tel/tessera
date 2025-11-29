@@ -37,7 +37,7 @@ function Collapse:update(ui)
 end
 
 function Collapse:draw(x, y, w, h)
-	love.graphics.setColor(theme.ui_text)
+	tessera.graphics.setColor(theme.ui_text)
 	local left_pad = h * 0.8 + Ui.DEFAULT_PAD
 
 	local tw = h * 0.15
@@ -46,12 +46,12 @@ function Collapse:draw(x, y, w, h)
 	local x2, y2 = tw, -tw
 	local x3, y3 = 0, tw
 
-	love.graphics.push()
-	love.graphics.translate(cx, cy)
-	love.graphics.rotate(self.angle)
-	love.graphics.polygon("fill", x1, y1, x2, y2, x3, y3)
-	love.graphics.polygon("line", x1, y1, x2, y2, x3, y3)
-	love.graphics.pop()
+	tessera.graphics.push()
+	tessera.graphics.translate(cx, cy)
+	tessera.graphics.rotate(self.angle)
+	tessera.graphics.polygon("fill", x1, y1, x2, y2, x3, y3)
+	tessera.graphics.polygon("line", x1, y1, x2, y2, x3, y3)
+	tessera.graphics.pop()
 	util.drawText(self.text, x + left_pad, y, w - left_pad, h)
 end
 

@@ -10,7 +10,7 @@ local function do_mute(ch_index, mute)
 	end
 	if ch.mute ~= mute then
 		ch.mute = mute
-		backend.sendMute(ch_index, mute)
+		tessera.audio.sendMute(ch_index, mute)
 	end
 end
 
@@ -117,16 +117,16 @@ function Channel:draw(ui, ch_index, x, y, w, h)
 	end
 
 	if color_fill then
-		love.graphics.setColor(color_fill)
-		love.graphics.rectangle("fill", x, y, w, h)
+		tessera.graphics.setColor(color_fill)
+		tessera.graphics.rectangle("fill", x, y, w, h)
 	end
 
 	local ch = project.channels[ch_index]
 
 	if selection.ch_index == ch_index then
-		love.graphics.setColor(hsluv.hsluv_to_rgb({ ch.hue, 50.0, 80.0 }))
+		tessera.graphics.setColor(hsluv.hsluv_to_rgb({ ch.hue, 50.0, 80.0 }))
 	else
-		love.graphics.setColor(hsluv.hsluv_to_rgb({ ch.hue, 70.0, 70.0 }))
+		tessera.graphics.setColor(hsluv.hsluv_to_rgb({ ch.hue, 70.0, 70.0 }))
 	end
 
 	util.drawText(project.channels[ch_index].name, x, y, w, h, "left", true)
@@ -156,16 +156,16 @@ function Button:draw(ui, checked, x, y, w, h)
 		color_fill = theme.bg_highlight
 	end
 	if color_fill then
-		love.graphics.setColor(color_fill)
-		love.graphics.rectangle("fill", x - 1, y - 1, w, h, Ui.CORNER_RADIUS)
+		tessera.graphics.setColor(color_fill)
+		tessera.graphics.rectangle("fill", x - 1, y - 1, w, h, Ui.CORNER_RADIUS)
 	end
 
 	if checked then
-		love.graphics.setColor(self.color_on)
-		love.graphics.draw(self.img_on, x, y)
+		tessera.graphics.setColor(self.color_on)
+		tessera.graphics.draw(self.img_on, x, y)
 	else
-		love.graphics.setColor(self.color_off)
-		love.graphics.draw(self.img_off, x, y)
+		tessera.graphics.setColor(self.color_off)
+		tessera.graphics.draw(self.img_off, x, y)
 	end
 end
 

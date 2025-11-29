@@ -56,11 +56,11 @@ function select_rect:draw(canvas)
 	local mx, my = canvas:getMouse()
 
 	if self.active then
-		love.graphics.setColor(util.color_alpha(theme.selection, 0.02))
-		love.graphics.rectangle("fill", self.ox, self.oy, mx - self.ox, my - self.oy)
-		love.graphics.setColor(theme.selection)
+		tessera.graphics.setColor(util.color_alpha(theme.selection, 0.02))
+		tessera.graphics.rectangle("fill", self.ox, self.oy, mx - self.ox, my - self.oy)
+		tessera.graphics.setColor(theme.selection)
 
-		love.graphics.rectangle("line", self.ox + 0.5, self.oy + 0.5, mx - self.ox, my - self.oy)
+		tessera.graphics.rectangle("line", self.ox + 0.5, self.oy + 0.5, mx - self.ox, my - self.oy)
 	end
 end
 

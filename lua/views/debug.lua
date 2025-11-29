@@ -29,12 +29,12 @@ end
 function Debug:draw()
 	local ix, iy = 32, 32
 
-	love.graphics.setColor(theme.ui_text)
+	tessera.graphics.setColor(theme.ui_text)
 
 	-- util.drawText(dump(project), ix, iy, self.w, 0)
 	local ls = 1.5 * resources.fonts.notes:getHeight()
 
-	love.graphics.setFont(resources.fonts.notes)
+	tessera.graphics.setFont(resources.fonts.notes)
 	util.drawText("abcdefghijklmnopqrstu", ix, iy, self.w, 0)
 	util.drawText("Ar Bs Ct Du Efea Fh Gi Bga", ix, iy + ls, self.w, 0)
 	util.drawText('jA kB Cl Dm En Fo Gp Aq D"', ix, iy + 2 * ls, self.w, 0)
