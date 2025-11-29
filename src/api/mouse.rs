@@ -73,16 +73,6 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		})?,
 	)?;
 
-	// tessera.mouse.set_visible(bool)
-	mouse.set(
-		"set_visible",
-		lua.create_function(|lua, visible: bool| {
-			let state = lua.app_data_ref::<State>().unwrap();
-			state.window.set_cursor_visible(visible);
-			Ok(())
-		})?,
-	)?;
-
 	// tessera.mouse.set_position(x, y)
 	mouse.set(
 		"set_position",
