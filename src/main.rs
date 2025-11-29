@@ -82,6 +82,7 @@ fn run(
 	let tessera_mousemoved: LuaFunction = tessera.get("mousemoved").unwrap();
 	let tessera_wheelmoved: LuaFunction = tessera.get("wheelmoved").unwrap();
 	let tessera_resize: LuaFunction = tessera.get("resize").unwrap();
+	let tessera_quit: LuaFunction = tessera.get("quit").unwrap();
 
 	let _start = std::time::Instant::now();
 	let mut last_update = std::time::Instant::now();
@@ -192,6 +193,9 @@ fn run(
 					}
 
 					app_state.window.request_redraw();
+				},
+				Event::LoopExiting => {
+					wrap_call(&tessera_quit, ());
 				},
 				_ => {},
 			}

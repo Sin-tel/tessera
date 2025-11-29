@@ -317,7 +317,6 @@ end
 
 function tessera.quit()
 	-- save.writeSetup()
-	tessera.audio.quit()
 end
 
 local function toNumber(x)
