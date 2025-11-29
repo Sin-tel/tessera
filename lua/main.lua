@@ -44,18 +44,10 @@ modifier_keys.any = false
 local load_last_save = true
 local last_save_location = "out/lastsave.sav"
 
-local _set_color = tessera.graphics.set_color
-tessera.graphics.set_color = function(r, g, b, a)
-	if type(r) == "table" then
-		_set_color(unpack(r))
-	else
-		_set_color(r, g, b, a)
-	end
+-- patch up set_color to work with tables
+tessera.graphics.set_color = function(t)
+	tessera.graphics.set_color_f(unpack(t))
 end
-
--- tessera.graphics.set_color_t = function(t)
--- 	tessera.graphics.set_color(unpack(t))
--- end
 
 local function load_project()
 	local success = false

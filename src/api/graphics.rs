@@ -140,7 +140,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	graphics.set(
-		"set_color",
+		"set_color_f",
 		lua.create_function(|lua, (r, g, b, a): (f32, f32, f32, Option<f32>)| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 
