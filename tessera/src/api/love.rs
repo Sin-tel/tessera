@@ -540,15 +540,10 @@ pub fn create_love_env() -> LuaResult<Lua> {
 
 	// love.timer
 	let timer = lua.create_table()?;
-	let get_fps = lua.create_function(|lua, ()| {
-		let state = lua.app_data_ref::<State>().unwrap();
-		Ok(state.timer.fps)
-	})?;
-	timer.set("getFPS", get_fps)?;
-
 	let get_time = lua.create_function(|lua, ()| {
 		let state = lua.app_data_ref::<State>().unwrap();
-		Ok(state.timer.get_time())
+		let time = (std::time::Instant::now() - state.start_time).as_secs_f64();
+		Ok(time)
 	})?;
 	timer.set("getTime", get_time)?;
 

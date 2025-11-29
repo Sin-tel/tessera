@@ -32,7 +32,6 @@ use femtovg::{Canvas, Color};
 use mlua::prelude::*;
 use std::fs;
 use std::path;
-use std::path::PathBuf;
 use std::time::Instant;
 use tessera_audio::context::AudioContext;
 use tessera_audio::log::{init_logging, log_error};
@@ -49,60 +48,11 @@ use api::love::create_love_env;
 use opengl::Renderer;
 use opengl::Surface;
 use opengl::WindowSurface;
-use opengl::start;
+use opengl::setup_window;
 use text::TextEngine;
-
-struct Timer {
-	start: Instant,
-	last_update: Instant,
-	last_update_fps: Instant,
-	fps: f64,
-	frames: usize,
-}
-
-impl Timer {
-	fn new() -> Self {
-		Self {
-			start: std::time::Instant::now(),
-			last_update: std::time::Instant::now(),
-			last_update_fps: std::time::Instant::now(),
-			fps: 0.,
-			frames: 0,
-		}
-	}
-
-	fn step(&mut self) -> f64 {
-		self.frames += 1;
-		let now = std::time::Instant::now();
-		let dt = (now - self.last_update).as_secs_f64();
-		self.last_update = now;
-
-		let time_since_last = (now - self.last_update_fps).as_secs_f64();
-		if time_since_last > 1.0 {
-			self.fps = (self.frames as f64 / time_since_last).round();
-			self.last_update_fps = now;
-			self.frames = 0;
-		}
-
-		dt
-	}
-
-	fn get_time(&self) -> f64 {
-		(std::time::Instant::now() - self.start).as_secs_f64()
-	}
-}
 
 const INIT_WIDTH: u32 = 1280;
 const INIT_HEIGHT: u32 = 720;
-
-#[derive(Debug, Clone)]
-pub struct Config {
-	pub lua_dir: PathBuf,
-	pub width: u32,
-	pub height: u32,
-	pub title: String,
-	pub resizeable: bool,
-}
 
 pub struct State {
 	current_color: Color,
@@ -113,7 +63,7 @@ pub struct State {
 	mouse_position: (f32, f32),
 	window_size: (u32, u32),
 	exit: bool,
-	timer: Timer,
+	start_time: Instant,
 	lua_dir: String,
 	transform_stack: Vec<femtovg::Transform2D>,
 	current_scissor: Option<(f32, f32, f32, f32)>,
@@ -134,10 +84,6 @@ impl State {
 	}
 }
 
-fn do_nothing(lua: &Lua) -> LuaFunction {
-	lua.create_function(|_, ()| Ok(())).unwrap()
-}
-
 fn wrap_call<T: IntoLuaMulti>(lua_fn: &LuaFunction, args: T) {
 	if let Err(e) = lua_fn.call::<()>(args) {
 		// For now we just panic
@@ -148,7 +94,7 @@ fn wrap_call<T: IntoLuaMulti>(lua_fn: &LuaFunction, args: T) {
 }
 
 fn main() {
-	let (canvas, event_loop, demo_surface, window) = start();
+	let (canvas, event_loop, demo_surface, window) = setup_window();
 
 	if let Err(e) = run(canvas, event_loop, demo_surface, window) {
 		println!("{e}");
@@ -175,7 +121,7 @@ fn run(
 		font: Font { name: "Inter".to_string(), size: 14. },
 		text_engine: TextEngine::new(),
 		exit: false,
-		timer: Timer::new(),
+		start_time: std::time::Instant::now(),
 		lua_dir: lua_dir.display().to_string(),
 		transform_stack: Vec::new(),
 		current_scissor: None,
@@ -196,16 +142,19 @@ fn run(
 
 	// Get main callbacks
 	let love: LuaTable = lua.globals().get("love")?;
-	let love_load: LuaFunction = love.get("load").unwrap_or(do_nothing(&lua));
-	let love_update: LuaFunction = love.get("update").unwrap_or(do_nothing(&lua));
-	let love_draw: LuaFunction = love.get("draw").unwrap_or(do_nothing(&lua));
-	let love_keypressed: LuaFunction = love.get("keypressed").unwrap_or(do_nothing(&lua));
-	let love_keyreleased: LuaFunction = love.get("keyreleased").unwrap_or(do_nothing(&lua));
-	let love_mousepressed: LuaFunction = love.get("mousepressed").unwrap_or(do_nothing(&lua));
-	let love_mousereleased: LuaFunction = love.get("mousereleased").unwrap_or(do_nothing(&lua));
-	let love_mousemoved: LuaFunction = love.get("mousemoved").unwrap_or(do_nothing(&lua));
-	let love_wheelmoved: LuaFunction = love.get("wheelmoved").unwrap_or(do_nothing(&lua));
-	let love_resize: LuaFunction = love.get("resize").unwrap_or(do_nothing(&lua));
+	let love_load: LuaFunction = love.get("load").unwrap();
+	let love_update: LuaFunction = love.get("update").unwrap();
+	let love_draw: LuaFunction = love.get("draw").unwrap();
+	let love_keypressed: LuaFunction = love.get("keypressed").unwrap();
+	let love_keyreleased: LuaFunction = love.get("keyreleased").unwrap();
+	let love_mousepressed: LuaFunction = love.get("mousepressed").unwrap();
+	let love_mousereleased: LuaFunction = love.get("mousereleased").unwrap();
+	let love_mousemoved: LuaFunction = love.get("mousemoved").unwrap();
+	let love_wheelmoved: LuaFunction = love.get("wheelmoved").unwrap();
+	let love_resize: LuaFunction = love.get("resize").unwrap();
+
+	let _start = std::time::Instant::now();
+	let mut last_update = std::time::Instant::now();
 
 	wrap_call(&love_load, ());
 
@@ -294,7 +243,10 @@ fn run(
 				Event::AboutToWait => {
 					let mut accum = 0.0;
 					loop {
-						let dt = step_timer(&lua);
+						let now = std::time::Instant::now();
+						let dt = (now - last_update).as_secs_f64();
+						last_update = now;
+
 						wrap_call(&love_update, dt);
 
 						accum += dt;
@@ -317,11 +269,6 @@ fn run(
 		.unwrap();
 
 	Ok(())
-}
-
-fn step_timer(lua: &Lua) -> f64 {
-	let mut state = lua.app_data_mut::<State>().unwrap();
-	state.timer.step()
 }
 
 fn render_start(lua: &Lua) {
