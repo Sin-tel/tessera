@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
 
-	use tessera_audio::dsp::log2_cheap;
-	use tessera_audio::dsp::pow2_cheap;
+	use tessera::dsp::log2_cheap;
+	use tessera::dsp::pow2_cheap;
 
 	#[test]
 	fn test_pow2_cheap_accuracy() {
