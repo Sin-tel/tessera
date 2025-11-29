@@ -23,7 +23,8 @@ fft-convolver = "0.2"
 hound = "3.5"
 log = "0.4"
 simplelog = "0.12"
-log-panics = { version = "2", features = ["with-backtrace"]}
+# log-panics = { version = "2", features = ["with-backtrace"]}
+log-panics = { version = "2"}
 midir = "0.10"
 num-complex = "0.4"
 

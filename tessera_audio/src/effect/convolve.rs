@@ -17,9 +17,9 @@ impl Effect for Convolve {
 		// TODO: share resources (lazy_static?). we dont need to reload the file for every instance.
 		//       can also just include_bytes and not deal with any resource loading
 
-		// let reader = hound::WavReader::open("res/samples/noise_ir.wav").unwrap();
-		// let reader = hound::WavReader::open("res/samples/noise_ir2.wav").unwrap();
-		let reader = hound::WavReader::open("res/samples/noise_ir3.wav").unwrap();
+		// let reader = hound::WavReader::open("assets/samples/noise_ir.wav").unwrap();
+		// let reader = hound::WavReader::open("assets/samples/noise_ir2.wav").unwrap();
+		let reader = hound::WavReader::open("assets/samples/noise_ir3.wav").unwrap();
 
 		let spec = reader.spec();
 

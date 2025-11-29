@@ -13,7 +13,7 @@ pub fn init_logging() {
         .set_target_level(LevelFilter::Off)
 		.build();
 
-	let filename = "../out/out.log";
+	let filename = "out/out.log";
 
 	// create empty new file
 	File::create(filename).unwrap();

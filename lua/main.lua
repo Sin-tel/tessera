@@ -42,7 +42,7 @@ modifier_keys.alt = false
 modifier_keys.any = false
 
 local load_last_save = true
-local last_save_location = "../out/lastsave.sav"
+local last_save_location = "out/lastsave.sav"
 
 -- predeclarations
 local sendParameters
