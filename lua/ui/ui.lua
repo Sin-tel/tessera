@@ -43,8 +43,8 @@ function Ui.new(view)
 	return self
 end
 
-function Ui:startFrame()
-	self.mx, self.my = self.view:getMouse()
+function Ui:start_frame()
+	self.mx, self.my = self.view:get_mouse()
 
 	self.bg_color = nil
 
@@ -65,8 +65,8 @@ function Ui:startFrame()
 	self.layout:start(0, -self.scroll)
 end
 
-function Ui:endFrame()
-	self.max_scroll = math.max(0, self.layout:totalHeight() - self.view.h)
+function Ui:end_frame()
+	self.max_scroll = math.max(0, self.layout:total_height() - self.view.h)
 end
 
 function Ui:next()
@@ -82,14 +82,14 @@ function Ui:next()
 	return self.layout:get()
 end
 
-local function drawLabel(text, align, x, y, w, h)
-	tessera.graphics.setColor(theme.ui_text)
-	util.drawText(text, x, y, w, h, align)
+local function draw_label(text, align, x, y, w, h)
+	tessera.graphics.set_color(theme.ui_text)
+	util.draw_text(text, x, y, w, h, align)
 end
 
 function Ui:label(text, align)
 	local x, y, w, h = self:next()
-	self:pushDraw(drawLabel, { text, align, x, y, w, h })
+	self:push_draw(draw_label, { text, align, x, y, w, h })
 end
 
 function Ui:hitbox(widget, x, y, w, h)
@@ -115,7 +115,7 @@ function Ui:hitbox(widget, x, y, w, h)
 	return false
 end
 
-function Ui:hitArea(x, y, w, h)
+function Ui:hit_area(x, y, w, h)
 	return self.view:focus() and self.mx >= x and self.my >= y and self.mx <= x + w and self.my <= y + h
 end
 
@@ -123,7 +123,7 @@ function Ui:background(color)
 	self.bg_color = color
 end
 
-function Ui:pushDraw(f, args)
+function Ui:push_draw(f, args)
 	table.insert(self.draw_queue, function()
 		f(unpack(args))
 	end)
@@ -131,7 +131,7 @@ end
 
 function Ui:draw()
 	for _, b in ipairs(self.bg_list) do
-		tessera.graphics.setColor(b[3])
+		tessera.graphics.set_color(b[3])
 		tessera.graphics.rectangle("fill", 0, b[1], self.view.w, b[2])
 	end
 

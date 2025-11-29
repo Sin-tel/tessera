@@ -1,4 +1,4 @@
-release = tessera.audio.isRelease()
+release = tessera.audio.is_release()
 
 local log = require("log")
 
@@ -22,7 +22,7 @@ mouse = require("mouse")
 command = require("command")
 util = require("util")
 
-width, height = tessera.graphics.getDimensions()
+width, height = tessera.graphics.get_dimensions()
 
 theme = require("settings/theme")
 selection = require("selection")
@@ -45,24 +45,24 @@ local load_last_save = true
 local last_save_location = "out/lastsave.sav"
 
 -- predeclarations
-local sendParameters
+local send_parameters
 
 local function load_project()
 	local success = false
-	if load_last_save and util.fileExists(last_save_location) then
+	if load_last_save and util.file_exists(last_save_location) then
 		success = save.read(last_save_location)
 	end
 
 	if not success then
 		log.info("Loading default project")
-		command.newChannel.new("pluck"):run()
+		command.new_channel.new("pluck"):run()
 		-- command.newChannel.new("epiano"):run()
 		-- command.newChannel.new("polysine"):run()
 		project.channels[1].armed = true
 	end
 end
 
-local function audioSetup()
+local function audio_setup()
 	if not tessera.audio.ok() then
 		tessera.audio.setup(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
 		midi.load()
@@ -97,7 +97,7 @@ function tessera.load()
 
 	math.randomseed(os.time())
 
-	setup = save.readSetup()
+	setup = save.read_setup()
 
 	mouse:load()
 
@@ -110,15 +110,15 @@ function tessera.load()
 	local top_left, middle_left = left:split(0.2, false)
 	local top_right, bottom_rigth = right:split(0.35, false)
 
-	top_left:setView(views.Scope.new(false))
-	-- top_left:setView(views.Canvas.new())
-	middle_left:setView(views.Canvas.new())
-	-- middle_left:setView(views.Debug.new())
-	top_right:setView(views.Channels.new())
-	bottom_rigth:setView(views.ChannelSettings.new())
+	top_left:set_view(views.Scope.new(false))
+	-- top_left:set_view(views.Canvas.new())
+	middle_left:set_view(views.Canvas.new())
+	-- middle_left:set_view(views.Debug.new())
+	top_right:set_view(views.Channels.new())
+	bottom_rigth:set_view(views.ChannelSettings.new())
 
 	-- load empty project
-	project = build.newProject()
+	project = build.new_project()
 	project.needs_init = true
 end
 
@@ -138,36 +138,36 @@ end
 function tessera.draw()
 	--- update ---
 	if audio_status == "request" then
-		audioSetup()
+		audio_setup()
 	elseif audio_status == "init" then
 		audio_status = "request"
 	end
 
-	tessera.audio.updateScope()
+	tessera.audio.update_scope()
 	if audio_status ~= "render" then
 		mouse:update()
 		workspace:update()
-		mouse:endFrame()
+		mouse:end_frame()
 
 		if tessera.audio.ok() then
-			sendParameters()
+			send_parameters()
 		end
 	end
 
 	--- draw ---
 	tessera.graphics.clear()
-	tessera.graphics.setColor(theme.borders)
+	tessera.graphics.set_color(theme.borders)
 	tessera.graphics.rectangle("fill", 0, 0, width, height)
 
 	workspace:draw()
 
 	if audio_status == "render" then
-		tessera.graphics.setColor(0, 0, 0, 0.7)
+		tessera.graphics.set_color(0, 0, 0, 0.7)
 		tessera.graphics.rectangle("fill", 0, 0, width, height)
 
-		tessera.graphics.setColor(theme.background)
+		tessera.graphics.set_color(theme.background)
 		tessera.graphics.rectangle("fill", width * 0.3, height * 0.5 - 16, width * 0.4, 32)
-		tessera.graphics.setColor(theme.widget)
+		tessera.graphics.set_color(theme.widget)
 		local p = engine.render_progress / engine.render_end
 		tessera.graphics.rectangle("fill", width * 0.3 + 4, height * 0.5 - 12, (width * 0.4 - 8) * p, 24)
 	end
@@ -222,8 +222,8 @@ function tessera.keypressed(_, key, isrepeat)
 
 	if audio_status == "render" then
 		if (key == "c" and modifier_keys.ctrl) or key == "escape" then
-			tessera.audio.renderCancel()
-			engine.renderEnd()
+			tessera.audio.render_cancel()
+			engine.render_end()
 		end
 
 		return
@@ -261,9 +261,9 @@ function tessera.keypressed(_, key, isrepeat)
 	elseif key == "y" and modifier_keys.ctrl then
 		command.redo()
 	elseif key == "r" and modifier_keys.ctrl then
-		engine.renderStart()
+		engine.render_start()
 	elseif key == "n" and modifier_keys.ctrl then
-		command.run_and_register(command.newProject.new())
+		command.run_and_register(command.NewProject.new())
 	elseif key == "s" and modifier_keys.ctrl then
 		save.write(last_save_location)
 	elseif key == "b" then
@@ -271,20 +271,20 @@ function tessera.keypressed(_, key, isrepeat)
 	elseif key == "down" and modifier_keys.shift then
 		if selection.ch_index and selection.device_index then
 			local new_index = selection.device_index + 1
-			command.run_and_register(command.reorderEffect.new(selection.ch_index, selection.device_index, new_index))
+			command.run_and_register(command.ReorderEffect.new(selection.ch_index, selection.device_index, new_index))
 		end
 	elseif key == "up" and modifier_keys.shift then
 		if selection.ch_index and selection.device_index then
 			local new_index = selection.device_index - 1
-			command.run_and_register(command.reorderEffect.new(selection.ch_index, selection.device_index, new_index))
+			command.run_and_register(command.ReorderEffect.new(selection.ch_index, selection.device_index, new_index))
 		end
 	elseif key == "delete" then
 		-- TODO: move these to respective views
 		if selection.ch_index then
 			if selection.device_index and selection.device_index > 0 then
-				command.run_and_register(command.removeEffect.new(selection.ch_index, selection.device_index))
+				command.run_and_register(command.RemoveEffect.new(selection.ch_index, selection.device_index))
 			else
-				command.run_and_register(command.removeChannel.new(selection.ch_index))
+				command.run_and_register(command.RemoveChannel.new(selection.ch_index))
 			end
 		end
 	end
@@ -319,7 +319,7 @@ function tessera.quit()
 	-- save.writeSetup()
 end
 
-local function toNumber(x)
+local function to_number(x)
 	if type(x) == "number" then
 		return x
 	elseif type(x) == "boolean" then
@@ -329,14 +329,14 @@ local function toNumber(x)
 	end
 end
 
-function sendParameters()
+function send_parameters()
 	for k, ch in ipairs(ui_channels) do
 		for l, par in ipairs(ch.instrument.parameters) do
 			local new_value = ch.instrument.state[l]
 			local old_value = ch.instrument.state_old[l]
 			if old_value ~= new_value then
-				local value = toNumber(new_value)
-				tessera.audio.sendParameter(k, 0, l, value)
+				local value = to_number(new_value)
+				tessera.audio.send_parameter(k, 0, l, value)
 				ch.instrument.state_old[l] = new_value
 			end
 		end
@@ -346,8 +346,8 @@ function sendParameters()
 				local new_value = fx.state[l]
 				local old_value = fx.state_old[l]
 				if old_value ~= new_value then
-					local value = toNumber(new_value)
-					tessera.audio.sendParameter(k, e, l, value)
+					local value = to_number(new_value)
+					tessera.audio.send_parameter(k, e, l, value)
 					fx.state_old[l] = new_value
 				end
 			end

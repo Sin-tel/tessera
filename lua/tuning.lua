@@ -105,7 +105,7 @@ tuning.chromatic_table = {
 }
 
 -- diatonic home row, 1 = C5
-function tuning.fromDiatonic(n, add_octave)
+function tuning.from_diatonic(n, add_octave)
 	add_octave = add_octave or 0
 	local s = #tuning.diatonic_table
 	local oct = math.floor((n - 1) / s)
@@ -120,7 +120,7 @@ function tuning.fromDiatonic(n, add_octave)
 end
 
 -- indexed by midi number, middle C = midi note number 60
-function tuning.fromMidi(n)
+function tuning.from_midi(n)
 	local s = #tuning.chromatic_table
 	local oct = math.floor(n / s)
 	n = n - oct * s
@@ -134,7 +134,7 @@ function tuning.fromMidi(n)
 end
 
 -- coordinates to pitch
-function tuning.getPitch(p)
+function tuning.get_pitch(p)
 	local f = 60
 	for i, v in ipairs(p) do
 		f = f + v * (tuning.generators[i] or 0)
@@ -143,7 +143,7 @@ function tuning.getPitch(p)
 end
 
 -- TODO: generalize this to other systems
-function tuning.getName(p)
+function tuning.get_name(p)
 	-- factor 4/7 is because base note name does not change when altering by an apotome (#) which is [-4, 7]
 	local o = p[1] + math.floor(p[2] * 4 / 7) + 4
 	local n_i = (p[2] + 1)
@@ -187,35 +187,35 @@ function tuning.getName(p)
 	return n .. acc .. tostring(o)
 end
 
-function tuning.getDiatonicIndex(p)
+function tuning.get_diatonic_index(p)
 	return 1 + 7 * p[1] + 4 * p[2]
 end
 
 -- note: the various move commands all mutate `p` in-place
 -- TODO: these should be configurable, depending on tuning
 
-function tuning.moveDiatonic(p, steps)
+function tuning.move_diatonic(p, steps)
 	local n = 1 + 7 * p[1] + 4 * p[2]
 
-	local p_o = tuning.fromDiatonic(n)
-	local p_new = tuning.fromDiatonic(n + steps)
+	local p_o = tuning.from_diatonic(n)
+	local p_new = tuning.from_diatonic(n + steps)
 
 	for i, _ in ipairs(p_new) do
 		p[i] = p[i] + p_new[i] - p_o[i]
 	end
 end
 
-function tuning.moveChromatic(p, steps)
+function tuning.move_chromatic(p, steps)
 	-- apotome
 	p[1] = p[1] - 4 * steps
 	p[2] = p[2] + 7 * steps
 end
 
-function tuning.moveOctave(p, steps)
+function tuning.move_octave(p, steps)
 	p[1] = p[1] + steps
 end
 
-function tuning.moveComma(p, steps)
+function tuning.move_comma(p, steps)
 	-- hardcoded to Pythagorean comma for now
 	-- which is equal to a diesis in meantone (and flipped in size)
 

@@ -13,7 +13,7 @@ edit.tool = select_rect
 edit.name = "edit"
 
 function edit:mousepressed(canvas)
-	local mx, my = canvas:getMouse()
+	local mx, my = canvas:get_mouse()
 
 	-- Check if click on note
 	local closest, closest_ch = canvas:find_closest_note(mx, my, NOTE_EDIT_DIST)
@@ -65,16 +65,16 @@ function edit:mousereleased(canvas)
 end
 
 function edit:update(canvas)
-	local mx, my = canvas:getMouse()
+	local mx, my = canvas:get_mouse()
 	local closest, _ = canvas:find_closest_note(mx, my, NOTE_EDIT_DIST)
 	local closest_end, _ = canvas:find_closest_end(mx, my, DRAG_END_DIST)
 
 	if modifier_keys.alt then
-		mouse:setCursor("h")
+		mouse:set_cursor("h")
 	elseif closest_end or self.tool == drag_end then
-		mouse:setCursor("v")
+		mouse:set_cursor("v")
 	elseif closest or self.tool == drag then
-		mouse:setCursor("move")
+		mouse:set_cursor("move")
 	end
 end
 

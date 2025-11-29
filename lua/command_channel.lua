@@ -1,8 +1,8 @@
 local SliderValue = require("ui/slider_value")
 local build = require("build")
-local deviceList = require("device_list")
+local device_list = require("device_list")
 
-local function minHueDist(hue)
+local function min_hue_dist(hue)
     -- calculate distance to closest hue that already exists
     local min_dist = 180.0
     for i, v in ipairs(project.channels) do
@@ -15,13 +15,13 @@ local function minHueDist(hue)
     return min_dist
 end
 
-local function findHue()
+local function find_hue()
     -- try some random hues, pick  the one that is furthest away from existing ones
     local hue = math.random() * 360.0
-    local min_dist = minHueDist(hue)
+    local min_dist = min_hue_dist(hue)
     for i = 1, 10 do
         local p_hue = math.random() * 360.0
-        local p_min_dist = minHueDist(p_hue)
+        local p_min_dist = min_hue_dist(p_hue)
         if p_min_dist > min_dist then
             hue = p_hue
             min_dist = p_min_dist
@@ -30,7 +30,7 @@ local function findHue()
     return hue
 end
 
-local function newDeviceData(name, options)
+local function new_device_data(name, options)
     local state = {}
 
     for i, v in ipairs(options.parameters) do
@@ -54,9 +54,9 @@ local function newDeviceData(name, options)
     return { name = name, state = state }
 end
 
-local function newChannelData(name, options)
+local function new_channel_data(name, options)
     return {
-        instrument = newDeviceData(name, options),
+        instrument = new_device_data(name, options),
         effects = {},
         notes = {},
         control = {},
@@ -65,32 +65,32 @@ local function newChannelData(name, options)
         armed = false,
         visible = true,
         lock = false,
-        hue = findHue(),
+        hue = find_hue(),
         name = name .. " " .. #project.channels,
     }
 end
 
-local function _removeChannel(ch_index)
+local function remove_channel(ch_index)
     if selection.ch_index == ch_index then
         selection.ch_index = nil
     end
     table.remove(project.channels, ch_index)
     table.remove(ui_channels, ch_index)
     build.refresh_channels()
-    tessera.audio.removeChannel(ch_index)
+    tessera.audio.remove_channel(ch_index)
 end
 
-local function _removeEffect(ch_index, effect_index)
+local function remove_effect(ch_index, effect_index)
     if selection.ch_index == ch_index and selection.device_index == effect_index then
         selection.device_index = nil
     end
 
     table.remove(project.channels[ch_index].effects, effect_index)
     table.remove(ui_channels[ch_index].effects, effect_index)
-    tessera.audio.removeEffect(ch_index, effect_index)
+    tessera.audio.remove_effect(ch_index, effect_index)
 end
 
-local function _reorderEffect(ch_index, old_index, new_index)
+local function reorder_effect(ch_index, old_index, new_index)
     if project.channels[ch_index] then
         local n = #project.channels[ch_index].effects
 
@@ -103,7 +103,7 @@ local function _reorderEffect(ch_index, old_index, new_index)
             temp = table.remove(ch.effects, old_index)
             table.insert(ch.effects, new_index, temp)
 
-            tessera.audio.reorderEffect(ch_index, old_index, new_index)
+            tessera.audio.reorder_effect(ch_index, old_index, new_index)
 
             if selection.ch_index == ch_index and selection.device_index == old_index then
                 selection.device_index = new_index
@@ -113,11 +113,11 @@ local function _reorderEffect(ch_index, old_index, new_index)
 end
 
 --
-local newChannel = {}
-newChannel.__index = newChannel
+local NewChannel = {}
+NewChannel.__index = NewChannel
 
-function newChannel.new(name)
-    local self = setmetatable({}, newChannel)
+function NewChannel.new(name)
+    local self = setmetatable({}, NewChannel)
 
     self.name = name
     self.ch_index = #project.channels + 1
@@ -126,11 +126,11 @@ function newChannel.new(name)
     return self
 end
 
-function newChannel:run()
-    local options = deviceList.instruments[self.name]
+function NewChannel:run()
+    local options = device_list.instruments[self.name]
     assert(options)
     -- build state
-    local channel = newChannelData(self.name, options)
+    local channel = new_channel_data(self.name, options)
     table.insert(project.channels, channel)
 
     build.channel(self.ch_index, channel)
@@ -141,38 +141,38 @@ function newChannel:run()
     return channel
 end
 
-function newChannel:reverse()
-    _removeChannel(self.ch_index)
+function NewChannel:reverse()
+    remove_channel(self.ch_index)
 end
 
 --
-local removeChannel = {}
-removeChannel.__index = removeChannel
+local RemoveChannel = {}
+RemoveChannel.__index = RemoveChannel
 
-function removeChannel.new(ch_index)
-    local self = setmetatable({}, removeChannel)
+function RemoveChannel.new(ch_index)
+    local self = setmetatable({}, RemoveChannel)
 
     self.ch_index = ch_index
     self.channel = util.clone(project.channels[ch_index])
     return self
 end
 
-function removeChannel:run()
-    _removeChannel(self.ch_index)
+function RemoveChannel:run()
+    remove_channel(self.ch_index)
 end
 
-function removeChannel:reverse()
+function RemoveChannel:reverse()
     local channel = util.clone(self.channel)
     table.insert(project.channels, self.ch_index, channel)
     build.channel(self.ch_index, channel)
 end
 
 --
-local newEffect = {}
-newEffect.__index = newEffect
+local NewEffect = {}
+NewEffect.__index = NewEffect
 
-function newEffect.new(ch_index, name)
-    local self = setmetatable({}, newEffect)
+function NewEffect.new(ch_index, name)
+    local self = setmetatable({}, NewEffect)
 
     self.ch_index = ch_index
     self.effect_index = #project.channels[ch_index].effects + 1
@@ -180,11 +180,11 @@ function newEffect.new(ch_index, name)
     return self
 end
 
-function newEffect:run()
-    local options = deviceList.effects[self.name]
+function NewEffect:run()
+    local options = device_list.effects[self.name]
     assert(options)
 
-    local effect = newDeviceData(self.name, options)
+    local effect = new_device_data(self.name, options)
     table.insert(project.channels[self.ch_index].effects, effect)
 
     build.effect(self.ch_index, self.effect_index, effect)
@@ -193,16 +193,16 @@ function newEffect:run()
     selection.device_index = self.effect_index
 end
 
-function newEffect:reverse()
-    _removeEffect(self.ch_index, self.effect_index)
+function NewEffect:reverse()
+    remove_effect(self.ch_index, self.effect_index)
 end
 
 --
-local removeEffect = {}
-removeEffect.__index = removeEffect
+local RemoveEffect = {}
+RemoveEffect.__index = RemoveEffect
 
-function removeEffect.new(ch_index, effect_index)
-    local self = setmetatable({}, removeEffect)
+function RemoveEffect.new(ch_index, effect_index)
+    local self = setmetatable({}, RemoveEffect)
 
     self.ch_index = ch_index
     self.effect_index = effect_index
@@ -210,22 +210,22 @@ function removeEffect.new(ch_index, effect_index)
     return self
 end
 
-function removeEffect:run()
-    _removeEffect(self.ch_index, self.effect_index)
+function RemoveEffect:run()
+    remove_effect(self.ch_index, self.effect_index)
 end
 
-function removeEffect:reverse()
+function RemoveEffect:reverse()
     local effect = util.clone(self.effect)
     table.insert(project.channels[self.ch_index].effects, self.effect_index, effect)
     build.effect(self.ch_index, self.effect_index, effect)
 end
 
 --
-local reorderEffect = {}
-reorderEffect.__index = reorderEffect
+local ReorderEffect = {}
+ReorderEffect.__index = ReorderEffect
 
-function reorderEffect.new(ch_index, old_index, new_index)
-    local self = setmetatable({}, reorderEffect)
+function ReorderEffect.new(ch_index, old_index, new_index)
+    local self = setmetatable({}, ReorderEffect)
 
     self.ch_index = ch_index
     self.old_index = old_index
@@ -233,12 +233,12 @@ function reorderEffect.new(ch_index, old_index, new_index)
     return self
 end
 
-function reorderEffect:run()
-    _reorderEffect(self.ch_index, self.old_index, self.new_index)
+function ReorderEffect:run()
+    reorder_effect(self.ch_index, self.old_index, self.new_index)
 end
 
-function reorderEffect:reverse()
-    _reorderEffect(self.ch_index, self.new_index, self.old_index)
+function ReorderEffect:reverse()
+    reorder_effect(self.ch_index, self.new_index, self.old_index)
 end
 
-return { newChannel, removeChannel, newEffect, removeEffect, reorderEffect }
+return { NewChannel, RemoveChannel, NewEffect, RemoveEffect, ReorderEffect }

@@ -16,7 +16,7 @@ function set_transport_time:mousedown(canvas)
 	if engine.playing then
 		self.do_start = false
 	else
-		local mx, _ = canvas:getMouse()
+		local mx, _ = canvas:get_mouse()
 
 		self.time = canvas.transform:time_inv(mx)
 

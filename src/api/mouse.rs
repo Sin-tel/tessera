@@ -7,14 +7,14 @@ pub struct Mouse;
 
 impl LuaUserData for Mouse {
 	fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
-		methods.add_function("getPosition", |lua, ()| {
+		methods.add_function("get_position", |lua, ()| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			Ok(state.mouse_position)
 		});
 
 		// tessera.mouse.setCursor(cursor)
 		// Option<String> handles the case where Lua calls setCursor() to reset default.
-		methods.add_function("setCursor", |lua, cursor_name: Option<String>| {
+		methods.add_function("set_cursor", |lua, cursor_name: Option<String>| {
 			let state = lua.app_data_ref::<State>().unwrap();
 
 			// If nil/None passed, default to Arrow. Otherwise parse the string.
@@ -43,7 +43,7 @@ impl LuaUserData for Mouse {
 		});
 
 		// tessera.mouse.setRelativeMode(bool)
-		methods.add_function("setRelativeMode", |lua, enable: bool| {
+		methods.add_function("set_relative_mode", |lua, enable: bool| {
 			let state = lua.app_data_ref::<State>().unwrap();
 
 			if enable {
@@ -66,14 +66,14 @@ impl LuaUserData for Mouse {
 		});
 
 		// tessera.mouse.setVisible(bool)
-		methods.add_function("setVisible", |lua, visible: bool| {
+		methods.add_function("set_visible", |lua, visible: bool| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			state.window.set_cursor_visible(visible);
 			Ok(())
 		});
 
 		// tessera.mouse.setPosition(x, y)
-		methods.add_function("setPosition", |lua, (x, y): (f32, f32)| {
+		methods.add_function("set_position", |lua, (x, y): (f32, f32)| {
 			let state = lua.app_data_ref::<State>().unwrap();
 			state.window.set_cursor_position(LogicalPosition::new(x, y)).unwrap();
 			Ok(())

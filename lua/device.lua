@@ -55,14 +55,14 @@ function Device:update(ui, index, w, w_label)
 			end
 			ui.layout:col(w - w_label) -- max
 			v.widget:update(ui, self.state, i)
-			ui.layout:newRow()
+			ui.layout:new_row()
 		end
 		ui:background()
 	end
 
 	-- detect hit anywhere inside of the device
 	local end_y = ui.layout.y
-	return ui:hitArea(start_x, start_y, w, end_y - start_y) and mouse.button_released
+	return ui:hit_area(start_x, start_y, w, end_y - start_y) and mouse.button_released
 end
 
 return Device

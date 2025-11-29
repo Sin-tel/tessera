@@ -18,18 +18,18 @@ function Slider:update(ui, target, key)
 	local x, y, w, h = ui:next()
 	local hit = ui:hitbox(self, x, y, w, h)
 
-	local v = self.value:toNormal(target[key])
+	local v = self.value:to_normal(target[key])
 
 	local interact = false
 
 	if mouse.button_pressed == 3 and hit then
 		if target[key] ~= self.value.default then
-			command.run_and_register(command.change.new(target, key, self.value.default))
+			command.run_and_register(command.Change.new(target, key, self.value.default))
 		end
 	end
 
 	if ui.active == self then
-		mouse:setRelative(true)
+		mouse:set_relative(true)
 		if mouse.button_pressed then
 			self.drag_start = v
 			self.prev_value = target[key]
@@ -39,7 +39,7 @@ function Slider:update(ui, target, key)
 			assert(w > 0)
 			local scale = 0.7 / w
 			local new_normalized = util.clamp(self.drag_start + scale * mouse.dx, 0, 1)
-			self.new_value = self.value:fromNormal(new_normalized)
+			self.new_value = self.value:from_normal(new_normalized)
 			target[key] = self.new_value
 			interact = true
 		end
@@ -49,14 +49,14 @@ function Slider:update(ui, target, key)
 		self.active = false
 
 		if self.new_value ~= self.prev_value then
-			local c = command.change.new(target, key, self.new_value)
+			local c = command.Change.new(target, key, self.new_value)
 			c.prev_value = self.prev_value
 			command.register(c)
 		end
 
 		if mouse.drag then
-			local ox, oy = ui.view:getOrigin()
-			mouse:setPosition(ox + x + v * w, oy + y + 0.5 * h)
+			local ox, oy = ui.view:get_origin()
+			mouse:set_position(ox + x + v * w, oy + y + 0.5 * h)
 		end
 	end
 
@@ -69,23 +69,23 @@ function Slider:update(ui, target, key)
 		color_line = theme.line_hover
 	end
 
-	local display = self.value:toString(target[key])
+	local display = self.value:to_string(target[key])
 
-	ui:pushDraw(self.draw, { self, v, display, color_fill, color_line, x, y, w, h })
+	ui:push_draw(self.draw, { self, v, display, color_fill, color_line, x, y, w, h })
 
 	return interact
 end
 
 function Slider:draw(v, display, color_fill, color_line, x, y, w, h)
 	-- background fill
-	tessera.graphics.setColor(color_fill)
+	tessera.graphics.set_color(color_fill)
 	tessera.graphics.rectangle("fill", x, y, w, h, CORNER_RADIUS)
 
 	-- pop scissor
-	local sx, sy, sw, sh = tessera.graphics.getScissor()
+	local sx, sy, sw, sh = tessera.graphics.get_scissor()
 
 	local gx, gy = x, y
-	gx, gy = tessera.graphics.transformPoint(gx, gy)
+	gx, gy = tessera.graphics.transform_point(gx, gy)
 
 	if self.value.centered then
 		local x1 = gx + w * 0.5
@@ -93,22 +93,22 @@ function Slider:draw(v, display, color_fill, color_line, x, y, w, h)
 		if x2 < x1 then
 			x1, x2 = x2, x1
 		end
-		tessera.graphics.intersectScissor(x1, gy, x2 - x1, h)
+		tessera.graphics.intersect_scissor(x1, gy, x2 - x1, h)
 	else
-		tessera.graphics.intersectScissor(gx, gy, w * v, h)
+		tessera.graphics.intersect_scissor(gx, gy, w * v, h)
 	end
 
-	tessera.graphics.setColor(theme.widget)
+	tessera.graphics.set_color(theme.widget)
 	tessera.graphics.rectangle("fill", x, y, w, h, CORNER_RADIUS)
 
 	-- push scissor
-	tessera.graphics.setScissor(sx, sy, sw, sh)
+	tessera.graphics.set_scissor(sx, sy, sw, sh)
 
-	tessera.graphics.setColor(color_line)
+	tessera.graphics.set_color(color_line)
 	tessera.graphics.rectangle("line", x, y, w, h, CORNER_RADIUS)
 
-	tessera.graphics.setColor(theme.ui_text)
-	util.drawText(display, x, y, w, h, "center")
+	tessera.graphics.set_color(theme.ui_text)
+	util.draw_text(display, x, y, w, h, "center")
 end
 
 return Slider

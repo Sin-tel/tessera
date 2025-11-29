@@ -53,7 +53,7 @@ end
 
 function scale:mousereleased(canvas)
 	if self.edit then
-		local c = command.noteUpdate.new(self.prev_state, selection.list)
+		local c = command.NoteUpdate.new(self.prev_state, selection.list)
 		command.register(c)
 		self.prev_state = nil
 	end

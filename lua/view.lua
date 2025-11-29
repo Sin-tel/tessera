@@ -22,23 +22,23 @@ end
 
 function View:draw() end
 
-function View:drawFull()
+function View:draw_full()
 	tessera.graphics.push()
 	tessera.graphics.translate(Ui.BORDER_SIZE, Ui.HEADER + Ui.BORDER_SIZE)
 
 	self:draw()
 	tessera.graphics.pop()
 
-	tessera.graphics.setColor(theme.header)
+	tessera.graphics.set_color(theme.header)
 	if self.box.focus then
-		tessera.graphics.setColor(theme.header_focus)
+		tessera.graphics.set_color(theme.header_focus)
 	end
 	tessera.graphics.rectangle("fill", 0, 0, self.box.w, Ui.HEADER)
 
-	tessera.graphics.setFont(resources.fonts.main)
-	tessera.graphics.setColor(theme.ui_text)
+	tessera.graphics.set_font(resources.fonts.main)
+	tessera.graphics.set_color(theme.ui_text)
 
-	util.drawText(self.name, 0, 0, self.box.w, Ui.HEADER, "left", true)
+	util.draw_text(self.name, 0, 0, self.box.w, Ui.HEADER, "left", true)
 end
 
 function View:mousepressed() end
@@ -47,7 +47,7 @@ function View:mousereleased() end
 function View:keypressed(key) end
 function View:update() end
 
-function View:getMouse()
+function View:get_mouse()
 	return mouse.x - (self.box.x + Ui.BORDER_SIZE), mouse.y - (self.box.y + Ui.HEADER + Ui.BORDER_SIZE)
 end
 
@@ -55,12 +55,12 @@ function View:focus()
 	return self.box.focus
 end
 
-function View:getOrigin()
+function View:get_origin()
 	-- TODO: this should be in sync with the translate() calls in both box and view
 	return self.box.x + Ui.BORDER_SIZE, self.box.y + Ui.HEADER + Ui.BORDER_SIZE
 end
 
-function View:setDimensions()
+function View:set_dimensions()
 	self.w = self.box.w - 2 * Ui.BORDER_SIZE
 	self.h = self.box.h - Ui.HEADER - 2 * Ui.BORDER_SIZE
 end

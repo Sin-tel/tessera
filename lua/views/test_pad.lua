@@ -17,17 +17,17 @@ function TestPadView.new()
 end
 
 function TestPadView:draw()
-	local mx, my = self:getMouse()
+	local mx, my = self:get_mouse()
 
 	local x1 = self.w * 0.05
 	local y1 = self.h * 0.05
 	local x2 = self.w * 0.95
 	local y2 = self.h * 0.95
 
-	tessera.graphics.setColor(theme.bg_nested)
+	tessera.graphics.set_color(theme.bg_nested)
 	tessera.graphics.rectangle("fill", x1, y1, x2 - x1, y2 - y1)
 
-	tessera.graphics.setColor(theme.line)
+	tessera.graphics.set_color(theme.line)
 	tessera.graphics.rectangle("line", x1, y1, x2 - x1, y2 - y1)
 
 	local oct = math.floor(self.w / 200)
@@ -39,7 +39,7 @@ function TestPadView:draw()
 		tessera.graphics.line(xx, y1, xx, y2)
 	end
 
-	tessera.graphics.setColor(theme.ui_text)
+	tessera.graphics.set_color(theme.ui_text)
 
 	mx = util.clamp(mx, x1, x2)
 	my = util.clamp(my, y1, y2)
@@ -65,7 +65,7 @@ function TestPadView:mousepressed()
 	if (mouse.button == 1 or mouse.button == 2) and ch_index then
 		self.id = VoiceAlloc.next_id()
 		local vel = self.v
-		local pitch = tuning.fromMidi(60)
+		local pitch = tuning.from_midi(60)
 		ui_channels[ch_index].voice_alloc:event({ name = "note_on", id = self.id, pitch = pitch, vel = vel })
 		ui_channels[ch_index].voice_alloc:event({ name = "cv", id = self.id, offset = self.f, pres = self.v })
 	end

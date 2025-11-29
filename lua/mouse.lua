@@ -45,7 +45,7 @@ function mouse:pressed(x, y, button)
 		self.drag = false
 		self.button = button
 		self.button_pressed = button
-		self.isDown = true
+		self.is_down = true
 
 		-- TODO: remove?
 		workspace:mousepressed()
@@ -56,11 +56,11 @@ function mouse:released(x, y, button)
 	self.x, self.y = x, y
 	if button == self.button then
 		self.button_released = self.button
-		self.isDown = false
+		self.is_down = false
 
 		-- double click detect
 		self.double = false
-		local new_timer = tessera.timer.getTime()
+		local new_timer = tessera.timer.get_time()
 		if new_timer - self.timer < DOUBLE_CLICK_TIME and self.pbutton == button then
 			self.double = true
 		end
@@ -74,7 +74,7 @@ function mouse:released(x, y, button)
 end
 
 function mouse:update(x, y)
-	self.x, self.y = tessera.mouse.getPosition()
+	self.x, self.y = tessera.mouse.get_position()
 
 	if self.button then
 		if math.sqrt((self.x - self.ix) ^ 2 + (self.y - self.iy) ^ 2) > DRAG_DIST then
@@ -85,29 +85,29 @@ function mouse:update(x, y)
 	self.cursor = "default"
 end
 
-function mouse:endFrame()
+function mouse:end_frame()
 	self.button_pressed = false
 	self.button_released = false
 	self.scroll = false
 
-	tessera.mouse.setRelativeMode(self.relative)
+	tessera.mouse.set_relative_mode(self.relative)
 	if self.cursor and not self.relative then
-		tessera.mouse.setVisible(true)
+		tessera.mouse.set_visible(true)
 		if self.pcursor ~= self.cursor then
-			tessera.mouse.setCursor(self.cursor)
+			tessera.mouse.set_cursor(self.cursor)
 		end
 		self.pcursor = self.cursor
 	else
-		tessera.mouse.setVisible(false)
+		tessera.mouse.set_visible(false)
 	end
 	self.relative = false
 end
 
-function mouse:setCursor(c)
+function mouse:set_cursor(c)
 	self.cursor = c
 end
 
-function mouse:setRelative(r)
+function mouse:set_relative(r)
 	-- TODO: some weird issue with sliders
 	--   Dragging them and then right clicking does not
 	--   register if the mouse hasn't moved since turning
@@ -115,10 +115,10 @@ function mouse:setRelative(r)
 	self.relative = true
 end
 
-function mouse:setPosition(x, y)
+function mouse:set_position(x, y)
 	self.x = x
 	self.y = y
-	tessera.mouse.setPosition(x, y)
+	tessera.mouse.set_position(x, y)
 end
 
 function mouse:mousemoved(_, _, dx, dy)

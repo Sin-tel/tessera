@@ -10,7 +10,7 @@ local function do_mute(ch_index, mute)
 	end
 	if ch.mute ~= mute then
 		ch.mute = mute
-		tessera.audio.sendMute(ch_index, mute)
+		tessera.audio.send_mute(ch_index, mute)
 	end
 end
 
@@ -86,17 +86,17 @@ function Channel:update(ui, ch_index)
 		ch.visible = not ch.visible
 
 		if not ch.visible then
-			selection.removeChannel(ch)
+			selection.remove_channel(ch)
 		end
 	end
 	if self.button_lock:update(ui, ch.lock, w - b, y + p, b, b) then
 		ch.lock = not ch.lock
 
 		if ch.lock then
-			selection.removeChannel(ch)
+			selection.remove_channel(ch)
 		end
 	end
-	ui:pushDraw(self.draw, { self, ui, ch_index, x, y, w, h })
+	ui:push_draw(self.draw, { self, ui, ch_index, x, y, w, h })
 
 	if ui.clicked == self then
 		selection.ch_index = ch_index
@@ -117,19 +117,19 @@ function Channel:draw(ui, ch_index, x, y, w, h)
 	end
 
 	if color_fill then
-		tessera.graphics.setColor(color_fill)
+		tessera.graphics.set_color(color_fill)
 		tessera.graphics.rectangle("fill", x, y, w, h)
 	end
 
 	local ch = project.channels[ch_index]
 
 	if selection.ch_index == ch_index then
-		tessera.graphics.setColor(hsluv.hsluv_to_rgb({ ch.hue, 50.0, 80.0 }))
+		tessera.graphics.set_color(hsluv.hsluv_to_rgb({ ch.hue, 50.0, 80.0 }))
 	else
-		tessera.graphics.setColor(hsluv.hsluv_to_rgb({ ch.hue, 70.0, 70.0 }))
+		tessera.graphics.set_color(hsluv.hsluv_to_rgb({ ch.hue, 70.0, 70.0 }))
 	end
 
-	util.drawText(project.channels[ch_index].name, x, y, w, h, "left", true)
+	util.draw_text(project.channels[ch_index].name, x, y, w, h, "left", true)
 end
 
 function Button.new(options)
@@ -145,7 +145,7 @@ end
 
 function Button:update(ui, checked, x, y, w, h)
 	ui:hitbox(self, x, y, w, h)
-	ui:pushDraw(self.draw, { self, ui, checked, x, y, w, h })
+	ui:push_draw(self.draw, { self, ui, checked, x, y, w, h })
 
 	return ui.clicked == self
 end
@@ -156,15 +156,15 @@ function Button:draw(ui, checked, x, y, w, h)
 		color_fill = theme.bg_highlight
 	end
 	if color_fill then
-		tessera.graphics.setColor(color_fill)
+		tessera.graphics.set_color(color_fill)
 		tessera.graphics.rectangle("fill", x - 1, y - 1, w, h, Ui.CORNER_RADIUS)
 	end
 
 	if checked then
-		tessera.graphics.setColor(self.color_on)
+		tessera.graphics.set_color(self.color_on)
 		tessera.graphics.draw(self.img_on, x, y)
 	else
-		tessera.graphics.setColor(self.color_off)
+		tessera.graphics.set_color(self.color_off)
 		tessera.graphics.draw(self.img_off, x, y)
 	end
 end

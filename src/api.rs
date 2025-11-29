@@ -57,7 +57,7 @@ pub fn create_lua() -> LuaResult<Lua> {
 		let time = (std::time::Instant::now() - state.start_time).as_secs_f64();
 		Ok(time)
 	})?;
-	timer.set("getTime", get_time)?;
+	timer.set("get_time", get_time)?;
 
 	let sleep = lua.create_function(|_, time: f64| {
 		std::thread::sleep(std::time::Duration::from_secs_f64(time));

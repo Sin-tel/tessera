@@ -10,7 +10,7 @@ local devices = {}
 local scan_device_timer = 0
 
 -- unique index for a midi note
-local function eventNoteIndex(event)
+local function event_note_index(event)
 	return event.channel * 256 + event.note
 end
 
@@ -28,7 +28,7 @@ function midi.load()
 	end
 end
 
-function midi.scanPorts(input_ports)
+function midi.scan_ports(input_ports)
 	-- TODO: 'default' should just open first port
 
 	local available_ports = tessera.midi.ports()
@@ -44,7 +44,7 @@ function midi.scanPorts(input_ports)
 		if ok then
 			devices_open[v.config_name] = true
 		else
-			midi.closeDevice(v.index)
+			midi.close_device(v.index)
 		end
 	end
 
@@ -52,21 +52,21 @@ function midi.scanPorts(input_ports)
 		local config_name = v.name
 
 		if not devices_open[config_name] then
-			local name, index = tessera.midi.openConnection(config_name)
+			local name, index = tessera.midi.open_connection(config_name)
 			if name then
 				assert(not devices[index])
-				devices[index] = midi.newDevice(v, name, index, config_name)
+				devices[index] = midi.new_device(v, name, index, config_name)
 			end
 		end
 	end
 end
 
-function midi.closeDevice(index)
-	tessera.midi.closeConnection(index)
+function midi.close_device(index)
+	tessera.midi.close_connection(index)
 	table.remove(devices, index)
 end
 
-function midi.newDevice(settings, name, index, config_name)
+function midi.new_device(settings, name, index, config_name)
 	local new = {}
 	new.index = index
 	new.mpe = settings.mpe
@@ -86,11 +86,11 @@ function midi.update(dt)
 	if scan_device_timer < 0 then
 		-- scan every .5 seconds
 		scan_device_timer = 0.5
-		midi.scanPorts(setup.midi.inputs)
+		midi.scan_ports(setup.midi.inputs)
 	end
 
 	for _, device in ipairs(devices) do
-		midi.updateDevice(device)
+		midi.update_device(device)
 	end
 end
 
@@ -100,7 +100,7 @@ function midi.flush()
 	end
 end
 
-function midi.updateDevice(device)
+function midi.update_device(device)
 	local events = tessera.midi.poll(device.index)
 	if not events then
 		return
@@ -124,15 +124,15 @@ end
 
 function midi.event(device, sink, event)
 	if event.name == "note_on" then
-		local n_index = eventNoteIndex(event)
+		local n_index = event_note_index(event)
 		local id = VoiceAlloc.next_id()
 		device.notes[n_index] = id
 
-		local pitch = tuning.fromMidi(event.note)
+		local pitch = tuning.from_midi(event.note)
 
 		sink:event({ name = "note_on", id = id, pitch = pitch, vel = event.vel })
 	elseif event.name == "note_off" then
-		local n_index = eventNoteIndex(event)
+		local n_index = event_note_index(event)
 		local id = device.notes[n_index]
 		if not id then
 			log.warn("Unhandled note off event.")

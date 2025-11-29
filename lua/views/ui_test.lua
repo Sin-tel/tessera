@@ -27,23 +27,23 @@ function UiTest.new()
 end
 
 function UiTest:update()
-	self.ui:startFrame()
+	self.ui:start_frame()
 
 	self.ui:label("left aligned label")
 
 	self.ui.layout:col(self.w * 0.5)
 	self.ui.layout:col(self.w * 0.3)
 	self.dropdown:update(self.ui, self.state, "combo")
-	self.ui.layout:newRow()
+	self.ui.layout:new_row()
 
 	self.ui.layout:col(self.w * 0.5)
 	self.ui:label("center aligned", "center")
 
 	self.ui.layout:col(self.w * 0.3)
 	if self.button:update(self.ui) then
-		command.run_and_register(command.change.new(self.state, "toggle", not self.state.toggle))
+		command.run_and_register(command.Change.new(self.state, "toggle", not self.state.toggle))
 	end
-	self.ui.layout:newRow()
+	self.ui.layout:new_row()
 
 	local w_label = self.w * 0.3
 	self.ui.layout:col(w_label)
@@ -64,7 +64,7 @@ function UiTest:update()
 	-- 	self.ui:label("pew!", "center")
 	-- end
 
-	self.ui:endFrame()
+	self.ui:end_frame()
 end
 
 function UiTest:draw()

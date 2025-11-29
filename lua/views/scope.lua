@@ -30,15 +30,15 @@ function Scope.new(spectrum)
 end
 
 function Scope:update()
-	self.ui:startFrame()
+	self.ui:start_frame()
 	self.ui.layout:col(200)
 	self.selector:update(self.ui, self, "index")
-	self.ui:endFrame()
+	self.ui:end_frame()
 end
 
 function Scope:draw()
 	if self.index == 2 then
-		local spectrum = tessera.audio.getSpectrum()
+		local spectrum = tessera.audio.get_spectrum()
 		if spectrum then
 			local n = #spectrum
 
@@ -51,7 +51,7 @@ function Scope:draw()
 			local sx = (self.w * 0.9) / n
 			local sy = self.h * 0.5
 
-			tessera.graphics.setColor(theme.bg_focus)
+			tessera.graphics.set_color(theme.bg_focus)
 			for i, v in ipairs(self.lines) do
 				local y = 0.2 * (math.log(v))
 				tessera.graphics.line(0, ty - sy * y, self.w, ty - sy * y)
@@ -63,7 +63,7 @@ function Scope:draw()
 				tessera.graphics.line(tx + x * sx, 0, tx + x * sx, self.h)
 			end
 
-			tessera.graphics.setColor(theme.ui_text)
+			tessera.graphics.set_color(theme.ui_text)
 			for i = 1, n - 1 do
 				local x1 = 200 * math.log((i - 1) / (n - 1), 2)
 				local x2 = 200 * math.log(i / (n - 1), 2)
@@ -75,7 +75,7 @@ function Scope:draw()
 			end
 		end
 	else
-		local scope = tessera.audio.getScope()
+		local scope = tessera.audio.get_scope()
 		if scope then
 			local n = #scope
 
@@ -114,7 +114,7 @@ function Scope:draw()
 					end
 				end
 			end
-			tessera.graphics.setColor(theme.ui_text)
+			tessera.graphics.set_color(theme.ui_text)
 			for i = 1, n - 1 do
 				tessera.graphics.line(
 					tx + i * sx - x_first,

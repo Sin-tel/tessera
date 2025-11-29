@@ -2,7 +2,7 @@ local build = require("build")
 
 local command = {}
 
-command.maxSize = 50
+command.max_size = 50
 command.stack = {}
 command.index = 0
 
@@ -22,7 +22,7 @@ function command.register(c)
     command.stack[command.index] = c
 
     -- remove events exceeding max size
-    if #command.stack > command.maxSize then
+    if #command.stack > command.max_size then
         table.remove(command.stack, 1)
         command.index = command.index - 1
     end
@@ -49,11 +49,11 @@ function command.redo()
 end
 
 -- a change to some variable
-local change = {}
-change.__index = change
+local Change = {}
+Change.__index = Change
 
-function change.new(target, key, value)
-    local self = setmetatable({}, change)
+function Change.new(target, key, value)
+    local self = setmetatable({}, Change)
 
     assert(type(target) == "table")
     self.target = target
@@ -64,36 +64,36 @@ function change.new(target, key, value)
     return self
 end
 
-function change:run()
+function Change:run()
     self.target[self.key] = self.value
 end
 
-function change:reverse()
+function Change:reverse()
     self.target[self.key] = self.prev_value
 end
 
-command.change = change
+command.Change = Change
 
 --
-local newProject = {}
-newProject.__index = newProject
+local NewProject = {}
+NewProject.__index = NewProject
 
-function newProject.new()
-    local self = setmetatable({}, newProject)
+function NewProject.new()
+    local self = setmetatable({}, NewProject)
 
     self.prev = util.clone(project)
     return self
 end
 
-function newProject:run()
+function NewProject:run()
     -- cleanup current project
     if project.channels then
         for i = #project.channels, 1, -1 do
-            tessera.audio.removeChannel(i)
+            tessera.audio.remove_channel(i)
         end
     end
 
-    project = build.newProject()
+    project = build.new_project()
 
     ui_channels = {}
     -- clear selection
@@ -101,19 +101,19 @@ function newProject:run()
     selection.device_index = nil
 end
 
-function newProject:reverse()
+function NewProject:reverse()
     project = util.clone(self.prev)
     build.project()
 end
 
-command.newProject = newProject
+command.NewProject = NewProject
 
 --
-local noteUpdate = {}
-noteUpdate.__index = noteUpdate
+local NoteUpdate = {}
+NoteUpdate.__index = NoteUpdate
 
-function noteUpdate.new(prev_state, new_state)
-    local self = setmetatable({}, noteUpdate)
+function NoteUpdate.new(prev_state, new_state)
+    local self = setmetatable({}, NoteUpdate)
 
     assert(prev_state)
     assert(new_state)
@@ -130,7 +130,7 @@ function noteUpdate.new(prev_state, new_state)
     return self
 end
 
-function noteUpdate:run()
+function NoteUpdate:run()
     for i, v in ipairs(self.notes) do
         for key, value in pairs(v) do
             self.notes[i][key] = self.new_state[i][key]
@@ -138,7 +138,7 @@ function noteUpdate:run()
     end
 end
 
-function noteUpdate:reverse()
+function NoteUpdate:reverse()
     for i, v in ipairs(self.notes) do
         for key, value in pairs(v) do
             self.notes[i][key] = self.prev_state[i][key]
@@ -146,14 +146,14 @@ function noteUpdate:reverse()
     end
 end
 
-command.noteUpdate = noteUpdate
+command.NoteUpdate = NoteUpdate
 
 --
-local noteDelete = {}
-noteDelete.__index = noteDelete
+local NoteDelete = {}
+NoteDelete.__index = NoteDelete
 
-function noteDelete.new(notes)
-    local self = setmetatable({}, noteDelete)
+function NoteDelete.new(notes)
+    local self = setmetatable({}, NoteDelete)
 
     assert(notes)
     self.notes = notes
@@ -167,7 +167,7 @@ function noteDelete.new(notes)
     return self
 end
 
-function noteDelete:run()
+function NoteDelete:run()
     -- remove selected notes
     for _, channel in ipairs(project.channels) do
         for i = #channel.notes, 1, -1 do
@@ -178,7 +178,7 @@ function noteDelete:run()
     end
 end
 
-function noteDelete:reverse()
+function NoteDelete:reverse()
     for ch_index in ipairs(self.notes) do
         for _, note in ipairs(self.notes[ch_index]) do
             table.insert(project.channels[ch_index].notes, note)
@@ -186,14 +186,14 @@ function noteDelete:reverse()
     end
 end
 
-command.noteDelete = noteDelete
+command.NoteDelete = NoteDelete
 
 --
-local noteAdd = {}
-noteAdd.__index = noteAdd
+local NoteAdd = {}
+NoteAdd.__index = NoteAdd
 
-function noteAdd.new(notes)
-    local self = setmetatable({}, noteAdd)
+function NoteAdd.new(notes)
+    local self = setmetatable({}, NoteAdd)
 
     self.notes = notes
     self.mask = {}
@@ -206,7 +206,7 @@ function noteAdd.new(notes)
     return self
 end
 
-function noteAdd:run()
+function NoteAdd:run()
     for ch_index in ipairs(self.notes) do
         for _, note in ipairs(self.notes[ch_index]) do
             table.insert(project.channels[ch_index].notes, note)
@@ -214,7 +214,7 @@ function noteAdd:run()
     end
 end
 
-function noteAdd:reverse()
+function NoteAdd:reverse()
     for _, channel in ipairs(project.channels) do
         for i = #channel.notes, 1, -1 do
             if self.mask[channel.notes[i]] then
@@ -224,9 +224,9 @@ function noteAdd:reverse()
     end
 end
 
-command.noteAdd = noteAdd
+command.NoteAdd = NoteAdd
 
-command.newChannel, command.removeChannel, command.newEffect, command.removeEffect, command.reorderEffect =
+command.NewChannel, command.RemoveChannel, command.NewEffect, command.RemoveEffect, command.ReorderEffect =
     unpack(require("command_channel"))
 
 return command
