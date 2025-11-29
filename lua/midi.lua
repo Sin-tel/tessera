@@ -17,7 +17,7 @@ end
 function midi.load()
 	devices = {}
 
-	local ports = backend.midiPorts()
+	local ports = love.midi.ports()
 	if #ports == 0 then
 		log.info("No midi input ports available.")
 	else
@@ -31,7 +31,7 @@ end
 function midi.scanPorts(input_ports)
 	-- TODO: 'default' should just open first port
 
-	local available_ports = backend.midiPorts()
+	local available_ports = love.midi.ports()
 	local devices_open = {}
 
 	for _, v in ipairs(devices) do
@@ -52,7 +52,7 @@ function midi.scanPorts(input_ports)
 		local config_name = v.name
 
 		if not devices_open[config_name] then
-			local name, index = backend.midiOpenConnection(config_name)
+			local name, index = love.midi.openConnection(config_name)
 			if name then
 				assert(not devices[index])
 				devices[index] = midi.newDevice(v, name, index, config_name)
@@ -62,7 +62,7 @@ function midi.scanPorts(input_ports)
 end
 
 function midi.closeDevice(index)
-	backend.midiCloseConnection(index)
+	love.midi.closeConnection(index)
 	table.remove(devices, index)
 end
 
@@ -96,12 +96,12 @@ end
 
 function midi.flush()
 	for _, device in ipairs(devices) do
-		backend.midiPoll(device.index)
+		love.midi.poll(device.index)
 	end
 end
 
 function midi.updateDevice(device)
-	local events = backend.midiPoll(device.index)
+	local events = love.midi.poll(device.index)
 	if not events then
 		return
 	end

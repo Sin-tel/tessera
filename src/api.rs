@@ -1,11 +1,13 @@
 pub mod backend;
 pub mod graphics;
 pub mod keycodes;
+pub mod midi;
 mod mouse;
 
-use crate::State;
 use crate::api::graphics::Graphics;
+use crate::api::midi::Midi;
 use crate::api::mouse::Mouse;
+use crate::app::State;
 use mlua::prelude::*;
 
 pub fn create_lua() -> LuaResult<Lua> {
@@ -28,6 +30,10 @@ pub fn create_lua() -> LuaResult<Lua> {
 	// love.mouse
 	let mouse = Mouse {};
 	love.set("mouse", mouse)?;
+
+	// love.midi
+	let midi = Midi {};
+	love.set("midi", midi)?;
 
 	// love.event
 	let event = lua.create_table()?;

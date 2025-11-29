@@ -1,5 +1,5 @@
-use crate::INIT_HEIGHT;
-use crate::INIT_WIDTH;
+use crate::app::INIT_HEIGHT;
+use crate::app::INIT_WIDTH;
 use winit::window::Icon;
 use winit::window::Window;
 
