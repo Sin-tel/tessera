@@ -63,7 +63,7 @@ function engine.render_start()
 	midi.flush()
 
 	if not tessera.audio.ok() then
-		log.error("Can't render, tessera.audio offline.")
+		log.error("Can't render, audio offline.")
 		return
 	end
 
@@ -159,6 +159,52 @@ function engine.end_time()
 		end
 	end
 	return t_end
+end
+
+local function to_number(x)
+	if type(x) == "number" then
+		return x
+	elseif type(x) == "boolean" then
+		return x and 1 or 0
+	else
+		error("unsupported type: " .. type(x))
+	end
+end
+
+function engine.send_parameters()
+	for k, ch in ipairs(ui_channels) do
+		for l, par in ipairs(ch.instrument.parameters) do
+			local new_value = ch.instrument.state[l]
+			local old_value = ch.instrument.state_old[l]
+			if old_value ~= new_value then
+				local value = to_number(new_value)
+				tessera.audio.send_parameter(k, 0, l, value)
+				ch.instrument.state_old[l] = new_value
+			end
+		end
+
+		for e, fx in ipairs(ch.effects) do
+			for l, par in ipairs(fx.parameters) do
+				local new_value = fx.state[l]
+				local old_value = fx.state_old[l]
+				if old_value ~= new_value then
+					local value = to_number(new_value)
+					tessera.audio.send_parameter(k, e, l, value)
+					fx.state_old[l] = new_value
+				end
+			end
+		end
+	end
+end
+
+function engine.reset_parameters()
+	for k, ch in ipairs(ui_channels) do
+		ch.instrument:reset()
+
+		for e, fx in ipairs(ch.effects) do
+			fx:reset()
+		end
+	end
 end
 
 return engine

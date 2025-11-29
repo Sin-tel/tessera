@@ -44,9 +44,6 @@ modifier_keys.any = false
 local load_last_save = true
 local last_save_location = "out/lastsave.sav"
 
--- predeclarations
-local send_parameters
-
 local function load_project()
 	local success = false
 	if load_last_save and util.file_exists(last_save_location) then
@@ -66,6 +63,7 @@ local function audio_setup()
 	if not tessera.audio.ok() then
 		tessera.audio.setup(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
 		midi.load()
+		engine.reset_parameters()
 	else
 		log.warn("Audio already set up")
 	end
@@ -74,7 +72,6 @@ local function audio_setup()
 		audio_status = "running"
 	else
 		log.error("Audio setup failed")
-		audio_status = "dead"
 	end
 
 	if project.needs_init then
@@ -123,10 +120,6 @@ function tessera.load()
 end
 
 function tessera.update(dt)
-	if not tessera.audio.ok() and (audio_status == "render" or audio_status == "running") then
-		log.warn("Backend died.")
-		audio_status = "dead"
-	end
 	if audio_status == "render" then
 		engine.render()
 	elseif audio_status == "running" then
@@ -149,9 +142,7 @@ function tessera.draw()
 		workspace:update()
 		mouse:end_frame()
 
-		if tessera.audio.ok() then
-			send_parameters()
-		end
+		engine.send_parameters()
 	end
 
 	--- draw ---
@@ -247,7 +238,6 @@ function tessera.keypressed(_, key, isrepeat)
 		end
 	elseif modifier_keys.ctrl and key == "k" then
 		if tessera.audio.ok() then
-			audio_status = "dead"
 			midi.quit()
 			tessera.audio.quit()
 		else
@@ -317,40 +307,4 @@ end
 
 function tessera.quit()
 	-- save.writeSetup()
-end
-
-local function to_number(x)
-	if type(x) == "number" then
-		return x
-	elseif type(x) == "boolean" then
-		return x and 1 or 0
-	else
-		error("unsupported type: " .. type(x))
-	end
-end
-
-function send_parameters()
-	for k, ch in ipairs(ui_channels) do
-		for l, par in ipairs(ch.instrument.parameters) do
-			local new_value = ch.instrument.state[l]
-			local old_value = ch.instrument.state_old[l]
-			if old_value ~= new_value then
-				local value = to_number(new_value)
-				tessera.audio.send_parameter(k, 0, l, value)
-				ch.instrument.state_old[l] = new_value
-			end
-		end
-
-		for e, fx in ipairs(ch.effects) do
-			for l, par in ipairs(fx.parameters) do
-				local new_value = fx.state[l]
-				local old_value = fx.state_old[l]
-				if old_value ~= new_value then
-					local value = to_number(new_value)
-					tessera.audio.send_parameter(k, e, l, value)
-					fx.state_old[l] = new_value
-				end
-			end
-		end
-	end
 end

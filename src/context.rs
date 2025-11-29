@@ -4,9 +4,10 @@ use crate::render::Render;
 use crate::scope::Scope;
 use mlua::Value;
 use mlua::prelude::*;
+use parking_lot::Mutex;
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 pub struct AudioContext {
 	pub stream: cpal::Stream,
