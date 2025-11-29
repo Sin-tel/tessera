@@ -37,6 +37,8 @@ use std::fs;
 use std::path;
 use std::path::PathBuf;
 use std::time::Instant;
+use tessera_audio::context::AudioContext;
+use tessera_audio::log::{init_logging, log_error};
 use winit::keyboard::KeyCode;
 use winit::{
 	event::{DeviceEvent, ElementState, Event, MouseButton, MouseScrollDelta, WindowEvent},
@@ -44,7 +46,7 @@ use winit::{
 	window::Window,
 };
 
-use backend::register_backend;
+use backend::Backend;
 use keycodes::keycode_to_love2d_key;
 use love_api::Font;
 use love_api::create_love_env;
@@ -121,8 +123,21 @@ pub struct State {
 	lua_dir: String,
 	transform_stack: Vec<femtovg::Transform2D>,
 	current_scissor: Option<(f32, f32, f32, f32)>,
+	audio: Option<AudioContext>,
 	canvas: Canvas<Renderer>,
 	window: Window,
+}
+
+impl State {
+	pub fn audio_mut(&mut self) -> Option<&mut AudioContext> {
+		if let Some(ud) = &self.audio
+			&& ud.m_render.is_poisoned()
+		{
+			log_error!("Lock was poisoned. Killing backend.");
+			self.audio = None;
+		}
+		self.audio.as_mut()
+	}
 }
 
 fn do_nothing(lua: &Lua) -> LuaFunction {
@@ -133,6 +148,8 @@ fn wrap_call<T: IntoLuaMulti>(lua_fn: &LuaFunction, args: T) {
 	if let Err(e) = lua_fn.call::<()>(args) {
 		// For now we just panic
 		panic!("{}", e);
+		// log_error!("{e}");
+		// println!("{e}");
 	}
 }
 
@@ -155,7 +172,6 @@ fn run(
 	let lua_dir = path::absolute("./lua").unwrap();
 
 	let mut lua = create_love_env()?;
-
 	lua.set_app_data(State {
 		current_color: Color::white(),
 		background_color: Color::black(),
@@ -171,6 +187,7 @@ fn run(
 		lua_dir: lua_dir.display().to_string(),
 		transform_stack: Vec::new(),
 		current_scissor: None,
+		audio: None,
 		canvas,
 		window,
 	});
@@ -178,7 +195,9 @@ fn run(
 	// set working directory so 'require' works
 	std::env::set_current_dir(&lua_dir).unwrap();
 
-	register_backend(&mut lua)?;
+	init_logging();
+
+	Backend::register(&mut lua)?;
 
 	let lua_main = fs::read_to_string(lua_dir.join("main.lua")).unwrap();
 	lua.load(lua_main).exec()?;

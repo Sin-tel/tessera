@@ -316,7 +316,7 @@ function workspace:draw()
 	love.graphics.setColor(theme.line)
 	love.graphics.rectangle("line", x1, y1, w1, h1, 2)
 	love.graphics.setColor(theme.ui_text)
-	if backend:ok() then
+	if backend.ok() then
 		util.drawText(string.format("%d %%", 100 * self.cpu_load), x1, 0, w1, ui.RIBBON_HEIGHT, "center")
 	else
 		util.drawText("offline", x1, 0, w1, ui.RIBBON_HEIGHT, "center")

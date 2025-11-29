@@ -1,60 +1,58 @@
+use crate::State;
 use mlua::prelude::*;
 use mlua::{UserData, UserDataMethods};
 use no_denormals::no_denormals;
 use ringbuf::traits::*;
 use std::error::Error;
 use tessera_audio::audio;
-use tessera_audio::context::{AudioContext, AudioMessage};
-use tessera_audio::log::{init_logging, log_error, log_info};
+use tessera_audio::context::AudioMessage;
+use tessera_audio::log::{log_error, log_info};
 use tessera_audio::midi;
 
-struct Backend(Option<AudioContext>);
+pub struct Backend;
 
-pub fn register_backend(lua: &mut Lua) -> LuaResult<()> {
-	init_logging();
-	log_info!("Backend initialized");
-	lua.globals().set("backend", Backend(None))?;
-
-	Ok(())
+impl Backend {
+	pub fn register(lua: &mut Lua) -> LuaResult<()> {
+		log_info!("Backend initialized");
+		lua.globals().set("backend", Backend {})?;
+		Ok(())
+	}
 }
 
 impl UserData for Backend {
 	fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
-		methods.add_method_mut(
+		methods.add_function(
 			"setup",
-			|_, data, (host_name, device_name, buffer_size): (String, String, Option<u32>)| {
+			|lua, (host_name, device_name, buffer_size): (String, String, Option<u32>)| {
+				let state = &mut *lua.app_data_mut::<State>().unwrap();
 				match audio::run(&host_name, &device_name, buffer_size) {
-					Ok(ud) => {
-						*data = Backend(Some(ud));
+					Ok(ctx) => {
+						state.audio = Some(ctx);
 						Ok(())
 					},
 					Err(e) => {
 						log_error!("{e}");
-						*data = Backend(None);
+						state.audio = None;
 						Ok(())
 					},
 				}
 			},
 		);
 
-		methods.add_method_mut("quit", |_, data, ()| {
-			*data = Backend(None);
+		methods.add_function("quit", |lua, ()| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			state.audio = None;
 			Ok(())
 		});
 
-		methods.add_method_mut("panic", |_, data, ()| {
-			if let Backend(Some(ud)) = data {
-				ud.send_message(AudioMessage::Panic);
+		methods.add_function("panic", |lua, ()| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				ctx.send_message(AudioMessage::Panic);
 			}
 			Ok(())
 		});
 
-		methods.add_method_mut("setWorkingDirectory", |_, _, path: String| {
-			std::env::set_current_dir(std::path::Path::new(&path))?;
-			Ok(())
-		});
-
-		methods.add_method_mut("isRelease", |_, _, ()| {
+		methods.add_function("isRelease", |_, ()| {
 			#[cfg(debug_assertions)]
 			return Ok(false);
 
@@ -62,68 +60,72 @@ impl UserData for Backend {
 			return Ok(true);
 		});
 
-		methods.add_method_mut("ok", |_, data, ()| {
-			check_lock_poison(data);
-			let Backend(data) = data;
-			Ok(data.is_some())
+		methods.add_function("ok", |lua, ()| {
+			Ok(lua.app_data_mut::<State>().unwrap().audio_mut().is_some())
 		});
 
-		methods.add_method("getSampleRate", |_, Backend(data), ()| {
-			if let Some(ud) = data {
-				return Ok(Some(ud.sample_rate));
+		methods.add_function("getSampleRate", |lua, ()| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				return Ok(Some(ctx.sample_rate));
 			}
 			Ok(None)
 		});
 
-		methods.add_method_mut(
-			"pitch",
-			|_, data, (channel_index, pitch, voice): (usize, f32, usize)| {
-				if let Backend(Some(ud)) = data {
-					ud.send_message(AudioMessage::Pitch(channel_index - 1, pitch, voice - 1));
-				}
-				Ok(())
-			},
-		);
+		methods.add_function("pitch", |lua, (channel_index, pitch, voice): (usize, f32, usize)| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				ctx.send_message(AudioMessage::Pitch(channel_index - 1, pitch, voice - 1));
+			}
+			Ok(())
+		});
 
-		methods.add_method_mut(
+		methods.add_function(
 			"pressure",
-			|_, data, (channel_index, pressure, voice): (usize, f32, usize)| {
-				if let Backend(Some(ud)) = data {
-					ud.send_message(AudioMessage::Pressure(channel_index - 1, pressure, voice - 1));
+			|lua, (channel_index, pressure, voice): (usize, f32, usize)| {
+				if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+					ctx.send_message(AudioMessage::Pressure(
+						channel_index - 1,
+						pressure,
+						voice - 1,
+					));
 				}
 				Ok(())
 			},
 		);
 
-		methods.add_method_mut(
+		methods.add_function(
 			"noteOn",
-			|_, data, (channel_index, pitch, vel, voice): (usize, f32, f32, usize)| {
-				if let Backend(Some(ud)) = data {
-					ud.send_message(AudioMessage::NoteOn(channel_index - 1, pitch, vel, voice - 1));
+			|lua, (channel_index, pitch, vel, voice): (usize, f32, f32, usize)| {
+				if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+					ctx.send_message(AudioMessage::NoteOn(
+						channel_index - 1,
+						pitch,
+						vel,
+						voice - 1,
+					));
 				}
 				Ok(())
 			},
 		);
 
-		methods.add_method_mut("noteOff", |_, data, (channel_index, voice): (usize, usize)| {
-			if let Backend(Some(ud)) = data {
-				ud.send_message(AudioMessage::NoteOff(channel_index - 1, voice - 1));
+		methods.add_function("noteOff", |lua, (channel_index, voice): (usize, usize)| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				ctx.send_message(AudioMessage::NoteOff(channel_index - 1, voice - 1));
 			}
 			Ok(())
 		});
 
-		methods.add_method_mut("sendMute", |_, data, (channel_index, mute): (usize, bool)| {
-			if let Backend(Some(ud)) = data {
-				ud.send_message(AudioMessage::Mute(channel_index - 1, mute));
+		methods.add_function("sendMute", |lua, (channel_index, mute): (usize, bool)| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				ctx.send_message(AudioMessage::Mute(channel_index - 1, mute));
 			}
 			Ok(())
 		});
 
-		methods.add_method_mut(
+		methods.add_function(
 			"sendParameter",
-			|_, data, (channel_index, device_index, index, value): (usize, usize, usize, f32)| {
-				if let Backend(Some(ud)) = data {
-					ud.send_message(AudioMessage::Parameter(
+			|lua, (channel_index, device_index, index, value): (usize, usize, usize, f32)| {
+				if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+					ctx.send_message(AudioMessage::Parameter(
 						channel_index - 1,
 						device_index, // don't need -1 here since device index is 0 for instrument and 1.. for fx
 						index - 1,
@@ -134,21 +136,21 @@ impl UserData for Backend {
 			},
 		);
 
-		methods.add_method_mut(
+		methods.add_function(
 			"bypass",
-			|_, data, (channel_index, device_index, bypass): (usize, usize, bool)| {
-				if let Backend(Some(ud)) = data {
-					ud.send_message(AudioMessage::Bypass(channel_index, device_index, bypass));
+			|lua, (channel_index, device_index, bypass): (usize, usize, bool)| {
+				if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+					ctx.send_message(AudioMessage::Bypass(channel_index, device_index, bypass));
 				}
 				Ok(())
 			},
 		);
 
-		methods.add_method_mut(
+		methods.add_function(
 			"reorderEffect",
-			|_, data, (channel_index, old_index, new_index): (usize, usize, usize)| {
-				if let Backend(Some(ud)) = data {
-					ud.send_message(AudioMessage::ReorderEffect(
+			|lua, (channel_index, old_index, new_index): (usize, usize, usize)| {
+				if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+					ctx.send_message(AudioMessage::ReorderEffect(
 						channel_index - 1,
 						old_index - 1,
 						new_index - 1,
@@ -158,69 +160,65 @@ impl UserData for Backend {
 			},
 		);
 
-		methods.add_method_mut("setRendering", |_, data, rendering: bool| {
-			if let Backend(Some(ud)) = data {
-				ud.send_rendering(rendering);
+		methods.add_function("setRendering", |lua, rendering: bool| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				ctx.send_rendering(rendering);
 			}
 			Ok(())
 		});
 
-		methods.add_method("isRendering", |_, data, ()| {
-			if let Backend(Some(ud)) = data { Ok(ud.is_rendering) } else { Ok(true) }
+		methods.add_function("isRendering", |lua, ()| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				Ok(ctx.is_rendering)
+			} else {
+				Ok(true)
+			}
 		});
 
-		methods.add_method_mut(
-			"insertChannel",
-			|_, data, (index, instrument_name): (usize, String)| {
-				check_lock_poison(data);
-				if let Backend(Some(ud)) = data {
-					let mut render = ud.m_render.lock().expect("Failed to get lock.");
-					render.insert_channel(index - 1, &instrument_name);
-				}
-				Ok(())
-			},
-		);
+		methods.add_function("insertChannel", |lua, (index, instrument_name): (usize, String)| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				let mut render = ctx.m_render.lock().expect("Failed to get lock.");
+				render.insert_channel(index - 1, &instrument_name);
+			}
+			Ok(())
+		});
 
-		methods.add_method_mut("removeChannel", |_, data, index: usize| {
-			check_lock_poison(data);
-			if let Backend(Some(ud)) = data {
-				let mut render = ud.m_render.lock().expect("Failed to get lock.");
+		methods.add_function("removeChannel", |lua, index: usize| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				let mut render = ctx.m_render.lock().expect("Failed to get lock.");
 				render.remove_channel(index - 1);
 			}
 			Ok(())
 		});
 
-		methods.add_method_mut(
+		methods.add_function(
 			"insertEffect",
-			|_, data, (channel_index, effect_index, name): (usize, usize, String)| {
-				check_lock_poison(data);
-				if let Backend(Some(ud)) = data {
-					let mut render = ud.m_render.lock().expect("Failed to get lock.");
+			|lua, (channel_index, effect_index, name): (usize, usize, String)| {
+				if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+					let mut render = ctx.m_render.lock().expect("Failed to get lock.");
 					render.insert_effect(channel_index - 1, effect_index - 1, &name);
 				}
 				Ok(())
 			},
 		);
 
-		methods.add_method_mut(
+		methods.add_function(
 			"removeEffect",
-			|_, data, (channel_index, effect_index): (usize, usize)| {
-				check_lock_poison(data);
-				if let Backend(Some(ud)) = data {
-					let mut render = ud.m_render.lock().expect("Failed to get lock.");
+			|lua, (channel_index, effect_index): (usize, usize)| {
+				if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+					let mut render = ctx.m_render.lock().expect("Failed to get lock.");
 					render.remove_effect(channel_index - 1, effect_index - 1);
 				}
 				Ok(())
 			},
 		);
 
-		methods.add_method_mut("renderBlock", |_, data, ()| {
-			check_lock_poison(data);
-			if let Backend(Some(ud)) = data {
+		methods.add_function("renderBlock", |lua, ()| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
 				let len = 64;
 				let buffer: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
 
-				let mut render = ud.m_render.lock().expect("Failed to get lock.");
+				let mut render = ctx.m_render.lock().expect("Failed to get lock.");
 				// TODO: need to check here if the stream is *actually* paused
 
 				render.parse_messages();
@@ -228,8 +226,8 @@ impl UserData for Backend {
 
 				// interlace
 				for i in 0..len {
-					ud.render_buffer.push(buffer[0][i]);
-					ud.render_buffer.push(buffer[1][i]);
+					ctx.render_buffer.push(buffer[0][i]);
+					ctx.render_buffer.push(buffer[1][i]);
 				}
 				Ok(true)
 			} else {
@@ -237,12 +235,12 @@ impl UserData for Backend {
 			}
 		});
 
-		methods.add_method_mut("renderFinish", |_, data, ()| {
-			if let Backend(Some(ud)) = data {
+		methods.add_function("renderFinish", |lua, ()| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
 				let filename = "../out/render.wav";
-				let sample_rate = ud.sample_rate;
+				let sample_rate = ctx.sample_rate;
 
-				match write_wav(filename, &ud.render_buffer, sample_rate) {
+				match write_wav(filename, &ctx.render_buffer, sample_rate) {
 					Ok(()) => {
 						log_info!("Wrote \"{filename}\".");
 					},
@@ -252,74 +250,81 @@ impl UserData for Backend {
 					},
 				}
 				// reset the buffer
-				ud.render_buffer = Vec::new();
+				ctx.render_buffer = Vec::new();
 			} else {
 				log_error!("Failed to write wav, backend offline.");
 			}
 			Ok(())
 		});
 
-		methods.add_method_mut("renderCancel", |_, data, ()| {
-			if let Backend(Some(ud)) = data {
-				ud.render_buffer = Vec::new();
+		methods.add_function("renderCancel", |lua, ()| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				ctx.render_buffer = Vec::new();
 			}
 			Ok(())
 		});
 
-		methods.add_method_mut("flush", |_, data, ()| {
-			check_lock_poison(data);
-			if let Backend(Some(ud)) = data {
-				let mut render = ud.m_render.lock().expect("Failed to get lock.");
+		methods.add_function("flush", |lua, ()| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				let mut render = ctx.m_render.lock().expect("Failed to get lock.");
 				render.flush();
 			}
 			Ok(())
 		});
 
-		methods.add_method_mut("updateScope", |_, data, ()| {
-			if let Backend(Some(ud)) = data {
-				ud.scope.update();
+		methods.add_function("updateScope", |lua, ()| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				ctx.scope.update();
 			}
 			Ok(())
 		});
-		methods.add_method("getSpectrum", |_, data, ()| {
-			if let Backend(Some(ud)) = data { Ok(Some(ud.scope.get_spectrum())) } else { Ok(None) }
+		methods.add_function("getSpectrum", |lua, ()| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				Ok(Some(ctx.scope.get_spectrum()))
+			} else {
+				Ok(None)
+			}
 		});
-		methods.add_method("getScope", |_, data, ()| {
-			if let Backend(Some(ud)) = data {
-				Ok(Some(ud.scope.get_oscilloscope()))
+		methods.add_function("getScope", |lua, ()| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				Ok(Some(ctx.scope.get_oscilloscope()))
 			} else {
 				Ok(None)
 			}
 		});
 
-		methods.add_method_mut("pop", |_, data, ()| {
-			if let Backend(Some(ud)) = data { Ok(ud.lua_rx.try_pop()) } else { Ok(None) }
+		methods.add_function("pop", |lua, ()| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				Ok(ctx.lua_rx.try_pop())
+			} else {
+				Ok(None)
+			}
 		});
 
-		methods.add_method("midiPorts", |_, _, ()| {
+		methods.add_function("midiPorts", |_, ()| {
 			let list = midi::port_names();
 			Ok(list)
 		});
 
-		methods.add_method_mut("midiOpenConnection", |_, data, port_name: String| {
-			if let Backend(Some(ud)) = data {
+		methods.add_function("midiOpenConnection", |lua, port_name: String| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
 				let connection = midi::connect(&port_name);
 				if let Some(c) = connection {
 					let name = c.name.clone();
-					let index = ud.midi_connections.len() + 1;
-					ud.midi_connections.push(c);
+					let index = ctx.midi_connections.len() + 1;
+					ctx.midi_connections.push(c);
 					return Ok((Some(name), Some(index)));
 				}
 			}
 			Ok((None, None))
 		});
 
-		methods.add_method_mut("midiCloseConnection", |_, data, connection_index: usize| {
-			if let Backend(Some(ud)) = data {
-				if ud.midi_connections.len() < connection_index - 1 {
+		methods.add_function("midiCloseConnection", |lua, connection_index: usize| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				if ctx.midi_connections.len() < connection_index - 1 {
 					log_error!("Bad midi connection index: {connection_index}");
 				} else {
-					let connection = ud.midi_connections.remove(connection_index - 1);
+					let connection = ctx.midi_connections.remove(connection_index - 1);
 					connection.connection.close();
 					log_info!("Closed connection \"{0}\"", connection.name);
 				}
@@ -327,9 +332,9 @@ impl UserData for Backend {
 			Ok(())
 		});
 
-		methods.add_method_mut("midiPoll", |_, data, connection_index: usize| {
-			if let Backend(Some(ud)) = data {
-				let connection = ud.midi_connections.get_mut(connection_index - 1);
+		methods.add_function("midiPoll", |lua, connection_index: usize| {
+			if let Some(ctx) = lua.app_data_mut::<State>().unwrap().audio_mut() {
+				let connection = ctx.midi_connections.get_mut(connection_index - 1);
 				match connection {
 					Some(c) => {
 						let events: Vec<midi::Event> = c.midi_rx.pop_iter().collect();
@@ -373,13 +378,4 @@ fn convert_sample_wav(x: f32) -> i16 {
 	let dither = (fastrand::f32() - fastrand::f32()) / f32::from(u16::MAX);
 	let x = (x + dither).clamp(-1.0, 1.0);
 	(if x >= 0.0 { x * f32::from(i16::MAX) } else { -x * f32::from(i16::MIN) }) as i16
-}
-
-fn check_lock_poison(data: &mut Backend) {
-	if let Backend(Some(ud)) = data
-		&& ud.m_render.is_poisoned()
-	{
-		log_error!("Lock was poisoned. Killing backend.");
-		*data = Backend(None);
-	}
 }
