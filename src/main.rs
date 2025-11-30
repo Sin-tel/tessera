@@ -4,7 +4,6 @@ use femtovg::Color;
 use mlua::prelude::*;
 use std::fs;
 use tessera::app::State;
-use tessera::app::{INIT_HEIGHT, INIT_WIDTH};
 use tessera::log::{init_logging, log_error};
 use winit::application::ApplicationHandler;
 use winit::event::DeviceId;
@@ -13,12 +12,10 @@ use winit::event_loop::ActiveEventLoop;
 use winit::window::WindowId;
 
 use tessera::api::create_lua;
-use tessera::api::graphics::Font;
 use tessera::api::keycodes::keycode_to_str;
 use tessera::opengl::Surface;
 use tessera::opengl::WindowSurface;
 use tessera::opengl::setup_window;
-use tessera::text::TextEngine;
 
 fn wrap_call<T: IntoLuaMulti>(lua_fn: &LuaFunction, args: T) {
 	if let Err(e) = lua_fn.call::<()>(args) {
@@ -39,21 +36,7 @@ fn run() -> LuaResult<()> {
 	let (canvas, event_loop, surface, window) = setup_window();
 
 	let lua = create_lua()?;
-	lua.set_app_data(State {
-		current_color: Color::white(),
-		mouse_position: (0., 0.),
-		window_size: (INIT_WIDTH, INIT_HEIGHT),
-		line_width: 1.5,
-		font: Font { name: "Inter".to_string(), size: 14. },
-		text_engine: TextEngine::new(),
-		exit: false,
-		start_time: std::time::Instant::now(),
-		transform_stack: Vec::new(),
-		current_scissor: None,
-		audio: None,
-		canvas,
-		window,
-	});
+	lua.set_app_data(State::new(canvas, window));
 
 	// set working directory so 'require' works
 	lua.load("package.path = package.path .. ';lua/?.lua;'").exec()?;

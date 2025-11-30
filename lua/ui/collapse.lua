@@ -38,7 +38,7 @@ end
 
 function Collapse:draw(x, y, w, h)
 	tessera.graphics.set_color(theme.ui_text)
-	local left_pad = h * 0.8 + Ui.DEFAULT_PAD
+	local left_pad = h * 0.8 + Ui.PAD
 
 	local tw = h * 0.15
 	local cx, cy = x + h * 0.5, y + h * 0.5
@@ -52,7 +52,10 @@ function Collapse:draw(x, y, w, h)
 	tessera.graphics.polygon("fill", x1, y1, x2, y2, x3, y3)
 	tessera.graphics.polygon("line", x1, y1, x2, y2, x3, y3)
 	tessera.graphics.pop()
-	util.draw_text(self.text, x + left_pad, y, w - left_pad, h)
+
+	tessera.graphics.set_font_size(Ui.TITLE_FONT_SIZE)
+	tessera.graphics.label(self.text, x + left_pad, y, w - left_pad, h)
+	tessera.graphics.set_font_size(Ui.DEFAULT_FONT_SIZE)
 end
 
 return Collapse

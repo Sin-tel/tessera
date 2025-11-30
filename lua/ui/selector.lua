@@ -88,7 +88,7 @@ function Button:draw(ui, x, y, w, h)
 	end
 
 	tessera.graphics.set_color(theme.ui_text)
-	util.draw_text(self.text, x, y, w, h, "center", true)
+	tessera.graphics.label(self.text, x, y, w, h, tessera.graphics.ALIGN_CENTER)
 end
 
 return Selector

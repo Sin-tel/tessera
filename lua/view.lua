@@ -35,10 +35,11 @@ function View:draw_full()
 	end
 	tessera.graphics.rectangle("fill", 0, 0, self.box.w, Ui.HEADER)
 
-	tessera.graphics.set_font(resources.fonts.main)
+	tessera.graphics.set_font_main()
+	tessera.graphics.set_font_size(Ui.TITLE_FONT_SIZE)
 	tessera.graphics.set_color(theme.ui_text)
-
-	util.draw_text(self.name, 4, 0, self.box.w, Ui.HEADER, "left", true)
+	tessera.graphics.label(self.name, 10, 0, self.box.w - 20, Ui.HEADER)
+	tessera.graphics.set_font_size(Ui.DEFAULT_FONT_SIZE)
 end
 
 function View:mousepressed() end

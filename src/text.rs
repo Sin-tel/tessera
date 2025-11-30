@@ -201,6 +201,24 @@ impl Fallback for MyFallback {
 	}
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum Fonts {
+	Inter,
+	Notes,
+}
+
+impl Fonts {
+	fn as_str(&self) -> &'static str {
+		match self {
+			Fonts::Inter => "Inter",
+			Fonts::Notes => "Notes",
+		}
+	}
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Rect(pub f32, pub f32, pub f32, pub f32);
+
 pub struct TextEngine {
 	font_system: FontSystem,
 	glyph_cache: RenderCache,
@@ -226,66 +244,100 @@ impl TextEngine {
 		Self { font_system, glyph_cache: RenderCache::new(), scratch_buffer }
 	}
 
-	pub fn draw_text(
+	pub fn draw_label(
 		&mut self,
 		canvas: &mut Canvas<Renderer>,
 		text: &str,
-		x: f32,
-		y: f32,
-		w: Option<f32>,
-		h: Option<f32>,
+		rect: Rect,
 		align: Option<Align>,
 		paint: &Paint,
-		font_name: &str,
+		font: Fonts,
+		font_size: f32,
 	) {
-		let font_size = paint.font_size();
+		let Rect(x, y, w, h) = rect;
 		let line_height = font_size;
 
 		let metrics = Metrics::new(font_size, line_height);
-
 		self.scratch_buffer.set_metrics(&mut self.font_system, metrics);
+		self.scratch_buffer.set_size(&mut self.font_system, Some(w), Some(h));
 
-		let attrs = Attrs::new().family(Family::Name(font_name));
+		let attrs = Attrs::new().family(Family::Name(font.as_str()));
 
 		self.scratch_buffer
 			.set_text(&mut self.font_system, text, &attrs, Shaping::Basic, align);
 
-		self.scratch_buffer.set_size(&mut self.font_system, w, h);
-
 		self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
 
-		let mut oy = 0.;
-		if let Some(h) = h {
-			oy = 0.5 * (h - font_size);
+		// center within box height
+		let y_offset = 0.5 * (h - font_size);
+
+		// Since we don't wrap, there's only a single run.
+		let line_w = self.scratch_buffer.layout_runs().next().unwrap().line_w;
+
+		if line_w > w {
+			// Measure the width of "..."
+			// self.scratch_buffer.set_text(
+			// 	&mut self.font_system,
+			// 	"...",
+			// 	&attrs,
+			// 	Shaping::Basic,
+			// 	align,
+			// );
+			// self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
+			// let dots_width = self.scratch_buffer.layout_runs().next().unwrap().line_w;
+
+			const DOTS_WIDTH: f32 = 11.3;
+
+			let w_available = w - DOTS_WIDTH;
+
+			// If "..." doesn't fit, draw nothing
+			if w_available <= 0.0 {
+				return;
+			}
+
+			// self.scratch_buffer.set_text(
+			// 	&mut self.font_system,
+			// 	text,
+			// 	&attrs,
+			// 	Shaping::Basic,
+			// 	align,
+			// );
+			// self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
+
+			let run = self.scratch_buffer.layout_runs().next().unwrap();
+			let mut index = 0;
+			let mut end_x = 0.;
+
+			// Test if we overflow our box
+			for glyph in run.glyphs {
+				end_x += glyph.w;
+				if end_x > w_available {
+					break;
+				}
+				index = glyph.end;
+			}
+
+			// Construct truncated string "Substr..."
+			let mut truncated = text[0..index].to_string();
+			truncated.push_str("...");
+
+			self.scratch_buffer.set_text(
+				&mut self.font_system,
+				&truncated,
+				&attrs,
+				Shaping::Basic,
+				align,
+			);
+			self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
 		}
 
+		// Draw
 		let cmds = self.glyph_cache.fill_to_cmds(
 			&mut self.font_system,
 			canvas,
 			&self.scratch_buffer,
-			(x, y + oy),
+			(x, y + y_offset),
 		);
-
 		canvas.draw_glyph_commands(cmds, paint);
-	}
-
-	pub fn measure_width(&mut self, text: &str, font_size: f32) -> f32 {
-		let metrics = Metrics::new(font_size, font_size * 1.2);
-		self.scratch_buffer.set_metrics(&mut self.font_system, metrics);
-
-		self.scratch_buffer.set_text(
-			&mut self.font_system,
-			text,
-			&Attrs::new(),
-			Shaping::Advanced,
-			// Some(Align::Left),
-			None,
-		);
-		self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
-
-		self.scratch_buffer
-			.layout_runs()
-			.map(|run| run.line_w)
-			.fold(0.0, f32::max)
 	}
 }

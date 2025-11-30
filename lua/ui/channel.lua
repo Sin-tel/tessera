@@ -1,6 +1,5 @@
 local Ui = require("ui/ui")
 local hsluv = require("lib/hsluv")
-local util = require("util")
 
 -- TODO: commands
 local function do_mute(ch_index, mute)
@@ -66,7 +65,7 @@ end
 
 function Channel:update(ui, ch_index)
 	local x, y, w, h = ui:next()
-	local p = Ui.DEFAULT_PAD
+	local p = Ui.PAD
 	local b = Ui.BUTTON_SMALL
 
 	ui:hitbox(self, x, y, w - 5 * b, h)
@@ -129,7 +128,10 @@ function Channel:draw(ui, ch_index, x, y, w, h)
 		tessera.graphics.set_color(hsluv.hsluv_to_rgb({ ch.hue, 70.0, 70.0 }))
 	end
 
-	util.draw_text(project.channels[ch_index].name, x, y, w, h, "left", true)
+	local pad = 10
+	local w_text = w - 5 * Ui.BUTTON_SMALL - 2 * pad
+
+	tessera.graphics.label(project.channels[ch_index].name, x + pad, y, w_text, h)
 end
 
 function Button.new(options)

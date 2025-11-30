@@ -115,7 +115,7 @@ function tessera.load()
 	top_left:set_view(views.Scope.new(false))
 	-- top_left:set_view(views.Canvas.new())
 	middle_left:set_view(views.Canvas.new())
-	-- middle_left:set_view(views.Debug.new())
+	-- middle_left:set_view(views.UiTest.new())
 	top_right:set_view(views.Channels.new())
 	bottom_rigth:set_view(views.ChannelSettings.new())
 

@@ -36,15 +36,15 @@ function Debug:draw()
 
 	tessera.graphics.set_color(theme.ui_text)
 
-	-- util.draw_text(dump(project), ix, iy, self.w, 0)
+	-- tessera.graphics.label(dump(project), ix, iy, self.w, 0)
 	local ls = 1.5 * resources.fonts.notes:get_height()
 
-	tessera.graphics.set_font(resources.fonts.notes)
-	util.draw_text("abcdefghijklmnopqrstu", ix, iy, self.w, 0)
-	util.draw_text("Ar Bs Ct Du Efea Fh Gi Bga", ix, iy + ls, self.w, 0)
-	util.draw_text('jA kB Cl Dm En Fo Gp Aq D"', ix, iy + 2 * ls, self.w, 0)
-	util.draw_text("abc - pnoq - jk - (a)", ix, iy + 3 * ls, self.w, 0)
-	util.draw_text("+-lm hci 5/4 7/8 11/8 - 4:5:6:7 Ac~Ba", ix, iy + 4 * ls, self.w, 0)
+	tessera.graphics.set_font_notes()
+	tessera.graphics.label("abcdefghijklmnopqrstu", ix, iy, self.w, 0)
+	tessera.graphics.label("Ar Bs Ct Du Efea Fh Gi Bga", ix, iy + ls, self.w, 0)
+	tessera.graphics.label('jA kB Cl Dm En Fo Gp Aq D"', ix, iy + 2 * ls, self.w, 0)
+	tessera.graphics.label("abc - pnoq - jk - (a)", ix, iy + 3 * ls, self.w, 0)
+	tessera.graphics.label("+-lm hci 5/4 7/8 11/8 - 4:5:6:7 Ac~Ba", ix, iy + 4 * ls, self.w, 0)
 end
 
 return Debug

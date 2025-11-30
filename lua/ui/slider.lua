@@ -108,7 +108,7 @@ function Slider:draw(v, display, color_fill, color_line, x, y, w, h)
 	tessera.graphics.rectangle("line", x, y, w, h, CORNER_RADIUS)
 
 	tessera.graphics.set_color(theme.ui_text)
-	util.draw_text(display, x, y + 1, w, h, "center")
+	tessera.graphics.label(display, x, y + 1, w, h, tessera.graphics.ALIGN_CENTER)
 end
 
 return Slider

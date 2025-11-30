@@ -316,12 +316,13 @@ function workspace:draw()
 	tessera.graphics.set_color(theme.line)
 	tessera.graphics.rectangle("line", x1, y1, w1, h1, 2)
 	tessera.graphics.set_color(theme.ui_text)
+
+	local cpu_label = "offline"
 	if tessera.audio.ok() then
-		util.draw_text(string.format("%d %%", 100 * self.cpu_load), x1, 0, w1, ui.RIBBON_HEIGHT, "center")
-	else
-		util.draw_text("offline", x1, 0, w1, ui.RIBBON_HEIGHT, "center")
+		cpu_label = string.format("%d %%", 100 * self.cpu_load)
 	end
-	util.draw_text("CPU: ", x1 - w1, 0, w1, ui.RIBBON_HEIGHT, "right")
+	tessera.graphics.label(cpu_label, x1, 0, w1, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_CENTER)
+	tessera.graphics.label("CPU: ", x1 - w1, 0, w1, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_RIGHT)
 
 	w1 = 96
 	h1 = 16

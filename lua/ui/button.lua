@@ -35,7 +35,7 @@ function Button:draw(ui, x, y, w, h)
 		tessera.graphics.set_color(color_line)
 		tessera.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
 		tessera.graphics.set_color(theme.ui_text)
-		util.draw_text(self.text, x, y, w, h, "center")
+		tessera.graphics.label(self.text, x, y, w, h, tessera.graphics.ALIGN_CENTER)
 	end
 end
 
