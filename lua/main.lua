@@ -127,6 +127,8 @@ function tessera.load()
 end
 
 function tessera.update(dt)
+	-- protect against huge dt from frozen window
+	dt = math.min(dt, 1 / 60)
 	if audio_status == "render" then
 		engine.render()
 	elseif audio_status == "running" then
