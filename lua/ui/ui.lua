@@ -126,9 +126,7 @@ function Ui:background(color)
 end
 
 function Ui:push_draw(f, args)
-	table.insert(self.draw_queue, function()
-		f(unpack(args))
-	end)
+	table.insert(self.draw_queue, { f, args })
 end
 
 function Ui:draw()
@@ -139,7 +137,7 @@ function Ui:draw()
 
 	-- draw in reverse order to handle overlaps
 	for i = #self.draw_queue, 1, -1 do
-		self.draw_queue[i]()
+		self.draw_queue[i][1](unpack(self.draw_queue[i][2]))
 	end
 
 	-- TODO: maybe we can cache these?
