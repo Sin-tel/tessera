@@ -1,12 +1,5 @@
 local resources = {}
 
--- fonts.main = tessera.graphics.newFont(12)
-resources.fonts = {}
-resources.fonts.main = tessera.graphics.new_font("Inter", 14)
-resources.fonts.notes = tessera.graphics.new_font("Notes", 14)
-
-tessera.graphics.set_font(resources.fonts.main)
-
 resources.icons = {}
 resources.icons.solo = tessera.graphics.new_image("assets/solo.png")
 resources.icons.mute = tessera.graphics.new_image("assets/mute.png")

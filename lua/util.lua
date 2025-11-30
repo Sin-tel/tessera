@@ -95,14 +95,6 @@ end
 
 util.clone = clone
 
-function util.draw_text(str, x, y, w, h, align, pad)
-	if pad then
-		x = x + Ui.DEFAULT_PAD
-		w = w - 2 * Ui.DEFAULT_PAD
-	end
-	tessera.graphics.draw_text(str, x, y, w, h, align)
-end
-
 function util.average(t)
 	local n = #t
 	if n == 0 then
@@ -162,10 +154,6 @@ function util.file_exists(filename)
 	else
 		return false
 	end
-end
-
-function util.color_alpha(c, alpha)
-	return c[1], c[2], c[3], alpha
 end
 
 return util

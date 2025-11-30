@@ -17,7 +17,9 @@ Ui.PARAMETER_PAD = 8 -- padding for parameters
 Ui.BUTTON_SMALL = 18
 Ui.CORNER_RADIUS = 4
 
-Ui.DEFAULT_PAD = 5
+Ui.PAD = 5
+Ui.DEFAULT_FONT_SIZE = 14
+Ui.TITLE_FONT_SIZE = 16
 
 function Ui.new(view)
 	local self = setmetatable({}, Ui)
@@ -84,7 +86,7 @@ end
 
 local function draw_label(text, align, x, y, w, h)
 	tessera.graphics.set_color(theme.ui_text)
-	util.draw_text(text, x, y, w, h, align)
+	tessera.graphics.label(text, x, y, w, h, align)
 end
 
 function Ui:label(text, align)

@@ -33,7 +33,7 @@ function Dropdown:update(ui, target, key)
 	local new_index
 	if self.open then
 		local tx, ty = x, y
-		local p = Ui.DEFAULT_PAD
+		local p = Ui.PAD
 		local th = Ui.ROW_HEIGHT - 2 * p
 
 		for i, v in ipairs(self.list) do
@@ -75,7 +75,7 @@ function Dropdown:draw(ui, label, x, y, w, h)
 	local th = h
 
 	if self.open then
-		local p = Ui.DEFAULT_PAD
+		local p = Ui.PAD
 		local n = #self.list
 		th = h + n * (Ui.ROW_HEIGHT - 2 * p)
 	end
@@ -94,7 +94,7 @@ function Dropdown:draw(ui, label, x, y, w, h)
 	end
 
 	tessera.graphics.set_color(theme.ui_text)
-	util.draw_text(label, x, y, w, h, "center", true)
+	tessera.graphics.label(label, x, y, w, h, tessera.graphics.ALIGN_CENTER)
 end
 
 function Button.new(text)
@@ -132,7 +132,7 @@ function Button:draw(ui, x, y, w, h)
 	end
 
 	tessera.graphics.set_color(theme.ui_text)
-	util.draw_text(self.text, x, y, w, h, "center", true)
+	tessera.graphics.label(self.text, x, y, w, h, tessera.graphics.ALIGN_CENTER)
 end
 
 return Dropdown

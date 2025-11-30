@@ -18,7 +18,7 @@ function Layout.new(w, h)
 
 	self.ok = false
 
-	self.pad = Ui.DEFAULT_PAD
+	self.pad = Ui.PAD
 
 	self.column_mode = false
 
@@ -26,7 +26,7 @@ function Layout.new(w, h)
 end
 
 function Layout:padding(pad)
-	self.pad = pad or Ui.DEFAULT_PAD
+	self.pad = pad or Ui.PAD
 end
 
 function Layout:start(x, y)

@@ -1,4 +1,6 @@
 use crate::app::State;
+use crate::text::Fonts;
+use crate::text::Rect;
 use cosmic_text::Align;
 use femtovg::ImageFlags;
 use femtovg::ImageId;
@@ -43,19 +45,7 @@ pub struct Font {
 	pub size: f32,
 }
 
-impl LuaUserData for Font {
-	fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
-		methods.add_method("get_height", |lua, _this, ()| {
-			let state = lua.app_data_ref::<State>().unwrap();
-			Ok(state.font.size * 1.2)
-		});
-		methods.add_method("get_width", |lua, _this, text: String| {
-			let state = &mut *lua.app_data_mut::<State>().unwrap();
-			let width = state.text_engine.measure_width(&text, state.font.size);
-			Ok(width)
-		});
-	}
-}
+impl LuaUserData for Font {}
 
 impl FromLua for Font {
 	fn from_lua(value: LuaValue, _lua: &Lua) -> LuaResult<Self> {
@@ -76,25 +66,29 @@ impl FromLua for Font {
 pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	let graphics = lua.create_table()?;
 
-	// Resources
 	graphics.set(
-		"new_font",
-		lua.create_function(|_, (name, size): (String, f32)| Ok(Font { name, size }))?,
-	)?;
-
-	graphics.set(
-		"get_font",
+		"set_font_main",
 		lua.create_function(|lua, ()| {
-			let state = lua.app_data_ref::<State>().unwrap();
-			Ok(state.font.clone())
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			state.font = Fonts::Inter;
+			Ok(())
 		})?,
 	)?;
 
 	graphics.set(
-		"set_font",
-		lua.create_function(|lua, font: Font| {
+		"set_font_notes",
+		lua.create_function(|lua, ()| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
-			state.font = font;
+			state.font = Fonts::Notes;
+			Ok(())
+		})?,
+	)?;
+
+	graphics.set(
+		"set_font_size",
+		lua.create_function(|lua, font_size: f32| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			state.font_size = font_size;
 			Ok(())
 		})?,
 	)?;
@@ -273,63 +267,30 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	graphics.set(
-		"print",
-		lua.create_function(|lua, (text, x, y): (String, f32, f32)| {
-			let state = &mut *lua.app_data_mut::<State>().unwrap();
-
-			let paint = Paint::color(state.current_color).with_font_size(state.font.size);
-
-			state.text_engine.draw_text(
-				&mut state.canvas,
-				&text,
-				x,
-				y,
-				None,
-				None,
-				None,
-				&paint,
-				&state.font.name,
-			);
-
-			Ok(())
-		})?,
-	)?;
-
-	graphics.set(
-		"draw_text",
+		"label",
 		lua.create_function(
-			|lua, (text, x, y, w, h, align): (String, f32, f32, f32, f32, Option<String>)| {
+			|lua, (text, x, y, w, h, align): (String, f32, f32, f32, f32, Option<u32>)| {
 				let state = &mut *lua.app_data_mut::<State>().unwrap();
 
-				let paint = Paint::color(state.current_color).with_font_size(state.font.size);
+				let paint = Paint::color(state.current_color);
 
-				// let align = match align {
-				// 	Some(s) => match s.as_str() {
-				// 		"left" => Some(Align::Left),
-				// 		"center" => Some(Align::Center),
-				// 		"right" => Some(Align::Right),
-				// 		e => panic!("Invalid align mode {e}"),
-				// 	},
-				// 	None => None,
-				// };
-
-				let align = align.map(|s| match s.as_str() {
-					"left" => Align::Left,
-					"center" => Align::Center,
-					"right" => Align::Right,
+				let align = align.map(|s| match s {
+					0 => Align::Left,
+					1 => Align::Center,
+					2 => Align::Right,
 					e => panic!("Invalid align mode {e}"),
 				});
 
-				state.text_engine.draw_text(
+				let rect = Rect(x, y, w, h);
+
+				state.text_engine.draw_label(
 					&mut state.canvas,
 					&text,
-					x,
-					y,
-					Some(w),
-					Some(h),
+					rect,
 					align,
 					&paint,
-					&state.font.name,
+					state.font,
+					state.font_size,
 				);
 
 				Ok(())
@@ -476,6 +437,10 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 			Ok((sx, sy))
 		})?,
 	)?;
+
+	graphics.set("ALIGN_LEFT", 0)?;
+	graphics.set("ALIGN_CENTER", 1)?;
+	graphics.set("ALIGN_RIGHT", 2)?;
 
 	Ok(graphics)
 }

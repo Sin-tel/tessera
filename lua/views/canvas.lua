@@ -103,7 +103,7 @@ function Canvas:draw()
 	local w_scale = math.min(12, -self.transform.sy)
 
 	-- draw notes
-	tessera.graphics.set_font(resources.fonts.notes)
+	tessera.graphics.set_font_notes()
 	for ch_index, ch in ipairs(project.channels) do
 		if ch.visible then
 			local c_normal = hsluv.hsluv_to_rgb({ ch.hue, 80.0, 60.0 })
@@ -196,7 +196,7 @@ function Canvas:draw()
 				if self.transform.sy < -20 then
 					tessera.graphics.set_color(c)
 					local note_name = tuning.get_name(note.pitch)
-					util.draw_text(note_name, x0 + 5, y0 - 10, self.w, 0)
+					tessera.graphics.label(note_name, x0 + 5, y0 - 10, self.w, 0)
 				end
 			end
 

@@ -51,7 +51,7 @@ function Device:update(ui, index, w, w_label)
 		for i, v in ipairs(self.parameters) do
 			ui.layout:col(w_label)
 			if v.label then
-				ui:label(v.label, "right")
+				ui:label(v.label, tessera.graphics.ALIGN_RIGHT)
 			end
 			ui.layout:col(w - w_label) -- max
 			v.widget:update(ui, self.state, i)

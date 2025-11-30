@@ -53,7 +53,7 @@ function Toggle:draw_toggle(color_fill, color_line, x, y, w, h)
 		tessera.graphics.set_color(color_line)
 		tessera.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
 		tessera.graphics.set_color(theme.ui_text)
-		util.draw_text(self.text, x, y, w, h, "center", true)
+		tessera.graphics.label(self.text, x, y, w, h, tessera.graphics.ALIGN_CENTER)
 	end
 end
 
@@ -63,8 +63,8 @@ function Toggle:draw_checkbox(color_fill, color_line, x, y, w, h)
 	tessera.graphics.set_color(color_line)
 	tessera.graphics.rectangle("line", x, y, h, h, Ui.CORNER_RADIUS)
 	tessera.graphics.set_color(theme.ui_text)
-	local left_pad = h + Ui.DEFAULT_PAD
-	util.draw_text(self.text, x + left_pad, y, w - left_pad, h)
+	local left_pad = h + Ui.PAD
+	tessera.graphics.label(self.text, x + left_pad, y, w - left_pad, h)
 end
 
 return Toggle

@@ -56,7 +56,8 @@ function select_rect:draw(canvas)
 	local mx, my = canvas:get_mouse()
 
 	if self.active then
-		tessera.graphics.set_color(util.color_alpha(theme.selection, 0.02))
+		local c = theme.selection
+		tessera.graphics.set_color_f(c[1], c[2], c[3], 0.16)
 		tessera.graphics.rectangle("fill", self.ox, self.oy, mx - self.ox, my - self.oy)
 		tessera.graphics.set_color(theme.selection)
 
