@@ -195,7 +195,7 @@ impl ApplicationHandler for App {
 			WindowEvent::MouseWheel { delta, .. } => {
 				let (x, y) = match delta {
 					MouseScrollDelta::LineDelta(x, y) => (x, y),
-					MouseScrollDelta::PixelDelta(d) => d.into(),
+					MouseScrollDelta::PixelDelta(d) => (d.x as f32 / 14., d.y as f32 / 14.),
 				};
 				wrap_call(&self.wheelmoved, (x, y));
 			},
@@ -210,6 +210,7 @@ impl ApplicationHandler for App {
 		_device_id: DeviceId,
 		event: DeviceEvent,
 	) {
+		#[allow(clippy::single_match)]
 		match event {
 			DeviceEvent::MouseMotion { delta } => {
 				let (x, y) = self.lua.app_data_ref::<State>().unwrap().mouse_position;
@@ -244,10 +245,6 @@ impl ApplicationHandler for App {
 		}
 
 		app_state.window.request_redraw();
-
-		// if self.request_redraw && !self.wait_cancelled && !self.close_requested {
-		// 	self.window.as_ref().unwrap().request_redraw();
-		// }
 	}
 
 	fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
