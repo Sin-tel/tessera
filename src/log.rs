@@ -3,31 +3,31 @@ use std::fs::OpenOptions;
 use std::io::LineWriter;
 
 pub fn init_logging() {
-    use simplelog::*;
+	use simplelog::*;
 
-    let config = ConfigBuilder::new()
-        .set_time_level(LevelFilter::Off)
-        .set_location_level(LevelFilter::Off)
-        .set_target_level(LevelFilter::Off)
-        .build();
+	let config = ConfigBuilder::new()
+		.set_time_level(LevelFilter::Off)
+		.set_location_level(LevelFilter::Off)
+		.set_target_level(LevelFilter::Off)
+		.build();
 
-    let filename = "out/out.log";
+	let filename = "out/out.log";
 
-    // create empty new file
-    File::create(filename).unwrap();
+	// create empty new file
+	File::create(filename).unwrap();
 
-    // append mode for atomic writes
-    let f = OpenOptions::new().write(true).truncate(true).open(filename).unwrap();
-    // buffer lines
-    let f_write = LineWriter::new(f);
+	// append mode for atomic writes
+	let f = OpenOptions::new().write(true).truncate(true).open(filename).unwrap();
+	// buffer lines
+	let f_write = LineWriter::new(f);
 
-    CombinedLogger::init(vec![
-        SimpleLogger::new(LevelFilter::Info, config.clone()),
-        WriteLogger::new(LevelFilter::Debug, config, f_write),
-    ])
-    .unwrap();
-    // Has to go last otherwise previous errors don't work
-    log_panics::init();
+	CombinedLogger::init(vec![
+		SimpleLogger::new(LevelFilter::Info, config.clone()),
+		WriteLogger::new(LevelFilter::Debug, config, f_write),
+	])
+	.unwrap();
+	// Has to go last otherwise previous errors don't work
+	log_panics::init();
 }
 
 #[macro_export]
