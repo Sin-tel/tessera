@@ -43,6 +43,8 @@ modifier_keys.any = false
 local load_last_save = true
 local last_save_location = "out/lastsave.sav"
 
+local draw_time_s = 0
+
 -- patch up set_color to work with tables
 tessera.graphics.set_color = function(t)
 	tessera.graphics.set_color_f(unpack(t))
@@ -130,13 +132,14 @@ function tessera.update(dt)
 end
 
 function tessera.draw()
-	local t_start = tessera.timer.get_time()
 	--- update ---
 	if audio_status == "request" then
 		audio_setup()
 	elseif audio_status == "init" then
 		audio_status = "request"
 	end
+
+	local t_start = tessera.timer.get_time()
 
 	tessera.audio.update_scope()
 	if audio_status ~= "render" then
@@ -153,16 +156,23 @@ function tessera.draw()
 
 	workspace:draw()
 
+	local draw_time = (tessera.timer.get_time() - t_start) * 1000
+	draw_time_s = draw_time_s + 0.1 * (draw_time - draw_time_s)
+	local draw_time_l = string.format("%04.1f", draw_time_s)
+	tessera.graphics.set_font_size(12)
+	tessera.graphics.set_color(theme.ui_text)
+	tessera.graphics.label(draw_time_l, 10, 0, 100, 32)
+
 	if audio_status == "render" then
+		tessera.graphics.set_color_f(0, 0, 0, 0.2)
+		tessera.graphics.rectangle("fill", 0, 0, width, height)
+
 		tessera.graphics.set_color(theme.background)
 		tessera.graphics.rectangle("fill", width * 0.3, height * 0.5 - 16, width * 0.4, 32)
 		tessera.graphics.set_color(theme.widget)
 		local p = engine.render_progress / engine.render_end
 		tessera.graphics.rectangle("fill", width * 0.3 + 4, height * 0.5 - 12, (width * 0.4 - 8) * p, 24)
 	end
-
-	local time = (tessera.timer.get_time() - t_start) * 1000
-	print(time)
 end
 
 function tessera.mousepressed(x, y, button)
