@@ -14,6 +14,9 @@ use crate::text::TextEngine;
 pub const INIT_WIDTH: u32 = 1280;
 pub const INIT_HEIGHT: u32 = 720;
 
+pub const DEFAULT_FONT_SIZE: f32 = 14.;
+pub const DEFAULT_LINE_WIDTH: f32 = 1.5;
+
 pub struct State {
 	pub current_color: Color,
 	pub line_width: f32,
@@ -38,9 +41,9 @@ impl State {
 			current_color: Color::white(),
 			mouse_position: (0., 0.),
 			window_size: (INIT_WIDTH, INIT_HEIGHT),
-			line_width: 1.5,
+			line_width: DEFAULT_LINE_WIDTH,
 			font: Font::Inter,
-			font_size: 14.,
+			font_size: DEFAULT_FONT_SIZE,
 			text_engine: TextEngine::new(),
 			image_ids: Vec::new(),
 			exit: false,
