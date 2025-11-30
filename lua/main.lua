@@ -5,6 +5,10 @@ local log = require("log")
 if not release then
 	require("lib/strict")
 end
+
+local profile = false
+-- local profile = require("lib.profile")
+
 VERSION = {}
 VERSION.MAJOR = "0"
 VERSION.MINOR = "0"
@@ -135,6 +139,9 @@ function tessera.draw()
 	--- update ---
 	if audio_status == "request" then
 		audio_setup()
+		if profile then
+			profile.start()
+		end
 	elseif audio_status == "init" then
 		audio_status = "request"
 	end
@@ -257,6 +264,10 @@ function tessera.keypressed(_, key, isrepeat)
 	elseif modifier_keys.ctrl and key == "w" then
 		-- for testing panic recovery
 		tessera.audio.panic()
+	elseif modifier_keys.ctrl and key == "p" then
+		if profile then
+			log.info(profile.report(100))
+		end
 	elseif key == "z" and modifier_keys.ctrl then
 		command.undo()
 	elseif key == "y" and modifier_keys.ctrl then
