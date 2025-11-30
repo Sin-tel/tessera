@@ -9,7 +9,7 @@ use crate::app::State;
 use mlua::prelude::*;
 
 pub fn create_lua() -> LuaResult<Lua> {
-	#[cfg(debug_assertions)]
+	// #[cfg(debug_assertions)]
 	let lua = unsafe {
 		Lua::unsafe_new_with(
 			mlua::StdLib::DEBUG | mlua::StdLib::ALL_SAFE,
@@ -17,8 +17,8 @@ pub fn create_lua() -> LuaResult<Lua> {
 		)
 	};
 
-	#[cfg(not(debug_assertions))]
-	let lua = Lua::new();
+	// #[cfg(not(debug_assertions))]
+	// let lua = Lua::new();
 
 	// main tessera table
 	let tessera = lua.create_table()?;

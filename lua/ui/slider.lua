@@ -11,6 +11,9 @@ function Slider.new(options)
 	self.value = SliderValue.new(options)
 	self.drag_start = 0.0
 
+	self.value_cache = nil
+	self.v_cache = nil
+
 	return self
 end
 
@@ -18,7 +21,12 @@ function Slider:update(ui, target, key)
 	local x, y, w, h = ui:next()
 	local hit = ui:hitbox(self, x, y, w, h)
 
-	local v = self.value:to_normal(target[key])
+	local value_new = target[key]
+	if self.value_cache ~= value_new then
+		self.value_cache = value_new
+		self.v_cache = self.value:to_normal(value_new)
+	end
+	local v = self.v_cache
 
 	local interact = false
 
