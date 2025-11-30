@@ -28,7 +28,6 @@ theme = require("settings/theme")
 selection = require("selection")
 clipboard = require("clipboard")
 setup = {}
-resources = {}
 
 audio_status = "init"
 
@@ -103,9 +102,6 @@ function tessera.load()
 
 	mouse:load()
 
-	--- load resources ---
-	resources = require("resources")
-
 	--- setup workspace ---
 	workspace:load()
 	local left, right = workspace.box:split(0.7, true)
@@ -134,6 +130,7 @@ function tessera.update(dt)
 end
 
 function tessera.draw()
+	local t_start = tessera.timer.get_time()
 	--- update ---
 	if audio_status == "request" then
 		audio_setup()
@@ -163,6 +160,9 @@ function tessera.draw()
 		local p = engine.render_progress / engine.render_end
 		tessera.graphics.rectangle("fill", width * 0.3 + 4, height * 0.5 - 12, (width * 0.4 - 8) * p, 24)
 	end
+
+	local time = (tessera.timer.get_time() - t_start) * 1000
+	print(time)
 end
 
 function tessera.mousepressed(x, y, button)

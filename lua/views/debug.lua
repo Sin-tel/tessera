@@ -37,7 +37,7 @@ function Debug:draw()
 	tessera.graphics.set_color(theme.ui_text)
 
 	-- tessera.graphics.label(dump(project), ix, iy, self.w, 0)
-	local ls = 1.5 * resources.fonts.notes:get_height()
+	local ls = 32
 
 	tessera.graphics.set_font_notes()
 	tessera.graphics.label("abcdefghijklmnopqrstu", ix, iy, self.w, 0)

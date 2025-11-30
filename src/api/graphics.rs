@@ -2,41 +2,9 @@ use crate::app::State;
 use crate::text::Font;
 use crate::text::Rect;
 use cosmic_text::Align;
-use femtovg::ImageFlags;
-use femtovg::ImageId;
 use femtovg::{Color, Paint, Path};
 use mlua::Variadic;
 use mlua::prelude::*;
-
-#[derive(Clone, Copy)]
-pub struct Image {
-	id: ImageId,
-	width: usize,
-	height: usize,
-}
-
-impl LuaUserData for Image {
-	fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
-		methods.add_method("get_height", |_lua, this, ()| Ok(this.height));
-		methods.add_method("get_width", |_lua, this, ()| Ok(this.width));
-	}
-}
-
-impl FromLua for Image {
-	fn from_lua(value: LuaValue, _lua: &Lua) -> LuaResult<Self> {
-		if let LuaValue::UserData(ref ud) = value
-			&& let Ok(img_ref) = ud.borrow::<Image>()
-		{
-			return Ok(*img_ref);
-		}
-
-		Err(LuaError::FromLuaConversionError {
-			from: value.type_name(),
-			to: "Image".to_string(),
-			message: Some("Expected an Image object".to_string()),
-		})
-	}
-}
 
 pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	let graphics = lua.create_table()?;
@@ -68,31 +36,21 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		})?,
 	)?;
 
-	// Image
-	graphics.set(
-		"new_image",
-		lua.create_function(|lua, filename: String| {
-			let state = &mut *lua.app_data_mut::<State>().unwrap();
-
-			let image_id = state.canvas.load_image_file(&filename, ImageFlags::empty()).unwrap();
-
-			let info = state.canvas.image_info(image_id).unwrap();
-			Ok(Image { id: image_id, width: info.width(), height: info.height() })
-		})?,
-	)?;
-
 	graphics.set(
 		"draw",
-		lua.create_function(|lua, (image, x, y): (Image, f32, f32)| {
+		lua.create_function(|lua, (image, x, y): (usize, f32, f32)| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 
-			let w = image.width as f32;
-			let h = image.height as f32;
+			let image_id = state.image_ids[image];
+
+			let info = state.canvas.image_info(image_id).unwrap();
+			let w = info.width() as f32;
+			let h = info.height() as f32;
 
 			let mut path = Path::new();
 			path.rect(x, y, w, h);
 
-			let paint = Paint::image_tint(image.id, x, y, w, h, 0.0, state.current_color);
+			let paint = Paint::image_tint(image_id, x, y, w, h, 0.0, state.current_color);
 			state.canvas.fill_path(&path, &paint);
 
 			Ok(())

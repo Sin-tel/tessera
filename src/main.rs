@@ -1,8 +1,9 @@
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 
 use femtovg::Color;
 use mlua::prelude::*;
 use std::fs;
+use std::time::{Duration, Instant};
 use tessera::app::State;
 use tessera::log::{init_logging, log_error};
 use winit::application::ApplicationHandler;
@@ -12,6 +13,7 @@ use winit::event_loop::ActiveEventLoop;
 use winit::window::WindowId;
 
 use tessera::api::create_lua;
+use tessera::api::image::load_images;
 use tessera::api::keycodes::keycode_to_str;
 use tessera::opengl::Surface;
 use tessera::opengl::WindowSurface;
@@ -46,6 +48,8 @@ fn run() -> LuaResult<()> {
 	let lua_main = fs::read_to_string("lua/main.lua").unwrap();
 	lua.load(lua_main).set_name("@lua/main.lua").exec()?;
 
+	load_images(&lua)?;
+
 	let tessera: LuaTable = lua.globals().get("tessera")?;
 	let load: LuaFunction = tessera.get("load").unwrap();
 	let update: LuaFunction = tessera.get("update").unwrap();
@@ -61,7 +65,7 @@ fn run() -> LuaResult<()> {
 
 	wrap_call(&load, ());
 
-	let last_update = std::time::Instant::now();
+	let last_update = Instant::now();
 	let mut app = App {
 		lua,
 		surface,
@@ -87,7 +91,7 @@ fn run() -> LuaResult<()> {
 struct App {
 	lua: Lua,
 	surface: Surface,
-	last_update: std::time::Instant,
+	last_update: Instant,
 	update: LuaFunction,
 	draw: LuaFunction,
 	keypressed: LuaFunction,
@@ -209,7 +213,7 @@ impl ApplicationHandler for App {
 		loop {
 			self.lua.app_data_mut::<State>().unwrap().check_audio_status();
 
-			let now = std::time::Instant::now();
+			let now = Instant::now();
 			let dt = (now - self.last_update).as_secs_f64();
 			self.last_update = now;
 
@@ -219,7 +223,7 @@ impl ApplicationHandler for App {
 			if accum >= 1.0 / 60.0 {
 				break;
 			}
-			std::thread::sleep(std::time::Duration::from_micros(2000));
+			std::thread::sleep(Duration::from_micros(2000));
 		}
 
 		let app_state = self.lua.app_data_mut::<State>().unwrap();

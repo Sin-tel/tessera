@@ -6,7 +6,6 @@ stds.tessera = {
       "tessera",
       "util",
       -- tables / modules
-      "resources",
       "theme",
       "setup",
       "workspace",
