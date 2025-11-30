@@ -103,6 +103,7 @@ function Canvas:draw()
 	local w_scale = math.min(12, -self.transform.sy)
 
 	-- draw notes
+	tessera.graphics.set_line_width(2.0)
 	tessera.graphics.set_font_notes()
 	for ch_index, ch in ipairs(project.channels) do
 		if ch.visible then
@@ -130,67 +131,42 @@ function Canvas:draw()
 				if selection.mask[note] then
 					c = c_select
 				end
-				for i = 1, #note.verts - 1 do
-					local x1 = self.transform:time(t_start + note.verts[i][1])
-					local x2 = self.transform:time(t_start + note.verts[i + 1][1])
-					local y1 = self.transform:pitch(p_start + note.verts[i][2])
-					local y2 = self.transform:pitch(p_start + note.verts[i + 1][2])
-					local w1 = note.verts[i][3] * w_scale
-					local w2 = note.verts[i + 1][3] * w_scale
-					if w1 > 1.0 or w2 > 1.0 then
-						tessera.graphics.set_color_f(0.3, 0.3, 0.3)
-						tessera.graphics.polygon(
-							"fill",
-							x1,
-							y1 + w1,
-							x2,
-							y2 + w2,
-							x2,
-							y2 - w2,
-							x1,
-							y1 - w1,
-							x1,
-							y1 + w1
-						)
-					end
-					tessera.graphics.set_color(c)
-					tessera.graphics.line(x1, y1, x2, y2)
+
+				local lx = {}
+				local ly = {}
+				local lw = {}
+
+				for i = 1, #note.verts do
+					local x = self.transform:time(t_start + note.verts[i][1])
+					local y = self.transform:pitch(p_start + note.verts[i][2])
+					local w = note.verts[i][3] * w_scale
+
+					table.insert(lx, x)
+					table.insert(ly, y)
+					table.insert(lw, w + 0.01)
 				end
 
 				-- draw temp lines for notes that are not yet finished
 				if note.is_recording then
 					local n = #note.verts
-					local x1 = self.transform:time(t_start + note.verts[n][1])
-					local x2 = self.transform:time(project.transport.time)
-					local y1 = self.transform:pitch(p_start + note.verts[n][2])
-					local y2 = y1
-					local w1 = note.verts[n][3] * w_scale
-					local w2 = w1
-					if w1 > 1.0 or w2 > 1.0 then
-						tessera.graphics.set_color_f(0.3, 0.3, 0.3)
-						tessera.graphics.polygon(
-							"fill",
-							x1,
-							y1 + w1,
-							x2,
-							y2 + w2,
-							x2,
-							y2 - w2,
-							x1,
-							y1 - w1,
-							x1,
-							y1 + w1
-						)
-					end
-					tessera.graphics.set_color(c)
-					tessera.graphics.line(x1, y1, x2, y2)
+					local x = self.transform:time(project.transport.time)
+					local y = self.transform:pitch(p_start + note.verts[n][2])
+					local w = note.verts[n][3] * w_scale
+
+					table.insert(lx, x)
+					table.insert(ly, y)
+					table.insert(lw, w)
 				end
 
-				-- note head
-				tessera.graphics.set_color(theme.bg_nested)
-				tessera.graphics.circle("fill", x0, y0, 3)
+				tessera.graphics.set_color_f(c[1] * 0.5, c[2] * 0.5, c[3] * 0.5)
+				tessera.graphics.polyline_w(lx, ly, lw)
+
 				tessera.graphics.set_color(c)
-				tessera.graphics.circle("line", x0, y0, 3)
+				tessera.graphics.polyline(lx, ly)
+
+				-- note head
+				tessera.graphics.set_color(c)
+				tessera.graphics.circle("fill", x0, y0, 3)
 
 				-- note names
 				if self.transform.sy < -20 then
@@ -218,7 +194,7 @@ function Canvas:draw()
 			end
 		end
 	end
-	tessera.graphics.set_line_width(1)
+	tessera.graphics.set_line_width()
 
 	-- top 'ribbon'
 	tessera.graphics.set_color(theme.background)
