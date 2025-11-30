@@ -1,8 +1,9 @@
 use crate::app::State;
+use crate::app::{DEFAULT_FONT_SIZE, DEFAULT_LINE_WIDTH};
 use crate::text::Font;
 use crate::text::Rect;
 use cosmic_text::Align;
-use femtovg::{Color, Paint, Path};
+use femtovg::{Color, LineCap, LineJoin, Paint, Path};
 use mlua::Variadic;
 use mlua::prelude::*;
 
@@ -29,9 +30,9 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 
 	graphics.set(
 		"set_font_size",
-		lua.create_function(|lua, font_size: f32| {
+		lua.create_function(|lua, font_size: Option<f32>| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
-			state.font_size = font_size;
+			state.font_size = font_size.unwrap_or(DEFAULT_FONT_SIZE);
 			Ok(())
 		})?,
 	)?;
@@ -80,10 +81,10 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 
 	graphics.set(
 		"set_line_width",
-		lua.create_function(|lua, w: f32| {
+		lua.create_function(|lua, line_width: Option<f32>| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 
-			state.line_width = w + 0.5;
+			state.line_width = line_width.unwrap_or(DEFAULT_LINE_WIDTH);
 			Ok(())
 		})?,
 	)?;
@@ -312,6 +313,34 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				m => panic!("Invalid draw mode {m}, expected one of: 'line', 'fill'"),
 			}
 
+			Ok(())
+		})?,
+	)?;
+
+	graphics.set(
+		"polyline",
+		lua.create_function(|lua, points: Vec<f32>| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			if points.len() < 4 || !points.len().is_multiple_of(2) {
+				return Err(LuaError::RuntimeError(
+					"Invalid number of points for polyline.".into(),
+				));
+			}
+
+			let mut path = Path::new();
+			path.move_to(points[0], points[1]);
+
+			for chunk in points[2..].chunks_exact(2) {
+				path.line_to(chunk[0], chunk[1]);
+			}
+
+			let mut paint = Paint::color(state.current_color);
+			paint.set_line_width(state.line_width);
+			paint.set_line_cap(LineCap::Round);
+			paint.set_line_join(LineJoin::Round);
+
+			state.canvas.stroke_path(&path, &paint);
 			Ok(())
 		})?,
 	)?;
