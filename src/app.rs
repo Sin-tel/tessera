@@ -1,7 +1,7 @@
 use crate::audio::AUDIO_PANIC;
 use crate::context::AudioContext;
 use crate::log::log_warn;
-use crate::text::Fonts;
+use crate::text::Font;
 use femtovg::{Canvas, Color};
 use std::sync::atomic::Ordering;
 use std::time::Instant;
@@ -16,7 +16,7 @@ pub const INIT_HEIGHT: u32 = 720;
 pub struct State {
 	pub current_color: Color,
 	pub line_width: f32,
-	pub font: Fonts,
+	pub font: Font,
 	pub font_size: f32,
 	pub text_engine: TextEngine,
 	pub mouse_position: (f32, f32),
@@ -37,7 +37,7 @@ impl State {
 			mouse_position: (0., 0.),
 			window_size: (INIT_WIDTH, INIT_HEIGHT),
 			line_width: 1.5,
-			font: Fonts::Inter,
+			font: Font::Inter,
 			font_size: 14.,
 			text_engine: TextEngine::new(),
 			exit: false,

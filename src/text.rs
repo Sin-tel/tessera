@@ -202,16 +202,16 @@ impl Fallback for MyFallback {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub enum Fonts {
+pub enum Font {
 	Inter,
 	Notes,
 }
 
-impl Fonts {
+impl Font {
 	fn as_str(&self) -> &'static str {
 		match self {
-			Fonts::Inter => "Inter",
-			Fonts::Notes => "Notes",
+			Font::Inter => "Inter",
+			Font::Notes => "Notes",
 		}
 	}
 }
@@ -251,7 +251,7 @@ impl TextEngine {
 		rect: Rect,
 		align: Option<Align>,
 		paint: &Paint,
-		font: Fonts,
+		font: Font,
 		font_size: f32,
 	) {
 		let Rect(x, y, w, h) = rect;

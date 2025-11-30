@@ -1,5 +1,5 @@
 use crate::app::State;
-use crate::text::Fonts;
+use crate::text::Font;
 use crate::text::Rect;
 use cosmic_text::Align;
 use femtovg::ImageFlags;
@@ -38,31 +38,6 @@ impl FromLua for Image {
 	}
 }
 
-// Font shim
-#[derive(Clone)]
-pub struct Font {
-	pub name: String,
-	pub size: f32,
-}
-
-impl LuaUserData for Font {}
-
-impl FromLua for Font {
-	fn from_lua(value: LuaValue, _lua: &Lua) -> LuaResult<Self> {
-		if let LuaValue::UserData(ref ud) = value
-			&& let Ok(font_ref) = ud.borrow::<Font>()
-		{
-			return Ok(font_ref.clone());
-		}
-
-		Err(LuaError::FromLuaConversionError {
-			from: value.type_name(),
-			to: "Font".to_string(),
-			message: Some("Expected an Font object".to_string()),
-		})
-	}
-}
-
 pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	let graphics = lua.create_table()?;
 
@@ -70,7 +45,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"set_font_main",
 		lua.create_function(|lua, ()| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
-			state.font = Fonts::Inter;
+			state.font = Font::Inter;
 			Ok(())
 		})?,
 	)?;
@@ -79,7 +54,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"set_font_notes",
 		lua.create_function(|lua, ()| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
-			state.font = Fonts::Notes;
+			state.font = Font::Notes;
 			Ok(())
 		})?,
 	)?;
