@@ -54,11 +54,11 @@ Channel.__index = Channel
 function Channel.new()
 	local self = setmetatable({}, Channel)
 
-	self.button_mute = Button.new({ img_on = resources.icons.mute, color_on = theme.mute })
-	self.button_solo = Button.new({ img_on = resources.icons.solo, color_on = theme.solo })
-	self.button_armed = Button.new({ img_on = resources.icons.armed, color_on = theme.recording })
-	self.button_visible = Button.new({ img_on = resources.icons.visible, img_off = resources.icons.invisible })
-	self.button_lock = Button.new({ img_on = resources.icons.lock, img_off = resources.icons.unlock })
+	self.button_mute = Button.new({ img_on = tessera.image.mute, color_on = theme.mute })
+	self.button_solo = Button.new({ img_on = tessera.image.solo, color_on = theme.solo })
+	self.button_armed = Button.new({ img_on = tessera.image.armed, color_on = theme.recording })
+	self.button_visible = Button.new({ img_on = tessera.image.visible, img_off = tessera.image.invisible })
+	self.button_lock = Button.new({ img_on = tessera.image.lock, img_off = tessera.image.unlock })
 
 	return self
 end
