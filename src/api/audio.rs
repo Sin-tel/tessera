@@ -321,28 +321,6 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	audio.set(
-		"get_spectrum",
-		lua.create_function(|lua, ()| {
-			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				Ok(Some(ctx.scope.get_spectrum()))
-			} else {
-				Ok(None)
-			}
-		})?,
-	)?;
-
-	audio.set(
-		"get_scope",
-		lua.create_function(|lua, ()| {
-			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				Ok(Some(ctx.scope.get_oscilloscope()))
-			} else {
-				Ok(None)
-			}
-		})?,
-	)?;
-
-	audio.set(
 		"pop",
 		lua.create_function(|lua, ()| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {

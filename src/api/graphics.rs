@@ -371,6 +371,34 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		})?,
 	)?;
 
+	graphics.set(
+		"draw_spectrum",
+		lua.create_function(|lua, (w, h): (f32, f32)| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			let Some(audio_ctx) = &mut state.audio else { return Ok(()) };
+
+			let color = state.current_color;
+			let sample_rate = audio_ctx.sample_rate as f32;
+			audio_ctx
+				.scope
+				.draw_spectrum(w, h, sample_rate, color, &mut state.canvas);
+			Ok(())
+		})?,
+	)?;
+
+	graphics.set(
+		"draw_scope",
+		lua.create_function(|lua, (w, h): (f32, f32)| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			let Some(audio_ctx) = &mut state.audio else { return Ok(()) };
+
+			let color = state.current_color;
+			audio_ctx.scope.draw_scope(w, h, color, &mut state.canvas);
+
+			Ok(())
+		})?,
+	)?;
+
 	graphics.set("ALIGN_LEFT", 0)?;
 	graphics.set("ALIGN_CENTER", 1)?;
 	graphics.set("ALIGN_RIGHT", 2)?;
