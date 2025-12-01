@@ -62,14 +62,14 @@ function Roll:seek(chase)
 			end_time = note.verts[#note.verts][1]
 		end
 		-- TODO: some annoying edge cases here
-		if note.time + end_time > project.transport.time then
+		if note.time + end_time > engine.time then
 			break
 		end
 		self.n_index = self.n_index + 1
 	end
 
 	-- TODO: find last relevant event and skip to there?
-	-- while self.control_table[self.c_index] and project.transport.time > self.control_table[self.c_index].time do
+	-- while self.control_table[self.c_index] and engine.time > self.control_table[self.c_index].time do
 	-- 	self.c_index = self.c_index + 1
 	-- end
 end
@@ -78,7 +78,7 @@ function Roll:stop()
 	-- any hanging notes shoud get a note off
 	for _, note in pairs(self.active_notes) do
 		note.is_recording = nil
-		local t_offset = project.transport.time - note.time
+		local t_offset = engine.time - note.time
 		table.insert(note.verts, { t_offset, 0, 0.0 })
 	end
 
@@ -87,7 +87,7 @@ function Roll:stop()
 end
 
 function Roll:playback()
-	while self.control_table[self.c_index] and project.transport.time > self.control_table[self.c_index].time do
+	while self.control_table[self.c_index] and engine.time > self.control_table[self.c_index].time do
 		local c = self.control_table[self.c_index]
 		if c.name == "sustain" then
 			self.voice_alloc:event({ name = "sustain", sustain = c.value })
@@ -95,7 +95,7 @@ function Roll:playback()
 		self.c_index = self.c_index + 1
 	end
 
-	while self.note_table[self.n_index] and project.transport.time > self.note_table[self.n_index].time do
+	while self.note_table[self.n_index] and engine.time > self.note_table[self.n_index].time do
 		local note = self.note_table[self.n_index]
 		local id = VoiceAlloc.next_id()
 		table.insert(self.voices, { n_index = self.n_index, v_index = 1, id = id })
@@ -109,7 +109,7 @@ function Roll:playback()
 		local v = self.voices[i]
 		local note = self.note_table[v.n_index]
 
-		while v.v_index + 1 <= #note.verts and project.transport.time > note.time + note.verts[v.v_index + 1][1] do
+		while v.v_index + 1 <= #note.verts and engine.time > note.time + note.verts[v.v_index + 1][1] do
 			v.v_index = v.v_index + 1
 		end
 
@@ -120,7 +120,7 @@ function Roll:playback()
 		else
 			local t0 = note.verts[v.v_index][1]
 			local t1 = note.verts[v.v_index + 1][1]
-			local alpha = (project.transport.time - (note.time + t0)) / (t1 - t0)
+			local alpha = (engine.time - (note.time + t0)) / (t1 - t0)
 
 			local offset = util.lerp(note.verts[v.v_index][2], note.verts[v.v_index + 1][2], alpha)
 			local pres = util.lerp(note.verts[v.v_index][3], note.verts[v.v_index + 1][3], alpha)
@@ -136,7 +136,7 @@ function Roll:event(event)
 
 	-- record events to timeline
 	if engine.playing and project.transport.recording then
-		local time = project.transport.time
+		local time = engine.time
 
 		if event.name == "note_on" then
 			local note = {

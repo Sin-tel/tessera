@@ -97,7 +97,7 @@ function Canvas:draw()
 
 	-- if self.follow and px > self.w * 0.9 then
 	if self.follow and engine.playing then
-		self.transform.ox_ = -project.transport.time * self.transform.sx + self.w * 0.5
+		self.transform.ox_ = -engine.time * self.transform.sx + self.w * 0.5
 	end
 
 	local w_scale = math.min(12, -self.transform.sy)
@@ -149,7 +149,7 @@ function Canvas:draw()
 				-- draw temp lines for notes that are not yet finished
 				if note.is_recording then
 					local n = #note.verts
-					local x = self.transform:time(project.transport.time)
+					local x = self.transform:time(engine.time)
 					local y = self.transform:pitch(p_start + note.verts[n][2])
 					local w = note.verts[n][3] * w_scale
 
@@ -203,7 +203,7 @@ function Canvas:draw()
 	tessera.graphics.rectangle("line", 0, 0, self.w, 16)
 
 	-- playhead
-	local px = self.transform:time(project.transport.time)
+	local px = self.transform:time(engine.time)
 	if project.transport.recording then
 		tessera.graphics.set_color(theme.recording)
 	else
