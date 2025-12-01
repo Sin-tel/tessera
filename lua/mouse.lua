@@ -58,7 +58,7 @@ function mouse:released(x, y, button)
 
 		-- double click detect
 		self.double = false
-		local new_timer = tessera.timer.get_time()
+		local new_timer = tessera.get_time()
 		if new_timer - self.timer < DOUBLE_CLICK_TIME and self.pbutton == button then
 			self.double = true
 		end

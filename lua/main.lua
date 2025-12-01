@@ -165,7 +165,7 @@ function tessera.draw()
 
 	workspace:draw()
 
-	local draw_time = (tessera.timer.get_time() - t_start) * 1000
+	local draw_time = (tessera.get_time() - t_start) * 1000
 	draw_time_s = draw_time_s + 0.1 * (draw_time - draw_time_s)
 	local draw_time_l = string.format("%04.1f", draw_time_s)
 	tessera.graphics.set_font_size(12)
@@ -249,7 +249,7 @@ function tessera.keypressed(_, key, isrepeat)
 	end
 
 	if key == "escape" then
-		tessera.event.quit()
+		tessera.exit()
 	elseif key == "space" then
 		if engine.playing then
 			engine.stop()
