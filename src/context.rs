@@ -13,6 +13,7 @@ pub struct AudioContext {
 	pub stream: cpal::Stream,
 	pub audio_tx: HeapProd<AudioMessage>,
 	pub stream_tx: HeapProd<bool>,
+	pub error_rx: HeapCons<bool>,
 	pub lua_rx: HeapCons<LuaMessage>,
 	pub m_render: Arc<Mutex<Render>>,
 	pub scope: Scope,
@@ -34,6 +35,14 @@ impl AudioContext {
 		if self.stream_tx.try_push(is_rendering).is_err() {
 			log_warn!("Stream queue full. Dropped message!");
 		}
+	}
+
+	pub fn check_should_rebuild(&mut self) -> bool {
+		let mut rebuild = false;
+		for m in self.error_rx.pop_iter() {
+			rebuild = m;
+		}
+		rebuild
 	}
 }
 

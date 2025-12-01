@@ -1,9 +1,11 @@
 use assert_no_alloc::*;
+use cpal::BackendSpecificError;
+use cpal::StreamError;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use no_denormals::no_denormals;
 use parking_lot::Mutex;
 use ringbuf::traits::*;
-use ringbuf::{HeapCons, HeapRb};
+use ringbuf::{HeapCons, HeapProd, HeapRb};
 use std::error::Error;
 use std::panic;
 use std::panic::AssertUnwindSafe;
@@ -92,6 +94,7 @@ where
 {
 	let (audio_tx, audio_rx) = HeapRb::<AudioMessage>::new(256).split();
 	let (stream_tx, stream_rx) = HeapRb::<bool>::new(8).split();
+	let (error_tx, error_rx) = HeapRb::<bool>::new(8).split();
 	let (lua_tx, lua_rx) = HeapRb::<LuaMessage>::new(256).split();
 	let (scope_tx, scope_rx) = HeapRb::<f32>::new(2048).split();
 	let scope = Scope::new(scope_rx);
@@ -104,12 +107,14 @@ where
 
 	let audio_closure = build_closure::<T>(stream_rx, m_render_clone);
 
-	let stream = device.build_output_stream(config, audio_closure, err_fn, None)?;
+	let stream =
+		device.build_output_stream(config, audio_closure, error_closure(error_tx), None)?;
 
 	Ok(AudioContext {
 		stream,
 		audio_tx,
 		stream_tx,
+		error_rx,
 		lua_rx,
 		m_render,
 		scope,
@@ -218,6 +223,23 @@ where
 	}
 }
 
+fn error_closure(mut error_tx: HeapProd<bool>) -> impl FnMut(StreamError) + Send + 'static {
+	move |error| match error {
+		StreamError::DeviceNotAvailable => {
+			log_error!("Stream error: device not available.")
+		},
+		StreamError::BackendSpecific { err: BackendSpecificError { ref description } } => {
+			// TODO: hopefully future versions of CPAL will handle this
+			if description.contains("ASIO reset request") {
+				log_info!("ASIO reset request");
+				error_tx.try_push(true).expect("Could not send message.");
+			} else {
+				log_error!("Stream error: {error}.")
+			}
+		},
+	}
+}
+
 fn find_output_device(
 	host_name: &str,
 	output_device_name: &str,
@@ -247,6 +269,7 @@ fn find_output_device(
 
 	log_info!("Avaliable output devices:");
 	for d in host.output_devices()? {
+		#[allow(deprecated)]
 		let name = d.name()?;
 		log_info!(" - \"{name}\"");
 	}
@@ -257,6 +280,7 @@ fn find_output_device(
 		output_device = host.default_output_device();
 	} else {
 		for device in host.output_devices().map_err(|_| "No output devices found.")? {
+			#[allow(deprecated)]
 			if let Ok(name) = device.name()
 				&& name.to_lowercase().contains(&output_device_name.to_lowercase())
 			{
@@ -273,15 +297,11 @@ fn find_output_device(
 			.ok_or("No default output device found.")?
 	};
 
+	#[allow(deprecated)]
 	let name = output_device.name()?;
 	log_info!("Using output device: \"{name}\"");
 
 	Ok(output_device)
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn err_fn(err: cpal::StreamError) {
-	log_error!("an error occurred on stream: {err}");
 }
 
 pub fn write_wav(filename: &str, samples: &[f32], sample_rate: u32) -> Result<(), Box<dyn Error>> {

@@ -5,9 +5,10 @@ edition = "2024"
 
 # ASIO requirements
 [target.'cfg(target_os = "windows")'.dependencies]
-cpal = { version = "0.16", features = ["asio"]}
+cpal = { version = "0.16", features = ["asio"], git = "https://github.com/Sin-tel/cpal.git", branch = "asio_message_callback" }
 [target.'cfg(not(target_os = "windows"))'.dependencies]
-cpal = { version = "0.16"}
+cpal = { version = "0.16", git = "https://github.com/Sin-tel/cpal.git", branch = "asio_message_callback" }
+
 
 [dependencies]
 assert_no_alloc = {version = "1.1", features = ["warn_debug"]}

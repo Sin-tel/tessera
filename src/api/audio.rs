@@ -39,6 +39,17 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	audio.set(
+		"check_should_rebuild",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				Ok(ctx.check_should_rebuild())
+			} else {
+				Ok(false)
+			}
+		})?,
+	)?;
+
+	audio.set(
 		"panic",
 		lua.create_function(|lua, ()| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {

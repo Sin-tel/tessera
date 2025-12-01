@@ -46,6 +46,7 @@ modifier_keys.any = false
 
 local load_last_save = true
 local last_save_location = "out/lastsave.sav"
+local project_initialized = false
 
 local draw_time_s = 0
 
@@ -56,7 +57,7 @@ tessera.graphics.set_color = function(t)
 	tessera.graphics.set_color_f(unpack(t))
 end
 
-local function load_project()
+local function build_startup_project()
 	local success = false
 	if load_last_save and util.file_exists(last_save_location) then
 		success = save.read(last_save_location)
@@ -86,11 +87,11 @@ local function audio_setup()
 		log.error("Audio setup failed")
 	end
 
-	if project.needs_init then
-		load_project()
-		project.needs_init = false
+	if not project_initialized then
+		build_startup_project()
+		project_initialized = true
 	else
-		-- restore tessera.audio
+		-- restore audio state
 		ui_channels = {}
 		build.project()
 	end
@@ -145,12 +146,20 @@ function tessera.load()
 
 	-- load empty project
 	build.new_project()
-	project.needs_init = true
 end
 
 function tessera.update(dt)
 	-- protect against huge dt from frozen window
 	dt = math.min(dt, 1 / 60)
+
+	if tessera.audio.check_should_rebuild() then
+		-- TODO: we only need to rebuild the stream, not tear down everything
+		log.info("Rebuilding stream")
+		midi.quit()
+		tessera.audio.quit()
+		audio_status = "request"
+	end
+
 	if audio_status == "render" then
 		engine.render()
 	elseif audio_status == "running" then
