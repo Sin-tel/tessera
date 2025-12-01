@@ -7,8 +7,19 @@ local widgets = require("ui/widgets")
 local build = {}
 
 function build.new_project()
+	if project.channels then
+		for i = #project.channels, 1, -1 do
+			tessera.audio.remove_channel(i)
+		end
+	end
+
+	ui_channels = {}
+	-- clear selection
+	selection.ch_index = nil
+	selection.device_index = nil
+
 	-- init empty project
-	local project = {}
+	project = {}
 	project.channels = {}
 	project.VERSION = {}
 	project.VERSION.MAJOR = VERSION.MAJOR
@@ -19,8 +30,6 @@ function build.new_project()
 	project.transport.time = 0
 	project.transport.start_time = 0
 	project.transport.recording = true
-
-	return project
 end
 
 function build.project()

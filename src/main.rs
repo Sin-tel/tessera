@@ -22,9 +22,11 @@ use tessera::opengl::setup_window;
 fn wrap_call<T: IntoLuaMulti>(lua_fn: &LuaFunction, args: T) {
 	if let Err(e) = lua_fn.call::<()>(args) {
 		// For now we just panic
-		panic!("{e}");
-		// log_error!("{e}");
+
+		log_error!("{e}");
+		panic!("Lua error");
 		// println!("{e}");
+		// panic!("Lua error");
 	}
 }
 

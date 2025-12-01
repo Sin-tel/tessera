@@ -6,7 +6,9 @@ mod midi;
 mod mouse;
 
 use crate::app::State;
+use crate::log::log_warn;
 use mlua::prelude::*;
+use std::sync::mpsc;
 
 pub fn create_lua() -> LuaResult<Lua> {
 	// #[cfg(debug_assertions)]
@@ -61,6 +63,78 @@ pub fn create_lua() -> LuaResult<Lua> {
 		lua.create_function(|_, time: f64| {
 			std::thread::sleep(std::time::Duration::from_secs_f64(time));
 			Ok(())
+		})?,
+	)?;
+
+	tessera.set(
+		"dialog_poll",
+		lua.create_function(|lua: &Lua, ()| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			if let Some(rx) = &state.dialog_rx {
+				match rx.try_recv() {
+					Ok(f) => {
+						state.dialog_rx = None;
+						Ok(Some(f))
+					},
+					_ => Ok(None),
+				}
+			} else {
+				Ok(None)
+			}
+		})?,
+	)?;
+
+	tessera.set(
+		"dialog_save",
+		lua.create_function(|lua: &Lua, name: String| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			if state.dialog_rx.is_some() {
+				log_warn!("Dialog already open!");
+				return Ok(false);
+			}
+
+			let (tx, rx) = mpsc::channel();
+			state.dialog_rx = Some(rx);
+
+			std::thread::spawn(move || {
+				let file = rfd::FileDialog::new()
+					.add_filter("save", &["sav"])
+					.set_file_name(name)
+					.set_directory(std::path::absolute("./out").unwrap())
+					.save_file();
+
+				tx.send(file).unwrap();
+			});
+
+			Ok(true)
+		})?,
+	)?;
+
+	tessera.set(
+		"dialog_open",
+		lua.create_function(|lua: &Lua, ()| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			if state.dialog_rx.is_some() {
+				log_warn!("Dialog already open!");
+				return Ok(false);
+			}
+
+			let (tx, rx) = mpsc::channel();
+			state.dialog_rx = Some(rx);
+
+			std::thread::spawn(move || {
+				let file = rfd::FileDialog::new()
+					.add_filter("save", &["sav"])
+					.set_directory(std::path::absolute("./out").unwrap())
+					.pick_file();
+
+				tx.send(file).unwrap();
+			});
+
+			Ok(true)
 		})?,
 	)?;
 
