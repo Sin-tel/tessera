@@ -2,6 +2,7 @@ local Device = require("device")
 local Roll = require("roll")
 local VoiceAlloc = require("voice_alloc")
 local device_list = require("device_list")
+local engine = require("engine")
 local widgets = require("ui/widgets")
 
 local build = {}
@@ -27,7 +28,6 @@ function build.new_project()
 	project.VERSION.PATCH = VERSION.PATCH
 	project.name = "Untitled project"
 	project.transport = {}
-	project.transport.time = 0
 	project.transport.start_time = 0
 	project.transport.recording = true
 end
@@ -43,6 +43,8 @@ function build.project()
 		selection.ch_index = 1
 		selection.device_index = 0
 	end
+
+	engine.seek(project.transport.start_time)
 end
 
 function build.channel(ch_index, channel)

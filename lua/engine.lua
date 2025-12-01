@@ -8,6 +8,7 @@ local engine = {}
 engine.playing = false
 engine.render_progress = 0
 engine.render_end = 8
+engine.time = 0
 
 function engine.start()
 	engine.seek(project.transport.start_time)
@@ -42,12 +43,12 @@ end
 
 function engine.seek(time)
 	assert(not engine.playing)
-	project.transport.time = time
+	engine.time = time
 end
 
 function engine.update(dt)
 	if engine.playing then
-		project.transport.time = project.transport.time + dt
+		engine.time = engine.time + dt
 		if tessera.audio.ok() then
 			for _, v in ipairs(ui_channels) do
 				v.roll:playback()
