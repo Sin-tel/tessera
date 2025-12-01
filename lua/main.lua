@@ -153,11 +153,8 @@ function tessera.update(dt)
 	dt = math.min(dt, 1 / 60)
 
 	if tessera.audio.check_should_rebuild() then
-		-- TODO: we only need to rebuild the stream, not tear down everything
 		log.info("Rebuilding stream")
-		midi.quit()
-		tessera.audio.quit()
-		audio_status = "request"
+		tessera.audio.rebuild(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
 	end
 
 	if audio_status == "render" then
