@@ -1,6 +1,7 @@
 use crate::app::State;
 use crate::audio;
-use crate::context::AudioMessage;
+use crate::audio::check_architecture;
+use crate::context::{AudioContext, AudioMessage};
 use crate::log::{log_error, log_info};
 use mlua::prelude::*;
 use no_denormals::no_denormals;
@@ -13,8 +14,10 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"setup",
 		lua.create_function(
 			|lua, (host_name, device_name, buffer_size): (String, String, Option<u32>)| {
+				check_architecture().unwrap();
+
 				let state = &mut *lua.app_data_mut::<State>().unwrap();
-				match audio::run(&host_name, &device_name, buffer_size) {
+				match AudioContext::new(&host_name, &device_name, buffer_size) {
 					Ok(ctx) => {
 						state.audio = Some(ctx);
 						Ok(())
@@ -25,6 +28,21 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 						Ok(())
 					},
 				}
+			},
+		)?,
+	)?;
+
+	audio.set(
+		"rebuild",
+		lua.create_function(
+			|lua, (host_name, device_name, buffer_size): (String, String, Option<u32>)| {
+				#[allow(clippy::collapsible_if)]
+				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+					if let Err(e) = ctx.rebuild_stream(&host_name, &device_name, buffer_size) {
+						log_error!("{e}");
+					}
+				}
+				Ok(())
 			},
 		)?,
 	)?;
@@ -210,7 +228,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"insert_channel",
 		lua.create_function(|lua, (index, instrument_name): (usize, String)| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let mut render = ctx.m_render.lock();
+				let mut render = ctx.render.lock();
 				render.insert_channel(index - 1, &instrument_name);
 			}
 			Ok(())
@@ -221,7 +239,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"remove_channel",
 		lua.create_function(|lua, index: usize| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let mut render = ctx.m_render.lock();
+				let mut render = ctx.render.lock();
 				render.remove_channel(index - 1);
 			}
 			Ok(())
@@ -232,7 +250,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"insert_effect",
 		lua.create_function(|lua, (channel_index, effect_index, name): (usize, usize, String)| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let mut render = ctx.m_render.lock();
+				let mut render = ctx.render.lock();
 				render.insert_effect(channel_index - 1, effect_index - 1, &name);
 			}
 			Ok(())
@@ -243,7 +261,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"remove_effect",
 		lua.create_function(|lua, (channel_index, effect_index): (usize, usize)| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let mut render = ctx.m_render.lock();
+				let mut render = ctx.render.lock();
 				render.remove_effect(channel_index - 1, effect_index - 1);
 			}
 			Ok(())
@@ -257,7 +275,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				let len = 64;
 				let buffer: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
 
-				let mut render = ctx.m_render.lock();
+				let mut render = ctx.render.lock();
 				// TODO: need to check here if the stream is *actually* paused
 
 				render.parse_messages();
@@ -314,7 +332,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"flush",
 		lua.create_function(|lua, ()| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let mut render = ctx.m_render.lock();
+				let mut render = ctx.render.lock();
 				render.flush();
 			}
 			Ok(())
