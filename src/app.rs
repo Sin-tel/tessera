@@ -4,7 +4,9 @@ use crate::log::log_warn;
 use crate::text::Font;
 use femtovg::ImageId;
 use femtovg::{Canvas, Color};
+use std::path::PathBuf;
 use std::sync::atomic::Ordering;
+use std::sync::mpsc;
 use std::time::Instant;
 use winit::window::Window;
 
@@ -33,6 +35,7 @@ pub struct State {
 	pub audio: Option<AudioContext>,
 	pub canvas: Canvas<Renderer>,
 	pub window: Window,
+	pub dialog_rx: Option<mpsc::Receiver<Option<PathBuf>>>,
 }
 
 impl State {
@@ -53,6 +56,7 @@ impl State {
 			audio: None,
 			canvas,
 			window,
+			dialog_rx: None,
 		}
 	}
 

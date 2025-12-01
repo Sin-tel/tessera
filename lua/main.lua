@@ -49,6 +49,8 @@ local last_save_location = "out/lastsave.sav"
 
 local draw_time_s = 0
 
+local dialog_pending
+
 -- patch up set_color to work with tables
 tessera.graphics.set_color = function(t)
 	tessera.graphics.set_color_f(unpack(t))
@@ -94,6 +96,26 @@ local function audio_setup()
 	end
 end
 
+-- since file dialogs are spawned on new threads, we need to check the results here
+local function poll_dialogs()
+	if dialog_pending then
+		local f = tessera.dialog_poll()
+		if f then
+			if dialog_pending == "save" then
+				save.write(f)
+				last_save_location = f
+				dialog_pending = nil
+			elseif dialog_pending == "open" then
+				-- TODO: undo
+				build.new_project()
+				save.read(f)
+				last_save_location = f
+				dialog_pending = nil
+			end
+		end
+	end
+end
+
 function tessera.load()
 	log.info("Tessera v" .. VERSION.MAJOR .. "." .. VERSION.MINOR .. "." .. VERSION.PATCH)
 	if release then
@@ -122,7 +144,7 @@ function tessera.load()
 	bottom_rigth:set_view(views.ChannelSettings.new())
 
 	-- load empty project
-	project = build.new_project()
+	build.new_project()
 	project.needs_init = true
 end
 
@@ -148,7 +170,9 @@ function tessera.draw()
 		audio_status = "request"
 	end
 
-	local t_start = tessera.timer.get_time()
+	poll_dialogs()
+
+	local t_start = tessera.get_time()
 
 	tessera.audio.update_scope()
 	if audio_status ~= "render" then
@@ -278,6 +302,14 @@ function tessera.keypressed(_, key, isrepeat)
 		engine.render_start()
 	elseif key == "n" and modifier_keys.ctrl then
 		command.run_and_register(command.NewProject.new())
+	elseif key == "o" and modifier_keys.ctrl then
+		if tessera.dialog_open() then
+			dialog_pending = "open"
+		end
+	elseif key == "s" and modifier_keys.ctrl and modifier_keys.shift then
+		if tessera.dialog_save("my_project") then
+			dialog_pending = "save"
+		end
 	elseif key == "s" and modifier_keys.ctrl then
 		save.write(last_save_location)
 	elseif key == "b" then
