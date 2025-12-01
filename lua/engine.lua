@@ -87,7 +87,7 @@ function engine.render_start()
 
 	-- sleep for a bit to make sure the audio thread is done
 	-- TODO: find something better
-	tessera.timer.sleep(0.01)
+	tessera.sleep(0.01)
 end
 
 function engine.render()
@@ -97,7 +97,7 @@ function engine.render()
 
 	-- Try to hit 16 ms to keep things responsive
 	local target_ms = 16
-	local t_start = tessera.timer.get_time()
+	local t_start = tessera.get_time()
 	for i = 1, 3000 do
 		local success = tessera.audio.render_block()
 		if not success then
@@ -115,7 +115,7 @@ function engine.render()
 			break
 		end
 
-		local t_now = (tessera.timer.get_time() - t_start) * 1000
+		local t_now = (tessera.get_time() - t_start) * 1000
 		if t_now > target_ms then
 			print(tostring(i) .. " blocks rendered")
 			break
