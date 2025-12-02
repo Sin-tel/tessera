@@ -49,6 +49,10 @@ impl Instrument for Polysine {
 		Polysine { voices, dc_killer: DcKiller::new(sample_rate), sample_rate, feedback: 0. }
 	}
 
+	fn voice_count(&self) -> usize {
+		N_VOICES
+	}
+
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
 

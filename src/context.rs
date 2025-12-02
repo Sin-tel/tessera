@@ -4,6 +4,7 @@ use crate::log::{log_info, log_warn};
 use crate::midi;
 use crate::render::Render;
 use crate::scope::Scope;
+use crate::voice_manager::Token;
 use mlua::Value;
 use mlua::prelude::*;
 use parking_lot::Mutex;
@@ -120,10 +121,12 @@ impl Drop for AudioContext {
 #[derive(Debug)]
 pub enum AudioMessage {
 	Panic,
-	NoteOn(usize, f32, f32, usize),
-	NoteOff(usize, usize),
-	Pitch(usize, f32, usize),
-	Pressure(usize, f32, usize),
+	AllNotesOff,
+	NoteOn(usize, Token, f32, f32),
+	NoteOff(usize, Token),
+	Pitch(usize, Token, f32),
+	Pressure(usize, Token, f32),
+	Sustain(usize, bool),
 	Parameter(usize, usize, usize, f32),
 	Mute(usize, bool),
 	Bypass(usize, usize, bool),

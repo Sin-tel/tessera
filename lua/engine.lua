@@ -28,9 +28,8 @@ function engine.stop()
 	local added_notes = {}
 	local total = 0
 
+	tessera.audio:all_notes_off()
 	for i, v in ipairs(ui_channels) do
-		v.voice_alloc:all_notes_off()
-
 		added_notes[i] = v.roll.recorded_notes
 		total = total + #added_notes[i]
 		v.roll:stop()
@@ -51,7 +50,7 @@ function engine.update(dt)
 		engine.time = engine.time + dt
 		if tessera.audio.ok() then
 			for _, v in ipairs(ui_channels) do
-				v.roll:playback()
+				v.roll:playback(v)
 			end
 		end
 	end

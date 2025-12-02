@@ -2,6 +2,7 @@ use crate::audio::AUDIO_PANIC;
 use crate::context::AudioContext;
 use crate::log::log_warn;
 use crate::text::Font;
+use crate::voice_manager::Token;
 use femtovg::ImageId;
 use femtovg::{Canvas, Color};
 use std::path::PathBuf;
@@ -33,6 +34,7 @@ pub struct State {
 	pub transform_stack: Vec<femtovg::Transform2D>,
 	pub current_scissor: Option<(f32, f32, f32, f32)>,
 	pub audio: Option<AudioContext>,
+	token: Token,
 	pub canvas: Canvas<Renderer>,
 	pub window: Window,
 	pub dialog_rx: Option<mpsc::Receiver<Option<PathBuf>>>,
@@ -54,6 +56,7 @@ impl State {
 			transform_stack: Vec::new(),
 			current_scissor: None,
 			audio: None,
+			token: 0,
 			canvas,
 			window,
 			dialog_rx: None,
@@ -66,5 +69,10 @@ impl State {
 			AUDIO_PANIC.store(false, Ordering::Relaxed);
 			self.audio = None;
 		}
+	}
+
+	pub fn next_token(&mut self) -> Token {
+		self.token = self.token.wrapping_add(1);
+		self.token
 	}
 }

@@ -1,6 +1,6 @@
+local Channel = require("channel")
 local Device = require("device")
 local Roll = require("roll")
-local VoiceAlloc = require("voice_alloc")
 local device_list = require("device_list")
 local engine = require("engine")
 local widgets = require("ui/widgets")
@@ -51,19 +51,16 @@ function build.channel(ch_index, channel)
 	local options = device_list.instruments[channel.instrument.name]
 	assert(options)
 
-	local channel_ui = { effects = {} }
+	local instrument = Device.new(channel.name, channel.instrument.state, options)
+	local widget = widgets.Channel.new()
+	local channel_ui = Channel.new(ch_index, instrument, widget)
 	table.insert(ui_channels, ch_index, channel_ui)
-	channel_ui.instrument = Device.new(channel.name, channel.instrument.state, options)
-	channel_ui.widget = widgets.Channel.new()
 
 	tessera.audio.insert_channel(ch_index, channel.instrument.name)
 
 	for i, v in ipairs(channel.effects) do
 		build.effect(ch_index, i, v)
 	end
-
-	channel_ui.voice_alloc = VoiceAlloc.new(ch_index, options.n_voices)
-	channel_ui.roll = Roll.new(ch_index)
 
 	build.refresh_channels()
 end
@@ -80,7 +77,7 @@ end
 
 function build.refresh_channels()
 	for i, v in ipairs(ui_channels) do
-		v.voice_alloc.ch_index = i
+		v.ch_index = i
 		v.roll.ch_index = i
 	end
 end

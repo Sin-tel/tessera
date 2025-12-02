@@ -1,15 +1,15 @@
-local VoiceAlloc = require("voice_alloc")
 local engine = require("engine")
 local log = require("log")
 
 local Roll = {}
 Roll.__index = Roll
 
+local DEFAULT_PRESSURE = 0.3
+
 function Roll.new(ch_index)
 	local self = setmetatable({}, Roll)
 
 	self.ch_index = ch_index
-	self.voice_alloc = ui_channels[ch_index].voice_alloc
 
 	self.n_index = 1
 	self.note_table = {}
@@ -79,28 +79,28 @@ function Roll:stop()
 	for _, note in pairs(self.active_notes) do
 		note.is_recording = nil
 		local t_offset = engine.time - note.time
-		table.insert(note.verts, { t_offset, 0, 0.0 })
+		table.insert(note.verts, { t_offset, 0, DEFAULT_PRESSURE })
 	end
 
 	self.active_notes = {}
 	self.recorded_notes = {}
 end
 
-function Roll:playback()
+function Roll:playback(channel)
 	while self.control_table[self.c_index] and engine.time > self.control_table[self.c_index].time do
 		local c = self.control_table[self.c_index]
 		if c.name == "sustain" then
-			self.voice_alloc:event({ name = "sustain", sustain = c.value })
+			channel:send_event({ name = "sustain", sustain = c.value })
 		end
 		self.c_index = self.c_index + 1
 	end
 
 	while self.note_table[self.n_index] and engine.time > self.note_table[self.n_index].time do
 		local note = self.note_table[self.n_index]
-		local id = VoiceAlloc.next_id()
-		table.insert(self.voices, { n_index = self.n_index, v_index = 1, id = id })
+		local token = tessera.audio.get_token()
+		table.insert(self.voices, { n_index = self.n_index, v_index = 1, token = token })
 
-		self.voice_alloc:event({ name = "note_on", id = id, pitch = note.pitch, vel = note.vel })
+		channel:send_event({ name = "note_on", token = token, pitch = note.pitch, vel = note.vel })
 
 		self.n_index = self.n_index + 1
 	end
@@ -115,7 +115,7 @@ function Roll:playback()
 
 		-- note off
 		if v.v_index >= #note.verts then
-			self.voice_alloc:event({ name = "note_off", id = v.id })
+			channel:send_event({ name = "note_off", token = v.token })
 			table.remove(self.voices, i)
 		else
 			local t0 = note.verts[v.v_index][1]
@@ -123,17 +123,15 @@ function Roll:playback()
 			local alpha = (engine.time - (note.time + t0)) / (t1 - t0)
 
 			local offset = util.lerp(note.verts[v.v_index][2], note.verts[v.v_index + 1][2], alpha)
-			local pres = util.lerp(note.verts[v.v_index][3], note.verts[v.v_index + 1][3], alpha)
+			local pressure = util.lerp(note.verts[v.v_index][3], note.verts[v.v_index + 1][3], alpha)
 
-			self.voice_alloc:event({ name = "cv", id = v.id, offset = offset, pres = pres })
+			channel:send_event({ name = "cv", token = v.token, offset = offset, pressure = pressure })
 		end
 	end
 end
 
+-- TODO: cleanup!
 function Roll:event(event)
-	-- passthrough
-	self.voice_alloc:event(event)
-
 	-- record events to timeline
 	if engine.playing and project.transport.recording then
 		local time = engine.time
@@ -144,15 +142,15 @@ function Roll:event(event)
 				time = time,
 				vel = event.vel,
 				-- TODO: initial pressure?
-				verts = { { 0.0, 0.0, 0.01 } },
+				verts = { { 0.0, 0.0, DEFAULT_PRESSURE } },
 				is_recording = true,
 			}
 
-			self.active_notes[event.id] = note
+			self.active_notes[event.token] = note
 			table.insert(project.channels[self.ch_index].notes, note)
 			table.insert(self.recorded_notes, note)
 		elseif event.name == "note_off" then
-			local note = self.active_notes[event.id]
+			local note = self.active_notes[event.token]
 			if not note then
 				-- Note was pressed before recording started
 				return
@@ -162,16 +160,16 @@ function Roll:event(event)
 
 			local v_prev = note.verts[#note.verts]
 			local offset = 0
-			local pres = 0
+			local pres = DEFAULT_PRESSURE
 			if v_prev then
 				offset = v_prev[2]
 			end
 
-			table.insert(self.active_notes[event.id].verts, { t_offset, offset, pres })
+			table.insert(self.active_notes[event.token].verts, { t_offset, offset, pres })
 
-			self.active_notes[event.id] = nil
+			self.active_notes[event.token] = nil
 		elseif event.name == "pitch" then
-			local note = self.active_notes[event.id]
+			local note = self.active_notes[event.token]
 			local t_offset = time - note.time
 
 			local v_prev = note.verts[#note.verts]
@@ -180,13 +178,13 @@ function Roll:event(event)
 			local n_new = { t_offset, event.offset, v_prev[3] }
 			-- if t_offset - v_prev[1] >= 0.008 then
 			if t_offset - v_prev[1] >= 0.0 then
-				table.insert(self.active_notes[event.id].verts, n_new)
+				table.insert(self.active_notes[event.token].verts, n_new)
 			else
 				-- note.verts[#note.verts] = n_new
 				note.verts[#note.verts][2] = event.offset
 			end
 		elseif event.name == "pressure" then
-			local note = self.active_notes[event.id]
+			local note = self.active_notes[event.token]
 			local t_offset = time - note.time
 
 			local v_prev = note.verts[#note.verts]
@@ -194,9 +192,23 @@ function Roll:event(event)
 			local n_new = { t_offset, v_prev[2], event.pressure }
 
 			if t_offset - v_prev[1] >= 0.008 then
-				table.insert(self.active_notes[event.id].verts, n_new)
+				table.insert(self.active_notes[event.token].verts, n_new)
 			else
 				-- note.verts[#note.verts] = n_new
+				note.verts[#note.verts][3] = event.pressure
+			end
+		elseif event.name == "cv" then
+			local note = self.active_notes[event.token]
+			local t_offset = time - note.time
+
+			local v_prev = note.verts[#note.verts]
+
+			local n_new = { t_offset, event.offset, event.pressure }
+
+			if t_offset - v_prev[1] >= 0.008 then
+				table.insert(self.active_notes[event.token].verts, n_new)
+			else
+				note.verts[#note.verts][2] = event.offset
 				note.verts[#note.verts][3] = event.pressure
 			end
 		elseif event.name == "sustain" then

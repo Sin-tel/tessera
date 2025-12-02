@@ -1,5 +1,4 @@
 local View = require("view")
-local VoiceAlloc = require("voice_alloc")
 local tuning = require("tuning")
 
 local TestPadView = View.derive("TestPad")
@@ -11,7 +10,7 @@ function TestPadView.new()
 	self.v = 0
 	self.f = 49
 
-	self.id = nil
+	self.token = nil
 
 	return self
 end
@@ -45,7 +44,7 @@ function TestPadView:draw()
 	my = util.clamp(my, y1, y2)
 
 	if self.box.focus then
-		tessera.graphics.ellipse("line", mx, my, 5)
+		tessera.graphics.circle("line", mx, my, 5)
 
 		local mxx = (mx - x1) / (x2 - x1)
 		local myy = (my - y1) / (y2 - y1)
@@ -55,7 +54,7 @@ function TestPadView:draw()
 
 		local ch_index = selection.ch_index
 		if (mouse.button == 1 or mouse.button == 2) and ch_index then
-			ui_channels[ch_index].voice_alloc:event({ name = "cv", id = self.id, offset = self.f, pres = self.v })
+			ui_channels[ch_index]:event({ name = "cv", token = self.token, offset = self.f, pressure = self.v })
 		end
 	end
 end
@@ -63,19 +62,19 @@ end
 function TestPadView:mousepressed()
 	local ch_index = selection.ch_index
 	if (mouse.button == 1 or mouse.button == 2) and ch_index then
-		self.id = VoiceAlloc.next_id()
+		self.token = tessera.audio.get_token()
 		local vel = self.v
 		local pitch = tuning.from_midi(60)
-		ui_channels[ch_index].voice_alloc:event({ name = "note_on", id = self.id, pitch = pitch, vel = vel })
-		ui_channels[ch_index].voice_alloc:event({ name = "cv", id = self.id, offset = self.f, pres = self.v })
+		ui_channels[ch_index]:event({ name = "note_on", token = self.token, pitch = pitch, vel = vel })
+		ui_channels[ch_index]:event({ name = "cv", token = self.token, offset = self.f, pressure = self.v })
 	end
 end
 
 function TestPadView:mousereleased()
 	local ch_index = selection.ch_index
 	if mouse.button == 1 and ch_index then
-		ui_channels[ch_index].voice_alloc:event({ name = "note_off", id = self.id })
-		self.id = nil
+		ui_channels[ch_index]:event({ name = "note_off", token = self.token })
+		self.token = nil
 	end
 end
 

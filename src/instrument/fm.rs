@@ -83,6 +83,10 @@ impl Instrument for Fm {
 		}
 	}
 
+	fn voice_count(&self) -> usize {
+		N_VOICES
+	}
+
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
 

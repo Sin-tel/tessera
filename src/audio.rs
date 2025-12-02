@@ -50,6 +50,7 @@ pub fn get_device_and_config(
 	Ok((output_device, stream_config, config.sample_format()))
 }
 
+#[allow(clippy::type_complexity)]
 pub fn build_stream(
 	device: &Device,
 	config: &StreamConfig,
