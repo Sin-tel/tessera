@@ -14,6 +14,8 @@ VERSION.MAJOR = "0"
 VERSION.MINOR = "0"
 VERSION.PATCH = "1"
 
+util = require("util")
+
 local build = require("build")
 local engine = require("engine")
 local midi = require("midi")
@@ -24,7 +26,6 @@ local views = require("views")
 workspace = require("workspace")
 mouse = require("mouse")
 command = require("command")
-util = require("util")
 
 width, height = tessera.graphics.get_dimensions()
 
@@ -45,7 +46,6 @@ modifier_keys.alt = false
 modifier_keys.any = false
 
 local load_last_save = true
-local last_save_location = "out/lastsave.sav"
 local project_initialized = false
 
 local draw_time_s = 0
@@ -59,8 +59,9 @@ end
 
 local function build_startup_project()
 	local success = false
-	if load_last_save and util.file_exists(last_save_location) then
-		success = save.read(last_save_location)
+	if load_last_save then
+		local f = save.get_last_save_location()
+		success = save.read(f)
 	end
 
 	if not success then
@@ -104,13 +105,13 @@ local function poll_dialogs()
 		if f then
 			if dialog_pending == "save" then
 				save.write(f)
-				last_save_location = f
+				save.set_save_location(f)
 				dialog_pending = nil
 			elseif dialog_pending == "open" then
 				-- TODO: undo
 				build.new_project()
 				save.read(f)
-				last_save_location = f
+				save.set_save_location(f)
 				dialog_pending = nil
 			end
 		end
@@ -138,7 +139,9 @@ function tessera.load()
 	local top_right, bottom_rigth = right:split(0.35, false)
 
 	top_left:set_view(views.Scope.new(false))
+	-- top_left:set_view(views.Canvas.new())
 	middle_left:set_view(views.Canvas.new())
+	-- middle_left:set_view(views.Debug.new())
 	top_right:set_view(views.Channels.new())
 	bottom_rigth:set_view(views.ChannelSettings.new())
 
@@ -315,7 +318,7 @@ function tessera.keypressed(_, key, isrepeat)
 			dialog_pending = "save"
 		end
 	elseif key == "s" and modifier_keys.ctrl then
-		save.write(last_save_location)
+		save.write(save.last_save_location)
 	elseif key == "b" then
 		project.transport.recording = not project.transport.recording
 	elseif key == "down" and modifier_keys.shift then

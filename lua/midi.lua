@@ -54,7 +54,7 @@ function midi.scan_ports(input_ports)
 			local name, index = tessera.midi.open_connection(config_name)
 			if name then
 				assert(not devices[index])
-				devices[index] = midi.new_device(v, name, index, config_name)
+				devices[index] = midi.new_device(v, name, config_name)
 			end
 		end
 	end
@@ -65,9 +65,8 @@ function midi.close_device(index)
 	table.remove(devices, index)
 end
 
-function midi.new_device(settings, name, index, config_name)
+function midi.new_device(settings, name, config_name)
 	local new = {}
-	new.index = index
 	new.mpe = settings.mpe
 	new.name = name
 	new.config_name = config_name
@@ -94,8 +93,9 @@ function midi.update(dt)
 end
 
 function midi.flush()
-	for _, device in ipairs(devices) do
-		tessera.midi.poll(device.index)
+	-- clear buffers
+	for i in ipairs(devices) do
+		tessera.midi.poll(i)
 	end
 end
 
