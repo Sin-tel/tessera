@@ -3,7 +3,6 @@
 #![warn(clippy::uninlined_format_args)]
 #![warn(clippy::semicolon_if_nothing_returned)]
 #![warn(clippy::explicit_iter_loop)]
-#![warn(clippy::items_after_statements)]
 #![warn(clippy::ignored_unit_patterns)]
 #![warn(clippy::redundant_else)]
 #![warn(clippy::match_same_arms)]
@@ -31,9 +30,9 @@ mod instrument;
 pub mod midi;
 pub mod render;
 pub mod scope;
+mod voice_manager;
 
 #[allow(dead_code)]
-// needs to be public for benches
 pub mod dsp;
 
 #[allow(unused_macros)]

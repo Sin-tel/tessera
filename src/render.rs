@@ -8,11 +8,18 @@ use crate::effect::*;
 use crate::instrument;
 use crate::instrument::*;
 use crate::log::log_warn;
+use crate::voice_manager::VoiceManager;
 
 pub struct Channel {
-	pub instrument: Box<dyn Instrument + Send>,
+	pub instrument: VoiceManager,
 	pub effects: Vec<Bypass>,
 	pub mute: bool,
+}
+
+impl Channel {
+	pub fn new(intrument: Box<dyn Instrument + Send>) -> Self {
+		Self { instrument: VoiceManager::new(intrument), effects: Vec::new(), mute: false }
+	}
 }
 
 pub struct Render {
@@ -51,9 +58,9 @@ impl Render {
 	}
 
 	pub fn insert_channel(&mut self, channel_index: usize, instrument_name: &str) {
-		let new_instr = instrument::new(self.sample_rate, instrument_name);
-		let newch = Channel { instrument: new_instr, effects: Vec::new(), mute: false };
-		self.channels.insert(channel_index, newch);
+		let instrument = instrument::new(self.sample_rate, instrument_name);
+		let channel = Channel::new(instrument);
+		self.channels.insert(channel_index, channel);
 	}
 
 	pub fn remove_channel(&mut self, index: usize) {
@@ -91,7 +98,7 @@ impl Render {
 					*sample = 0.0;
 				}
 
-				ch.instrument.process(buf_slice);
+				ch.instrument.instrument.process(buf_slice);
 				#[cfg(debug_assertions)]
 				check_fp(buf_slice);
 
@@ -139,34 +146,45 @@ impl Render {
 		use AudioMessage::*;
 		while let Some(m) = self.audio_rx.try_pop() {
 			match m {
-				NoteOn(ch_index, pitch, vel, id) => {
-					let ch = &mut self.channels[ch_index];
-					if !ch.mute {
-						ch.instrument.note_on(pitch, vel, id);
+				AllNotesOff => {
+					for ch in &mut self.channels {
+						ch.instrument.all_notes_off();
 					}
 				},
-				NoteOff(ch_index, id) => {
+				NoteOn(ch_index, token, pitch, vel) => {
 					let ch = &mut self.channels[ch_index];
 					if !ch.mute {
-						ch.instrument.note_off(id);
+						ch.instrument.note_on(token, pitch, vel);
 					}
 				},
-				Pitch(ch_index, pitch, id) => {
+				NoteOff(ch_index, token) => {
 					let ch = &mut self.channels[ch_index];
 					if !ch.mute {
-						ch.instrument.pitch(pitch, id);
+						ch.instrument.note_off(token);
 					}
 				},
-				Pressure(ch_index, pressure, id) => {
+				Pitch(ch_index, token, pitch) => {
 					let ch = &mut self.channels[ch_index];
 					if !ch.mute {
-						ch.instrument.pressure(pressure, id);
+						ch.instrument.pitch(token, pitch);
+					}
+				},
+				Pressure(ch_index, token, pressure) => {
+					let ch = &mut self.channels[ch_index];
+					if !ch.mute {
+						ch.instrument.pressure(token, pressure);
+					}
+				},
+				Sustain(ch_index, sustain) => {
+					let ch = &mut self.channels[ch_index];
+					if !ch.mute {
+						ch.instrument.sustain(sustain);
 					}
 				},
 				Parameter(ch_index, device_index, index, val) => {
 					let ch = &mut self.channels[ch_index];
 					if device_index == 0 {
-						ch.instrument.set_parameter(index, val);
+						ch.instrument.instrument.set_parameter(index, val);
 					} else {
 						ch.effects[device_index - 1].effect.set_parameter(index, val);
 					}
@@ -192,7 +210,7 @@ impl Render {
 
 	pub fn flush(&mut self) {
 		for ch in &mut self.channels {
-			ch.instrument.flush();
+			ch.instrument.instrument.flush();
 			for fx in &mut ch.effects {
 				fx.effect.flush();
 			}

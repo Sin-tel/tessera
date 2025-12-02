@@ -3,6 +3,7 @@ use crate::audio;
 use crate::audio::check_architecture;
 use crate::context::{AudioContext, AudioMessage};
 use crate::log::{log_error, log_info};
+use crate::voice_manager::Token;
 use mlua::prelude::*;
 use no_denormals::no_denormals;
 use ringbuf::traits::*;
@@ -104,20 +105,18 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	audio.set(
-		"pitch",
-		lua.create_function(|lua, (channel_index, pitch, voice): (usize, f32, usize)| {
-			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				ctx.send_message(AudioMessage::Pitch(channel_index - 1, pitch, voice - 1));
-			}
-			Ok(())
+		"get_token",
+		lua.create_function(|lua, ()| {
+			let state = &mut lua.app_data_mut::<State>().unwrap();
+			Ok(state.next_token())
 		})?,
 	)?;
 
 	audio.set(
-		"pressure",
-		lua.create_function(|lua, (channel_index, pressure, voice): (usize, f32, usize)| {
+		"all_notes_off",
+		lua.create_function(|lua, ()| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				ctx.send_message(AudioMessage::Pressure(channel_index - 1, pressure, voice - 1));
+				ctx.send_message(AudioMessage::AllNotesOff);
 			}
 			Ok(())
 		})?,
@@ -126,14 +125,9 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	audio.set(
 		"note_on",
 		lua.create_function(
-			|lua, (channel_index, pitch, vel, voice): (usize, f32, f32, usize)| {
+			|lua, (channel_index, pitch, vel, token): (usize, f32, f32, Token)| {
 				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-					ctx.send_message(AudioMessage::NoteOn(
-						channel_index - 1,
-						pitch,
-						vel,
-						voice - 1,
-					));
+					ctx.send_message(AudioMessage::NoteOn(channel_index - 1, token, pitch, vel));
 				}
 				Ok(())
 			},
@@ -142,9 +136,39 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 
 	audio.set(
 		"note_off",
-		lua.create_function(|lua, (channel_index, voice): (usize, usize)| {
+		lua.create_function(|lua, (channel_index, token): (usize, Token)| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				ctx.send_message(AudioMessage::NoteOff(channel_index - 1, voice - 1));
+				ctx.send_message(AudioMessage::NoteOff(channel_index - 1, token));
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"pitch",
+		lua.create_function(|lua, (channel_index, pitch, token): (usize, f32, Token)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_message(AudioMessage::Pitch(channel_index - 1, token, pitch));
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"pressure",
+		lua.create_function(|lua, (channel_index, pressure, token): (usize, f32, Token)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_message(AudioMessage::Pressure(channel_index - 1, token, pressure));
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"sustain",
+		lua.create_function(|lua, (channel_index, sustain): (usize, bool)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_message(AudioMessage::Sustain(channel_index - 1, sustain));
 			}
 			Ok(())
 		})?,

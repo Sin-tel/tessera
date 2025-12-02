@@ -82,6 +82,10 @@ impl Instrument for Analog {
 		}
 	}
 
+	fn voice_count(&self) -> usize {
+		1
+	}
+
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
 
