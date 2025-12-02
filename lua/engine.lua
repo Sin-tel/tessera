@@ -41,7 +41,10 @@ function engine.stop()
 end
 
 function engine.seek(time)
-	assert(not engine.playing)
+	if engine.playing then
+		log.warn("Engine was playing while seeking")
+		return
+	end
 	engine.time = time
 end
 
