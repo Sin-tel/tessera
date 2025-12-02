@@ -8,8 +8,10 @@ there is also 6 extra accidental pairs
 -- TODO: load tuning info from file
 
 local tuning = {}
+local ratio = util.ratio
 
--- default 11-limit JI table
+-- 11-limit JI table
+-- tuning.rank = 5
 -- tuning.generators = {
 -- 	ratio(2/1),
 -- 	ratio(3/2),
@@ -18,13 +20,23 @@ local tuning = {}
 -- 	ratio(33/32),
 -- }
 
--- meantone TE optimal
+-- 5-limit JI
+-- tuning.rank = 3
+-- tuning.generators = {
+-- 	ratio(2 / 1),
+-- 	ratio(3 / 2),
+-- 	ratio(81 / 80),
+-- }
+
+-- -- meantone TE optimal
+tuning.rank = 2
 tuning.generators = {
 	12.01397,
 	6.97049,
 }
 
 -- flattone
+-- tuning.rank = 2
 -- tuning.generators = {
 -- 	12.02062,
 -- 	6.94545,
@@ -60,19 +72,6 @@ tuning.generators = {
 -- 	7.01955,
 -- }
 
--- temperament projection matrix
--- empty entries are zero
--- stylua: ignore
-tuning.table = {
-	{ 1 },
-	{ 0, 1 },
-	{},
-	{},
-	{},
-	{},
-	{},
-}
-
 tuning.circle_of_fifths = { "F", "C", "G", "D", "A", "E", "B" }
 
 -- current scale expressed in generator steps
@@ -104,6 +103,14 @@ tuning.chromatic_table = {
 	{ -2,  5 },  -- B
 }
 
+function tuning.new_note()
+	local new = {}
+	for i = 1, tuning.rank do
+		new[i] = 0
+	end
+	return new
+end
+
 -- diatonic home row, 1 = C5
 function tuning.from_diatonic(n, add_octave)
 	add_octave = add_octave or 0
@@ -112,7 +119,7 @@ function tuning.from_diatonic(n, add_octave)
 	n = n - oct * s
 	local dia = tuning.diatonic_table[n]
 
-	local new = {}
+	local new = tuning.new_note()
 	new[1] = dia[1] + oct + add_octave
 	new[2] = dia[2]
 
@@ -126,7 +133,7 @@ function tuning.from_midi(n)
 	n = n - oct * s
 	local dia = tuning.chromatic_table[n + 1]
 
-	local new = {}
+	local new = tuning.new_note()
 	new[1] = dia[1] + oct - 5
 	new[2] = dia[2]
 
@@ -182,6 +189,16 @@ function tuning.get_name(p)
 		end
 	end
 
+	if tuning.rank >= 3 then
+		local plus = p[3]
+		if plus > 0 then
+			acc = acc .. string.rep("l", plus)
+		elseif plus < 0 then
+			local minus = -plus
+			acc = acc .. string.rep("m", minus)
+		end
+	end
+
 	local n = tuning.circle_of_fifths[n_i % #tuning.circle_of_fifths + 1]
 
 	return n .. acc .. tostring(o)
@@ -200,7 +217,7 @@ function tuning.move_diatonic(p, steps)
 	local p_o = tuning.from_diatonic(n)
 	local p_new = tuning.from_diatonic(n + steps)
 
-	for i, _ in ipairs(p_new) do
+	for i = 1, tuning.rank do
 		p[i] = p[i] + p_new[i] - p_o[i]
 	end
 end
@@ -216,12 +233,18 @@ function tuning.move_octave(p, steps)
 end
 
 function tuning.move_comma(p, steps)
-	-- hardcoded to Pythagorean comma for now
-	-- which is equal to a diesis in meantone (and flipped in size)
+	if tuning.rank == 2 then
+		-- hardcoded to Pythagorean comma for now
 
-	-- Pythagorean comma
-	p[1] = p[1] + 7 * steps
-	p[2] = p[2] - 12 * steps
+		if tuning.get_pitch({ -7, 12 }) < 0 then
+			-- diesis in meantone is flipped in size
+			steps = -steps
+		end
+		p[1] = p[1] + 7 * steps
+		p[2] = p[2] - 12 * steps
+	else
+		p[3] = p[3] + steps
+	end
 end
 
 return tuning

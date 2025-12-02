@@ -15,18 +15,20 @@ function Debug.new()
 end
 
 function Debug:draw()
-	-- local ix, iy = 32, 32
+	local ix, iy = 32, 32
 
 	tessera.graphics.set_color(theme.ui_text)
+	tessera.graphics.set_font_size(18)
 
-	-- local ls = 32
+	local ls = 32
 
-	-- tessera.graphics.set_font_notes()
-	-- tessera.graphics.label("abcdefghijklmnopqrstu", ix, iy, self.w, 0)
-	-- tessera.graphics.label("Ar Bs Ct Du Efea Fh Gi Bga", ix, iy + ls, self.w, 0)
-	-- tessera.graphics.label('jA kB Cl Dm En Fo Gp Aq D"', ix, iy + 2 * ls, self.w, 0)
-	-- tessera.graphics.label("abc - pnoq - jk - (a)", ix, iy + 3 * ls, self.w, 0)
-	-- tessera.graphics.label("+-lm hci 5/4 7/8 11/8 - 4:5:6:7 Ac~Ba", ix, iy + 4 * ls, self.w, 0)
+	local w = self.w - ix
+	tessera.graphics.set_font_notes()
+	tessera.graphics.label("abcdefghijklmnopqrstu", ix, iy, w, ls)
+	tessera.graphics.label("Ar Bs Ct Du Efea Fh Gi Bga", ix, iy + ls, w, ls)
+	tessera.graphics.label('jA kB Cl Dm En Fo Gp Aq D"', ix, iy + 2 * ls, w, ls)
+	tessera.graphics.label("abc - pnoq - jk - (a)", ix, iy + 3 * ls, w, ls)
+	tessera.graphics.label("+-lm hci 5/4 7/8 11/8 - 4:5:6:7 Ac~Ba", ix, iy + 4 * ls, w, ls)
 
 	-- tessera.graphics.set_line_width(5)
 	-- tessera.graphics.polyline(self.line_x, self.line_y)

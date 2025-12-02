@@ -39,6 +39,8 @@ end
 local function do_patches()
 	-- fix any issues with save files here when they come up
 	-- this is just a band-aid for now
+
+	-- fix projects with different rank
 	local tuning = require("tuning")
 	for _, ch in ipairs(project.channels) do
 		for _, note in ipairs(ch.notes) do
