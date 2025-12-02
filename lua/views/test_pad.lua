@@ -8,7 +8,8 @@ function TestPadView.new()
 	local self = setmetatable({}, TestPadView)
 
 	self.v = 0
-	self.f = 49
+	self.f = 60
+	self.chromatic = 60
 
 	self.token = nil
 
@@ -49,12 +50,18 @@ function TestPadView:draw()
 		local mxx = (mx - x1) / (x2 - x1)
 		local myy = (my - y1) / (y2 - y1)
 
-		self.f = -math.floor(oct * 0.5) * 12 + oct * 12 * mxx
+		self.f = 60 - math.floor(oct * 0.5) * 12 + oct * 12 * mxx
+		self.chromatic = math.floor(0.5 + self.f)
 		self.v = 1.0 - myy
 
 		local ch_index = selection.ch_index
 		if (mouse.button == 1 or mouse.button == 2) and ch_index then
-			ui_channels[ch_index]:event({ name = "cv", token = self.token, offset = self.f, pressure = self.v })
+			ui_channels[ch_index]:event({
+				name = "cv",
+				token = self.token,
+				offset = self.f - self.pitch,
+				pressure = self.v,
+			})
 		end
 	end
 end
@@ -64,9 +71,11 @@ function TestPadView:mousepressed()
 	if (mouse.button == 1 or mouse.button == 2) and ch_index then
 		self.token = tessera.audio.get_token()
 		local vel = self.v
-		local pitch = tuning.from_midi(60)
-		ui_channels[ch_index]:event({ name = "note_on", token = self.token, pitch = pitch, vel = vel })
-		ui_channels[ch_index]:event({ name = "cv", token = self.token, offset = self.f, pressure = self.v })
+		local note = tuning.from_midi(self.chromatic)
+		self.pitch = tuning.get_pitch(note)
+
+		ui_channels[ch_index]:event({ name = "note_on", token = self.token, pitch = note, vel = vel })
+		ui_channels[ch_index]:event({ name = "cv", token = self.token, offset = self.f - self.pitch, pressure = self.v })
 	end
 end
 

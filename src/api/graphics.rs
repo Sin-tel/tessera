@@ -233,6 +233,27 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	graphics.set(
+		"text",
+		lua.create_function(|lua, (text, x, y): (String, f32, f32)| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			let paint = Paint::color(state.current_color);
+
+			state.text_engine.draw_text(
+				&mut state.canvas,
+				&text,
+				x,
+				y,
+				&paint,
+				state.font,
+				state.font_size,
+			);
+
+			Ok(())
+		})?,
+	)?;
+
+	graphics.set(
 		"circle",
 		lua.create_function(|lua, (mode, x, y, r): (String, f32, f32, f32)| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
@@ -388,6 +409,29 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				path.line_to(*bx, *by);
 			}
 			path.close();
+
+			// draw
+			let paint = Paint::color(state.current_color);
+			state.canvas.fill_path(&path, &paint);
+			Ok(())
+		})?,
+	)?;
+
+	graphics.set(
+		"verts",
+		lua.create_function(|lua, (lx, ly, w): (Vec<f32>, Vec<f32>, f32)| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			if lx.len() < 2 {
+				return Ok(());
+			}
+			assert!(lx.len() == ly.len());
+
+			let mut path = Path::new();
+
+			for (&x, &y) in lx.iter().zip(ly.iter()) {
+				path.circle(x, y, w);
+			}
 
 			// draw
 			let paint = Paint::color(state.current_color);

@@ -340,4 +340,36 @@ impl TextEngine {
 		);
 		canvas.draw_glyph_commands(cmds, paint);
 	}
+
+	pub fn draw_text(
+		&mut self,
+		canvas: &mut Canvas<Renderer>,
+		text: &str,
+		x: f32,
+		y: f32,
+		paint: &Paint,
+		font: Font,
+		font_size: f32,
+	) {
+		let line_height = font_size;
+
+		let metrics = Metrics::new(font_size, line_height);
+		self.scratch_buffer.set_metrics(&mut self.font_system, metrics);
+
+		let attrs = Attrs::new().family(Family::Name(font.as_str()));
+
+		self.scratch_buffer
+			.set_text(&mut self.font_system, text, &attrs, Shaping::Basic, None);
+
+		self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
+
+		// Draw
+		let cmds = self.glyph_cache.fill_to_cmds(
+			&mut self.font_system,
+			canvas,
+			&self.scratch_buffer,
+			(x, y),
+		);
+		canvas.draw_glyph_commands(cmds, paint);
+	}
 }

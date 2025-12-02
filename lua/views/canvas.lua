@@ -78,10 +78,11 @@ function Canvas:draw()
 				local py = self.transform:pitch(tuning.get_pitch(tuning.from_diatonic(j, i)))
 				tessera.graphics.line(0, py, self.w, py)
 			end
+		elseif self.transform.sy < -2 then
+			tessera.graphics.set_color(theme.grid_highlight)
+			local py = self.transform:pitch(tuning.get_pitch({ i }))
+			tessera.graphics.line(0, py, self.w, py)
 		end
-		tessera.graphics.set_color(theme.grid_highlight)
-		local py = self.transform:pitch(tuning.get_pitch({ i }))
-		tessera.graphics.line(0, py, self.w, py)
 	end
 
 	-- time grid
@@ -105,11 +106,15 @@ function Canvas:draw()
 	-- draw notes
 	tessera.graphics.set_line_width(2.0)
 	tessera.graphics.set_font_notes()
-	for ch_index, ch in ipairs(project.channels) do
+	tessera.graphics.set_font_size()
+
+	for ch_index = #project.channels, 1, -1 do
+		local ch = project.channels[ch_index]
 		if ch.visible then
 			local c_normal = hsluv.hsluv_to_rgb({ ch.hue, 80.0, 60.0 })
 			local c_select = hsluv.hsluv_to_rgb({ ch.hue, 50.0, 80.0 })
 			local c_lock = hsluv.hsluv_to_rgb({ ch.hue, 40.0, 40.0 })
+			local c_vert = hsluv.hsluv_to_rgb({ ch.hue, 100.0, 70.0 })
 
 			for _, note in ipairs(ch.notes) do
 				local t_start = note.time
@@ -117,62 +122,74 @@ function Canvas:draw()
 				local x0 = self.transform:time(t_start)
 				local y0 = self.transform:pitch(p_start)
 
-				-- velocity
-				tessera.graphics.set_color_f(0.6, 0.6, 0.6)
-				local vo = 32 * note.vel
-				tessera.graphics.line(x0, y0, x0, y0 - vo)
-				tessera.graphics.line(x0 - 2, y0 - vo, x0 + 2, y0 - vo)
+				local x_end = self.transform:time(t_start + note.verts[#note.verts][1])
 
-				-- note
-				local c = c_normal
-				if ch.lock then
-					c = c_lock
-				end
-				if selection.mask[note] then
-					c = c_select
-				end
+				-- cull only based on time
+				if x_end > 0 and x0 < self.w then
+					-- y0 offset by first vert
+					local y0t = y0 + note.verts[1][2] * self.transform.sy
 
-				local lx = {}
-				local ly = {}
-				local lw = {}
+					-- velocity
+					tessera.graphics.set_color_f(0.6, 0.6, 0.6)
+					local vo = 32 * note.vel
+					tessera.graphics.line(x0, y0t, x0, y0t - vo)
+					tessera.graphics.line(x0 - 2, y0t - vo, x0 + 2, y0t - vo)
 
-				for i = 1, #note.verts do
-					local x = self.transform:time(t_start + note.verts[i][1])
-					local y = self.transform:pitch(p_start + note.verts[i][2])
-					local w = note.verts[i][3] * w_scale
+					-- note
+					local c = c_normal
+					if ch.lock then
+						c = c_lock
+					elseif selection.mask[note] then
+						c = c_select
+					end
 
-					table.insert(lx, x)
-					table.insert(ly, y)
-					table.insert(lw, w + 0.01)
-				end
+					local lx = {}
+					local ly = {}
+					local lw = {}
 
-				-- draw temp lines for notes that are not yet finished
-				if note.is_recording then
-					local n = #note.verts
-					local x = self.transform:time(engine.time)
-					local y = self.transform:pitch(p_start + note.verts[n][2])
-					local w = note.verts[n][3] * w_scale
+					for i = 1, #note.verts do
+						local x = self.transform:time(t_start + note.verts[i][1])
+						local y = self.transform:pitch(p_start + note.verts[i][2])
+						local w = note.verts[i][3] * w_scale
 
-					table.insert(lx, x)
-					table.insert(ly, y)
-					table.insert(lw, w)
-				end
+						table.insert(lx, x)
+						table.insert(ly, y)
+						table.insert(lw, w + 0.01)
+					end
 
-				tessera.graphics.set_color_f(c[1] * 0.5, c[2] * 0.5, c[3] * 0.5)
-				tessera.graphics.polyline_w(lx, ly, lw)
+					-- draw temp lines for notes that are not yet finished
+					if note.is_recording then
+						local n = #note.verts
+						local x = self.transform:time(engine.time)
+						local y = self.transform:pitch(p_start + note.verts[n][2])
+						local w = note.verts[n][3] * w_scale
 
-				tessera.graphics.set_color(c)
-				tessera.graphics.polyline(lx, ly)
+						table.insert(lx, x)
+						table.insert(ly, y)
+						table.insert(lw, w)
+					end
 
-				-- note head
-				tessera.graphics.set_color(c)
-				tessera.graphics.circle("fill", x0, y0, 3)
+					tessera.graphics.set_color_f(c[1] * 0.5, c[2] * 0.5, c[3] * 0.5)
+					tessera.graphics.polyline_w(lx, ly, lw)
 
-				-- note names
-				if self.transform.sy < -20 then
 					tessera.graphics.set_color(c)
-					local note_name = tuning.get_name(note.pitch)
-					tessera.graphics.label(note_name, x0 + 5, y0 - 10, self.w, 0)
+					tessera.graphics.polyline(lx, ly)
+
+					if self.transform.sy < -70 then
+						tessera.graphics.set_color(c_vert)
+						tessera.graphics.verts(lx, ly, 2)
+					end
+
+					-- note head
+					tessera.graphics.set_color(c)
+					tessera.graphics.circle("fill", x0, y0t, 3)
+
+					-- note names
+					if self.transform.sy < -20 then
+						tessera.graphics.set_color(c)
+						local note_name = tuning.get_name(note.pitch)
+						tessera.graphics.text(note_name, x0 + 5, y0t - 20)
+					end
 				end
 			end
 
@@ -259,13 +276,17 @@ function Canvas:keypressed(key)
 			-- get notes and paste them
 			local notes = util.clone(clipboard.notes)
 			local c = command.NoteAdd.new(notes)
-			command.run_and_register(c)
+
+			-- drag tool is responsible for registering the actual command
+			c:run()
 
 			-- set selection to new notes
 			selection.set_from_notes(notes)
 
 			-- switch to drag mode
 			self.current_tool = drag
+			drag.mode = "paste"
+			-- TODO: kind of hacky, should just have an init()
 			self.current_tool:mousepressed(self)
 			self.tool_active = true
 			return true

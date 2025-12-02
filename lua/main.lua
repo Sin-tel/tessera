@@ -138,9 +138,7 @@ function tessera.load()
 	local top_right, bottom_rigth = right:split(0.35, false)
 
 	top_left:set_view(views.Scope.new(false))
-	-- top_left:set_view(views.Canvas.new())
 	middle_left:set_view(views.Canvas.new())
-	-- middle_left:set_view(views.Debug.new())
 	top_right:set_view(views.Channels.new())
 	bottom_rigth:set_view(views.ChannelSettings.new())
 
@@ -264,7 +262,7 @@ function tessera.keypressed(_, key, isrepeat)
 	if audio_status == "render" then
 		if (key == "c" and modifier_keys.ctrl) or key == "escape" then
 			tessera.audio.render_cancel()
-			engine.render_end()
+			engine.render_finish()
 		end
 
 		return
