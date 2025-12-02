@@ -11,14 +11,6 @@ allow only one instance of each view?
 
 make tuning settings
 
-save undo history?
-
-sync polyphony / voice count somehow
-
-catch lua error handler
-- save to log
-- save backup
-
 add view resized callback
 
 add some way to tune instruments properly
