@@ -37,7 +37,7 @@ impl AudioContext {
 			get_device_and_config(host_name, output_device_name, buffer_size)?;
 		let sample_rate = config.sample_rate.0;
 
-		let (audio_tx, audio_rx) = HeapRb::<AudioMessage>::new(256).split();
+		let (audio_tx, audio_rx) = HeapRb::<AudioMessage>::new(1024).split();
 		let (lua_tx, lua_rx) = HeapRb::<LuaMessage>::new(256).split();
 		let (scope_tx, scope_rx) = HeapRb::<f32>::new(2048).split();
 		let scope = Scope::new(scope_rx);

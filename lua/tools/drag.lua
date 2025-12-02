@@ -3,7 +3,7 @@ local util = require("util")
 
 local drag = {}
 
-drag.clone = false
+drag.mode = "drag"
 
 function drag:mousepressed(canvas)
 	self.ix, self.iy = mouse.x, mouse.y
@@ -23,7 +23,7 @@ function drag:mousedown(canvas)
 		if util.dist(self.ix, self.iy, mouse.x, mouse.y) < mouse.DRAG_DIST then
 			return
 		else
-			if self.clone then
+			if drag.mode == "clone" then
 				local notes = util.clone(selection.get_notes())
 				for ch_index in ipairs(notes) do
 					for _, note in ipairs(notes[ch_index]) do
@@ -80,7 +80,7 @@ end
 
 function drag:mousereleased(canvas)
 	if self.edit then
-		if self.clone then
+		if self.mode == "clone" or self.mode == "paste" then
 			local notes = selection.get_notes()
 			local c = command.NoteAdd.new(notes)
 			command.register(c)
@@ -90,11 +90,11 @@ function drag:mousereleased(canvas)
 			self.prev_state = nil
 		end
 
-		self.clone = false
+		self.mode = "drag"
 		return true
 	end
 
-	self.clone = false
+	self.mode = "drag"
 end
 
 function drag:draw(canvas) end
