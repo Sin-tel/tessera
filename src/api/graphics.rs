@@ -80,6 +80,21 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	graphics.set(
+		"get_color_hsv",
+		lua.create_function(|lua, (h, s, v): (f64, f32, f32)| {
+			use okhsl::*;
+			let Rgb { r, g, b } = oklab_to_srgb_f32(okhsv_to_oklab(Okhsv { h, s, v }));
+			let t = lua.create_table()?;
+			t.set(1, r)?;
+			t.set(2, g)?;
+			t.set(3, b)?;
+
+			// Ok((r, g, b))
+			Ok(t)
+		})?,
+	)?;
+
+	graphics.set(
 		"set_line_width",
 		lua.create_function(|lua, line_width: Option<f32>| {
 			let mut state = lua.app_data_mut::<State>().unwrap();

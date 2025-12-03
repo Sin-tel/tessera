@@ -1,5 +1,4 @@
 local Ui = require("ui/ui")
-local hsluv = require("lib/hsluv")
 
 -- TODO: commands
 local function do_mute(ch_index, mute)
@@ -122,11 +121,13 @@ function Channel:draw(ui, ch_index, x, y, w, h)
 
 	local ch = project.channels[ch_index]
 
+	local c
 	if selection.ch_index == ch_index then
-		tessera.graphics.set_color(hsluv.hsluv_to_rgb({ ch.hue, 50.0, 80.0 }))
+		c = tessera.graphics.get_color_hsv(ch.hue / 360, 0.40, 0.95)
 	else
-		tessera.graphics.set_color(hsluv.hsluv_to_rgb({ ch.hue, 70.0, 70.0 }))
+		c = tessera.graphics.get_color_hsv(ch.hue / 360, 0.70, 0.90)
 	end
+	tessera.graphics.set_color(c)
 
 	local pad = 10
 	local w_text = w - 5 * Ui.BUTTON_SMALL - 2 * pad
