@@ -1,3 +1,4 @@
+use crate::api::project::Project;
 use crate::audio::AUDIO_PANIC;
 use crate::context::AudioContext;
 use crate::log::log_warn;
@@ -34,10 +35,11 @@ pub struct State {
 	pub transform_stack: Vec<femtovg::Transform2D>,
 	pub current_scissor: Option<(f32, f32, f32, f32)>,
 	pub audio: Option<AudioContext>,
-	token: Token,
+	pub project: Option<Project>,
 	pub canvas: Canvas<Renderer>,
 	pub window: Window,
 	pub dialog_rx: Option<mpsc::Receiver<Option<PathBuf>>>,
+	token: Token,
 }
 
 impl State {
@@ -56,6 +58,7 @@ impl State {
 			transform_stack: Vec::new(),
 			current_scissor: None,
 			audio: None,
+			project: None,
 			token: 0,
 			canvas,
 			window,
