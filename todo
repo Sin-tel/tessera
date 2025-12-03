@@ -41,7 +41,7 @@
   [ ] envelope
   [ ] vibrato
 [ ] lasso
-[ ] better hit detection
+[x] better hit detection
 
 [ ] Project tempo
 [ ] Project grid / time division
