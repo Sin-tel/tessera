@@ -43,6 +43,7 @@ swash = "0.2"
 unicode-script = "0.5.5"
 parking_lot = "0.12.5"
 rfd = "0.16"
+okhsl = "1.0.1"
 
 [[bench]]
 name = "bench"

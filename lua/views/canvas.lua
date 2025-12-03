@@ -1,7 +1,6 @@
 local Transform = require("views/transform")
 local View = require("view")
 local engine = require("engine")
-local hsluv = require("lib/hsluv")
 local tuning = require("tuning")
 
 -- sub tools
@@ -112,10 +111,10 @@ function Canvas:draw()
 	for ch_index = #project.channels, 1, -1 do
 		local ch = project.channels[ch_index]
 		if ch.visible then
-			local c_normal = hsluv.hsluv_to_rgb({ ch.hue, 80.0, 60.0 })
-			local c_select = hsluv.hsluv_to_rgb({ ch.hue, 50.0, 80.0 })
-			local c_lock = hsluv.hsluv_to_rgb({ ch.hue, 40.0, 40.0 })
-			local c_vert = hsluv.hsluv_to_rgb({ ch.hue, 100.0, 70.0 })
+			local c_normal = tessera.graphics.get_color_hsv(ch.hue / 360, 0.75, 0.80)
+			local c_select = tessera.graphics.get_color_hsv(ch.hue / 360, 0.50, 0.95)
+			local c_lock = tessera.graphics.get_color_hsv(ch.hue / 360, 0.40, 0.40)
+			local c_vert = tessera.graphics.get_color_hsv(ch.hue / 360, 0.70, 1.00)
 
 			for _, note in ipairs(ch.notes) do
 				local t_start = note.time
@@ -170,6 +169,7 @@ function Canvas:draw()
 						table.insert(lw, w)
 					end
 
+					-- tessera.graphics.set_color_f(c[1] * 0.5, c[2] * 0.5, c[3] * 0.5)
 					tessera.graphics.set_color_f(c[1] * 0.5, c[2] * 0.5, c[3] * 0.5)
 					tessera.graphics.polyline_w(lx, ly, lw)
 
