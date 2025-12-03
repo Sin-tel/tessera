@@ -23,21 +23,41 @@ function select_rect:mousereleased(canvas)
 
 	local mask = {}
 
-	local x1 = math.min(self.ox, mx)
-	local y1 = math.min(self.oy, my)
-	local x2 = math.max(self.ox, mx)
-	local y2 = math.max(self.oy, my)
+	local bx1 = math.min(self.ox, mx)
+	local by1 = math.min(self.oy, my)
+	local bx2 = math.max(self.ox, mx)
+	local by2 = math.max(self.oy, my)
 
 	for _, channel in ipairs(project.channels) do
 		if channel.visible and not channel.lock then
-			for i, v in ipairs(channel.notes) do
-				local t_start = v.time
-				local p_start = tuning.get_pitch(v.pitch)
-				local x0 = canvas.transform:time(t_start)
-				local y0 = canvas.transform:pitch(p_start)
+			for _, note in ipairs(channel.notes) do
+				-- broad phase: reject based on time range
+				local t_start = note.time
+				local t_end = note.time + note.verts[#note.verts][1]
+				local x_start = canvas.transform:time(t_start)
+				local x_end = canvas.transform:time(t_end)
 
-				if x1 < x0 and x0 < x2 and y1 < y0 and y0 < y2 then
-					mask[v] = true
+				if x_end >= bx1 and x_start <= bx2 then
+					-- narrow phase, do a line-box intersection for each segment
+					local base_pitch = tuning.get_pitch(note.pitch)
+
+					local x1 = canvas.transform:time(t_start)
+					local y1 = canvas.transform:pitch(base_pitch + note.verts[1][2])
+
+					for k = 2, #note.verts do
+						local vert = note.verts[k]
+
+						local x2 = canvas.transform:time(t_start + vert[1])
+						local y2 = canvas.transform:pitch(base_pitch + vert[2])
+
+						if util.line_box_intersect(x1, y1, x2, y2, bx1, by1, bx2, by2) then
+							-- hit
+							mask[note] = true
+							break
+						end
+
+						x1, y1 = x2, y2
+					end
 				end
 			end
 		end

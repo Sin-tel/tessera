@@ -10,8 +10,14 @@ function drag:mousepressed(canvas)
 
 	local mx, my = canvas:get_mouse()
 
-	local closest, _ = canvas:find_closest_note(mx, my)
-	self.note_origin = util.clone(closest)
+	local closest, _ = canvas:find_closest_note(mx, my, 32)
+
+	self.note_origin = selection.list[1]
+	if closest then
+		self.note_origin = util.clone(closest)
+	end
+
+	assert(self.note_origin)
 
 	self.start_x, self.start_y = canvas.transform:inverse(mouse.x, mouse.y)
 

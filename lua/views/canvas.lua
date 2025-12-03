@@ -101,7 +101,8 @@ function Canvas:draw()
 		self.transform.ox_ = -engine.time * self.transform.sx + self.w * 0.5
 	end
 
-	local w_scale = math.min(12, -self.transform.sy)
+	local w_scale = 0.3 * math.sqrt(-self.transform.sy * self.transform.sx)
+	w_scale = math.min(20, w_scale)
 
 	-- draw notes
 	tessera.graphics.set_line_width(2.0)
@@ -322,7 +323,7 @@ function Canvas:keypressed(key)
 	if move_up then
 		local prev_state = util.clone(selection.list)
 
-		for k, v in ipairs(selection.list) do
+		for _, v in ipairs(selection.list) do
 			if modifier_keys.shift then
 				tuning.move_octave(v.pitch, move_up)
 			elseif modifier_keys.ctrl then
@@ -348,7 +349,7 @@ function Canvas:keypressed(key)
 		if modifier_keys.alt then
 			move_amt = 0.01
 		end
-		for k, v in ipairs(selection.list) do
+		for _, v in ipairs(selection.list) do
 			v.time = v.time + move_right * move_amt
 		end
 
@@ -357,29 +358,71 @@ function Canvas:keypressed(key)
 	end
 end
 
+function Canvas:dist_sq_note(note, mx, my)
+	local d_max = math.huge
+
+	local base_pitch = tuning.get_pitch(note.pitch)
+	local t_start = note.time
+
+	-- Calculate first point
+	-- note.verts[1][1] is always 0
+	local x1 = self.transform:time(t_start)
+	local y1 = self.transform:pitch(base_pitch + note.verts[1][2])
+
+	for k = 2, #note.verts do
+		local vert = note.verts[k]
+
+		local x2 = self.transform:time(t_start + vert[1])
+		local y2 = self.transform:pitch(base_pitch + vert[2])
+
+		-- Check segment distance
+		local d_sq = util.segment_dist_sq(mx, my, x1, y1, x2, y2)
+		if d_sq < d_max then
+			d_max = d_sq
+		end
+
+		-- Shift for next segment
+		x1, y1 = x2, y2
+	end
+
+	return d_max
+end
+
 function Canvas:find_closest_note(mx, my, max_distance)
 	local closest
 	local closest_ch
-	local dmax = max_distance or math.huge
+
+	-- use squared distance
+	local dmax = max_distance ^ 2
+
+	local c1 = 0
+	local c2 = 0
+
 	for ch_index, channel in ipairs(project.channels) do
 		if channel.visible and not channel.lock then
-			for i, v in ipairs(channel.notes) do
-				local t_start = v.time
-				local t_end = v.time + v.verts[#v.verts][1]
-				local p_start = tuning.get_pitch(v.pitch)
+			for _, note in ipairs(channel.notes) do
+				-- Broad phase: bound by time range
+				local t_start = note.time
+				local t_end = note.time + note.verts[#note.verts][1]
+
 				local x0 = self.transform:time(t_start)
 				local x1 = self.transform:time(t_end)
-				local y0 = self.transform:pitch(p_start)
 
-				-- Assuming note is a horizontal line, project target onto it
-				local x_proj = util.clamp(mx, x0, x1)
+				c1 = c1 + 1
+				if mx >= x0 - max_distance and mx <= x1 + max_distance then
+					-- Narrow phase: iterate over segments
+					local note_dist = self:dist_sq_note(note, mx, my)
+					c2 = c2 + 1
 
-				-- Use projected distance, with distance to start as a tie-breaker
-				local d = util.dist(x_proj, y0, mx, my) + 0.001 * math.abs(x0 - mx)
-				if d < dmax then
-					dmax = d
-					closest = v
-					closest_ch = ch_index
+					-- We add a tiny bias based on distance to start of note (x0)
+					-- to prefer the start of a note if two overlap exactly
+					local tie_breaker = 0.0001 * math.abs(x0 - mx)
+
+					if note_dist + tie_breaker < dmax then
+						dmax = note_dist
+						closest = note
+						closest_ch = ch_index
+					end
 				end
 			end
 		end
@@ -394,11 +437,11 @@ function Canvas:find_closest_end(mx, my, max_distance)
 	local dmax = max_distance or math.huge
 	for ch_index, channel in ipairs(project.channels) do
 		if channel.visible and not channel.lock then
-			for i, v in ipairs(channel.notes) do
+			for _, v in ipairs(channel.notes) do
 				local t_end = v.time + v.verts[#v.verts][1]
-				local p_start = tuning.get_pitch(v.pitch)
+				local p_end = tuning.get_pitch(v.pitch) + v.verts[#v.verts][2]
 				local x0 = self.transform:time(t_end)
-				local y0 = self.transform:pitch(p_start)
+				local y0 = self.transform:pitch(p_end)
 
 				local d = util.dist(x0, y0, mx, my)
 				if d < dmax then
