@@ -147,6 +147,10 @@ impl Instrument for Pluck {
 				right = voice.ap.process(right);
 				left = voice.lp.process(left);
 
+				// make sure it doesn't explode
+				left = left.clamp(-1.0, 1.0);
+				right = right.clamp(-1.0, 1.0);
+
 				let s = right + left;
 
 				let mut hf = 0.0;

@@ -115,65 +115,67 @@ where
 
 	move |cpal_buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
 		let result = panic::catch_unwind(AssertUnwindSafe(|| {
-			unsafe {
-				no_denormals(|| {
-					assert_no_alloc(|| {
-						let cpal_buffer_size = cpal_buffer.len() / 2;
-						match render.try_lock() {
-							Some(mut render) if !is_rendering => {
-								if !start {
-									start = true;
-									log_info!("Buffer size: {cpal_buffer_size:?}");
-								}
+			assert_no_alloc(|| {
+				#[cfg(debug_assertions)]
+				enable_fpu_traps();
 
-								let time = std::time::Instant::now();
-
-								// parse all messages
-								for m in stream_rx.pop_iter() {
-									is_rendering = m;
-								}
-								render.parse_messages();
-
-								for buffer_chunk in cpal_buffer.chunks_mut(MAX_BUF_SIZE) {
-									let chunk_size = buffer_chunk.len() / 2;
-									let [mut l, mut r] = process_buffer;
-									let buf_slice =
-										&mut [&mut l[..chunk_size], &mut r[..chunk_size]];
-
-									render.process(buf_slice);
-
-									// interlace and convert
-									for (i, outsample) in
-										buffer_chunk.chunks_exact_mut(2).enumerate()
-									{
-										outsample[0] = T::from_sample(buf_slice[0][i]);
-										outsample[1] = T::from_sample(buf_slice[1][i]);
-									}
-								}
-
-								let t = time.elapsed();
-								let p = t.as_secs_f64()
-									/ (cpal_buffer_size as f64 / f64::from(render.sample_rate));
-								cpu_load.set(p as f32);
-								let load = cpu_load.process();
-								render.send(LuaMessage::Cpu(load));
-							},
-							_ => {
-								// Output silence as a fallback when lock fails.
-
-								for m in stream_rx.pop_iter() {
-									is_rendering = m;
-								}
-								// log_info!("Output silent");
-								for outsample in cpal_buffer.chunks_exact_mut(2) {
-									outsample[0] = T::from_sample(0.0f32);
-									outsample[1] = T::from_sample(0.0f32);
-								}
-							},
+				let cpal_buffer_size = cpal_buffer.len() / 2;
+				match render.try_lock() {
+					Some(mut render) if !is_rendering => {
+						if !start {
+							start = true;
+							log_info!("Buffer size: {cpal_buffer_size:?}");
 						}
-					});
-				});
-			};
+
+						let time = std::time::Instant::now();
+
+						// parse all messages
+						for m in stream_rx.pop_iter() {
+							is_rendering = m;
+						}
+						render.parse_messages();
+
+						for buffer_chunk in cpal_buffer.chunks_mut(MAX_BUF_SIZE) {
+							let chunk_size = buffer_chunk.len() / 2;
+							let [mut l, mut r] = process_buffer;
+							let buf_slice = &mut [&mut l[..chunk_size], &mut r[..chunk_size]];
+
+							unsafe {
+								no_denormals(|| {
+									render.process(buf_slice);
+								});
+							};
+
+							// interlace and convert
+							for (i, outsample) in buffer_chunk.chunks_exact_mut(2).enumerate() {
+								outsample[0] = T::from_sample(buf_slice[0][i]);
+								outsample[1] = T::from_sample(buf_slice[1][i]);
+							}
+						}
+
+						let t = time.elapsed();
+						let p = t.as_secs_f64()
+							/ (cpal_buffer_size as f64 / f64::from(render.sample_rate));
+						cpu_load.set(p as f32);
+						let load = cpu_load.process();
+						render.send(LuaMessage::Cpu(load));
+					},
+					_ => {
+						// Output silence as a fallback when lock fails.
+
+						for m in stream_rx.pop_iter() {
+							is_rendering = m;
+						}
+						// log_info!("Output silent");
+						for outsample in cpal_buffer.chunks_exact_mut(2) {
+							outsample[0] = T::from_sample(0.0f32);
+							outsample[1] = T::from_sample(0.0f32);
+						}
+					},
+				}
+			});
+			// 	});
+			// };
 		}));
 		if let Err(e) = result {
 			let msg = match e.downcast_ref::<&'static str>() {
@@ -296,3 +298,24 @@ fn convert_sample_wav(x: f32) -> i16 {
 	let x = (x + dither).clamp(-1.0, 1.0);
 	(if x >= 0.0 { x * f32::from(i16::MAX) } else { -x * f32::from(i16::MIN) }) as i16
 }
+
+#[cfg(debug_assertions)]
+#[cfg(any(target_arch = "x86_64"))]
+#[allow(deprecated)]
+fn enable_fpu_traps() {
+	unsafe {
+		use std::arch::x86_64::*;
+		let mut mxcsr = _mm_getcsr();
+		// clear the mask bits for all of the traps except _MM_EXCEPT_INEXACT.
+		mxcsr &= !(_MM_MASK_INVALID
+			| _MM_EXCEPT_DENORM
+			| _MM_MASK_DIV_ZERO
+			| _MM_EXCEPT_OVERFLOW
+			| _MM_EXCEPT_UNDERFLOW);
+		_mm_setcsr(mxcsr);
+	}
+}
+
+#[cfg(debug_assertions)]
+#[cfg(not(target_arch = "x86_64"))]
+fn enable_fpu_traps() {}
