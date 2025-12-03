@@ -284,6 +284,20 @@ function tessera.keypressed(_, key, isrepeat)
 		else
 			engine.start()
 		end
+	elseif modifier_keys.ctrl and key == "t" then
+		local t_start = tessera.get_time()
+
+		log.info("Sending project to backend")
+		tessera.project.set(project)
+
+		local time = (tessera.get_time() - t_start) * 1000
+		print("Took " .. time)
+	elseif modifier_keys.ctrl and key == "r" then
+		local p = tessera.project.get()
+
+		if p then
+			build.load_project(p)
+		end
 	elseif modifier_keys.ctrl and key == "k" then
 		if tessera.audio.ok() then
 			midi.quit()

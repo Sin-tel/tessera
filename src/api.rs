@@ -4,6 +4,7 @@ pub mod image;
 pub mod keycodes;
 mod midi;
 mod mouse;
+pub mod project;
 
 use crate::app::State;
 use crate::log::log_warn;
@@ -36,6 +37,9 @@ pub fn create_lua() -> LuaResult<Lua> {
 
 	// tessera.audio
 	tessera.set("audio", audio::create(&lua)?)?;
+
+	// tessera.project
+	tessera.set("project", project::create(&lua)?)?;
 
 	// tessera.exit()
 	tessera.set(
