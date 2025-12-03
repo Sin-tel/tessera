@@ -10,9 +10,9 @@ local profile = false
 -- local profile = require("lib.profile")
 
 VERSION = {}
-VERSION.MAJOR = "0"
-VERSION.MINOR = "0"
-VERSION.PATCH = "1"
+VERSION.MAJOR = 0
+VERSION.MINOR = 0
+VERSION.PATCH = 1
 
 util = require("util")
 
@@ -93,8 +93,7 @@ local function audio_setup()
 		project_initialized = true
 	else
 		-- restore audio state
-		ui_channels = {}
-		build.project()
+		build.restore_project()
 	end
 end
 
@@ -247,9 +246,7 @@ function tessera.textinput(t)
 	if audio_status == "render" then
 		return
 	end
-	-- should we handle tessera.textedited? (for IMEs)
-	-- TODO: handle utf-8
-	-- print(t)b
+	-- not implemented
 end
 
 function tessera.keypressed(_, key, isrepeat)

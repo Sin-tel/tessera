@@ -32,10 +32,8 @@ function edit:mousepressed(canvas)
 	elseif closest then
 		self.tool = drag
 
-		drag.mode = "clone"
-
 		if modifier_keys.ctrl then
-			drag.clone = true
+			drag.mode = "clone"
 		end
 	end
 

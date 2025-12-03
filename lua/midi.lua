@@ -87,8 +87,8 @@ function midi.update(dt)
 		midi.scan_ports(setup.midi.inputs)
 	end
 
-	for _, device in ipairs(devices) do
-		midi.update_device(device)
+	for i, device in ipairs(devices) do
+		midi.update_device(i, device)
 	end
 end
 
@@ -99,8 +99,8 @@ function midi.flush()
 	end
 end
 
-function midi.update_device(device)
-	local events = tessera.midi.poll(device.index)
+function midi.update_device(device_index, device)
+	local events = tessera.midi.poll(device_index)
 	if not events then
 		return
 	end

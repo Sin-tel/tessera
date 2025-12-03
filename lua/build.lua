@@ -1,12 +1,12 @@
 local Channel = require("channel")
 local Device = require("device")
-local Roll = require("roll")
 local device_list = require("device_list")
 local engine = require("engine")
 local widgets = require("ui/widgets")
 
 local build = {}
 
+-- clear the project from a valid state
 function build.new_project()
 	if project.channels then
 		for i = #project.channels, 1, -1 do
@@ -32,7 +32,8 @@ function build.new_project()
 	project.transport.recording = true
 end
 
-function build.project()
+-- build the given "project" is set but nothing else is
+local function setup_project()
 	for i, v in ipairs(project.channels) do
 		build.channel(i, v)
 	end
@@ -47,9 +48,23 @@ function build.project()
 	engine.seek(project.transport.start_time)
 end
 
+-- restore project from invalid state where backend died
+function build.restore_project()
+	ui_channels = {}
+	setup_project()
+end
+
+-- load new project from a valid state
+function build.load_project(new)
+	build.new_project()
+	project = new
+	setup_project()
+end
+
 function build.channel(ch_index, channel)
 	local options = device_list.instruments[channel.instrument.name]
-	assert(options)
+
+	assert(options, 'Could not find options for "' .. channel.instrument.name .. '"')
 
 	local instrument = Device.new(channel.name, channel.instrument.state, options)
 	local widget = widgets.Channel.new()

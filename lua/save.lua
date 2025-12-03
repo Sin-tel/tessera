@@ -36,13 +36,13 @@ function save.write(filename)
 	save.set_save_location(filename)
 end
 
-local function do_patches()
+local function do_patches(p)
 	-- fix any issues with save files here when they come up
 	-- this is just a band-aid for now
 
 	-- fix projects with different rank
 	local tuning = require("tuning")
-	for _, ch in ipairs(project.channels) do
+	for _, ch in ipairs(p.channels) do
 		for _, note in ipairs(ch.notes) do
 			for i = 1, tuning.rank do
 				if not note.pitch[i] then
@@ -51,6 +51,10 @@ local function do_patches()
 			end
 		end
 	end
+end
+
+local function version_str(version)
+	return version.MAJOR .. "." .. version.MINOR .. "." .. version.PATCH
 end
 
 function save.read(filename)
@@ -65,29 +69,23 @@ function save.read(filename)
 	local content = util.readfile(filename)
 	local new_project = setfenv(loadstring(content), {})()
 
-	-- currently assume most pessimistic compatibility
-	-- later on we may be more lenient (probably should according to semver)
-	-- if we can automatically upgrade save files to new version, do so here
-	if
-		new_project.VERSION.MAJOR == VERSION.MAJOR
-		and new_project.VERSION.MINOR == VERSION.MINOR
-		and new_project.VERSION.PATCH == VERSION.PATCH
-	then
-		project = new_project
-
-		do_patches()
-		build.project()
-		return true
+	-- we will check versions, but only emit a warning
+	local current_v = version_str(VERSION)
+	local project_v = version_str(new_project.VERSION)
+	if project_v ~= current_v then
+		log.warn(
+			"Save file was created with version "
+				.. project_v
+				.. " which is incompatible with current version "
+				.. current_v
+		)
 	end
 
-	local save_version = new_project.VERSION.MAJOR
-		.. "."
-		.. new_project.VERSION.MINOR
-		.. "."
-		.. new_project.VERSION.PATCH
-	log.warn("Save file version incompatible (" .. save_version .. ")")
+	-- if we can automatically upgrade save files to new version, do so here
+	do_patches(new_project)
 
-	return false
+	build.load_project(new_project)
+	return true
 end
 
 local setup_path = "settings/setup.lua"

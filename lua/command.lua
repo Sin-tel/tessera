@@ -91,8 +91,7 @@ function NewProject:run()
 end
 
 function NewProject:reverse()
-    project = util.clone(self.prev)
-    build.project()
+    build.load_project(util.clone(self.prev))
 end
 
 command.NewProject = NewProject
