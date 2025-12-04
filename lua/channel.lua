@@ -34,9 +34,6 @@ function Channel:send_event(event)
 		tessera.audio.note_on(self.ch_index, pitch, v_curve, token)
 	elseif event.name == "note_off" then
 		tessera.audio.note_off(self.ch_index, token)
-	elseif event.name == "cv" then
-		tessera.audio.pitch(self.ch_index, event.offset, token)
-		tessera.audio.pressure(self.ch_index, event.pressure, token)
 	elseif event.name == "pitch" then
 		tessera.audio.pitch(self.ch_index, event.offset, token)
 	elseif event.name == "pressure" then
@@ -44,7 +41,7 @@ function Channel:send_event(event)
 	elseif event.name == "sustain" then
 		tessera.audio.sustain(self.ch_index, event.sustain)
 	else
-		log.warn("unhandled event: ", util.pprint(event))
+		log.warn("unhandled event: ", util.dump(event))
 	end
 end
 

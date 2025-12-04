@@ -1,5 +1,6 @@
 local Ui = require("ui/ui")
 local log = require("log")
+local serialize = require("lib.serialize")
 
 local util = {}
 
@@ -148,27 +149,19 @@ function util.average(t)
 	return sum / n
 end
 
-local function pprint(t, indent)
-	indent = indent or 0
+function util.dump(t)
 	if type(t) == "table" then
-		for k, v in pairs(t) do
-			if type(v) == "table" then
-				print(string.rep("  ", indent) .. tostring(k) .. ":")
-				pprint(v, indent + 1)
-			else
-				local s = tostring(v)
-				if type(v) == "string" then
-					s = '"' .. s .. '"'
-				end
-				print(string.rep("  ", indent) .. tostring(k) .. ": " .. s)
-			end
-		end
+		return serialize(t)
+	elseif type(t) == "string" then
+		return '"' .. t .. '"'
 	else
-		print(t)
+		return tostring(t)
 	end
 end
 
-util.pprint = pprint
+function util.pprint(t)
+	print(util.dump(t))
+end
 
 function util.writefile(filename, contents)
 	local file, err = io.open(filename, "w")
