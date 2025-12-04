@@ -154,6 +154,8 @@ impl Effect for Reverb {
 		for d in &mut self.allpass_r {
 			d.flush();
 		}
+		self.pre_l.flush();
+		self.pre_r.flush();
 	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {

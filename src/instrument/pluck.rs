@@ -263,7 +263,18 @@ impl Instrument for Pluck {
 		voice.note_on = false;
 	}
 
-	fn flush(&mut self) {}
+	fn flush(&mut self) {
+		for voice in self.voices.iter_mut() {
+			voice.delay_l.flush();
+			voice.delay_r.flush();
+			voice.hammer_x = 2.0;
+			voice.hammer_v = 0.0;
+
+			voice.lp_f.reset_state();
+			voice.ap.reset_state();
+			voice.lp.reset_state();
+		}
+	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {

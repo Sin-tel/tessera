@@ -133,6 +133,11 @@ impl Adsr {
 		self.stage = AdsrStage::Release;
 	}
 
+	pub fn reset(&mut self) {
+		self.stage = AdsrStage::Attack;
+		self.value = 0.;
+	}
+
 	pub fn set_vel(&mut self, vel: f32) {
 		self.vel = vel;
 	}
