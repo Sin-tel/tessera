@@ -5,11 +5,10 @@ use crate::midi;
 use crate::render::Render;
 use crate::scope::Scope;
 use crate::voice_manager::Token;
-use mlua::Value;
-use mlua::prelude::*;
 use parking_lot::Mutex;
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd, HeapRb};
+use serde::Serialize;
 use std::error::Error;
 use std::sync::Arc;
 
@@ -134,30 +133,9 @@ pub enum AudioMessage {
 	// Swap(?),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
+#[serde(tag = "tag")]
 pub enum LuaMessage {
-	Cpu(f32),
-	Meter(f32, f32),
-}
-
-impl IntoLua for LuaMessage {
-	fn into_lua(self, lua: &Lua) -> LuaResult<Value> {
-		use LuaMessage::*;
-
-		let table = Lua::create_table(lua)?;
-
-		match self {
-			Cpu(cpu_load) => {
-				table.set("tag", "cpu")?;
-				table.set("cpu_load", cpu_load)?;
-			},
-			Meter(l, r) => {
-				table.set("tag", "meter")?;
-				table.set("l", l)?;
-				table.set("r", r)?;
-			},
-		}
-
-		Ok(Value::Table(table))
-	}
+	Cpu { load: f32 },
+	Meter { l: f32, r: f32 },
 }

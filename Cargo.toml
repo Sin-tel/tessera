@@ -29,8 +29,7 @@ simplelog = "0.12"
 # log-panics = { version = "2", features = ["with-backtrace"]}
 log-panics = { version = "2"}
 
-mlua = { version = "0.11", features = ["luajit", "vendored"] }
-# mlua = { version = "0.11", features = ["luajit", "module"] }
+mlua = { version = "0.11", features = ["luajit", "vendored", "serde"] }
 
 winit = "0.30"
 femtovg = {version="0.19.3", default-features = false, features=["image-loading"] }
@@ -45,6 +44,7 @@ unicode-script = "0.5.5"
 parking_lot = "0.12.5"
 rfd = "0.16"
 okhsl = "1.0.1"
+serde = { version = "1.0", features = ["derive"] }
 
 [[bench]]
 name = "bench"

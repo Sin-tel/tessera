@@ -158,7 +158,7 @@ where
 							/ (cpal_buffer_size as f64 / f64::from(render.sample_rate));
 						cpu_load.set(p as f32);
 						let load = cpu_load.process();
-						render.send(LuaMessage::Cpu(load));
+						render.send(LuaMessage::Cpu { load });
 					},
 					_ => {
 						// Output silence as a fallback when lock fails.
