@@ -8,6 +8,7 @@ end
 
 local profile = false
 -- local profile = require("lib.profile")
+-- local profile = require("lib.profile2")
 
 VERSION = {}
 VERSION.MAJOR = 0
@@ -169,11 +170,12 @@ function tessera.draw()
 	--- update ---
 	if audio_status == "request" then
 		audio_setup()
-		if profile then
-			profile.start()
-		end
 	elseif audio_status == "init" then
 		audio_status = "request"
+	end
+
+	if profile then
+		profile.start()
 	end
 
 	poll_dialogs()
@@ -211,6 +213,10 @@ function tessera.draw()
 		tessera.graphics.set_color(theme.widget)
 		local p = engine.render_progress / engine.render_end
 		tessera.graphics.rectangle("fill", width * 0.3 + 4, height * 0.5 - 12, (width * 0.4 - 8) * p, 24)
+	end
+
+	if profile then
+		profile.stop()
 	end
 end
 
@@ -284,20 +290,20 @@ function tessera.keypressed(_, key, isrepeat)
 		else
 			engine.start()
 		end
-	elseif modifier_keys.ctrl and key == "t" then
-		local t_start = tessera.get_time()
-
-		log.info("Sending project to backend")
-		tessera.project.set(project)
-
-		local time = (tessera.get_time() - t_start) * 1000
-		print("Took " .. time)
-	elseif modifier_keys.ctrl and key == "r" then
-		local p = tessera.project.get()
-
-		if p then
-			build.load_project(p)
-		end
+	-- elseif modifier_keys.ctrl and key == "t" then
+	-- 	local t_start = tessera.get_time()
+	-- 	log.info("Sending project to backend")
+	-- 	tessera.project.set(project)
+	-- 	local time = (tessera.get_time() - t_start) * 1000
+	-- 	print("Took " .. time)
+	-- elseif modifier_keys.ctrl and key == "r" then
+	-- 	local p = tessera.project.get()
+	-- 	if p then
+	-- 		build.load_project(p)
+	-- 	end
+	elseif modifier_keys.ctrl and key == "f" then
+		engine.stop()
+		tessera.audio.flush()
 	elseif modifier_keys.ctrl and key == "k" then
 		if tessera.audio.ok() then
 			midi.quit()
@@ -310,7 +316,7 @@ function tessera.keypressed(_, key, isrepeat)
 		tessera.audio.panic()
 	elseif modifier_keys.ctrl and key == "p" then
 		if profile then
-			log.info(profile.report(100))
+			log.info(profile.report(20))
 		end
 	elseif key == "z" and modifier_keys.ctrl then
 		command.undo()

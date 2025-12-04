@@ -11,9 +11,6 @@ function Slider.new(options)
 	self.value = SliderValue.new(options)
 	self.drag_start = 0.0
 
-	self.value_cache = nil
-	self.v_cache = nil
-
 	return self
 end
 
@@ -21,12 +18,7 @@ function Slider:update(ui, target, key)
 	local x, y, w, h = ui:next()
 	local hit = ui:hitbox(self, x, y, w, h)
 
-	local value_new = target[key]
-	if self.value_cache ~= value_new then
-		self.value_cache = value_new
-		self.v_cache = self.value:to_normal(value_new)
-	end
-	local v = self.v_cache
+	local v = self.value:to_normal(target[key])
 
 	local interact = false
 
@@ -116,7 +108,7 @@ function Slider:draw(v, display, color_fill, color_line, x, y, w, h)
 	tessera.graphics.rectangle("line", x, y, w, h, CORNER_RADIUS)
 
 	tessera.graphics.set_color(theme.ui_text)
-	tessera.graphics.label(display, x, y + 1, w, h, tessera.graphics.ALIGN_CENTER)
+	tessera.graphics.label(display, x, y + 0.4, w, h, tessera.graphics.ALIGN_CENTER)
 end
 
 return Slider

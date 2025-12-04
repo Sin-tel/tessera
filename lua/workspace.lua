@@ -25,14 +25,6 @@ function Box:scissor()
 	)
 end
 
-function Box:for_all(f)
-	f(self)
-	if self.children then
-		self.children[1]:for_all(f)
-		self.children[2]:for_all(f)
-	end
-end
-
 function Box:draw()
 	if self.children then
 		for _, v in ipairs(self.children) do
@@ -273,10 +265,28 @@ function Box:resize(x, y, w, h)
 	end
 end
 
+function Box:update_view()
+	if self.view then
+		self.view:update()
+	end
+	if self.children then
+		self.children[1]:update_view()
+		self.children[2]:update_view()
+	end
+end
+
 function Box:set_view(view)
 	if not self.children then
 		self.view = view
 		view.box = self
+	end
+end
+
+function Box:set_focus(focus)
+	self.focus = focus
+	if self.children then
+		self.children[1]:set_focus(focus)
+		self.children[2]:set_focus(focus)
 	end
 end
 
@@ -350,18 +360,12 @@ function workspace:update()
 		self.drag_div:set_split(mouse.x, mouse.y)
 	end
 	-- update
-	self.box:for_all(function(b)
-		if b.view then
-			b.view:update()
-		end
-	end)
+	self.box:update_view()
 
 	local div = self.drag_div
 	if not mouse.is_down then
 		div = div or self.box:get_divider()
-		self.box:for_all(function(b)
-			b.focus = false
-		end)
+		self.box:set_focus(false)
 		self.focus = nil
 	end
 	if div then
