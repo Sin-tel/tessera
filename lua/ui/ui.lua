@@ -137,7 +137,8 @@ function Ui:draw()
 
 	-- draw in reverse order to handle overlaps
 	for i = #self.draw_queue, 1, -1 do
-		self.draw_queue[i][1](unpack(self.draw_queue[i][2]))
+		local f, args = unpack(self.draw_queue[i])
+		f(unpack(args))
 	end
 
 	-- TODO: maybe we can cache these?

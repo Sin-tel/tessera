@@ -13,12 +13,7 @@ use std::sync::mpsc;
 
 pub fn create_lua() -> LuaResult<Lua> {
 	// #[cfg(debug_assertions)]
-	let lua = unsafe {
-		Lua::unsafe_new_with(
-			mlua::StdLib::DEBUG | mlua::StdLib::ALL_SAFE,
-			mlua::LuaOptions::default(),
-		)
-	};
+	let lua = unsafe { Lua::unsafe_new() };
 
 	// #[cfg(not(debug_assertions))]
 	// let lua = Lua::new();
