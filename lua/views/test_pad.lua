@@ -57,9 +57,13 @@ function TestPadView:draw()
 		local ch_index = selection.ch_index
 		if (mouse.button == 1 or mouse.button == 2) and ch_index then
 			ui_channels[ch_index]:event({
-				name = "cv",
+				name = "pitch",
 				token = self.token,
 				offset = self.f - self.pitch,
+			})
+			ui_channels[ch_index]:event({
+				name = "pressure",
+				token = self.token,
 				pressure = self.v,
 			})
 		end
@@ -75,7 +79,7 @@ function TestPadView:mousepressed()
 		self.pitch = tuning.get_pitch(note)
 
 		ui_channels[ch_index]:event({ name = "note_on", token = self.token, pitch = note, vel = vel })
-		ui_channels[ch_index]:event({ name = "cv", token = self.token, offset = self.f - self.pitch, pressure = self.v })
+		ui_channels[ch_index]:event({ name = "pitch", token = self.token, offset = self.f - self.pitch })
 	end
 end
 

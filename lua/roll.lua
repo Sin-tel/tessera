@@ -125,7 +125,8 @@ function Roll:playback(channel)
 			local offset = util.lerp(note.verts[v.v_index][2], note.verts[v.v_index + 1][2], alpha)
 			local pressure = util.lerp(note.verts[v.v_index][3], note.verts[v.v_index + 1][3], alpha)
 
-			channel:send_event({ name = "cv", token = v.token, offset = offset, pressure = pressure })
+			channel:send_event({ name = "pressure", token = v.token, pressure = pressure })
+			channel:send_event({ name = "pitch", token = v.token, offset = offset })
 		end
 	end
 end
@@ -174,7 +175,6 @@ function Roll:event(event)
 
 			local v_prev = note.verts[#note.verts]
 
-			print(t_offset - v_prev[1])
 			local n_new = { t_offset, event.offset, v_prev[3] }
 			-- if t_offset - v_prev[1] >= 0.008 then
 			if t_offset - v_prev[1] >= 0.0 then
@@ -197,20 +197,6 @@ function Roll:event(event)
 				-- note.verts[#note.verts] = n_new
 				note.verts[#note.verts][3] = event.pressure
 			end
-		elseif event.name == "cv" then
-			local note = self.active_notes[event.token]
-			local t_offset = time - note.time
-
-			local v_prev = note.verts[#note.verts]
-
-			local n_new = { t_offset, event.offset, event.pressure }
-
-			if t_offset - v_prev[1] >= 0.008 then
-				table.insert(self.active_notes[event.token].verts, n_new)
-			else
-				note.verts[#note.verts][2] = event.offset
-				note.verts[#note.verts][3] = event.pressure
-			end
 		elseif event.name == "sustain" then
 			if not project.channels[self.ch_index].control.sustain then
 				project.channels[self.ch_index].control.sustain = {}
@@ -218,7 +204,7 @@ function Roll:event(event)
 			local c = { value = event.sustain, time = time }
 			table.insert(project.channels[self.ch_index].control.sustain, c)
 		else
-			print("unhandled event: ", util.pprint(event))
+			print("unhandled event: ", util.dump(event))
 		end
 	end
 end

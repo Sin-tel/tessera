@@ -123,12 +123,14 @@ local function write_table2(t, var)
 end
 
 local function serialize(t, var)
-	local var = var or "t"
-
-	local s = "local " .. var .. " = {\n"
-	s = s .. write_table(t)
-	s = s .. "\nreturn " .. var
-	return s
+	if var then
+		local s = "local " .. var .. " = {\n"
+		s = s .. write_table(t)
+		s = s .. "\nreturn " .. var
+		return s
+	else
+		return "{\n" .. write_table(t)
+	end
 end
 
 local function deserialize(s)
