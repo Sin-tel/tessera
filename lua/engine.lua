@@ -143,9 +143,9 @@ function engine.parse_messages()
 		if p == nil then
 			return
 		end
-		if p.tag == "cpu" then
-			workspace.cpu_load = p.cpu_load
-		elseif p.tag == "meter" then
+		if p.tag == "Cpu" then
+			workspace.cpu_load = p.load
+		elseif p.tag == "Meter" then
 			workspace.meter.l = util.to_dB(p.l)
 			workspace.meter.r = util.to_dB(p.r)
 		end
@@ -165,23 +165,13 @@ function engine.end_time()
 	return t_end
 end
 
-local function to_number(x)
-	if type(x) == "number" then
-		return x
-	elseif type(x) == "boolean" then
-		return x and 1 or 0
-	else
-		error("unsupported type: " .. type(x))
-	end
-end
-
 function engine.send_parameters()
 	for k, ch in ipairs(ui_channels) do
 		for l in ipairs(ch.instrument.parameters) do
 			local new_value = ch.instrument.state[l]
 			local old_value = ch.instrument.state_old[l]
 			if old_value ~= new_value then
-				local value = to_number(new_value)
+				local value = new_value
 				tessera.audio.send_parameter(k, 0, l, value)
 				ch.instrument.state_old[l] = new_value
 			end
@@ -192,7 +182,7 @@ function engine.send_parameters()
 				local new_value = fx.state[l]
 				local old_value = fx.state_old[l]
 				if old_value ~= new_value then
-					local value = to_number(new_value)
+					local value = new_value
 					tessera.audio.send_parameter(k, e, l, value)
 					fx.state_old[l] = new_value
 				end

@@ -20,14 +20,18 @@ function Toggle:update(ui, target, key)
 	local clicked = false
 
 	if ui.clicked == self then
-		command.run_and_register(command.Change.new(target, key, not target[key]))
+		local new_v = 0
+		if target[key] == 0 then
+			new_v = 1
+		end
+		command.run_and_register(command.Change.new(target, key, new_v))
 		clicked = true
 	end
 
 	local color_fill = theme.widget_bg
 	local color_line = theme.line
 
-	if target[key] then
+	if target[key] == 1 then
 		color_fill = theme.widget
 	end
 	if ui.active == self then

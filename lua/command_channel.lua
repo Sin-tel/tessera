@@ -43,7 +43,7 @@ local function new_device_data(name, options)
         elseif widget_type == "selector" then
             state[i] = widget_options.default or 1
         elseif widget_type == "toggle" then
-            state[i] = widget_options.default or false
+            state[i] = widget_options.default and 1 or 0
         else
             error(widget_type .. " not supported!")
         end

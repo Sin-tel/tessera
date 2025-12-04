@@ -129,7 +129,7 @@ impl Render {
 		self.peak_r.set(sum[1]);
 		let peak_l = self.peak_l.process();
 		let peak_r = self.peak_r.process();
-		self.send(LuaMessage::Meter(peak_l, peak_r));
+		self.send(LuaMessage::Meter { l: peak_l, r: peak_r });
 
 		// Send everything to scope.
 		for s in buffer[0].iter() {

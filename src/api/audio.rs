@@ -388,7 +388,10 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"pop",
 		lua.create_function(|lua, ()| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				Ok(ctx.lua_rx.try_pop())
+				match ctx.lua_rx.try_pop() {
+					Some(p) => Ok(Some(lua.to_value(&p)?)),
+					None => Ok(None),
+				}
 			} else {
 				Ok(None)
 			}
