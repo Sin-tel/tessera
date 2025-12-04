@@ -112,7 +112,11 @@ impl Instrument for Polysine {
 		voice.vel.set(0.0);
 		voice.note_on = false;
 	}
-	fn flush(&mut self) {}
+	fn flush(&mut self) {
+		for v in &mut self.voices {
+			v.vel.set_immediate(0.);
+		}
+	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {

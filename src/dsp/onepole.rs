@@ -28,6 +28,10 @@ impl OnePole {
 		self.g.set(g);
 	}
 
+	pub fn reset_state(&mut self) {
+		self.s = 0.;
+	}
+
 	pub fn set_lowpass(&mut self, cutoff: f32) {
 		let f = prewarp(cutoff / self.sample_rate);
 		self.set_coef(f);
