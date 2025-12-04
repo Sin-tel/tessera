@@ -123,6 +123,17 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	audio.set(
+		"clear_messages",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let mut render = ctx.render.lock();
+				render.parse_messages();
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
 		"note_on",
 		lua.create_function(
 			|lua, (channel_index, pitch, vel, token): (usize, f32, f32, Token)| {

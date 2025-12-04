@@ -8,6 +8,10 @@ local build = {}
 
 -- clear the project from a valid state
 function build.new_project()
+	-- make sure there is no lingering state on the backend.
+	engine.stop()
+	tessera.audio.clear_messages()
+
 	if project.channels then
 		for i = #project.channels, 1, -1 do
 			tessera.audio.remove_channel(i)
