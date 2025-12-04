@@ -174,8 +174,6 @@ where
 					},
 				}
 			});
-			// 	});
-			// };
 		}));
 		if let Err(e) = result {
 			let msg = match e.downcast_ref::<&'static str>() {
@@ -300,7 +298,7 @@ fn convert_sample_wav(x: f32) -> i16 {
 }
 
 #[cfg(debug_assertions)]
-#[cfg(any(target_arch = "x86_64"))]
+#[cfg(target_arch = "x86_64")]
 #[allow(deprecated)]
 fn enable_fpu_traps() {
 	unsafe {

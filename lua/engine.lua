@@ -23,6 +23,9 @@ function engine.start()
 end
 
 function engine.stop()
+	if engine.playing == false then
+		return
+	end
 	engine.playing = false
 
 	local added_notes = {}
@@ -62,6 +65,7 @@ function engine.update(dt)
 end
 
 function engine.render_start()
+	engine.stop()
 	tessera.audio.flush()
 	midi.flush()
 
@@ -87,10 +91,7 @@ function engine.render_start()
 	mouse:end_frame()
 
 	tessera.audio.set_rendering(true)
-
-	-- sleep for a bit to make sure the audio thread is done
-	-- TODO: find something better
-	tessera.sleep(0.01)
+	tessera.audio.clear_messages()
 end
 
 function engine.render()
@@ -176,7 +177,7 @@ end
 
 function engine.send_parameters()
 	for k, ch in ipairs(ui_channels) do
-		for l, par in ipairs(ch.instrument.parameters) do
+		for l in ipairs(ch.instrument.parameters) do
 			local new_value = ch.instrument.state[l]
 			local old_value = ch.instrument.state_old[l]
 			if old_value ~= new_value then
@@ -187,7 +188,7 @@ function engine.send_parameters()
 		end
 
 		for e, fx in ipairs(ch.effects) do
-			for l, par in ipairs(fx.parameters) do
+			for l in ipairs(fx.parameters) do
 				local new_value = fx.state[l]
 				local old_value = fx.state_old[l]
 				if old_value ~= new_value then
@@ -201,10 +202,9 @@ function engine.send_parameters()
 end
 
 function engine.reset_parameters()
-	for k, ch in ipairs(ui_channels) do
+	for _, ch in ipairs(ui_channels) do
 		ch.instrument:reset()
-
-		for e, fx in ipairs(ch.effects) do
+		for _, fx in ipairs(ch.effects) do
 			fx:reset()
 		end
 	end
