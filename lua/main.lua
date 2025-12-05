@@ -248,14 +248,7 @@ function tessera.wheelmoved(_, y)
 	mouse:wheelmoved(y)
 end
 
-function tessera.textinput(t)
-	if audio_status == "render" then
-		return
-	end
-	-- not implemented
-end
-
-function tessera.keypressed(_, key, isrepeat)
+function tessera.keypressed(key, key_str, isrepeat)
 	if key == "lshift" or key == "rshift" then
 		modifier_keys.shift = true
 	elseif key == "lctrl" or key == "rctrl" then
@@ -361,7 +354,7 @@ function tessera.keypressed(_, key, isrepeat)
 	end
 end
 
-function tessera.keyreleased(_, key)
+function tessera.keyreleased(key, key_str)
 	if key == "lshift" or key == "rshift" then
 		modifier_keys.shift = false
 	elseif key == "lctrl" or key == "rctrl" then
