@@ -6,10 +6,14 @@ local Channel = {}
 
 Channel.__index = Channel
 
-function Channel.new(ch_index, instrument, widget)
+function Channel.new(ch_index, data, instrument, widget)
 	local self = setmetatable({}, Channel)
 
 	self.ch_index = ch_index
+
+	-- reference to project data
+	self.data = data
+	self.mute_old = false
 
 	self.widget = widget
 	self.instrument = instrument
@@ -43,6 +47,10 @@ function Channel:send_event(event)
 	else
 		log.warn("unhandled event: ", util.dump(event))
 	end
+end
+
+function Channel:reset()
+	self.mute_old = false
 end
 
 return Channel

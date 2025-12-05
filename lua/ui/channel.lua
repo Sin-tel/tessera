@@ -8,7 +8,6 @@ local function do_mute(ch_index, mute)
 	end
 	if ch.mute ~= mute then
 		ch.mute = mute
-		tessera.audio.send_mute(ch_index, mute)
 	end
 end
 

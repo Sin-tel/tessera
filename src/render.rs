@@ -98,7 +98,7 @@ impl Render {
 					*sample = 0.0;
 				}
 
-				ch.instrument.instrument.process(buf_slice);
+				ch.instrument.process(buf_slice);
 				#[cfg(debug_assertions)]
 				check_fp(buf_slice);
 
@@ -189,13 +189,13 @@ impl Render {
 						ch.effects[device_index - 1].effect.set_parameter(index, val);
 					}
 				},
-				Mute(ch_index, mute) => self.channels[ch_index].mute = mute,
-				Bypass(ch_index, device_index, bypass) => {
+				MuteChannel(ch_index, mute) => self.channels[ch_index].mute = mute,
+				MuteDevice(ch_index, device_index, mute) => {
 					let ch = &mut self.channels[ch_index];
 					if device_index == 0 {
-						log_warn!("Bypass instrument is not supported");
+						ch.instrument.set_mute(mute);
 					} else {
-						ch.effects[device_index - 1].bypassed = bypass;
+						ch.effects[device_index - 1].set_mute(mute);
 					}
 				},
 				ReorderEffect(ch_index, old_index, new_index) => {

@@ -49,16 +49,19 @@ pub trait Effect {
 
 pub struct Bypass {
 	pub effect: Box<dyn Effect + Send>,
-	pub bypassed: bool,
+	mute: bool,
 }
 
 impl Bypass {
 	pub fn new(sample_rate: f32, name: &str) -> Self {
-		Bypass { effect: effect::new(sample_rate, name), bypassed: false }
+		Bypass { effect: effect::new(sample_rate, name), mute: false }
 	}
 	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
-		if !self.bypassed {
+		if !self.mute {
 			self.effect.process(buffer);
 		}
+	}
+	pub fn set_mute(&mut self, mute: bool) {
+		self.mute = mute;
 	}
 }

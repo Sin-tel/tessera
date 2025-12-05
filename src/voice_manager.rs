@@ -29,6 +29,7 @@ pub struct VoiceManager {
 	voices: Vec<Voice>,
 	queue: VecDeque<Voice>,
 	sustain: bool,
+	mute: bool,
 }
 
 impl VoiceManager {
@@ -39,6 +40,7 @@ impl VoiceManager {
 			voices: vec![Voice::default(); voice_count],
 			queue: VecDeque::with_capacity(8),
 			sustain: false,
+			mute: false,
 		}
 	}
 
@@ -51,6 +53,9 @@ impl VoiceManager {
 	}
 
 	pub fn note_on(&mut self, token: Token, pitch: f32, vel: f32) {
+		if self.mute {
+			return;
+		}
 		let mut playing_best_i = None;
 		let mut playing_min_dist = f32::MAX;
 
@@ -93,6 +98,9 @@ impl VoiceManager {
 	}
 
 	pub fn note_off(&mut self, token: Token) {
+		if self.mute {
+			return;
+		}
 		let Some(i) = self.get_index(token) else {
 			// Voice was already dead
 			if let Some(pos) = self.get_queue_index(token) {
@@ -116,6 +124,9 @@ impl VoiceManager {
 	}
 
 	pub fn pitch(&mut self, token: Token, offset: f32) {
+		if self.mute {
+			return;
+		}
 		if let Some(i) = self.get_index(token) {
 			let pitch = self.voices[i].pitch + offset;
 			self.instrument.pitch(pitch, i);
@@ -123,12 +134,18 @@ impl VoiceManager {
 	}
 
 	pub fn pressure(&mut self, token: Token, pressure: f32) {
+		if self.mute {
+			return;
+		}
 		if let Some(i) = self.get_index(token) {
 			self.instrument.pressure(pressure, i);
 		}
 	}
 
 	pub fn sustain(&mut self, sustain: bool) {
+		if self.mute {
+			return;
+		}
 		self.sustain = sustain;
 		if !sustain {
 			for (i, v) in self.voices.iter_mut().enumerate() {
@@ -147,5 +164,20 @@ impl VoiceManager {
 			*v = Voice::default();
 		}
 		self.sustain = false;
+	}
+
+	pub fn set_mute(&mut self, mute: bool) {
+		if mute {
+			self.all_notes_off();
+		}
+		self.mute = mute;
+	}
+
+	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
+		// TODO: mute currently only skips processing, but still receives other inputs
+		// maybe this is fine
+		if !self.mute {
+			self.instrument.process(buffer);
+		}
 	}
 }

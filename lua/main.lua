@@ -6,6 +6,8 @@ if not release then
 	require("lib/strict")
 end
 
+local load_last_save = true
+
 local profile = false
 -- local profile = require("lib.profile")
 -- local profile = require("lib.profile2")
@@ -46,7 +48,6 @@ modifier_keys.shift = false
 modifier_keys.alt = false
 modifier_keys.any = false
 
-local load_last_save = true
 local project_initialized = false
 
 local draw_time_s = 0
