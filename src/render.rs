@@ -1,18 +1,29 @@
-use ringbuf::traits::*;
-use ringbuf::{HeapCons, HeapProd};
-
 use crate::audio::MAX_BUF_SIZE;
 use crate::context::{AudioMessage, LuaMessage};
+use crate::dsp;
 use crate::dsp::env::AttackRelease;
 use crate::effect::*;
 use crate::instrument;
 use crate::instrument::*;
-use crate::log::log_warn;
+use crate::meters::MeterHandle;
+use crate::voice_manager::VoiceManager;
+use ringbuf::traits::*;
+use ringbuf::{HeapCons, HeapProd};
 
 pub struct Channel {
-	pub instrument: Box<dyn Instrument + Send>,
+	pub instrument: VoiceManager,
 	pub effects: Vec<Bypass>,
 	pub mute: bool,
+}
+
+impl Channel {
+	pub fn new(intrument: Box<dyn Instrument + Send>, meter_handle: MeterHandle) -> Self {
+		Self {
+			instrument: VoiceManager::new(intrument, meter_handle),
+			effects: Vec::new(),
+			mute: false,
+		}
+	}
 }
 
 pub struct Render {
@@ -41,8 +52,8 @@ impl Render {
 			channels: Vec::new(),
 			buffer2: [[0.0f32; MAX_BUF_SIZE]; 2],
 			sample_rate,
-			peak_l: AttackRelease::new_direct(0.5, 0.1),
-			peak_r: AttackRelease::new_direct(0.5, 0.1),
+			peak_l: AttackRelease::new_direct(0.5, 0.05),
+			peak_r: AttackRelease::new_direct(0.5, 0.05),
 		}
 	}
 
@@ -50,22 +61,31 @@ impl Render {
 		self.lua_tx.try_push(m).ok();
 	}
 
-	pub fn insert_channel(&mut self, channel_index: usize, instrument_name: &str) {
-		let new_instr = instrument::new(self.sample_rate, instrument_name);
-		let newch = Channel { instrument: new_instr, effects: Vec::new(), mute: false };
-		self.channels.insert(channel_index, newch);
+	pub fn insert_channel(
+		&mut self,
+		channel_index: usize,
+		instrument_name: &str,
+		meter_handle: MeterHandle,
+	) {
+		let instrument = instrument::new(self.sample_rate, instrument_name);
+		let channel = Channel::new(instrument, meter_handle);
+		self.channels.insert(channel_index, channel);
 	}
 
 	pub fn remove_channel(&mut self, index: usize) {
 		self.channels.remove(index);
 	}
 
-	pub fn insert_effect(&mut self, channel_index: usize, effect_index: usize, name: &str) {
-		if let Some(ch) = self.channels.get_mut(channel_index) {
-			ch.effects.insert(effect_index, Bypass::new(self.sample_rate, name));
-		} else {
-			log_warn!("Channel index out of bounds");
-		}
+	pub fn insert_effect(
+		&mut self,
+		channel_index: usize,
+		effect_index: usize,
+		name: &str,
+		meter_handle: MeterHandle,
+	) {
+		let ch = &mut self.channels[channel_index];
+		ch.effects
+			.insert(effect_index, Bypass::new(self.sample_rate, name, meter_handle));
 	}
 
 	pub fn remove_effect(&mut self, channel_index: usize, effect_index: usize) {
@@ -113,16 +133,20 @@ impl Render {
 		}
 
 		// Calculate peak
-		let mut sum = [0.0; 2];
-		for (i, track) in buffer.iter().enumerate() {
-			sum[i] = track.iter().map(|x| x.abs()).fold(f32::MIN, f32::max);
-		}
+		let [peak_l, peak_r] = dsp::peak(buffer);
+		self.peak_l.set(peak_l);
+		self.peak_r.set(peak_r);
 
-		self.peak_l.set(sum[0]);
-		self.peak_r.set(sum[1]);
+		// let mut sum = [0.0; 2];
+		// for (i, track) in buffer.iter().enumerate() {
+		// 	sum[i] = track.iter().map(|x| x * x).sum::<f32>() / (len as f32);
+		// }
+		// self.peak_l.set(sum[0]);
+		// self.peak_r.set(sum[1]);
+
 		let peak_l = self.peak_l.process();
 		let peak_r = self.peak_r.process();
-		self.send(LuaMessage::Meter(peak_l, peak_r));
+		self.send(LuaMessage::Meter { l: peak_l, r: peak_r });
 
 		// Send everything to scope.
 		for s in buffer[0].iter() {
@@ -139,28 +163,39 @@ impl Render {
 		use AudioMessage::*;
 		while let Some(m) = self.audio_rx.try_pop() {
 			match m {
-				NoteOn(ch_index, pitch, vel, id) => {
-					let ch = &mut self.channels[ch_index];
-					if !ch.mute {
-						ch.instrument.note_on(pitch, vel, id);
+				AllNotesOff => {
+					for ch in &mut self.channels {
+						ch.instrument.all_notes_off();
 					}
 				},
-				NoteOff(ch_index, id) => {
+				NoteOn(ch_index, token, pitch, vel) => {
 					let ch = &mut self.channels[ch_index];
 					if !ch.mute {
-						ch.instrument.note_off(id);
+						ch.instrument.note_on(token, pitch, vel);
 					}
 				},
-				Pitch(ch_index, pitch, id) => {
+				NoteOff(ch_index, token) => {
 					let ch = &mut self.channels[ch_index];
 					if !ch.mute {
-						ch.instrument.pitch(pitch, id);
+						ch.instrument.note_off(token);
 					}
 				},
-				Pressure(ch_index, pressure, id) => {
+				Pitch(ch_index, token, pitch) => {
 					let ch = &mut self.channels[ch_index];
 					if !ch.mute {
-						ch.instrument.pressure(pressure, id);
+						ch.instrument.pitch(token, pitch);
+					}
+				},
+				Pressure(ch_index, token, pressure) => {
+					let ch = &mut self.channels[ch_index];
+					if !ch.mute {
+						ch.instrument.pressure(token, pressure);
+					}
+				},
+				Sustain(ch_index, sustain) => {
+					let ch = &mut self.channels[ch_index];
+					if !ch.mute {
+						ch.instrument.sustain(sustain);
 					}
 				},
 				Parameter(ch_index, device_index, index, val) => {
@@ -171,13 +206,13 @@ impl Render {
 						ch.effects[device_index - 1].effect.set_parameter(index, val);
 					}
 				},
-				Mute(ch_index, mute) => self.channels[ch_index].mute = mute,
-				Bypass(ch_index, device_index, bypass) => {
+				MuteChannel(ch_index, mute) => self.channels[ch_index].mute = mute,
+				MuteDevice(ch_index, device_index, mute) => {
 					let ch = &mut self.channels[ch_index];
 					if device_index == 0 {
-						log_warn!("Bypass instrument is not supported");
+						ch.instrument.set_mute(mute);
 					} else {
-						ch.effects[device_index - 1].bypassed = bypass;
+						ch.effects[device_index - 1].set_mute(mute);
 					}
 				},
 				ReorderEffect(ch_index, old_index, new_index) => {

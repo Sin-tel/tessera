@@ -80,6 +80,21 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	graphics.set(
+		"get_color_hsv",
+		lua.create_function(|lua, (h, s, v): (f64, f32, f32)| {
+			use okhsl::*;
+			let Rgb { r, g, b } = oklab_to_srgb_f32(okhsv_to_oklab(Okhsv { h, s, v }));
+			let t = lua.create_table()?;
+			t.set(1, r)?;
+			t.set(2, g)?;
+			t.set(3, b)?;
+
+			// Ok((r, g, b))
+			Ok(t)
+		})?,
+	)?;
+
+	graphics.set(
 		"set_line_width",
 		lua.create_function(|lua, line_width: Option<f32>| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
@@ -233,6 +248,27 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	graphics.set(
+		"text",
+		lua.create_function(|lua, (text, x, y): (String, f32, f32)| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			let paint = Paint::color(state.current_color);
+
+			state.text_engine.draw_text(
+				&mut state.canvas,
+				&text,
+				x,
+				y,
+				&paint,
+				state.font,
+				state.font_size,
+			);
+
+			Ok(())
+		})?,
+	)?;
+
+	graphics.set(
 		"circle",
 		lua.create_function(|lua, (mode, x, y, r): (String, f32, f32, f32)| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
@@ -319,20 +355,19 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 
 	graphics.set(
 		"polyline",
-		lua.create_function(|lua, points: Vec<f32>| {
+		lua.create_function(|lua, (x, y): (Vec<f32>, Vec<f32>)| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 
-			if points.len() < 4 || !points.len().is_multiple_of(2) {
-				return Err(LuaError::RuntimeError(
-					"Invalid number of points for polyline.".into(),
-				));
+			if x.len() < 2 {
+				return Ok(());
 			}
+			assert!(x.len() == y.len());
 
 			let mut path = Path::new();
-			path.move_to(points[0], points[1]);
+			path.move_to(x[0], y[0]);
 
-			for chunk in points[2..].chunks_exact(2) {
-				path.line_to(chunk[0], chunk[1]);
+			for (&x, &y) in x.iter().zip(y.iter()).skip(1) {
+				path.line_to(x, y);
 			}
 
 			let mut paint = Paint::color(state.current_color);
@@ -341,6 +376,81 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 			paint.set_line_join(LineJoin::Round);
 
 			state.canvas.stroke_path(&path, &paint);
+			Ok(())
+		})?,
+	)?;
+
+	graphics.set(
+		"polyline_w",
+		lua.create_function(|lua, (lx, ly, lw): (Vec<f32>, Vec<f32>, Vec<f32>)| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			if lx.len() < 2 {
+				return Ok(());
+			}
+			assert!(lx.len() == ly.len());
+			assert!(lx.len() == lw.len());
+
+			let n = lx.len();
+			let mut path = Path::new();
+
+			let mut bottom_verts: Vec<(f32, f32)> = Vec::with_capacity(n);
+
+			// first point
+			let (nx, ny) = get_normal(lx[0], ly[0], lx[1], ly[1]);
+
+			let (x, y, w) = (lx[0], ly[0], lw[0]);
+			path.move_to(x + nx * w, y + ny * w);
+			bottom_verts.push((x - nx * w, y - ny * w));
+
+			// middle points
+			for i in 1..n - 1 {
+				let (nx, ny) = get_normal(lx[i - 1], ly[i - 1], lx[i + 1], ly[i + 1]);
+				let (x, y, w) = (lx[i], ly[i], lw[i]);
+
+				path.line_to(x + nx * w, y + ny * w);
+				bottom_verts.push((x - nx * w, y - ny * w));
+			}
+
+			// last point
+			let (nx, ny) = get_normal(lx[n - 2], ly[n - 2], lx[n - 1], ly[n - 1]);
+			let (x, y, w) = (lx[n - 1], ly[n - 1], lw[n - 1]);
+
+			path.line_to(x + nx * w, y + ny * w);
+			bottom_verts.push((x - nx * w, y - ny * w));
+
+			// draw bottom verts in reverse
+			for (bx, by) in bottom_verts.iter().rev() {
+				path.line_to(*bx, *by);
+			}
+			path.close();
+
+			// draw
+			let paint = Paint::color(state.current_color);
+			state.canvas.fill_path(&path, &paint);
+			Ok(())
+		})?,
+	)?;
+
+	graphics.set(
+		"verts",
+		lua.create_function(|lua, (lx, ly, w): (Vec<f32>, Vec<f32>, f32)| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			if lx.len() < 2 {
+				return Ok(());
+			}
+			assert!(lx.len() == ly.len());
+
+			let mut path = Path::new();
+
+			for (&x, &y) in lx.iter().zip(ly.iter()) {
+				path.circle(x, y, w);
+			}
+
+			// draw
+			let paint = Paint::color(state.current_color);
+			state.canvas.fill_path(&path, &paint);
 			Ok(())
 		})?,
 	)?;
@@ -433,4 +543,11 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	graphics.set("ALIGN_RIGHT", 2)?;
 
 	Ok(graphics)
+}
+
+fn get_normal(x1: f32, y1: f32, x2: f32, y2: f32) -> (f32, f32) {
+	let dx = x2 - x1;
+	let dy = y2 - y1;
+	let len = (dx * dx + dy * dy).sqrt();
+	if len > 0.0001 { (-dy / len, dx / len) } else { (0.0, 1.0) }
 }

@@ -40,4 +40,5 @@ pub trait Instrument {
 	fn pressure(&mut self, pressure: f32, id: usize);
 	fn set_parameter(&mut self, index: usize, val: f32);
 	fn flush(&mut self);
+	fn voice_count(&self) -> usize;
 }

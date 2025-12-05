@@ -1,5 +1,3 @@
-implement undo for recording
-
 note datastructure:
 pitch = {base_pitch, start_time, velocity, verts}
 verts = list of {time, pitch_offset, pressure}
@@ -12,14 +10,6 @@ allow only one instance of each view?
  makes some logic easier
 
 make tuning settings
-
-save undo history?
-
-sync polyphony / voice count somehow
-
-catch lua error handler
-- save to log
-- save backup
 
 add view resized callback
 
@@ -64,6 +54,45 @@ pluck model:
 make tuning import/export and add to project settings
 add generic transposition / movement system
 port over the tracking scripts for midi input
+
+### Custom note font
+maps ascii characters to accidentals
+
+Note names are just uppercase A, B, C, etc.
+other characters:
+`()+,-./0123456789:<=>~`
+
+accidentals:
+a: single flat b
+b: natural
+c: single sharp #
+d: double sharp x
+e: double flat bb
+f: triple flat bbb
+g: 1/2 flat d
+h: 1/2 sharp t
+i: 3/2 sharp
+j: caret down
+k: caret up
+l: small + (Johnston)
+m: small - (Johnston)
+n: septimal down L (heji)
+o: septimal up (heji)
+p: septimal double down (heji)
+q: septimal double up (heji)
+r: arrow up
+s: arrow down
+t: arrow double up
+u: arrow double down
+
+testing:
+!: alternative triple flat (slanted)
+": triple +
+#: double caret down vv
+$: double caret down stacked
+
+unused:
+`vwxyz%&'*;?@[]{}|^_`
 
 ## MIDI
 also need midi out ports

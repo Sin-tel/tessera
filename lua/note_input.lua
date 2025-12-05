@@ -1,11 +1,10 @@
-local VoiceAlloc = require("voice_alloc")
 local tuning = require("tuning")
 
 local note_input = {}
 
 local key_down = {}
 
-local DEFAULT_VELOCITY = 0.3
+local DEFAULT_VELOCITY = 0.5
 
 local octave = 0
 
@@ -17,9 +16,9 @@ function note_input:keypressed(key)
 		for i, v in ipairs(self.diatonic_row) do
 			if v == key then
 				local p = tuning.from_diatonic(i, octave)
-				local id = VoiceAlloc.next_id()
-				key_down[i] = id
-				ui_channels[ch_index].roll:event({ name = "note_on", id = id, pitch = p, vel = DEFAULT_VELOCITY })
+				local token = tessera.audio.get_token()
+				key_down[i] = token
+				ui_channels[ch_index]:event({ name = "note_on", token = token, pitch = p, vel = DEFAULT_VELOCITY })
 				return true
 			end
 		end
@@ -33,9 +32,9 @@ function note_input:keyreleased(key)
 	if ch_index then
 		for i, v in ipairs(self.diatonic_row) do
 			if v == key then
-				local id = key_down[i]
-				if id then
-					ui_channels[ch_index].roll:event({ name = "note_off", id = id })
+				local token = key_down[i]
+				if token then
+					ui_channels[ch_index]:event({ name = "note_off", token = token })
 				end
 				return true
 			end

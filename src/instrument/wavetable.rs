@@ -88,6 +88,10 @@ impl Instrument for Wavetable {
 		new
 	}
 
+	fn voice_count(&self) -> usize {
+		1
+	}
+
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		if self.interpolate >= 1.0 {
 			self.interpolate = 0.0;

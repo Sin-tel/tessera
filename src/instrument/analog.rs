@@ -82,6 +82,10 @@ impl Instrument for Analog {
 		}
 	}
 
+	fn voice_count(&self) -> usize {
+		1
+	}
+
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
 
@@ -176,7 +180,12 @@ impl Instrument for Analog {
 		self.gate.set(0.0);
 		self.envelope.note_off();
 	}
-	fn flush(&mut self) {}
+
+	fn flush(&mut self) {
+		self.envelope.reset();
+		self.gate.set(0.0);
+		self.note_on = false;
+	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {

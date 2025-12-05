@@ -10,12 +10,14 @@ mod testfilter;
 mod tilt;
 mod wide;
 
+use crate::dsp;
 use crate::effect;
 use crate::effect::{
 	compressor::Compressor, convolve::Convolve, delay::Delay, drive::Drive, equalizer::Equalizer,
 	gain::Gain, pan::Pan, reverb::Reverb, testfilter::TestFilter, tilt::Tilt, wide::Wide,
 };
 use crate::log::log_warn;
+use crate::meters::MeterHandle;
 
 // list of effects
 pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
@@ -49,16 +51,24 @@ pub trait Effect {
 
 pub struct Bypass {
 	pub effect: Box<dyn Effect + Send>,
-	pub bypassed: bool,
+	mute: bool,
+	meter_handle: MeterHandle,
 }
 
 impl Bypass {
-	pub fn new(sample_rate: f32, name: &str) -> Self {
-		Bypass { effect: effect::new(sample_rate, name), bypassed: false }
+	pub fn new(sample_rate: f32, name: &str, meter_handle: MeterHandle) -> Self {
+		Bypass { effect: effect::new(sample_rate, name), mute: false, meter_handle }
 	}
 	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
-		if !self.bypassed {
+		if self.mute {
+			self.meter_handle.set([0., 0.]);
+		} else {
 			self.effect.process(buffer);
+			let peak = dsp::peak(buffer);
+			self.meter_handle.set(peak);
 		}
+	}
+	pub fn set_mute(&mut self, mute: bool) {
+		self.mute = mute;
 	}
 }

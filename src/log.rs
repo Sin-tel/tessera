@@ -23,7 +23,7 @@ pub fn init_logging() {
 
 	CombinedLogger::init(vec![
 		SimpleLogger::new(LevelFilter::Info, config.clone()),
-		WriteLogger::new(LevelFilter::Debug, config, f_write),
+		WriteLogger::new(LevelFilter::Info, config, f_write),
 	])
 	.unwrap();
 	// Has to go last otherwise previous errors don't work
