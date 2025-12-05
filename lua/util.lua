@@ -117,6 +117,22 @@ function util.velocity_curve(x)
 	return out
 end
 
+local METER_CLIP_COLOR = { 1.00, 0.30, 0.20 }
+
+function util.meter_color(x, darken)
+	if x > 1 then
+		return METER_CLIP_COLOR
+	else
+		assert(x >= 0)
+		local v = 0.7
+		if darken then
+			local x_log = math.max((util.to_dB(x) + 60) / 60, 0)
+			v = 0.9 * x_log
+		end
+		return tessera.graphics.get_color_hsv((140 - 110 * x * x) / 360, 0.7, v)
+	end
+end
+
 -- clone a simple, non-recursive data table
 local function clone(orig, seen)
 	seen = seen or {}

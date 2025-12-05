@@ -3,7 +3,7 @@ local Device = {}
 Device.__index = Device
 
 -- options is a reference to an entry in device_list
-function Device.new(data, options)
+function Device.new(data, options, meter_id)
 	local self = setmetatable({}, Device)
 
 	self.number = options.number
@@ -11,6 +11,10 @@ function Device.new(data, options)
 	-- reference to project data
 	self.data = data
 	self.state = data.state
+
+	self.meter_id = meter_id
+	self.meter_l = 0.0
+	self.meter_r = 1.0
 
 	-- copy of state that is already sent to backend
 	self.state_old = {}

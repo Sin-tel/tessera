@@ -1,6 +1,7 @@
 use crate::audio::build_stream;
 use crate::audio::get_device_and_config;
 use crate::log::{log_info, log_warn};
+use crate::meters::Meters;
 use crate::midi;
 use crate::render::Render;
 use crate::scope::Scope;
@@ -24,6 +25,7 @@ pub struct AudioContext {
 	pub sample_rate: u32,
 	pub midi_connections: Vec<midi::Connection>,
 	pub render_buffer: Vec<f32>,
+	pub meters: Meters,
 }
 
 impl AudioContext {
@@ -59,6 +61,7 @@ impl AudioContext {
 			sample_rate,
 			midi_connections: Vec::new(),
 			render_buffer: Vec::new(),
+			meters: Meters::new(),
 		})
 	}
 

@@ -148,6 +148,14 @@ pub fn time_constant_linear(t: f32, sample_rate: f32) -> f32 {
 	1000. / (sample_rate * t)
 }
 
+pub fn peak(buffer: &mut [&mut [f32]; 2]) -> (f32, f32) {
+	let mut sum = [0.0; 2];
+	for (i, track) in buffer.iter().enumerate() {
+		sum[i] = track.iter().map(|x| x.abs()).fold(0., f32::max);
+	}
+	(sum[0], sum[1])
+}
+
 // This is a 'naive' implementation of a one-pole highpass at 10Hz
 // Since cutoff << sample rate it works fine
 #[derive(Debug)]

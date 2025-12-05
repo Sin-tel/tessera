@@ -69,13 +69,12 @@ function build.channel(ch_index, channel_data)
 	local options = device_list.instruments[channel_data.instrument.name]
 
 	assert(options, 'Could not find options for "' .. channel_data.instrument.name .. '"')
+	local meter_id = tessera.audio.insert_channel(ch_index, channel_data.instrument.name)
 
-	local instrument = Device.new(channel_data.instrument, options)
+	local instrument = Device.new(channel_data.instrument, options, meter_id)
 	local widget = widgets.Channel.new()
 	local channel = Channel.new(ch_index, channel_data, instrument, widget)
 	table.insert(ui_channels, ch_index, channel)
-
-	tessera.audio.insert_channel(ch_index, channel_data.instrument.name)
 
 	for i, v in ipairs(channel_data.effects) do
 		build.effect(ch_index, i, v)
@@ -88,10 +87,10 @@ function build.effect(ch_index, effect_index, effect)
 	local options = device_list.effects[effect.name]
 	assert(options)
 
-	local effect_ui = Device.new(effect, options)
-	table.insert(ui_channels[ch_index].effects, effect_index, effect_ui)
+	local meter_id = tessera.audio.insert_effect(ch_index, effect_index, effect.name)
 
-	tessera.audio.insert_effect(ch_index, effect_index, effect.name)
+	local effect_ui = Device.new(effect, options, meter_id)
+	table.insert(ui_channels[ch_index].effects, effect_index, effect_ui)
 end
 
 function build.refresh_channels()

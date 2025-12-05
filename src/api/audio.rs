@@ -263,10 +263,13 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"insert_channel",
 		lua.create_function(|lua, (index, instrument_name): (usize, String)| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let (meter_handle, meter_id) = ctx.meters.register();
 				let mut render = ctx.render.lock();
-				render.insert_channel(index - 1, &instrument_name);
+				render.insert_channel(index - 1, &instrument_name, meter_handle);
+				Ok(Some(meter_id + 1))
+			} else {
+				Ok(None)
 			}
-			Ok(())
 		})?,
 	)?;
 
@@ -285,10 +288,13 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"insert_effect",
 		lua.create_function(|lua, (channel_index, effect_index, name): (usize, usize, String)| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let (meter_handle, meter_id) = ctx.meters.register();
 				let mut render = ctx.render.lock();
-				render.insert_effect(channel_index - 1, effect_index - 1, &name);
+				render.insert_effect(channel_index - 1, effect_index - 1, &name, meter_handle);
+				Ok(Some(meter_id + 1))
+			} else {
+				Ok(None)
 			}
-			Ok(())
 		})?,
 	)?;
 
@@ -300,6 +306,18 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				render.remove_effect(channel_index - 1, effect_index - 1);
 			}
 			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"get_meters",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let meters = ctx.meters.collect();
+				Ok(Some(meters))
+			} else {
+				Ok(None)
+			}
 		})?,
 	)?;
 

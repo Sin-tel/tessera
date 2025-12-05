@@ -66,7 +66,24 @@ function CollapseDevice:draw(x, y, w, h)
 	end
 	tessera.graphics.set_font_size(Ui.TITLE_FONT_SIZE)
 	tessera.graphics.label(self.device.data.display_name, x + label_pad, y, w - label_pad, h)
-	tessera.graphics.set_font_size(Ui.DEFAULT_FONT_SIZE)
+	tessera.graphics.set_font_size()
+
+	-- draw meter
+	local r = 0.2 * Ui.ROW_HEIGHT
+
+	local ml = self.device.meter_l
+	local mr = self.device.meter_r
+
+	local cl = util.meter_color(ml, true)
+	local cr = util.meter_color(mr, true)
+
+	local mx_r = w - 1 * r - Ui.PAD
+	local mx_l = w - 3 * r - 2 * Ui.PAD
+
+	tessera.graphics.set_color(cl)
+	tessera.graphics.circle("fill", mx_l, cy, r)
+	tessera.graphics.set_color(cr)
+	tessera.graphics.circle("fill", mx_r, cy, r)
 end
 
 -- mute toggle
