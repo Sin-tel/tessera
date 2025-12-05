@@ -61,7 +61,7 @@ impl Bypass {
 	}
 	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		if self.mute {
-			self.meter_handle.set((0., 0.));
+			self.meter_handle.set([0., 0.]);
 		} else {
 			self.effect.process(buffer);
 			let peak = dsp::peak(buffer);

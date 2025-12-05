@@ -86,7 +86,7 @@
 [x] Render to wav
 [x] volume / panning
 [x] Simple metering (cpu, dB meters, audio engine state)
-[ ] Per device meters
+[x] Per device meters
 [x] channel mute
 [x] Mixing channels
 [x] Up and down samplers
