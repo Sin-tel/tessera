@@ -3,19 +3,23 @@ local Device = {}
 Device.__index = Device
 
 -- options is a reference to an entry in device_list
-function Device.new(name, state, options)
+function Device.new(data, options)
 	local self = setmetatable({}, Device)
 
 	self.number = options.number
-	self.name = name
 
-	self.state = state
+	-- reference to project data
+	self.data = data
+	self.state = data.state
+
 	-- copy of state that is already sent to backend
 	self.state_old = {}
+	self.mute_old = false
 
 	-- UI stuff and parameter handlers
-	self.collapse = widgets.Collapse.new(self.name)
+	self.collapse = widgets.CollapseDevice.new(self)
 	self.parameters = {}
+
 	for _, v in ipairs(options.parameters) do
 		local p = {}
 		p.label = v[1]
@@ -67,6 +71,7 @@ end
 
 function Device:reset()
 	self.state_old = {}
+	self.mute_old = false
 end
 
 return Device

@@ -65,19 +65,19 @@ function build.load_project(new)
 	setup_project()
 end
 
-function build.channel(ch_index, channel)
-	local options = device_list.instruments[channel.instrument.name]
+function build.channel(ch_index, channel_data)
+	local options = device_list.instruments[channel_data.instrument.name]
 
-	assert(options, 'Could not find options for "' .. channel.instrument.name .. '"')
+	assert(options, 'Could not find options for "' .. channel_data.instrument.name .. '"')
 
-	local instrument = Device.new(channel.name, channel.instrument.state, options)
+	local instrument = Device.new(channel_data.instrument, options)
 	local widget = widgets.Channel.new()
-	local channel_ui = Channel.new(ch_index, instrument, widget)
-	table.insert(ui_channels, ch_index, channel_ui)
+	local channel = Channel.new(ch_index, channel_data, instrument, widget)
+	table.insert(ui_channels, ch_index, channel)
 
-	tessera.audio.insert_channel(ch_index, channel.instrument.name)
+	tessera.audio.insert_channel(ch_index, channel_data.instrument.name)
 
-	for i, v in ipairs(channel.effects) do
+	for i, v in ipairs(channel_data.effects) do
 		build.effect(ch_index, i, v)
 	end
 
@@ -88,7 +88,7 @@ function build.effect(ch_index, effect_index, effect)
 	local options = device_list.effects[effect.name]
 	assert(options)
 
-	local effect_ui = Device.new(effect.name, effect.state, options)
+	local effect_ui = Device.new(effect, options)
 	table.insert(ui_channels[ch_index].effects, effect_index, effect_ui)
 
 	tessera.audio.insert_effect(ch_index, effect_index, effect.name)

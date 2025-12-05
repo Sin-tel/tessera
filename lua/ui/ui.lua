@@ -39,6 +39,7 @@ function Ui.new(view)
 	self.scroll_goal = 0
 	self.max_scroll = 0
 
+	-- defer loading because of circular import
 	local Layout = require("ui/layout")
 	self.layout = Layout.new()
 

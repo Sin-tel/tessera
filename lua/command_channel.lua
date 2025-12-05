@@ -51,7 +51,7 @@ local function new_device_data(name, options)
         assert(state[i] ~= nil)
     end
 
-    return { name = name, state = state }
+    return { name = name, display_name = util.capitalize(name), state = state, mute = false }
 end
 
 local function new_channel_data(name, options)
@@ -66,7 +66,7 @@ local function new_channel_data(name, options)
         visible = true,
         lock = false,
         hue = find_hue(),
-        name = name .. " " .. #project.channels,
+        name = "Channel " .. #project.channels .. " (" .. util.capitalize(name) .. ")",
     }
 end
 
@@ -177,6 +177,7 @@ function NewEffect.new(ch_index, name)
     self.ch_index = ch_index
     self.effect_index = #project.channels[ch_index].effects + 1
     self.name = name
+    self.display_name = name
     return self
 end
 
