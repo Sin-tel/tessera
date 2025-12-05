@@ -1,7 +1,7 @@
 local VoiceAlloc = require("voice_alloc")
 local tuning = require("tuning")
 
-local noteInput = {}
+local note_input = {}
 
 local key_down = {}
 
@@ -9,14 +9,14 @@ local DEFAULT_VELOCITY = 0.3
 
 local octave = 0
 
-noteInput.diatonic_row = { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]" }
+note_input.diatonic_row = { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]" }
 
-function noteInput:keypressed(key)
+function note_input:keypressed(key)
 	local ch_index = selection.ch_index
 	if ch_index then
 		for i, v in ipairs(self.diatonic_row) do
 			if v == key then
-				local p = tuning.fromDiatonic(i, octave)
+				local p = tuning.from_diatonic(i, octave)
 				local id = VoiceAlloc.next_id()
 				key_down[i] = id
 				ui_channels[ch_index].roll:event({ name = "note_on", id = id, pitch = p, vel = DEFAULT_VELOCITY })
@@ -28,7 +28,7 @@ function noteInput:keypressed(key)
 	return false
 end
 
-function noteInput:keyreleased(key)
+function note_input:keyreleased(key)
 	local ch_index = selection.ch_index
 	if ch_index then
 		for i, v in ipairs(self.diatonic_row) do
@@ -58,4 +58,4 @@ function noteInput:keyreleased(key)
 	return false
 end
 
-return noteInput
+return note_input

@@ -18,7 +18,7 @@ function Layout.new(w, h)
 
 	self.ok = false
 
-	self.pad = Ui.DEFAULT_PAD
+	self.pad = Ui.PAD
 
 	self.column_mode = false
 
@@ -26,7 +26,7 @@ function Layout.new(w, h)
 end
 
 function Layout:padding(pad)
-	self.pad = pad or Ui.DEFAULT_PAD
+	self.pad = pad or Ui.PAD
 end
 
 function Layout:start(x, y)
@@ -48,7 +48,7 @@ function Layout:start(x, y)
 	self.row_h = 0
 end
 
-function Layout:newRow()
+function Layout:new_row()
 	self.y = self.y + self.h
 	self.column_mode = false
 	self.x = self.start_x
@@ -60,7 +60,7 @@ function Layout:row(w, h)
 
 	-- if we just did columns we need to start a new row
 	if self.column_mode then
-		self:newRow()
+		self:new_row()
 	end
 
 	local x, y = self.start_x, self.y
@@ -99,7 +99,7 @@ function Layout:col(w, h)
 	self.ok = true
 end
 
-function Layout:totalHeight()
+function Layout:total_height()
 	return self.y - self.start_y
 end
 

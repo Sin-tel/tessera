@@ -42,7 +42,7 @@ function SliderValue.new(options)
 	return self
 end
 
-function SliderValue:fromNormal(value)
+function SliderValue:from_normal(value)
 	local x = util.clamp(value, 0, 1)
 	if self.t == "dB" then
 		x = util.curve_dB(x, self.max)
@@ -58,7 +58,7 @@ function SliderValue:fromNormal(value)
 	end
 end
 
-function SliderValue:toNormal(value)
+function SliderValue:to_normal(value)
 	if self.t == "dB" then
 		return util.curve_dB_inv(value, self.max)
 	elseif self.t == "log" then
@@ -68,7 +68,7 @@ function SliderValue:toNormal(value)
 	end
 end
 
-function SliderValue:toString(value)
+function SliderValue:to_string(value)
 	local display = value
 
 	if self.t == "dB" then

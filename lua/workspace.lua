@@ -1,4 +1,3 @@
-local backend = require("backend")
 local ui = require("ui/ui")
 
 local workspace = {}
@@ -17,22 +16,20 @@ function Box.new(x, y, w, h)
 	return self
 end
 
-function Box:stencil()
-	love.graphics.rectangle(
-		"fill",
+function Box:scissor()
+	tessera.graphics.set_scissor(
 		self.x + ui.BORDER_SIZE,
 		self.y + ui.BORDER_SIZE,
 		self.w - (2 * ui.BORDER_SIZE),
-		self.h - (2 * ui.BORDER_SIZE),
-		ui.BORDER_RADIUS
+		self.h - (2 * ui.BORDER_SIZE)
 	)
 end
 
-function Box:forAll(f)
+function Box:for_all(f)
 	f(self)
 	if self.children then
-		self.children[1]:forAll(f)
-		self.children[2]:forAll(f)
+		self.children[1]:for_all(f)
+		self.children[2]:for_all(f)
 	end
 end
 
@@ -42,22 +39,20 @@ function Box:draw()
 			v:draw()
 		end
 	else
-		love.graphics.stencil(function()
-			self:stencil()
-		end, "replace", 2, false)
-		love.graphics.setStencilTest("greater", 1)
+		self:scissor()
 
-		love.graphics.setColor(theme.background)
-		love.graphics.rectangle("fill", self.x, self.y, self.w, self.h)
+		tessera.graphics.set_color(theme.background)
+		tessera.graphics.rectangle("fill", self.x, self.y, self.w, self.h)
 
-		love.graphics.push()
-		love.graphics.translate(self.x, self.y)
-		self.view:drawFull()
-		love.graphics.pop()
+		tessera.graphics.push()
+		tessera.graphics.translate(self.x, self.y)
+		self.view:draw_full()
+		tessera.graphics.pop()
 
-		love.graphics.setStencilTest()
-		love.graphics.setColor(theme.borders)
-		love.graphics.rectangle(
+		tessera.graphics.reset_scissor()
+
+		tessera.graphics.set_color(theme.borders)
+		tessera.graphics.rectangle(
 			"line",
 			self.x + ui.BORDER_SIZE,
 			self.y + ui.BORDER_SIZE,
@@ -68,7 +63,7 @@ function Box:draw()
 	end
 end
 
-function Box:getDivider()
+function Box:get_divider()
 	local mx = mouse.x - self.x
 	local my = mouse.y - self.y
 	if mx < 0 or my < 0 or mx > self.w or my > self.h then
@@ -79,11 +74,11 @@ function Box:getDivider()
 			if math.abs(self.r - mx) < ui.RESIZE_W then
 				return self
 			else
-				local d1 = self.children[1]:getDivider()
+				local d1 = self.children[1]:get_divider()
 				if d1 then
 					return d1
 				end
-				local d2 = self.children[2]:getDivider()
+				local d2 = self.children[2]:get_divider()
 				if d2 then
 					return d2
 				end
@@ -92,11 +87,11 @@ function Box:getDivider()
 			if math.abs(self.r - my) < ui.RESIZE_W then
 				return self
 			else
-				local d1 = self.children[1]:getDivider()
+				local d1 = self.children[1]:get_divider()
 				if d1 then
 					return d1
 				end
-				local d2 = self.children[2]:getDivider()
+				local d2 = self.children[2]:get_divider()
 				if d2 then
 					return d2
 				end
@@ -164,6 +159,10 @@ function Box:recalc(x, y, w, h)
 			self.children[1]:recalc(self.x, self.y, self.w, self.r)
 			self.children[2]:recalc(self.x, self.y + self.r, self.w, self.h - self.r)
 		end
+	end
+
+	if self.view then
+		self.view:set_dimensions()
 	end
 end
 
@@ -274,7 +273,7 @@ function Box:resize(x, y, w, h)
 	end
 end
 
-function Box:setView(view)
+function Box:set_view(view)
 	if not self.children then
 		self.view = view
 		view.box = self
@@ -299,7 +298,7 @@ function workspace:resize(w, h)
 end
 
 function workspace:draw()
-	local ll = util.clamp(self.cpu_load, 0, 1)
+	local ll = util.clamp(self.cpu_load, 0.01, 1)
 	local hl_col = theme.cpu_meter
 	if self.cpu_load > 1.0 then
 		hl_col = theme.warning
@@ -310,68 +309,69 @@ function workspace:draw()
 	local y1 = 0.5 * (ui.RIBBON_HEIGHT - h1)
 	local x1 = self.w - 64 - y1
 
-	love.graphics.setColor(theme.widget_bg)
-	love.graphics.rectangle("fill", x1, y1, w1, h1, 2)
-	love.graphics.setColor(hl_col)
-	love.graphics.rectangle("fill", x1, y1, w1 * ll, h1)
-	love.graphics.setColor(theme.line)
-	love.graphics.rectangle("line", x1, y1, w1, h1, 2)
-	love.graphics.setColor(theme.ui_text)
-	if backend:ok() then
-		util.drawText(string.format("%d %%", 100 * self.cpu_load), x1, 0, w1, ui.RIBBON_HEIGHT, "center")
-	else
-		util.drawText("offline", x1, 0, w1, ui.RIBBON_HEIGHT, "center")
+	tessera.graphics.set_color(theme.widget_bg)
+	tessera.graphics.rectangle("fill", x1, y1, w1, h1, 2)
+	tessera.graphics.set_color(hl_col)
+	tessera.graphics.rectangle("fill", x1, y1, w1 * ll, h1)
+	tessera.graphics.set_color(theme.line)
+	tessera.graphics.rectangle("line", x1, y1, w1, h1, 2)
+	tessera.graphics.set_color(theme.ui_text)
+
+	local cpu_label = "offline"
+	if tessera.audio.ok() then
+		cpu_label = string.format("%d %%", 100 * self.cpu_load)
 	end
-	util.drawText("CPU: ", x1 - w1, 0, w1, ui.RIBBON_HEIGHT, "right")
+	tessera.graphics.label(cpu_label, x1, 0, w1, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_CENTER)
+	tessera.graphics.label("CPU: ", x1 - w1, 0, w1, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_RIGHT)
 
 	w1 = 96
 	h1 = 16
 	y1 = 0.5 * (ui.RIBBON_HEIGHT - h1)
 	x1 = self.w - 224 - y1
 
-	local ml = util.clamp((self.meter.l + 80) / 80, 0, 1)
-	local mr = util.clamp((self.meter.r + 80) / 80, 0, 1)
+	local ml = util.clamp((self.meter.l + 80) / 80, 0.01, 1)
+	local mr = util.clamp((self.meter.r + 80) / 80, 0.01, 1)
 
-	love.graphics.setColor(theme.widget_bg)
-	love.graphics.rectangle("fill", x1, y1, w1, h1, 2)
-	love.graphics.setColor(ml < 1.0 and theme.meter or theme.meter_clip)
-	love.graphics.rectangle("fill", x1, y1, w1 * ml, 0.5 * h1 - 1)
-	love.graphics.setColor(mr < 1.0 and theme.meter or theme.meter_clip)
-	love.graphics.rectangle("fill", x1, y1 + 0.5 * h1, w1 * mr, 0.5 * h1)
-	love.graphics.setColor(theme.line)
-	love.graphics.rectangle("line", x1, y1, w1, h1, 2)
-	love.graphics.setColor(theme.ui_text)
+	tessera.graphics.set_color(theme.widget_bg)
+	tessera.graphics.rectangle("fill", x1, y1, w1, h1, 2)
+	tessera.graphics.set_color(ml < 1.0 and theme.meter or theme.meter_clip)
+	tessera.graphics.rectangle("fill", x1, y1, w1 * ml, 0.5 * h1 - 1)
+	tessera.graphics.set_color(mr < 1.0 and theme.meter or theme.meter_clip)
+	tessera.graphics.rectangle("fill", x1, y1 + 0.5 * h1, w1 * mr, 0.5 * h1)
+	tessera.graphics.set_color(theme.line)
+	tessera.graphics.rectangle("line", x1, y1, w1, h1, 2)
+	tessera.graphics.set_color(theme.ui_text)
 
 	self.box:draw()
 end
 
 function workspace:update()
-	if self.dragDiv and mouse.drag then
-		self.dragDiv:set_split(mouse.x, mouse.y)
+	if self.drag_div and mouse.drag then
+		self.drag_div:set_split(mouse.x, mouse.y)
 	end
 	-- update
-	self.box:forAll(function(b)
+	self.box:for_all(function(b)
 		if b.view then
 			b.view:update()
 		end
 	end)
 
-	local div = self.dragDiv
-	if not mouse.isDown then
-		div = div or self.box:getDivider()
-		self.box:forAll(function(b)
+	local div = self.drag_div
+	if not mouse.is_down then
+		div = div or self.box:get_divider()
+		self.box:for_all(function(b)
 			b.focus = false
 		end)
 		self.focus = nil
 	end
 	if div then
 		if div.vertical then
-			mouse:setCursor("v")
+			mouse:set_cursor("v")
 		else
-			mouse:setCursor("h")
+			mouse:set_cursor("h")
 		end
 	else
-		if not mouse.isDown then
+		if not mouse.is_down then
 			local b = self.box:get()
 			if b then
 				b.focus = true
@@ -384,9 +384,9 @@ end
 function workspace:mousepressed()
 	local div = false
 	if mouse.button == 1 then
-		div = self.box:getDivider(mouse.x, mouse.y)
+		div = self.box:get_divider(mouse.x, mouse.y)
 		if div then
-			self.dragDiv = div
+			self.drag_div = div
 		end
 	end
 
@@ -396,7 +396,7 @@ function workspace:mousepressed()
 end
 
 function workspace:mousereleased()
-	self.dragDiv = nil
+	self.drag_div = nil
 	if self.focus then
 		self.focus:mousereleased()
 	end

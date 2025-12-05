@@ -95,46 +95,6 @@ end
 
 util.clone = clone
 
-function util.drawText(str, x, y, w, h, align, pad)
-	align = align or "left"
-
-	assert(type(str) == "string", type(str))
-
-	if pad then
-		local p = Ui.DEFAULT_PAD
-		x = x + p
-		w = w - 2 * p
-	end
-
-	local f = love.graphics.getFont()
-	local str2 = str
-	local fh = f:getHeight()
-
-	local oy = 0.5 * (h - fh)
-
-	local l = str:len()
-	local strip = false
-	while true do
-		local fw = f:getWidth(str2)
-		if fw < w then
-			if align == "left" or strip then
-				love.graphics.print(str2, math.floor(x), math.floor(y + oy))
-			elseif align == "center" then
-				love.graphics.print(str2, math.floor(x + 0.5 * (w - fw)), math.floor(y + oy))
-			elseif align == "right" then
-				love.graphics.print(str2, math.floor(x + w - fw), math.floor(y + oy))
-			end
-			break
-		end
-		l = l - 1
-		if l <= 0 then
-			break
-		end
-		str2 = str:sub(1, l) .. "..."
-		strip = true
-	end
-end
-
 function util.average(t)
 	local n = #t
 	if n == 0 then
@@ -186,7 +146,7 @@ function util.readfile(filename)
 	return content
 end
 
-function util.fileExists(filename)
+function util.file_exists(filename)
 	local f = io.open(filename, "r")
 	if f ~= nil then
 		io.close(f)
@@ -194,10 +154,6 @@ function util.fileExists(filename)
 	else
 		return false
 	end
-end
-
-function util.color_alpha(c, alpha)
-	return c[1], c[2], c[3], alpha
 end
 
 return util

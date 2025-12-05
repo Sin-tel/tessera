@@ -27,7 +27,7 @@ impl Skf {
 
 	// returns lp, bp, hp
 	#[must_use]
-	fn process_all(&mut self, x: f32) -> (f32, f32, f32) {
+	pub fn process_all(&mut self, x: f32) -> (f32, f32, f32) {
 		let f = self.f.process();
 
 		// evaluate the non-linear gains

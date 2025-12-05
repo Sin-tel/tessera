@@ -39,7 +39,7 @@ function Selector:update(ui, target, key)
 	end
 
 	if new_index then
-		command.run_and_register(command.change.new(target, key, new_index))
+		command.run_and_register(command.Change.new(target, key, new_index))
 	end
 
 	for i, v in ipairs(self.list) do
@@ -60,7 +60,7 @@ end
 
 function Button:update(ui, x, y, w, h)
 	ui:hitbox(self, x, y, w, h)
-	ui:pushDraw(self.draw, { self, ui, x, y, w, h })
+	ui:push_draw(self.draw, { self, ui, x, y, w, h })
 	return ui.clicked == self
 end
 
@@ -79,16 +79,16 @@ function Button:draw(ui, x, y, w, h)
 		color_line = theme.widget
 	end
 	if color_fill then
-		love.graphics.setColor(color_fill)
-		love.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
+		tessera.graphics.set_color(color_fill)
+		tessera.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
 	end
 	if color_line then
-		love.graphics.setColor(color_line)
-		love.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
+		tessera.graphics.set_color(color_line)
+		tessera.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
 	end
 
-	love.graphics.setColor(theme.ui_text)
-	util.drawText(self.text, x, y, w, h, "center", true)
+	tessera.graphics.set_color(theme.ui_text)
+	tessera.graphics.label(self.text, x, y, w, h, tessera.graphics.ALIGN_CENTER)
 end
 
 return Selector

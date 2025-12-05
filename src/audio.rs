@@ -1,22 +1,26 @@
 use assert_no_alloc::*;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use no_denormals::no_denormals;
+use parking_lot::Mutex;
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapRb};
 use std::error::Error;
 use std::panic;
 use std::panic::AssertUnwindSafe;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
+use crate::context::{AudioContext, AudioMessage, LuaMessage};
 use crate::dsp::env::AttackRelease;
 use crate::log::{log_error, log_info, log_warn};
-use crate::lua::{AudioContext, AudioMessage, LuaMessage};
 use crate::render::Render;
 use crate::scope::Scope;
 
 #[cfg(debug_assertions)] // required when disable_release is set (default)
 #[global_allocator]
 static A: AllocDisabler = AllocDisabler;
+
+pub static AUDIO_PANIC: AtomicBool = AtomicBool::new(false);
 
 pub const MAX_BUF_SIZE: usize = 64;
 pub const SPECTRUM_SIZE: usize = 4096;
@@ -139,7 +143,7 @@ where
 					assert_no_alloc(|| {
 						let cpal_buffer_size = cpal_buffer.len() / 2;
 						match m_render.try_lock() {
-							Ok(mut render) if !is_rendering => {
+							Some(mut render) if !is_rendering => {
 								if !start {
 									start = true;
 									log_info!("Buffer size: {cpal_buffer_size:?}");
@@ -203,6 +207,9 @@ where
 				},
 			};
 			log_error!("Audio thread panic: {msg}");
+
+			AUDIO_PANIC.store(true, Ordering::Relaxed);
+
 			for outsample in cpal_buffer.chunks_exact_mut(2) {
 				outsample[0] = T::from_sample(0.0f32);
 				outsample[1] = T::from_sample(0.0f32);
@@ -250,10 +257,10 @@ fn find_output_device(
 		output_device = host.default_output_device();
 	} else {
 		for device in host.output_devices().map_err(|_| "No output devices found.")? {
-			if let Ok(name) = device.name() {
-				if name.to_lowercase().contains(&output_device_name.to_lowercase()) {
-					output_device = Some(device);
-				}
+			if let Ok(name) = device.name()
+				&& name.to_lowercase().contains(&output_device_name.to_lowercase())
+			{
+				output_device = Some(device);
 			}
 		}
 	}
@@ -275,4 +282,28 @@ fn find_output_device(
 #[allow(clippy::needless_pass_by_value)]
 fn err_fn(err: cpal::StreamError) {
 	log_error!("an error occurred on stream: {err}");
+}
+
+pub fn write_wav(filename: &str, samples: &[f32], sample_rate: u32) -> Result<(), Box<dyn Error>> {
+	let spec = hound::WavSpec {
+		channels: 2,
+		sample_rate,
+		bits_per_sample: 16,
+		sample_format: hound::SampleFormat::Int,
+	};
+
+	let mut writer = hound::WavWriter::create(filename, spec)?;
+	for s in samples {
+		writer.write_sample(convert_sample_wav(*s))?;
+	}
+	writer.finalize()?;
+
+	Ok(())
+}
+
+fn convert_sample_wav(x: f32) -> i16 {
+	// TPDF dither in range [-1, 1] quantization levels
+	let dither = (fastrand::f32() - fastrand::f32()) / f32::from(u16::MAX);
+	let x = (x + dither).clamp(-1.0, 1.0);
+	(if x >= 0.0 { x * f32::from(i16::MAX) } else { -x * f32::from(i16::MIN) }) as i16
 }

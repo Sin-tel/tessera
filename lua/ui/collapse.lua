@@ -31,14 +31,14 @@ function Collapse:update(ui)
 		self.angle = -0.5 * math.pi
 	end
 
-	ui:pushDraw(self.draw, { self, x, y, w, h })
+	ui:push_draw(self.draw, { self, x, y, w, h })
 
 	return self.open
 end
 
 function Collapse:draw(x, y, w, h)
-	love.graphics.setColor(theme.ui_text)
-	local left_pad = h * 0.8 + Ui.DEFAULT_PAD
+	tessera.graphics.set_color(theme.ui_text)
+	local left_pad = h * 0.8 + Ui.PAD
 
 	local tw = h * 0.15
 	local cx, cy = x + h * 0.5, y + h * 0.5
@@ -46,13 +46,16 @@ function Collapse:draw(x, y, w, h)
 	local x2, y2 = tw, -tw
 	local x3, y3 = 0, tw
 
-	love.graphics.push()
-	love.graphics.translate(cx, cy)
-	love.graphics.rotate(self.angle)
-	love.graphics.polygon("fill", x1, y1, x2, y2, x3, y3)
-	love.graphics.polygon("line", x1, y1, x2, y2, x3, y3)
-	love.graphics.pop()
-	util.drawText(self.text, x + left_pad, y, w - left_pad, h)
+	tessera.graphics.push()
+	tessera.graphics.translate(cx, cy)
+	tessera.graphics.rotate(self.angle)
+	tessera.graphics.polygon("fill", x1, y1, x2, y2, x3, y3)
+	tessera.graphics.polygon("line", x1, y1, x2, y2, x3, y3)
+	tessera.graphics.pop()
+
+	tessera.graphics.set_font_size(Ui.TITLE_FONT_SIZE)
+	tessera.graphics.label(self.text, x + left_pad, y, w - left_pad, h)
+	tessera.graphics.set_font_size(Ui.DEFAULT_FONT_SIZE)
 end
 
 return Collapse

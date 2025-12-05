@@ -1,0 +1,335 @@
+use crate::app::State;
+use crate::audio;
+use crate::context::AudioMessage;
+use crate::log::{log_error, log_info};
+use mlua::prelude::*;
+use no_denormals::no_denormals;
+use ringbuf::traits::*;
+
+pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
+	let audio = lua.create_table()?;
+
+	audio.set(
+		"setup",
+		lua.create_function(
+			|lua, (host_name, device_name, buffer_size): (String, String, Option<u32>)| {
+				let state = &mut *lua.app_data_mut::<State>().unwrap();
+				match audio::run(&host_name, &device_name, buffer_size) {
+					Ok(ctx) => {
+						state.audio = Some(ctx);
+						Ok(())
+					},
+					Err(e) => {
+						log_error!("{e}");
+						state.audio = None;
+						Ok(())
+					},
+				}
+			},
+		)?,
+	)?;
+
+	audio.set(
+		"quit",
+		lua.create_function(|lua, ()| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			state.audio = None;
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"panic",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_message(AudioMessage::Panic);
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"is_release",
+		lua.create_function(|_, ()| {
+			#[cfg(debug_assertions)]
+			return Ok(false);
+
+			#[cfg(not(debug_assertions))]
+			return Ok(true);
+		})?,
+	)?;
+
+	audio.set(
+		"ok",
+		lua.create_function(|lua, ()| Ok(lua.app_data_mut::<State>().unwrap().audio.is_some()))?,
+	)?;
+
+	audio.set(
+		"get_samplerate",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &lua.app_data_ref::<State>().unwrap().audio {
+				return Ok(Some(ctx.sample_rate));
+			}
+			Ok(None)
+		})?,
+	)?;
+
+	audio.set(
+		"pitch",
+		lua.create_function(|lua, (channel_index, pitch, voice): (usize, f32, usize)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_message(AudioMessage::Pitch(channel_index - 1, pitch, voice - 1));
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"pressure",
+		lua.create_function(|lua, (channel_index, pressure, voice): (usize, f32, usize)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_message(AudioMessage::Pressure(channel_index - 1, pressure, voice - 1));
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"note_on",
+		lua.create_function(
+			|lua, (channel_index, pitch, vel, voice): (usize, f32, f32, usize)| {
+				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+					ctx.send_message(AudioMessage::NoteOn(
+						channel_index - 1,
+						pitch,
+						vel,
+						voice - 1,
+					));
+				}
+				Ok(())
+			},
+		)?,
+	)?;
+
+	audio.set(
+		"note_off",
+		lua.create_function(|lua, (channel_index, voice): (usize, usize)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_message(AudioMessage::NoteOff(channel_index - 1, voice - 1));
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"send_mute",
+		lua.create_function(|lua, (channel_index, mute): (usize, bool)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_message(AudioMessage::Mute(channel_index - 1, mute));
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"send_parameter",
+		lua.create_function(
+			|lua, (channel_index, device_index, index, value): (usize, usize, usize, f32)| {
+				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+					ctx.send_message(AudioMessage::Parameter(
+						channel_index - 1,
+						device_index, // don't need -1 here since device index is 0 for instrument and 1.. for fx
+						index - 1,
+						value,
+					));
+				}
+				Ok(())
+			},
+		)?,
+	)?;
+
+	audio.set(
+		"bypass",
+		lua.create_function(|lua, (channel_index, device_index, bypass): (usize, usize, bool)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_message(AudioMessage::Bypass(channel_index, device_index, bypass));
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"reorder_effect",
+		lua.create_function(
+			|lua, (channel_index, old_index, new_index): (usize, usize, usize)| {
+				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+					ctx.send_message(AudioMessage::ReorderEffect(
+						channel_index - 1,
+						old_index - 1,
+						new_index - 1,
+					));
+				}
+				Ok(())
+			},
+		)?,
+	)?;
+
+	audio.set(
+		"set_rendering",
+		lua.create_function(|lua, rendering: bool| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_rendering(rendering);
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"is_rendering",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				Ok(ctx.is_rendering)
+			} else {
+				Ok(true)
+			}
+		})?,
+	)?;
+
+	audio.set(
+		"insert_channel",
+		lua.create_function(|lua, (index, instrument_name): (usize, String)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let mut render = ctx.m_render.lock();
+				render.insert_channel(index - 1, &instrument_name);
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"remove_channel",
+		lua.create_function(|lua, index: usize| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let mut render = ctx.m_render.lock();
+				render.remove_channel(index - 1);
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"insert_effect",
+		lua.create_function(|lua, (channel_index, effect_index, name): (usize, usize, String)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let mut render = ctx.m_render.lock();
+				render.insert_effect(channel_index - 1, effect_index - 1, &name);
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"remove_effect",
+		lua.create_function(|lua, (channel_index, effect_index): (usize, usize)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let mut render = ctx.m_render.lock();
+				render.remove_effect(channel_index - 1, effect_index - 1);
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"render_block",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let len = 64;
+				let buffer: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
+
+				let mut render = ctx.m_render.lock();
+				// TODO: need to check here if the stream is *actually* paused
+
+				render.parse_messages();
+				unsafe { no_denormals(|| render.process(buffer)) };
+
+				// interlace
+				for i in 0..len {
+					ctx.render_buffer.push(buffer[0][i]);
+					ctx.render_buffer.push(buffer[1][i]);
+				}
+				Ok(true)
+			} else {
+				Ok(false)
+			}
+		})?,
+	)?;
+
+	audio.set(
+		"render_finish",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let filename = "out/render.wav";
+				let sample_rate = ctx.sample_rate;
+
+				match audio::write_wav(filename, &ctx.render_buffer, sample_rate) {
+					Ok(()) => {
+						log_info!("Wrote \"{filename}\".");
+					},
+					Err(e) => {
+						log_error!("Failed to write wav!");
+						log_error!("{e}");
+					},
+				}
+				// reset the buffer
+				ctx.render_buffer = Vec::new();
+			} else {
+				log_error!("Failed to write wav, backend offline.");
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"render_cancel",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.render_buffer = Vec::new();
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"flush",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let mut render = ctx.m_render.lock();
+				render.flush();
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"update_scope",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.scope.update();
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"pop",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				Ok(ctx.lua_rx.try_pop())
+			} else {
+				Ok(None)
+			}
+		})?,
+	)?;
+
+	Ok(audio)
+}

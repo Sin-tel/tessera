@@ -225,11 +225,7 @@ impl Instrument for Analog {
 // the 1/m term is to guarantee the integral is 0
 fn blit(s: f32, m: f32) -> f32 {
 	let denom = m * (s * PI).sin();
-	if denom.abs() < 1e-7 {
-		1. - (1. / m)
-	} else {
-		((s * m * PI).sin() / denom) - (1. / m)
-	}
+	if denom.abs() < 1e-7 { 1. - (1. / m) } else { ((s * m * PI).sin() / denom) - (1. / m) }
 }
 
 impl Analog {

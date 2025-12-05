@@ -1,4 +1,4 @@
-local deviceList = {}
+local device_list = {}
 
 -- should this just define a UI instead of a parameter list?
 -- parameters need to have a correct number though
@@ -10,9 +10,9 @@ local C5_HZ = 523.2511
 local INF = math.huge
 local DEFAULT_Q = 1 / math.sqrt(2)
 
-deviceList.instruments = {}
+device_list.instruments = {}
 
-deviceList.instruments.sine = {
+device_list.instruments.sine = {
 	n_voices = 1,
 	parameters = {
 		{ "fixed", "toggle" },
@@ -22,7 +22,7 @@ deviceList.instruments.sine = {
 	},
 }
 
-deviceList.instruments.wavetable = {
+device_list.instruments.wavetable = {
 	n_voices = 1,
 	parameters = {
 		{ "vel mod", "slider", { default = 0.0 } },
@@ -30,7 +30,7 @@ deviceList.instruments.wavetable = {
 	},
 }
 
-deviceList.instruments.analog = {
+device_list.instruments.analog = {
 	n_voices = 1,
 	parameters = {
 		{ "pulse width", "slider", { default = 0.5, min = 0.5, max = 0.99, fmt = "%0.2f" } },
@@ -54,7 +54,7 @@ deviceList.instruments.analog = {
 	},
 }
 
-deviceList.instruments.fm = {
+device_list.instruments.fm = {
 	n_voices = 16,
 	parameters = {
 		{ "feedback", "slider", { default = 0.0, min = -1.0, max = 1.0, centered = true } },
@@ -75,7 +75,7 @@ deviceList.instruments.fm = {
 	},
 }
 
-deviceList.instruments.polysine = {
+device_list.instruments.polysine = {
 	n_voices = 16,
 	parameters = {
 		{ "feedback", "slider", { default = 0.5, max = 2.0 } },
@@ -84,7 +84,7 @@ deviceList.instruments.polysine = {
 	},
 }
 
-deviceList.instruments.pluck = {
+device_list.instruments.pluck = {
 	n_voices = 8,
 	parameters = {
 		{ "decay", "slider", { default = 0.66, min = 0.0, max = 1.0 } },
@@ -97,7 +97,7 @@ deviceList.instruments.pluck = {
 	},
 }
 
-deviceList.instruments.epiano = {
+device_list.instruments.epiano = {
 	n_voices = 16,
 	parameters = {
 		{ "gain", "slider", { default = -6, min = -24, max = 6, fmt = "%0.1f dB" } },
@@ -106,28 +106,28 @@ deviceList.instruments.epiano = {
 	},
 }
 
-deviceList.effects = {}
+device_list.effects = {}
 
-deviceList.effects.pan = {
+device_list.effects.pan = {
 	parameters = {
 		{ "gain", "slider", { default = 0, t = "dB" } },
 		{ "pan", "slider", { default = 0, min = -1, max = 1, centered = true, fmt = "%0.2f" } },
 	},
 }
 
-deviceList.effects.gain = {
+device_list.effects.gain = {
 	parameters = {
 		{ "gain", "slider", { default = 0, max = 12, t = "dB" } },
 	},
 }
 
-deviceList.effects.wide = {
+device_list.effects.wide = {
 	parameters = {
 		{ "amount", "slider", { default = 0.2, max = 1 } },
 	},
 }
 
-deviceList.effects.drive = {
+device_list.effects.drive = {
 	parameters = {
 		{ "dry wet", "slider", { default = 1.0 } },
 		{ "mode", "selector", { "soft", "hard" } },
@@ -139,7 +139,7 @@ deviceList.effects.drive = {
 	},
 }
 
-deviceList.effects.delay = {
+device_list.effects.delay = {
 	parameters = {
 		{ "dry wet", "slider", { default = 0.33 } },
 		{ "time", "slider", { default = 0.4, min = 0.1, max = 1.0, t = "log" } },
@@ -150,7 +150,7 @@ deviceList.effects.delay = {
 	},
 }
 
-deviceList.effects.reverb = {
+device_list.effects.reverb = {
 	parameters = {
 		{ "dry wet", "slider", { default = 0.33 } },
 		{ "size", "slider", { default = 0.8, min = 0.3, max = 1.0 } },
@@ -160,7 +160,7 @@ deviceList.effects.reverb = {
 	},
 }
 
-deviceList.effects.testfilter = {
+device_list.effects.testfilter = {
 	parameters = {
 		{ "freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
 		{ "Q", "slider", { default = DEFAULT_Q, min = 0.5, max = 10, t = "log" } },
@@ -169,7 +169,7 @@ deviceList.effects.testfilter = {
 	},
 }
 
-deviceList.effects.equalizer = {
+device_list.effects.equalizer = {
 	parameters = {
 		{ "low gain", "slider", { default = 0, min = -24, max = 24, centered = true, fmt = "%0.1f dB" } },
 		{ "band 1 gain", "slider", { default = 0, min = -24, max = 24, centered = true, fmt = "%0.1f dB" } },
@@ -184,19 +184,19 @@ deviceList.effects.equalizer = {
 	},
 }
 
-deviceList.effects.tilt = {
+device_list.effects.tilt = {
 	parameters = {
 		{ "slope", "slider", { default = 0, min = -12, max = 12, centered = true, fmt = "%0.1f dB/oct" } },
 	},
 }
 
-deviceList.effects.convolve = {
+device_list.effects.convolve = {
 	parameters = {
 		{ "dry wet", "slider", { default = 1.0 } },
 	},
 }
 
-deviceList.effects.compressor = {
+device_list.effects.compressor = {
 	parameters = {
 		{ "dry wet", "slider", { default = 1.0 } },
 		{ "treshold", "slider", { default = -24, min = -48, max = 0, fmt = "%0.1f dB" } },
@@ -207,4 +207,4 @@ deviceList.effects.compressor = {
 	},
 }
 
-return deviceList
+return device_list

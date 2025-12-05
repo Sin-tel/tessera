@@ -50,8 +50,8 @@ mod tests {
 			max_abs_error = max_abs_error.max(abs_error);
 
 			println!(
-                "x = {x:.2}: approx = {approx:+.6}, exact = {exact:+.6}, abs_error = {abs_error:0.6}",
-            );
+				"x = {x:.2}: approx = {approx:+.6}, exact = {exact:+.6}, abs_error = {abs_error:0.6}",
+			);
 		}
 
 		println!("Maximum absolute error: {:.6}", max_abs_error);

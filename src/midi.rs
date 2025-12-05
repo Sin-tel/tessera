@@ -1,7 +1,7 @@
 use crate::log::{log_error, log_info, log_warn};
 use midir::{Ignore, MidiInput, MidiInputConnection};
-use mlua::prelude::*;
 use mlua::Value;
+use mlua::prelude::*;
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd, HeapRb};
 
@@ -49,10 +49,10 @@ pub fn connect(port_name: &str) -> Option<Connection> {
 				"midir-test",
 				|_stamp, message, midi_rx| {
 					let event = Event::from_bytes(message);
-					if let Some(e) = event {
-						if midi_rx.try_push(e).is_err() {
-							log_warn!("Midi queue full!");
-						}
+					if let Some(e) = event
+						&& midi_rx.try_push(e).is_err()
+					{
+						log_warn!("Midi queue full!");
 					}
 				},
 				midi_tx,
