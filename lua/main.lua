@@ -142,9 +142,11 @@ function tessera.load()
 	local top_right, bottom_rigth = right:split(0.35, false)
 
 	top_left:set_view(views.Scope.new(false))
-	-- top_left:set_view(views.Canvas.new())
 	middle_left:set_view(views.Canvas.new())
-	-- middle_left:set_view(views.Debug.new())
+
+	-- top_left:set_view(views.Canvas.new())
+	-- middle_left:set_view(views.TestPad.new())
+
 	top_right:set_view(views.Channels.new())
 	bottom_rigth:set_view(views.ChannelSettings.new())
 
@@ -186,6 +188,8 @@ function tessera.draw()
 	local t_start = tessera.get_time()
 
 	tessera.audio.update_scope()
+	engine.update_meters()
+
 	if audio_status ~= "render" then
 		mouse:update()
 		workspace:update()

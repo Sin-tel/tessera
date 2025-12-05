@@ -146,8 +146,8 @@ function engine.parse_messages()
 		if p.tag == "Cpu" then
 			workspace.cpu_load = p.load
 		elseif p.tag == "Meter" then
-			workspace.meter.l = util.to_dB(p.l)
-			workspace.meter.r = util.to_dB(p.r)
+			workspace.meter.l = p.l
+			workspace.meter.r = p.r
 		end
 	end
 end
@@ -178,6 +178,22 @@ local function send_mute_device(device, ch_index, device_index)
 	if device.mute_old ~= mute then
 		tessera.audio.send_mute_device(ch_index, device_index, mute)
 		device.mute_old = mute
+	end
+end
+
+local M_DECAY = 0.7
+
+function engine.update_meters()
+	local meters = tessera.audio.get_meters()
+	for _, ch in ipairs(ui_channels) do
+		local i = ch.instrument.meter_id
+		ch.instrument.meter_l = math.max(meters[i][1], ch.instrument.meter_l * M_DECAY)
+		ch.instrument.meter_r = math.max(meters[i][2], ch.instrument.meter_r * M_DECAY)
+		for _, fx in ipairs(ch.effects) do
+			i = fx.meter_id
+			fx.meter_l = math.max(meters[i][1], fx.meter_l * M_DECAY)
+			fx.meter_r = math.max(meters[i][2], fx.meter_r * M_DECAY)
+		end
 	end
 end
 

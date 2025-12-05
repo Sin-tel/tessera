@@ -1,4 +1,6 @@
+use crate::dsp;
 use crate::instrument::Instrument;
+use crate::meters::MeterHandle;
 use std::collections::VecDeque;
 
 pub type Token = u32;
@@ -25,15 +27,16 @@ impl Voice {
 }
 
 pub struct VoiceManager {
-	pub instrument: Box<dyn Instrument + Send>,
+	instrument: Box<dyn Instrument + Send>,
 	voices: Vec<Voice>,
 	queue: VecDeque<Voice>,
 	sustain: bool,
 	mute: bool,
+	meter_handle: MeterHandle,
 }
 
 impl VoiceManager {
-	pub fn new(instrument: Box<dyn Instrument + Send>) -> Self {
+	pub fn new(instrument: Box<dyn Instrument + Send>, meter_handle: MeterHandle) -> Self {
 		let voice_count = instrument.voice_count();
 		Self {
 			instrument,
@@ -41,6 +44,7 @@ impl VoiceManager {
 			queue: VecDeque::with_capacity(8),
 			sustain: false,
 			mute: false,
+			meter_handle,
 		}
 	}
 
@@ -174,10 +178,23 @@ impl VoiceManager {
 	}
 
 	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
-		// TODO: mute currently only skips processing, but still receives other inputs
-		// maybe this is fine
-		if !self.mute {
+		if self.mute {
+			self.meter_handle.set((0., 0.));
+		} else {
 			self.instrument.process(buffer);
+			let peak = dsp::peak(buffer);
+			self.meter_handle.set(peak);
 		}
+	}
+
+	pub fn flush(&mut self) {
+		self.instrument.flush();
+	}
+
+	pub fn set_parameter(&mut self, index: usize, val: f32) {
+		if self.mute {
+			return;
+		}
+		self.instrument.set_parameter(index, val);
 	}
 }

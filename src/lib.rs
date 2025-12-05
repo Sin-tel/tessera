@@ -27,6 +27,7 @@ pub mod audio;
 pub mod context;
 mod effect;
 mod instrument;
+pub mod meters;
 pub mod midi;
 pub mod render;
 pub mod scope;
