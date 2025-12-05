@@ -183,6 +183,8 @@ impl Instrument for Analog {
 
 	fn flush(&mut self) {
 		self.envelope.reset();
+		self.gate.set(0.0);
+		self.note_on = false;
 	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {

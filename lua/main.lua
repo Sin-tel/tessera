@@ -303,6 +303,7 @@ function tessera.keypressed(_, key, isrepeat)
 	-- 	end
 	elseif modifier_keys.ctrl and key == "f" then
 		engine.stop()
+		tessera.audio.clear_messages()
 		tessera.audio.flush()
 	elseif modifier_keys.ctrl and key == "k" then
 		if tessera.audio.ok() then
