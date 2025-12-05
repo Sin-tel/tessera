@@ -134,7 +134,7 @@ impl Adsr {
 	}
 
 	pub fn reset(&mut self) {
-		self.stage = AdsrStage::Attack;
+		self.stage = AdsrStage::Release;
 		self.value = 0.;
 	}
 
