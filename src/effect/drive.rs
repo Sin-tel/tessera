@@ -154,7 +154,7 @@ impl Effect for Drive {
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
 			0 => self.balance.set(value),
-			1 => self.hard = value > 0.5,
+			1 => self.hard = value > 1.5,
 			2 => {
 				let gain = from_db(value);
 				self.gain.set(gain);
