@@ -10,6 +10,7 @@ use winit::application::ApplicationHandler;
 use winit::event::DeviceId;
 use winit::event::{DeviceEvent, ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
+use winit::keyboard::{Key, PhysicalKey};
 use winit::window::WindowId;
 
 use tessera::api::create_lua;
@@ -42,7 +43,7 @@ fn run() -> LuaResult<()> {
 	let lua = create_lua()?;
 	lua.set_app_data(State::new(canvas, window));
 
-	// set working directory so 'require' works
+	// set import path so 'require' works
 	lua.load("package.path = package.path .. ';lua/?.lua;'").exec()?;
 
 	init_logging();
@@ -128,7 +129,8 @@ impl ApplicationHandler for App {
 			WindowEvent::KeyboardInput {
 				event:
 					winit::event::KeyEvent {
-						physical_key: winit::keyboard::PhysicalKey::Code(keycode),
+						physical_key: PhysicalKey::Code(keycode),
+						logical_key,
 						state,
 						repeat,
 						..
@@ -136,12 +138,18 @@ impl ApplicationHandler for App {
 				..
 			} => {
 				let key = keycode_to_str(keycode);
+				let key_str: Option<String> = match logical_key {
+					Key::Character(s) => Some(s.into()),
+					// Key::Named(s) => s.to_text().map(str::to_string),
+					_ => None,
+				};
+
 				match state {
 					ElementState::Pressed => {
-						wrap_call(&self.keypressed, (key, key, repeat));
+						wrap_call(&self.keypressed, (key, key_str, repeat));
 					},
 					ElementState::Released => {
-						wrap_call(&self.keyreleased, (key, key, repeat));
+						wrap_call(&self.keyreleased, (key, key_str, repeat));
 					},
 				}
 			},
