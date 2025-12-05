@@ -68,7 +68,7 @@ impl Effect for Convolve {
 	}
 
 	fn flush(&mut self) {
-		self.convolver.reset()
+		self.convolver.reset();
 	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {

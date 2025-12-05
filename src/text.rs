@@ -1,14 +1,15 @@
+use crate::log_info;
 use crate::opengl::Renderer;
 use cosmic_text::fontdb;
 use cosmic_text::{
 	Align, Attrs, Buffer, CacheKey, Fallback, Family, FontSystem, Metrics, Shaping, SubpixelBin,
 	SwashCache, Wrap,
 };
-use femtovg::Color;
 use femtovg::imgref::{Img, ImgRef};
 use femtovg::rgb::RGBA8;
 use femtovg::{
-	Atlas, Canvas, DrawCommand, GlyphDrawCommands, ImageFlags, ImageId, ImageSource, Paint, Quad,
+	Atlas, Canvas, Color, DrawCommand, GlyphDrawCommands, ImageFlags, ImageId, ImageSource, Paint,
+	Quad,
 };
 use std::collections::HashMap;
 use swash::scale::image::Content;
@@ -136,6 +137,7 @@ impl RenderCache {
 								)
 								.unwrap();
 							let texture_index = self.glyph_textures.len();
+							log_info!("Allocating font atlas {}", texture_index);
 							let (x, y) = atlas.add_rect(content_w, content_h).unwrap();
 							self.glyph_textures.push(FontTexture { atlas, image_id });
 							(texture_index, x, y)

@@ -264,7 +264,7 @@ impl Instrument for Pluck {
 	}
 
 	fn flush(&mut self) {
-		for voice in self.voices.iter_mut() {
+		for voice in &mut self.voices {
 			voice.delay_l.flush();
 			voice.delay_r.flush();
 			voice.hammer_x = 2.0;
