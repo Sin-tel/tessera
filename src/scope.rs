@@ -64,8 +64,9 @@ impl Scope {
 		// calculate trigger position
 		let max_val = buffer.iter().fold(0., |max, &val| val.abs().max(max));
 
-		let threshold = 0.5 * max_val;
+		let threshold = 0.5 * max_val + 0.01;
 		let mut x_trigger = 0.0;
+
 		let mut schmitt = true;
 
 		for (i, &v) in buffer.iter().enumerate() {

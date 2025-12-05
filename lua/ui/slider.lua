@@ -99,13 +99,13 @@ function Slider:draw(v, display, color_fill, color_line, x, y, w, h)
 	end
 
 	tessera.graphics.set_color(theme.widget)
-	tessera.graphics.rectangle("fill", x, y, w, h, CORNER_RADIUS)
+	tessera.graphics.rectangle("fill", x - 0.5, y - 0.5, w, h + 1, CORNER_RADIUS)
 
 	-- push scissor
 	tessera.graphics.set_scissor(sx, sy, sw, sh)
 
 	tessera.graphics.set_color(color_line)
-	tessera.graphics.rectangle("line", x, y, w, h, CORNER_RADIUS)
+	tessera.graphics.rectangle("line", x - 0.5, y - 0.5, w, h + 1, CORNER_RADIUS)
 
 	tessera.graphics.set_color(theme.ui_text)
 	tessera.graphics.label(display, x, y + 0.4, w, h, tessera.graphics.ALIGN_CENTER)

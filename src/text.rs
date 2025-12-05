@@ -106,7 +106,7 @@ impl RenderCache {
 							apply_blur(&rendered.data, content_w, content_h, radius);
 						rendered.data = new_data;
 						content_x -= radius as i32;
-						content_y -= radius as i32;
+						content_y -= radius as i32 - 1;
 						content_w = new_w;
 						content_h = new_h;
 					}
@@ -409,15 +409,15 @@ fn apply_blur(src: &[u8], width: usize, height: usize, radius: usize) -> (Vec<u8
 	let padding = radius;
 	let new_w = width + padding * 2;
 	let new_h = height + padding * 2;
-	let mut out = vec![0u8; new_w * new_h];
+	let mut out = vec![0.0f32; new_w * new_h];
 
 	for y in 0..new_h {
 		for x in 0..new_w {
 			let src_x = (x as i32) - padding as i32;
 			let src_y = (y as i32) - padding as i32;
 
-			let mut acc = 0u32;
-			let mut count = 0u32;
+			let mut acc: f32 = 0.0;
+			let mut count: u32 = 0;
 
 			for ky in -(radius as i32)..=(radius as i32) {
 				for kx in -(radius as i32)..=(radius as i32) {
@@ -426,15 +426,18 @@ fn apply_blur(src: &[u8], width: usize, height: usize, radius: usize) -> (Vec<u8
 
 					if sx >= 0 && sx < width as i32 && sy >= 0 && sy < height as i32 {
 						let val = src[(sy as usize * width) + sx as usize];
-						acc += u32::from(val);
+						acc += f32::from(val);
 					}
 					count += 1;
 				}
 			}
 
-			out[y * new_w + x] = (acc / count) as u8;
+			out[y * new_w + x] = acc / (count as f32);
 		}
 	}
+
+	// slightly darken and convert to u8
+	let out = out.iter_mut().map(|x| (*x * 1.3).clamp(0., 255.) as u8).collect();
 
 	(out, new_w, new_h)
 }
