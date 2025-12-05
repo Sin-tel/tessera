@@ -13,7 +13,6 @@ local DEFAULT_Q = 1 / math.sqrt(2)
 device_list.instruments = {}
 
 device_list.instruments.sine = {
-	n_voices = 1,
 	parameters = {
 		{ "fixed", "toggle" },
 		{ "freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
@@ -23,7 +22,6 @@ device_list.instruments.sine = {
 }
 
 device_list.instruments.wavetable = {
-	n_voices = 1,
 	parameters = {
 		{ "vel mod", "slider", { default = 0.0 } },
 		{ "pres mod", "slider", { default = 0.25 } },
@@ -31,7 +29,6 @@ device_list.instruments.wavetable = {
 }
 
 device_list.instruments.analog = {
-	n_voices = 1,
 	parameters = {
 		{ "pulse width", "slider", { default = 0.5, min = 0.5, max = 0.99, fmt = "%0.2f" } },
 		{ "mix pulse", "slider", { default = -INF, t = "dB" } },
@@ -55,7 +52,6 @@ device_list.instruments.analog = {
 }
 
 device_list.instruments.fm = {
-	n_voices = 16,
 	parameters = {
 		{ "feedback", "slider", { default = 0.0, min = -1.0, max = 1.0, centered = true } },
 		{ "depth", "slider", { default = 0.2, min = 0, max = 1.0 } },
@@ -76,7 +72,6 @@ device_list.instruments.fm = {
 }
 
 device_list.instruments.polysine = {
-	n_voices = 16,
 	parameters = {
 		{ "feedback", "slider", { default = 0.5, max = 2.0 } },
 		{ "attack", "slider", { default = 40.0, min = 1.0, max = 20000.0, t = "log", fmt = "ms" } },
@@ -85,7 +80,6 @@ device_list.instruments.polysine = {
 }
 
 device_list.instruments.pluck = {
-	n_voices = 8,
 	parameters = {
 		{ "decay", "slider", { default = 0.66, min = 0.0, max = 1.0 } },
 		{ "release", "slider", { default = 0.5, min = -1.0, max = 1.0, centered = true } },
@@ -98,7 +92,6 @@ device_list.instruments.pluck = {
 }
 
 device_list.instruments.epiano = {
-	n_voices = 16,
 	parameters = {
 		{ "gain", "slider", { default = -6, min = -24, max = 6, fmt = "%0.1f dB" } },
 		{ "wobble", "slider", { default = 0.3 } },

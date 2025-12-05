@@ -1,10 +1,8 @@
 --[[
 table serializer that outputs human readable lua code
 
-supports nested tables (and arrays) of numbers, strings and booleans 
+supports nested tables (and arrays) of numbers, strings and booleans
 doesn't support functions, userdata, circular references, and probably a lot of edge cases
-
--- TODO: use fast string concat
 ]]
 
 local infinity = math.huge
@@ -23,7 +21,8 @@ function writer.number(value)
 	return value == infinity and "1/0"
 		or value == -infinity and "-1/0"
 		or value ~= value and write_nan(value)
-		or ("%.17G"):format(value)
+		-- Note: we only care about preserving f32 representation
+		or ("%.8G"):format(value)
 end
 
 -- serialize strings
@@ -48,9 +47,12 @@ local function is_array(t)
 	return true
 end
 
+local function indent(b, n)
+	table.insert(b, ("\t"):rep(n))
+end
+
 local function write_table(t, depth)
-	local depth = depth or 0
-	local s = ""
+	local b = {}
 
 	local arr = is_array(t)
 
@@ -58,81 +60,61 @@ local function write_table(t, depth)
 	for k, v in pairs(t) do
 		if type(v) == "table" then
 			if type(k) == "string" then
-				s = s .. ("\t"):rep(depth) .. ("%s"):format(k) .. " = {\n" .. write_table(v, depth) .. ",\n"
+				indent(b, depth)
+				local s = ("%s"):format(k) .. " = {\n" .. write_table(v, depth) .. ",\n"
+				table.insert(b, s)
 			else
 				if arr then
-					s = s .. ("\t"):rep(depth) .. "{\n" .. write_table(v, depth) .. ",\n"
+					indent(b, depth)
+					local s = "{\n" .. write_table(v, depth) .. ",\n"
+					table.insert(b, s)
 				else
-					s = s .. ("\t"):rep(depth) .. ("[%s]"):format(k) .. " = {\n" .. write_table(v, depth) .. ",\n"
+					indent(b, depth)
+					local s = ("[%s]"):format(k) .. " = {\n" .. write_table(v, depth) .. ",\n"
+					table.insert(b, s)
 				end
 			end
 		else
 			if type(k) == "string" then
 				local write_value = get_writer(v)
 				local value = write_value(v)
-				s = s .. ("\t"):rep(depth) .. ("%s = %s,\n"):format(k, value)
+
+				indent(b, depth)
+				local s = ("%s = %s,\n"):format(k, value)
+				table.insert(b, s)
 			else
-				local writeKey, write_value = get_writer(k), get_writer(v)
-				local key, value = writeKey(k), write_value(v)
+				local write_key, write_value = get_writer(k), get_writer(v)
+				local key, value = write_key(k), write_value(v)
+
+				indent(b, depth)
 				if arr then
-					--[[if type(v) == "number" then
-						if k == 1 then
-							s = s .. ("\t"):rep(depth)
-						end
-						s = s ..  ('%s, '):format(value)
-					else]]
-					s = s .. ("\t"):rep(depth) .. ("%s,\n"):format(value)
-					--end
+					local s = ("%s,\n"):format(value)
+					table.insert(b, s)
 				else
-					s = s .. ("\t"):rep(depth) .. ("[%s] = %s,\n"):format(key, value)
+					local s = ("[%s] = %s,\n"):format(key, value)
+					table.insert(b, s)
 				end
 			end
 		end
 	end
 	depth = depth - 1
-	s = s .. ("\t"):rep(depth) .. "}"
 
-	return s
-end
+	indent(b, depth)
 
-local function write_table2(t, var)
-	local s = ""
+	table.insert(b, "}")
 
-	s = s .. (var .. " = {}\n")
-	for k, v in pairs(t) do
-		if type(v) == "table" then
-			if type(k) == "string" then
-				s = s .. write_table2(v, ("%s.%s"):format(var, k))
-			else
-				s = s .. write_table2(v, ("%s[%s]"):format(var, k))
-			end
-		else
-			if type(k) == "string" then
-				local write_value = get_writer(v)
-				local value = write_value(v)
-				s = s .. ("%s.%s = %s\n"):format(var, k, value)
-			else
-				local writeKey, write_value = get_writer(k), get_writer(v)
-				local key, value = writeKey(k), write_value(v)
-				s = s .. ("%s[%s] = %s\n"):format(var, key, value)
-			end
-		end
-	end
-	--end
-	return s
+	return table.concat(b)
 end
 
 local function serialize(t, var)
-	local var = var or "t"
-
-	local s = "local " .. var .. " = {\n"
-	s = s .. write_table(t)
-	s = s .. "\nreturn " .. var
-	return s
-end
-
-local function deserialize(s)
-	return setfenv(loadstring(s), {})()
+	if var then
+		local s = "local " .. var .. " = {\n"
+		s = s .. write_table(t, 0)
+		s = s .. "\nreturn " .. var
+		return s
+	else
+		return "{\n" .. write_table(t, 0)
+	end
 end
 
 return serialize

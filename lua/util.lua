@@ -1,7 +1,10 @@
 local Ui = require("ui/ui")
 local log = require("log")
+local serialize = require("lib.serialize")
 
 local util = {}
+
+local EPSILON = 1e-5
 
 function util.lerp(a, b, t)
 	return a + (b - a) * util.clamp(t, 0, 1)
@@ -31,6 +34,45 @@ end
 
 function util.dist(x1, y1, x2, y2)
 	return math.sqrt((x1 - x2) ^ 2 + (y1 - y2) ^ 2)
+end
+
+function util.segment_dist_sq(px, py, x1, y1, x2, y2)
+	local l2 = (x1 - x2) ^ 2 + (y1 - y2) ^ 2
+	if l2 < EPSILON then
+		return (px - x1) ^ 2 + (py - y1) ^ 2
+	end
+
+	local t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2
+	t = math.max(0, math.min(1, t))
+
+	return (px - (x1 + t * (x2 - x1))) ^ 2 + (py - (y1 + t * (y2 - y1))) ^ 2
+end
+
+function util.segment_intersect(p1x, p1y, p2x, p2y, p3x, p3y, p4x, p4y)
+	local d = (p2x - p1x) * (p4y - p3y) - (p2y - p1y) * (p4x - p3x)
+	if d < EPSILON then
+		return false
+	end
+
+	local t = ((p3x - p1x) * (p4y - p3y) - (p3y - p1y) * (p4x - p3x)) / d
+	local u = ((p3x - p1x) * (p2y - p1y) - (p3y - p1y) * (p2x - p1x)) / d
+
+	return t >= 0 and t <= 1 and u >= 0 and u <= 1
+end
+
+function util.line_box_intersect(x1, y1, x2, y2, bx1, by1, bx2, by2)
+	-- check if either endpoint is inside the box
+	if
+		(x1 >= bx1 and x1 <= bx2 and y1 >= by1 and y1 <= by2) or (x2 >= bx1 and x2 <= bx2 and y2 >= by1 and y2 <= by2)
+	then
+		return true
+	end
+
+	-- check intersection with each of the four box edges
+	return util.segment_intersect(x1, y1, x2, y2, bx1, by1, bx2, by1) -- top
+		or util.segment_intersect(x1, y1, x2, y2, bx2, by1, bx2, by2) -- right
+		or util.segment_intersect(x1, y1, x2, y2, bx2, by2, bx1, by2) -- bottom
+		or util.segment_intersect(x1, y1, x2, y2, bx1, by2, bx1, by1) -- left
 end
 
 function util.length(x, y)
@@ -75,6 +117,22 @@ function util.velocity_curve(x)
 	return out
 end
 
+local METER_CLIP_COLOR = { 1.00, 0.30, 0.20 }
+
+function util.meter_color(x, darken)
+	if x > 1 then
+		return METER_CLIP_COLOR
+	else
+		assert(x >= 0)
+		local v = 0.7
+		if darken then
+			local x_log = math.max((util.to_dB(x) + 60) / 60, 0)
+			v = 0.9 * x_log
+		end
+		return tessera.graphics.get_color_hsv((140 - 110 * x * x) / 360, 0.7, v)
+	end
+end
+
 -- clone a simple, non-recursive data table
 local function clone(orig, seen)
 	seen = seen or {}
@@ -107,27 +165,23 @@ function util.average(t)
 	return sum / n
 end
 
-local function pprint(t, indent)
-	indent = indent or 0
+function util.dump(t)
 	if type(t) == "table" then
-		for k, v in pairs(t) do
-			if type(v) == "table" then
-				print(string.rep("  ", indent) .. tostring(k) .. ":")
-				pprint(v, indent + 1)
-			else
-				local s = tostring(v)
-				if type(v) == "string" then
-					s = '"' .. s .. '"'
-				end
-				print(string.rep("  ", indent) .. tostring(k) .. ": " .. s)
-			end
-		end
+		return serialize(t)
+	elseif type(t) == "string" then
+		return '"' .. t .. '"'
 	else
-		print(t)
+		return tostring(t)
 	end
 end
 
-util.pprint = pprint
+function util.pprint(t)
+	print(util.dump(t))
+end
+
+function util.capitalize(s)
+	return s:sub(1, 1):upper() .. s:sub(2):lower()
+end
 
 function util.writefile(filename, contents)
 	local file, err = io.open(filename, "w")

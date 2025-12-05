@@ -23,23 +23,30 @@ end
 function View:draw() end
 
 function View:draw_full()
+	-- draw child window
 	tessera.graphics.push()
 	tessera.graphics.translate(Ui.BORDER_SIZE, Ui.HEADER + Ui.BORDER_SIZE)
 
 	self:draw()
 	tessera.graphics.pop()
 
+	-- shadow
+	tessera.graphics.set_color(theme.background)
+	tessera.graphics.rectangle("fill", 0, 0, self.box.w, Ui.HEADER + 2)
+
+	-- header
 	tessera.graphics.set_color(theme.header)
 	if self.box.focus then
 		tessera.graphics.set_color(theme.header_focus)
 	end
 	tessera.graphics.rectangle("fill", 0, 0, self.box.w, Ui.HEADER)
 
+	-- title
 	tessera.graphics.set_font_main()
 	tessera.graphics.set_font_size(Ui.TITLE_FONT_SIZE)
 	tessera.graphics.set_color(theme.ui_text)
 	tessera.graphics.label(self.name, 10, 0, self.box.w - 20, Ui.HEADER)
-	tessera.graphics.set_font_size(Ui.DEFAULT_FONT_SIZE)
+	tessera.graphics.set_font_size()
 end
 
 function View:mousepressed() end

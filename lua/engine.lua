@@ -8,6 +8,7 @@ local engine = {}
 engine.playing = false
 engine.render_progress = 0
 engine.render_end = 8
+engine.time = 0
 
 function engine.start()
 	engine.seek(project.transport.start_time)
@@ -22,14 +23,16 @@ function engine.start()
 end
 
 function engine.stop()
+	if engine.playing == false then
+		return
+	end
 	engine.playing = false
 
 	local added_notes = {}
 	local total = 0
 
+	tessera.audio:all_notes_off()
 	for i, v in ipairs(ui_channels) do
-		v.voice_alloc:all_notes_off()
-
 		added_notes[i] = v.roll.recorded_notes
 		total = total + #added_notes[i]
 		v.roll:stop()
@@ -41,16 +44,19 @@ function engine.stop()
 end
 
 function engine.seek(time)
-	assert(not engine.playing)
-	project.transport.time = time
+	if engine.playing then
+		log.warn("Engine was playing while seeking")
+		return
+	end
+	engine.time = time
 end
 
 function engine.update(dt)
 	if engine.playing then
-		project.transport.time = project.transport.time + dt
+		engine.time = engine.time + dt
 		if tessera.audio.ok() then
 			for _, v in ipairs(ui_channels) do
-				v.roll:playback()
+				v.roll:playback(v)
 			end
 		end
 	end
@@ -59,6 +65,7 @@ function engine.update(dt)
 end
 
 function engine.render_start()
+	engine.stop()
 	tessera.audio.flush()
 	midi.flush()
 
@@ -84,10 +91,7 @@ function engine.render_start()
 	mouse:end_frame()
 
 	tessera.audio.set_rendering(true)
-
-	-- sleep for a bit to make sure the audio thread is done
-	-- TODO: find something better
-	tessera.timer.sleep(0.01)
+	tessera.audio.clear_messages()
 end
 
 function engine.render()
@@ -97,7 +101,7 @@ function engine.render()
 
 	-- Try to hit 16 ms to keep things responsive
 	local target_ms = 16
-	local t_start = tessera.timer.get_time()
+	local t_start = tessera.get_time()
 	for i = 1, 3000 do
 		local success = tessera.audio.render_block()
 		if not success then
@@ -115,7 +119,7 @@ function engine.render()
 			break
 		end
 
-		local t_now = (tessera.timer.get_time() - t_start) * 1000
+		local t_now = (tessera.get_time() - t_start) * 1000
 		if t_now > target_ms then
 			print(tostring(i) .. " blocks rendered")
 			break
@@ -139,11 +143,11 @@ function engine.parse_messages()
 		if p == nil then
 			return
 		end
-		if p.tag == "cpu" then
-			workspace.cpu_load = p.cpu_load
-		elseif p.tag == "meter" then
-			workspace.meter.l = util.to_dB(p.l)
-			workspace.meter.r = util.to_dB(p.r)
+		if p.tag == "Cpu" then
+			workspace.cpu_load = p.load
+		elseif p.tag == "Meter" then
+			workspace.meter.l = p.l
+			workspace.meter.r = p.r
 		end
 	end
 end
@@ -161,35 +165,63 @@ function engine.end_time()
 	return t_end
 end
 
-local function to_number(x)
-	if type(x) == "number" then
-		return x
-	elseif type(x) == "boolean" then
-		return x and 1 or 0
-	else
-		error("unsupported type: " .. type(x))
+local function send_mute_channel(ch, ch_index)
+	local mute = ch.data.mute
+	if ch.mute_old ~= mute then
+		tessera.audio.send_mute_channel(ch_index, mute)
+		ch.mute_old = mute
+	end
+end
+
+local function send_mute_device(device, ch_index, device_index)
+	local mute = device.data.mute
+	if device.mute_old ~= mute then
+		tessera.audio.send_mute_device(ch_index, device_index, mute)
+		device.mute_old = mute
+	end
+end
+
+local M_DECAY = 0.7
+
+function engine.update_meters()
+	local meters = tessera.audio.get_meters()
+	for _, ch in ipairs(ui_channels) do
+		local i = ch.instrument.meter_id
+		ch.instrument.meter_l = math.max(meters[i][1], ch.instrument.meter_l * M_DECAY)
+		ch.instrument.meter_r = math.max(meters[i][2], ch.instrument.meter_r * M_DECAY)
+		for _, fx in ipairs(ch.effects) do
+			i = fx.meter_id
+			fx.meter_l = math.max(meters[i][1], fx.meter_l * M_DECAY)
+			fx.meter_r = math.max(meters[i][2], fx.meter_r * M_DECAY)
+		end
 	end
 end
 
 function engine.send_parameters()
-	for k, ch in ipairs(ui_channels) do
-		for l, par in ipairs(ch.instrument.parameters) do
+	for ch_index, ch in ipairs(ui_channels) do
+		send_mute_channel(ch, ch_index)
+
+		send_mute_device(ch.instrument, ch_index, 0)
+
+		for l in ipairs(ch.instrument.parameters) do
 			local new_value = ch.instrument.state[l]
 			local old_value = ch.instrument.state_old[l]
 			if old_value ~= new_value then
-				local value = to_number(new_value)
-				tessera.audio.send_parameter(k, 0, l, value)
+				local value = new_value
+				tessera.audio.send_parameter(ch_index, 0, l, value)
 				ch.instrument.state_old[l] = new_value
 			end
 		end
 
-		for e, fx in ipairs(ch.effects) do
-			for l, par in ipairs(fx.parameters) do
+		for fx_index, fx in ipairs(ch.effects) do
+			send_mute_device(fx, ch_index, fx_index)
+
+			for l in ipairs(fx.parameters) do
 				local new_value = fx.state[l]
 				local old_value = fx.state_old[l]
 				if old_value ~= new_value then
-					local value = to_number(new_value)
-					tessera.audio.send_parameter(k, e, l, value)
+					local value = new_value
+					tessera.audio.send_parameter(ch_index, fx_index, l, value)
 					fx.state_old[l] = new_value
 				end
 			end
@@ -198,10 +230,10 @@ function engine.send_parameters()
 end
 
 function engine.reset_parameters()
-	for k, ch in ipairs(ui_channels) do
+	for _, ch in ipairs(ui_channels) do
+		ch:reset()
 		ch.instrument:reset()
-
-		for e, fx in ipairs(ch.effects) do
+		for _, fx in ipairs(ch.effects) do
 			fx:reset()
 		end
 	end

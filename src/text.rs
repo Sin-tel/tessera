@@ -1,15 +1,15 @@
+use crate::log_info;
 use crate::opengl::Renderer;
-use crate::text::imgref::{Img, ImgRef};
-use crate::text::rgb::RGBA8;
 use cosmic_text::fontdb;
 use cosmic_text::{
 	Align, Attrs, Buffer, CacheKey, Fallback, Family, FontSystem, Metrics, Shaping, SubpixelBin,
 	SwashCache, Wrap,
 };
-use femtovg::imgref;
-use femtovg::rgb;
+use femtovg::imgref::{Img, ImgRef};
+use femtovg::rgb::RGBA8;
 use femtovg::{
-	Atlas, Canvas, DrawCommand, GlyphDrawCommands, ImageFlags, ImageId, ImageSource, Paint, Quad,
+	Atlas, Canvas, Color, DrawCommand, GlyphDrawCommands, ImageFlags, ImageId, ImageSource, Paint,
+	Quad,
 };
 use std::collections::HashMap;
 use swash::scale::image::Content;
@@ -22,6 +22,12 @@ pub struct FontTexture {
 	image_id: ImageId,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum GlyphStyle {
+	Normal,
+	Blur,
+}
+
 #[derive(Copy, Clone, Debug)]
 pub struct RenderedGlyph {
 	texture_index: usize,
@@ -31,12 +37,11 @@ pub struct RenderedGlyph {
 	offset_y: i32,
 	atlas_x: u32,
 	atlas_y: u32,
-	color_glyph: bool,
 }
 
 pub struct RenderCache {
 	swash_cache: SwashCache,
-	rendered_glyphs: HashMap<CacheKey, Option<RenderedGlyph>>,
+	rendered_glyphs: HashMap<(CacheKey, GlyphStyle), Option<RenderedGlyph>>,
 	glyph_textures: Vec<FontTexture>,
 }
 
@@ -55,11 +60,10 @@ impl RenderCache {
 		canvas: &mut Canvas<Renderer>,
 		buffer: &Buffer,
 		position: (f32, f32),
+		style: GlyphStyle,
 	) -> GlyphDrawCommands {
-		let mut alpha_cmd_map = HashMap::new();
-		let mut color_cmd_map = HashMap::new();
+		let mut cmd_map = HashMap::new();
 
-		//let total_height = buffer.layout_runs().len() as i32 * buffer.metrics().line_height;
 		for run in buffer.layout_runs() {
 			for glyph in run.glyphs {
 				let physical_glyph = glyph.physical((0.0, 0.0), 1.0);
@@ -68,26 +72,47 @@ impl RenderCache {
 
 				let position_x = position.0 + cache_key.x_bin.as_float();
 				let position_y = position.1 + cache_key.y_bin.as_float();
-				//let position_x = position_x - run.line_w * justify.0;
-				//let position_y = position_y - total_height as f32 * justify.1;
+
 				let (position_x, subpixel_x) = SubpixelBin::new(position_x);
-				let (position_y, subpixel_y) = SubpixelBin::new(position_y);
+
+				// Hack: Swash uses Y-up so we need to flip the subpixel bin.
+				let (position_y, subpixel_y) = SubpixelBin::new(-position_y);
+				let position_y = -position_y;
+
 				cache_key.x_bin = subpixel_x;
 				cache_key.y_bin = subpixel_y;
-				// perform cache lookup for rendered glyph
-				let Some(rendered) = self.rendered_glyphs.entry(cache_key).or_insert_with(|| {
-					// resterize glyph
-					let rendered = self.swash_cache.get_image_uncached(system, cache_key)?;
 
-					// upload it to the GPU
-					// pick an atlas texture for our glyph
-					let content_w = rendered.placement.width as usize;
-					let content_h = rendered.placement.height as usize;
+				// perform cache lookup for rendered glyph
+				let key = (cache_key, style);
+				let Some(rendered) = self.rendered_glyphs.entry(key).or_insert_with(|| {
+					// resterize glyph
+					let mut rendered = self.swash_cache.get_image_uncached(system, cache_key)?;
+
+					let mut content_x = rendered.placement.left;
+					let mut content_y = -rendered.placement.top; // Flip Y
+					let mut content_w = rendered.placement.width as usize;
+					let mut content_h = rendered.placement.height as usize;
 
 					if content_w == 0 || content_h == 0 {
 						return None;
 					}
 
+					// Apply blur and change size
+					if style == GlyphStyle::Blur {
+						if rendered.content == Content::Color {
+							return None;
+						}
+						let radius = 2;
+						let (new_data, new_w, new_h) =
+							apply_blur(&rendered.data, content_w, content_h, radius);
+						rendered.data = new_data;
+						content_x -= radius as i32;
+						content_y -= radius as i32 - 1;
+						content_w = new_w;
+						content_h = new_h;
+					}
+
+					// Check if there is some space
 					let mut found = None;
 					for (texture_index, glyph_atlas) in self.glyph_textures.iter_mut().enumerate() {
 						if let Some((x, y)) = glyph_atlas.atlas.add_rect(content_w, content_h) {
@@ -97,7 +122,7 @@ impl RenderCache {
 					}
 					let (texture_index, atlas_alloc_x, atlas_alloc_y) =
 						found.unwrap_or_else(|| {
-							// if no atlas could fit the texture, make a new atlas tyvm
+							// If no atlas could fit the texture, make a new atlas
 							// TODO error handling
 							let mut atlas = Atlas::new(TEXTURE_SIZE, TEXTURE_SIZE);
 							let image_id = canvas
@@ -112,6 +137,7 @@ impl RenderCache {
 								)
 								.unwrap();
 							let texture_index = self.glyph_textures.len();
+							log_info!("Allocating font atlas {}", texture_index);
 							let (x, y) = atlas.add_rect(content_w, content_h).unwrap();
 							self.glyph_textures.push(FontTexture { atlas, image_id });
 							(texture_index, x, y)
@@ -142,20 +168,16 @@ impl RenderCache {
 
 					Some(RenderedGlyph {
 						texture_index,
-						width: rendered.placement.width,
-						height: rendered.placement.height,
-						offset_x: rendered.placement.left,
-						offset_y: rendered.placement.top,
+						width: content_w as u32,
+						height: content_h as u32,
+						offset_x: content_x,
+						offset_y: content_y,
 						atlas_x: atlas_alloc_x as u32,
 						atlas_y: atlas_alloc_y as u32,
-						color_glyph: matches!(rendered.content, Content::Color),
 					})
 				}) else {
 					continue;
 				};
-
-				let cmd_map =
-					if rendered.color_glyph { &mut color_cmd_map } else { &mut alpha_cmd_map };
 
 				let cmd = cmd_map.entry(rendered.texture_index).or_insert_with(|| DrawCommand {
 					image_id: self.glyph_textures[rendered.texture_index].image_id,
@@ -166,7 +188,7 @@ impl RenderCache {
 				let it = 1.0 / TEXTURE_SIZE as f32;
 
 				q.x0 = (position_x + physical_glyph.x + rendered.offset_x) as f32;
-				q.y0 = (position_y + physical_glyph.y - rendered.offset_y) as f32 + run.line_y;
+				q.y0 = (position_y + physical_glyph.y + rendered.offset_y) as f32 + run.line_y;
 				q.x1 = q.x0 + rendered.width as f32;
 				q.y1 = q.y0 + rendered.height as f32;
 
@@ -180,8 +202,9 @@ impl RenderCache {
 		}
 
 		GlyphDrawCommands {
-			alpha_glyphs: alpha_cmd_map.into_values().collect(),
-			color_glyphs: color_cmd_map.into_values().collect(),
+			alpha_glyphs: cmd_map.into_values().collect(),
+			// We don't care about rendering emoji
+			color_glyphs: Vec::new(),
 		}
 	}
 }
@@ -225,6 +248,8 @@ pub struct TextEngine {
 	scratch_buffer: Buffer,
 }
 
+const SHAPING: Shaping = Shaping::Basic;
+
 impl TextEngine {
 	pub fn new() -> Self {
 		// let mut font_system = FontSystem::new();
@@ -264,7 +289,7 @@ impl TextEngine {
 		let attrs = Attrs::new().family(Family::Name(font.as_str()));
 
 		self.scratch_buffer
-			.set_text(&mut self.font_system, text, &attrs, Shaping::Basic, align);
+			.set_text(&mut self.font_system, text, &attrs, SHAPING, align);
 
 		self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
 
@@ -280,7 +305,7 @@ impl TextEngine {
 			// 	&mut self.font_system,
 			// 	"...",
 			// 	&attrs,
-			// 	Shaping::Basic,
+			// 	SHAPING,
 			// 	align,
 			// );
 			// self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
@@ -299,7 +324,7 @@ impl TextEngine {
 			// 	&mut self.font_system,
 			// 	text,
 			// 	&attrs,
-			// 	Shaping::Basic,
+			// 	SHAPING,
 			// 	align,
 			// );
 			// self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
@@ -321,13 +346,8 @@ impl TextEngine {
 			let mut truncated = text[0..index].to_string();
 			truncated.push_str("...");
 
-			self.scratch_buffer.set_text(
-				&mut self.font_system,
-				&truncated,
-				&attrs,
-				Shaping::Basic,
-				align,
-			);
+			self.scratch_buffer
+				.set_text(&mut self.font_system, &truncated, &attrs, SHAPING, align);
 			self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
 		}
 
@@ -337,7 +357,89 @@ impl TextEngine {
 			canvas,
 			&self.scratch_buffer,
 			(x, y + y_offset),
+			GlyphStyle::Blur,
+		);
+		let outline_paint = Paint::color(Color::black());
+		canvas.draw_glyph_commands(cmds, &outline_paint);
+
+		let cmds = self.glyph_cache.fill_to_cmds(
+			&mut self.font_system,
+			canvas,
+			&self.scratch_buffer,
+			(x, y + y_offset),
+			GlyphStyle::Normal,
 		);
 		canvas.draw_glyph_commands(cmds, paint);
 	}
+
+	pub fn draw_text(
+		&mut self,
+		canvas: &mut Canvas<Renderer>,
+		text: &str,
+		x: f32,
+		y: f32,
+		paint: &Paint,
+		font: Font,
+		font_size: f32,
+	) {
+		let line_height = font_size;
+
+		let metrics = Metrics::new(font_size, line_height);
+		self.scratch_buffer.set_metrics(&mut self.font_system, metrics);
+
+		let attrs = Attrs::new().family(Family::Name(font.as_str()));
+
+		self.scratch_buffer
+			.set_text(&mut self.font_system, text, &attrs, SHAPING, None);
+
+		self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
+
+		// Draw
+		let cmds = self.glyph_cache.fill_to_cmds(
+			&mut self.font_system,
+			canvas,
+			&self.scratch_buffer,
+			(x, y),
+			GlyphStyle::Normal,
+		);
+		canvas.draw_glyph_commands(cmds, paint);
+	}
+}
+
+// TODO: this is just a box blur, can do better.
+fn apply_blur(src: &[u8], width: usize, height: usize, radius: usize) -> (Vec<u8>, usize, usize) {
+	let padding = radius;
+	let new_w = width + padding * 2;
+	let new_h = height + padding * 2;
+	let mut out = vec![0.0f32; new_w * new_h];
+
+	for y in 0..new_h {
+		for x in 0..new_w {
+			let src_x = (x as i32) - padding as i32;
+			let src_y = (y as i32) - padding as i32;
+
+			let mut acc: f32 = 0.0;
+			let mut count: u32 = 0;
+
+			for ky in -(radius as i32)..=(radius as i32) {
+				for kx in -(radius as i32)..=(radius as i32) {
+					let sx = src_x + kx;
+					let sy = src_y + ky;
+
+					if sx >= 0 && sx < width as i32 && sy >= 0 && sy < height as i32 {
+						let val = src[(sy as usize * width) + sx as usize];
+						acc += f32::from(val);
+					}
+					count += 1;
+				}
+			}
+
+			out[y * new_w + x] = acc / (count as f32);
+		}
+	}
+
+	// slightly darken and convert to u8
+	let out = out.iter_mut().map(|x| (*x * 1.3).clamp(0., 255.) as u8).collect();
+
+	(out, new_w, new_h)
 }

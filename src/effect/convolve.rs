@@ -67,7 +67,9 @@ impl Effect for Convolve {
 		bl.copy_from_slice(br);
 	}
 
-	fn flush(&mut self) {}
+	fn flush(&mut self) {
+		self.convolver.reset();
+	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		#[allow(clippy::single_match_else)]

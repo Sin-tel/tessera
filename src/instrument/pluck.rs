@@ -124,6 +124,10 @@ impl Instrument for Pluck {
 		}
 	}
 
+	fn voice_count(&self) -> usize {
+		N_VOICES
+	}
+
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
 
@@ -142,6 +146,10 @@ impl Instrument for Pluck {
 				voice.prev = voice.lp_f.process(right.clamp(0.0, 1.0));
 				right = voice.ap.process(right);
 				left = voice.lp.process(left);
+
+				// make sure it doesn't explode
+				left = left.clamp(-1.0, 1.0);
+				right = right.clamp(-1.0, 1.0);
 
 				let s = right + left;
 
@@ -255,7 +263,18 @@ impl Instrument for Pluck {
 		voice.note_on = false;
 	}
 
-	fn flush(&mut self) {}
+	fn flush(&mut self) {
+		for voice in &mut self.voices {
+			voice.delay_l.flush();
+			voice.delay_r.flush();
+			voice.hammer_x = 2.0;
+			voice.hammer_v = 0.0;
+
+			voice.lp_f.reset_state();
+			voice.ap.reset_state();
+			voice.lp.reset_state();
+		}
+	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {

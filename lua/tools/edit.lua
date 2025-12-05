@@ -33,7 +33,7 @@ function edit:mousepressed(canvas)
 		self.tool = drag
 
 		if modifier_keys.ctrl then
-			drag.clone = true
+			drag.mode = "clone"
 		end
 	end
 

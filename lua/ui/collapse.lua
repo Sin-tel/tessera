@@ -50,7 +50,6 @@ function Collapse:draw(x, y, w, h)
 	tessera.graphics.translate(cx, cy)
 	tessera.graphics.rotate(self.angle)
 	tessera.graphics.polygon("fill", x1, y1, x2, y2, x3, y3)
-	tessera.graphics.polygon("line", x1, y1, x2, y2, x3, y3)
 	tessera.graphics.pop()
 
 	tessera.graphics.set_font_size(Ui.TITLE_FONT_SIZE)

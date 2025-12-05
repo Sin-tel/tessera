@@ -1,5 +1,4 @@
 local Ui = require("ui/ui")
-local hsluv = require("lib/hsluv")
 
 -- TODO: commands
 local function do_mute(ch_index, mute)
@@ -9,7 +8,6 @@ local function do_mute(ch_index, mute)
 	end
 	if ch.mute ~= mute then
 		ch.mute = mute
-		tessera.audio.send_mute(ch_index, mute)
 	end
 end
 
@@ -106,6 +104,7 @@ function Channel:update(ui, ch_index)
 end
 
 function Channel:draw(ui, ch_index, x, y, w, h)
+	-- background
 	local color_fill = nil
 	if ui.hover == self then
 		color_fill = theme.bg_highlight
@@ -122,16 +121,59 @@ function Channel:draw(ui, ch_index, x, y, w, h)
 
 	local ch = project.channels[ch_index]
 
+	-- label
+	local c
 	if selection.ch_index == ch_index then
-		tessera.graphics.set_color(hsluv.hsluv_to_rgb({ ch.hue, 50.0, 80.0 }))
+		c = tessera.graphics.get_color_hsv(ch.hue / 360, 0.40, 0.95)
 	else
-		tessera.graphics.set_color(hsluv.hsluv_to_rgb({ ch.hue, 70.0, 70.0 }))
+		c = tessera.graphics.get_color_hsv(ch.hue / 360, 0.70, 0.90)
 	end
+	tessera.graphics.set_color(c)
+
+	local w_buttons = 5 * Ui.BUTTON_SMALL
 
 	local pad = 10
-	local w_text = w - 5 * Ui.BUTTON_SMALL - 2 * pad
+	local w_text = w - w_buttons - 2 * pad
+	tessera.graphics.label(project.channels[ch_index].name, x + pad, y, w_text * 0.6 - 16, h)
 
-	tessera.graphics.label(project.channels[ch_index].name, x + pad, y, w_text, h)
+	-- meter
+	ch = ui_channels[ch_index]
+
+	local device = ch.instrument
+	if #ch.effects > 0 then
+		device = ch.effects[#ch.effects]
+	end
+	local ml = device.meter_l
+	local mr = device.meter_r
+
+	local cl = util.meter_color(ml)
+	local cr = util.meter_color(mr)
+
+	local wl = util.clamp((util.to_dB(ml) + 80) / 80, 0, 1)
+	local wr = util.clamp((util.to_dB(mr) + 80) / 80, 0, 1)
+
+	local x1 = w_text * 0.6
+	local h1 = 16
+	local y1 = y + 0.5 * (h - h1)
+	local w1 = w - x1 - w_buttons - 20
+	local h2 = 0.5 * h1
+	if w1 > 0 then
+		tessera.graphics.set_color(theme.bg_nested)
+		tessera.graphics.rectangle("fill", x1, y1, w1, h1)
+		if wl > 0 then
+			tessera.graphics.set_color(cl)
+			tessera.graphics.rectangle("fill", x1, y1, w1 * wl, h2 - 1)
+		end
+		if wr > 0 then
+			tessera.graphics.set_color(cr)
+			tessera.graphics.rectangle("fill", x1, y1 + h2, w1 * wr, h2)
+		end
+		tessera.graphics.set_color(theme.line)
+		tessera.graphics.rectangle("line", x1, y1 - 0.5, w1, h1, 2)
+
+		-- tessera.graphics.set_color(theme.line)
+		-- tessera.graphics.rectangle("line", x1, y1, w1, h1, 2)
+	end
 end
 
 function Button.new(options)

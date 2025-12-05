@@ -1,7 +1,9 @@
 use crate::app::State;
 use crate::audio;
-use crate::context::AudioMessage;
+use crate::audio::check_architecture;
+use crate::context::{AudioContext, AudioMessage};
 use crate::log::{log_error, log_info};
+use crate::voice_manager::Token;
 use mlua::prelude::*;
 use no_denormals::no_denormals;
 use ringbuf::traits::*;
@@ -13,8 +15,10 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"setup",
 		lua.create_function(
 			|lua, (host_name, device_name, buffer_size): (String, String, Option<u32>)| {
+				check_architecture().unwrap();
+
 				let state = &mut *lua.app_data_mut::<State>().unwrap();
-				match audio::run(&host_name, &device_name, buffer_size) {
+				match AudioContext::new(&host_name, &device_name, buffer_size) {
 					Ok(ctx) => {
 						state.audio = Some(ctx);
 						Ok(())
@@ -30,11 +34,37 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	audio.set(
+		"rebuild",
+		lua.create_function(
+			|lua, (host_name, device_name, buffer_size): (String, String, Option<u32>)| {
+				#[allow(clippy::collapsible_if)]
+				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+					if let Err(e) = ctx.rebuild_stream(&host_name, &device_name, buffer_size) {
+						log_error!("{e}");
+					}
+				}
+				Ok(())
+			},
+		)?,
+	)?;
+
+	audio.set(
 		"quit",
 		lua.create_function(|lua, ()| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 			state.audio = None;
 			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"check_should_rebuild",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				Ok(ctx.check_should_rebuild())
+			} else {
+				Ok(false)
+			}
 		})?,
 	)?;
 
@@ -75,20 +105,29 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	audio.set(
-		"pitch",
-		lua.create_function(|lua, (channel_index, pitch, voice): (usize, f32, usize)| {
+		"get_token",
+		lua.create_function(|lua, ()| {
+			let state = &mut lua.app_data_mut::<State>().unwrap();
+			Ok(state.next_token())
+		})?,
+	)?;
+
+	audio.set(
+		"all_notes_off",
+		lua.create_function(|lua, ()| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				ctx.send_message(AudioMessage::Pitch(channel_index - 1, pitch, voice - 1));
+				ctx.send_message(AudioMessage::AllNotesOff);
 			}
 			Ok(())
 		})?,
 	)?;
 
 	audio.set(
-		"pressure",
-		lua.create_function(|lua, (channel_index, pressure, voice): (usize, f32, usize)| {
+		"clear_messages",
+		lua.create_function(|lua, ()| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				ctx.send_message(AudioMessage::Pressure(channel_index - 1, pressure, voice - 1));
+				let mut render = ctx.render.lock();
+				render.parse_messages();
 			}
 			Ok(())
 		})?,
@@ -97,14 +136,9 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	audio.set(
 		"note_on",
 		lua.create_function(
-			|lua, (channel_index, pitch, vel, voice): (usize, f32, f32, usize)| {
+			|lua, (channel_index, pitch, vel, token): (usize, f32, f32, Token)| {
 				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-					ctx.send_message(AudioMessage::NoteOn(
-						channel_index - 1,
-						pitch,
-						vel,
-						voice - 1,
-					));
+					ctx.send_message(AudioMessage::NoteOn(channel_index - 1, token, pitch, vel));
 				}
 				Ok(())
 			},
@@ -113,19 +147,59 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 
 	audio.set(
 		"note_off",
-		lua.create_function(|lua, (channel_index, voice): (usize, usize)| {
+		lua.create_function(|lua, (channel_index, token): (usize, Token)| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				ctx.send_message(AudioMessage::NoteOff(channel_index - 1, voice - 1));
+				ctx.send_message(AudioMessage::NoteOff(channel_index - 1, token));
 			}
 			Ok(())
 		})?,
 	)?;
 
 	audio.set(
-		"send_mute",
+		"pitch",
+		lua.create_function(|lua, (channel_index, pitch, token): (usize, f32, Token)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_message(AudioMessage::Pitch(channel_index - 1, token, pitch));
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"pressure",
+		lua.create_function(|lua, (channel_index, pressure, token): (usize, f32, Token)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_message(AudioMessage::Pressure(channel_index - 1, token, pressure));
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"sustain",
+		lua.create_function(|lua, (channel_index, sustain): (usize, bool)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_message(AudioMessage::Sustain(channel_index - 1, sustain));
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"send_mute_channel",
 		lua.create_function(|lua, (channel_index, mute): (usize, bool)| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				ctx.send_message(AudioMessage::Mute(channel_index - 1, mute));
+				ctx.send_message(AudioMessage::MuteChannel(channel_index - 1, mute));
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"send_mute_device",
+		lua.create_function(|lua, (channel_index, device_index, mute): (usize, usize, bool)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_message(AudioMessage::MuteDevice(channel_index - 1, device_index, mute));
 			}
 			Ok(())
 		})?,
@@ -146,16 +220,6 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				Ok(())
 			},
 		)?,
-	)?;
-
-	audio.set(
-		"bypass",
-		lua.create_function(|lua, (channel_index, device_index, bypass): (usize, usize, bool)| {
-			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				ctx.send_message(AudioMessage::Bypass(channel_index, device_index, bypass));
-			}
-			Ok(())
-		})?,
 	)?;
 
 	audio.set(
@@ -199,10 +263,13 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"insert_channel",
 		lua.create_function(|lua, (index, instrument_name): (usize, String)| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let mut render = ctx.m_render.lock();
-				render.insert_channel(index - 1, &instrument_name);
+				let (meter_handle, meter_id) = ctx.meters.register();
+				let mut render = ctx.render.lock();
+				render.insert_channel(index - 1, &instrument_name, meter_handle);
+				Ok(Some(meter_id + 1))
+			} else {
+				Ok(None)
 			}
-			Ok(())
 		})?,
 	)?;
 
@@ -210,7 +277,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"remove_channel",
 		lua.create_function(|lua, index: usize| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let mut render = ctx.m_render.lock();
+				let mut render = ctx.render.lock();
 				render.remove_channel(index - 1);
 			}
 			Ok(())
@@ -221,10 +288,13 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"insert_effect",
 		lua.create_function(|lua, (channel_index, effect_index, name): (usize, usize, String)| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let mut render = ctx.m_render.lock();
-				render.insert_effect(channel_index - 1, effect_index - 1, &name);
+				let (meter_handle, meter_id) = ctx.meters.register();
+				let mut render = ctx.render.lock();
+				render.insert_effect(channel_index - 1, effect_index - 1, &name, meter_handle);
+				Ok(Some(meter_id + 1))
+			} else {
+				Ok(None)
 			}
-			Ok(())
 		})?,
 	)?;
 
@@ -232,10 +302,22 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"remove_effect",
 		lua.create_function(|lua, (channel_index, effect_index): (usize, usize)| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let mut render = ctx.m_render.lock();
+				let mut render = ctx.render.lock();
 				render.remove_effect(channel_index - 1, effect_index - 1);
 			}
 			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"get_meters",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let meters = ctx.meters.collect();
+				Ok(Some(meters))
+			} else {
+				Ok(None)
+			}
 		})?,
 	)?;
 
@@ -246,7 +328,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				let len = 64;
 				let buffer: &mut [&mut [f32]; 2] = &mut [&mut vec![0.0; len], &mut vec![0.0; len]];
 
-				let mut render = ctx.m_render.lock();
+				let mut render = ctx.render.lock();
 				// TODO: need to check here if the stream is *actually* paused
 
 				render.parse_messages();
@@ -303,7 +385,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"flush",
 		lua.create_function(|lua, ()| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let mut render = ctx.m_render.lock();
+				let mut render = ctx.render.lock();
 				render.flush();
 			}
 			Ok(())
@@ -324,7 +406,10 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"pop",
 		lua.create_function(|lua, ()| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				Ok(ctx.lua_rx.try_pop())
+				match ctx.lua_rx.try_pop() {
+					Some(p) => Ok(Some(lua.to_value(&p)?)),
+					None => Ok(None),
+				}
 			} else {
 				Ok(None)
 			}

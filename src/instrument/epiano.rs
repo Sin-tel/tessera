@@ -85,6 +85,10 @@ impl Instrument for Epiano {
 		}
 	}
 
+	fn voice_count(&self) -> usize {
+		N_VOICES
+	}
+
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
 
@@ -183,7 +187,14 @@ impl Instrument for Epiano {
 			v.set_bandpass(voice.freq[i], voice.freq[i] * 0.12);
 		}
 	}
-	fn flush(&mut self) {}
+
+	fn flush(&mut self) {
+		for voice in &mut self.voices {
+			voice.filter.iter_mut().for_each(Filter::reset_state);
+			voice.hammer_phase = 2.;
+			voice.prev = (self.x0 * self.x0 + self.y0 * self.y0).sqrt().recip();
+		}
+	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {

@@ -6,13 +6,18 @@ if not release then
 	require("lib/strict")
 end
 
+local load_last_save = true
+
 local profile = false
 -- local profile = require("lib.profile")
+-- local profile = require("lib.profile2")
 
 VERSION = {}
-VERSION.MAJOR = "0"
-VERSION.MINOR = "0"
-VERSION.PATCH = "1"
+VERSION.MAJOR = 0
+VERSION.MINOR = 0
+VERSION.PATCH = 1
+
+util = require("util")
 
 local build = require("build")
 local engine = require("engine")
@@ -24,7 +29,6 @@ local views = require("views")
 workspace = require("workspace")
 mouse = require("mouse")
 command = require("command")
-util = require("util")
 
 width, height = tessera.graphics.get_dimensions()
 
@@ -44,20 +48,22 @@ modifier_keys.shift = false
 modifier_keys.alt = false
 modifier_keys.any = false
 
-local load_last_save = true
-local last_save_location = "out/lastsave.sav"
+local project_initialized = false
 
 local draw_time_s = 0
+
+local dialog_pending
 
 -- patch up set_color to work with tables
 tessera.graphics.set_color = function(t)
 	tessera.graphics.set_color_f(unpack(t))
 end
 
-local function load_project()
+local function build_startup_project()
 	local success = false
-	if load_last_save and util.file_exists(last_save_location) then
-		success = save.read(last_save_location)
+	if load_last_save then
+		local f = save.get_last_save_location()
+		success = save.read(f)
 	end
 
 	if not success then
@@ -66,6 +72,8 @@ local function load_project()
 		-- command.NewChannel.new("epiano"):run()
 		-- command.NewChannel.new("polysine"):run()
 		project.channels[1].armed = true
+
+		save.set_save_location(save.default_save_location)
 	end
 end
 
@@ -84,13 +92,32 @@ local function audio_setup()
 		log.error("Audio setup failed")
 	end
 
-	if project.needs_init then
-		load_project()
-		project.needs_init = false
+	if not project_initialized then
+		build_startup_project()
+		project_initialized = true
 	else
-		-- restore tessera.audio
-		ui_channels = {}
-		build.project()
+		-- restore audio state
+		build.restore_project()
+	end
+end
+
+-- since file dialogs are spawned on new threads, we need to check the results here
+local function poll_dialogs()
+	if dialog_pending then
+		local f = tessera.dialog_poll()
+		if f then
+			if dialog_pending == "save" then
+				save.write(f)
+				save.set_save_location(f)
+				dialog_pending = nil
+			elseif dialog_pending == "open" then
+				-- TODO: undo
+				build.new_project()
+				save.read(f)
+				save.set_save_location(f)
+				dialog_pending = nil
+			end
+		end
 	end
 end
 
@@ -115,18 +142,27 @@ function tessera.load()
 	local top_right, bottom_rigth = right:split(0.35, false)
 
 	top_left:set_view(views.Scope.new(false))
+	middle_left:set_view(views.Canvas.new())
+
 	-- top_left:set_view(views.Canvas.new())
-	-- middle_left:set_view(views.Canvas.new())
-	middle_left:set_view(views.Debug.new())
+	-- middle_left:set_view(views.TestPad.new())
+
 	top_right:set_view(views.Channels.new())
 	bottom_rigth:set_view(views.ChannelSettings.new())
 
 	-- load empty project
-	project = build.new_project()
-	project.needs_init = true
+	build.new_project()
 end
 
 function tessera.update(dt)
+	-- protect against huge dt from frozen window
+	dt = math.min(dt, 1 / 60)
+
+	if tessera.audio.check_should_rebuild() then
+		log.info("Rebuilding stream")
+		tessera.audio.rebuild(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
+	end
+
 	if audio_status == "render" then
 		engine.render()
 	elseif audio_status == "running" then
@@ -139,16 +175,21 @@ function tessera.draw()
 	--- update ---
 	if audio_status == "request" then
 		audio_setup()
-		if profile then
-			profile.start()
-		end
 	elseif audio_status == "init" then
 		audio_status = "request"
 	end
 
-	local t_start = tessera.timer.get_time()
+	if profile then
+		profile.start()
+	end
+
+	poll_dialogs()
+
+	local t_start = tessera.get_time()
 
 	tessera.audio.update_scope()
+	engine.update_meters()
+
 	if audio_status ~= "render" then
 		mouse:update()
 		workspace:update()
@@ -163,7 +204,7 @@ function tessera.draw()
 
 	workspace:draw()
 
-	local draw_time = (tessera.timer.get_time() - t_start) * 1000
+	local draw_time = (tessera.get_time() - t_start) * 1000
 	draw_time_s = draw_time_s + 0.1 * (draw_time - draw_time_s)
 	local draw_time_l = string.format("%04.1f", draw_time_s)
 	tessera.graphics.set_font_size(12)
@@ -179,6 +220,10 @@ function tessera.draw()
 		tessera.graphics.set_color(theme.widget)
 		local p = engine.render_progress / engine.render_end
 		tessera.graphics.rectangle("fill", width * 0.3 + 4, height * 0.5 - 12, (width * 0.4 - 8) * p, 24)
+	end
+
+	if profile then
+		profile.stop()
 	end
 end
 
@@ -210,16 +255,7 @@ function tessera.wheelmoved(_, y)
 	mouse:wheelmoved(y)
 end
 
-function tessera.textinput(t)
-	if audio_status == "render" then
-		return
-	end
-	-- should we handle tessera.textedited? (for IMEs)
-	-- TODO: handle utf-8
-	-- print(t)b
-end
-
-function tessera.keypressed(_, key, isrepeat)
+function tessera.keypressed(key, key_str, isrepeat)
 	if key == "lshift" or key == "rshift" then
 		modifier_keys.shift = true
 	elseif key == "lctrl" or key == "rctrl" then
@@ -232,7 +268,7 @@ function tessera.keypressed(_, key, isrepeat)
 	if audio_status == "render" then
 		if (key == "c" and modifier_keys.ctrl) or key == "escape" then
 			tessera.audio.render_cancel()
-			engine.render_end()
+			engine.render_finish()
 		end
 
 		return
@@ -247,13 +283,28 @@ function tessera.keypressed(_, key, isrepeat)
 	end
 
 	if key == "escape" then
-		tessera.event.quit()
+		tessera.exit()
 	elseif key == "space" then
 		if engine.playing then
 			engine.stop()
 		else
 			engine.start()
 		end
+	-- elseif modifier_keys.ctrl and key == "t" then
+	-- 	local t_start = tessera.get_time()
+	-- 	log.info("Sending project to backend")
+	-- 	tessera.project.set(project)
+	-- 	local time = (tessera.get_time() - t_start) * 1000
+	-- 	print("Took " .. time)
+	-- elseif modifier_keys.ctrl and key == "r" then
+	-- 	local p = tessera.project.get()
+	-- 	if p then
+	-- 		build.load_project(p)
+	-- 	end
+	elseif modifier_keys.ctrl and key == "f" then
+		engine.stop()
+		tessera.audio.clear_messages()
+		tessera.audio.flush()
 	elseif modifier_keys.ctrl and key == "k" then
 		if tessera.audio.ok() then
 			midi.quit()
@@ -266,7 +317,7 @@ function tessera.keypressed(_, key, isrepeat)
 		tessera.audio.panic()
 	elseif modifier_keys.ctrl and key == "p" then
 		if profile then
-			log.info(profile.report(100))
+			log.info(profile.report(20))
 		end
 	elseif key == "z" and modifier_keys.ctrl then
 		command.undo()
@@ -276,8 +327,16 @@ function tessera.keypressed(_, key, isrepeat)
 		engine.render_start()
 	elseif key == "n" and modifier_keys.ctrl then
 		command.run_and_register(command.NewProject.new())
+	elseif key == "o" and modifier_keys.ctrl then
+		if tessera.dialog_open() then
+			dialog_pending = "open"
+		end
+	elseif key == "s" and modifier_keys.ctrl and modifier_keys.shift then
+		if tessera.dialog_save("my_project") then
+			dialog_pending = "save"
+		end
 	elseif key == "s" and modifier_keys.ctrl then
-		save.write(last_save_location)
+		save.write(save.last_save_location)
 	elseif key == "b" then
 		project.transport.recording = not project.transport.recording
 	elseif key == "down" and modifier_keys.shift then
@@ -302,7 +361,7 @@ function tessera.keypressed(_, key, isrepeat)
 	end
 end
 
-function tessera.keyreleased(_, key)
+function tessera.keyreleased(key, key_str)
 	if key == "lshift" or key == "rshift" then
 		modifier_keys.shift = false
 	elseif key == "lctrl" or key == "rctrl" then

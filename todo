@@ -11,22 +11,41 @@
 [x] Send parameters
 [x] Scrolling
 [x] outliner buttons (mute, solo, arm, visible)
+[x] 2D layout system
 [x] channel/outliner view
 [x] Keyboard note playing
 [-] Harmonic coordinate logic
+[X] Load/save file dialogs
 [-] handle MPE input
+[ ] linnstrument custom handler
+[ ] Settings menu
+[ ] Switch views with dropdown
+[ ] Switch workspace (tabs)
+[ ] Save workspace
+[ ] Rename project
 [x] Static piano roll setup
-[ ] Basic selection and editing
+[x] Basic selection and editing
   [x] rect select
-  [-] edit tool routes rect select / move
-  [ ] pen tool
+  [x] edit tool routes rect select / move
   [x] move notes with keyboard
   [x] move notes with keyboard
-  [ ] undo
+  [x] undo
+[ ] fix grab end
+[ ] pen tool
+  [ ] line
+  [ ] freehand
+[ ] Sculpt tools
+  [ ] grab
+  [ ] smooth
+  [ ] smudge
+  [ ] envelope
+  [ ] vibrato
+[ ] lasso
+[x] better hit detection
 
 [ ] Project tempo
 [ ] Project grid / time division
-[ ] Add note internal vertices
+[x] Add note internal vertices
 [ ] Time warping
 [x] UI checkbox (also in top level)
 [x] UI selector
@@ -36,18 +55,16 @@
 [-] UI dropdown
 [x] add instrument menu/list
 [x] add effects menu/list
-[-] Effect bypass
 [x] Remove effect
 [x] Reorder effects
 [x] Remove channel
+[ ] Effect bypass
 [ ] Type value in slider
 [ ] Top ribbon menu
-[ ] Tabs/workspaces
 [ ] Loop
-[ ] Tools
 [ ] Parse tuning files
 [ ] Keybinding file
-[ ] Midi remapping 
+[ ] Midi routing menu
 [x] Rebuild backend from lua data
 [x] Save project
 [x] Undo
@@ -58,8 +75,7 @@
 [x] Add font
 [x] Render proper accidentals
 [ ] Fuzzy search command palette
-[-] Panner view
-
+[ ] Mixer / channel strip view?
 
 ## Rust
 [x] ASIO support
@@ -70,21 +86,40 @@
 [x] Render to wav
 [x] volume / panning
 [x] Simple metering (cpu, dB meters, audio engine state)
+[x] Per device meters
 [x] channel mute
-[+] Mixing channels
+[x] Mixing channels
 [x] Up and down samplers
-[-] Add some effects
+[x] Add some effects
 [x] Replace RtMidi
+[ ] Auto generate device_list
+[ ] Move sequencer to rust (sync?)
+[ ] Move pitch system to rust
+[ ] Move midi routing to rust
 [ ] Poll audio/midi settings
 [x] Reset audio driver to change settings in ASIO panel
+[ ] Group channels
+[ ] Master channel
+[ ] Return tracks?
+[x] Polyphonic instruments
+[x] binaural panning
+[x] Support WASAPI
+[ ] Support macOS
+[ ] Support linux
+[ ] Automation
+[ ] Simple audio flow (parallel)
+[ ] Vst hosting (pianoteq)
+[x] FFT convolver
+
+Devices
 [x] Basic delay
 [x] Basic reverb
+[x] EQ
+[x] Compressor
 [ ] Phaser
 [ ] Chorus/vibrato
 [ ] Tremolo
 [ ] Tape saturation
-[x] EQ
-[x] Compressor
 [ ] Limiter
 [ ] BBD delay
 [ ] Room reverb
@@ -99,16 +134,4 @@
 [ ] Modal synth
 [ ] Prepare for play (reset envs etc)
 [ ] Change sample rate
-[ ] Group channels
-[ ] Master channel
-[ ] Return tracks?
-[x] Polyphonic instruments
-[x] binaural panning 
-[x] Support WASAPI
-[ ] Support macOS
-[ ] Support linux
-[ ] Automation
-[ ] Simple audio flow (parallel)
-[ ] Vst hosting (pianoteq)
-[x] FFT convolver
 

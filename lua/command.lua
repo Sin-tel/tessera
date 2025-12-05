@@ -87,23 +87,11 @@ end
 
 function NewProject:run()
     -- cleanup current project
-    if project.channels then
-        for i = #project.channels, 1, -1 do
-            tessera.audio.remove_channel(i)
-        end
-    end
-
-    project = build.new_project()
-
-    ui_channels = {}
-    -- clear selection
-    selection.ch_index = nil
-    selection.device_index = nil
+    build.new_project()
 end
 
 function NewProject:reverse()
-    project = util.clone(self.prev)
-    build.project()
+    build.load_project(util.clone(self.prev))
 end
 
 command.NewProject = NewProject

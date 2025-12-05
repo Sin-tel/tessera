@@ -1,3 +1,4 @@
+require("table.clear")
 local View = require("view")
 local midi = require("midi")
 
@@ -6,6 +7,10 @@ Debug.__index = Debug
 
 function Debug.new()
 	local self = setmetatable({}, Debug)
+
+	self.line_x = {}
+	self.line_y = {}
+	self.line_w = {}
 	return self
 end
 
@@ -13,19 +18,37 @@ function Debug:draw()
 	local ix, iy = 32, 32
 
 	tessera.graphics.set_color(theme.ui_text)
+	tessera.graphics.set_font_size(18)
 
-	-- local ls = 32
+	local ls = 32
 
-	-- tessera.graphics.set_font_notes()
-	-- tessera.graphics.label("abcdefghijklmnopqrstu", ix, iy, self.w, 0)
-	-- tessera.graphics.label("Ar Bs Ct Du Efea Fh Gi Bga", ix, iy + ls, self.w, 0)
-	-- tessera.graphics.label('jA kB Cl Dm En Fo Gp Aq D"', ix, iy + 2 * ls, self.w, 0)
-	-- tessera.graphics.label("abc - pnoq - jk - (a)", ix, iy + 3 * ls, self.w, 0)
-	-- tessera.graphics.label("+-lm hci 5/4 7/8 11/8 - 4:5:6:7 Ac~Ba", ix, iy + 4 * ls, self.w, 0)
+	local w = self.w - ix
+	tessera.graphics.set_font_notes()
+	tessera.graphics.label("abcdefghijklmnopqrstu", ix, iy, w, ls)
+	tessera.graphics.label("Ar Bs Ct Du Efea Fh Gi Bga", ix, iy + ls, w, ls)
+	tessera.graphics.label('jA kB Cl Dm En Fo Gp Aq D"', ix, iy + 2 * ls, w, ls)
+	tessera.graphics.label("abc - pnoq - jk - (a)", ix, iy + 3 * ls, w, ls)
+	tessera.graphics.label("+-lm hci 5/4 7/8 11/8 - 4:5:6:7 Ac~Ba", ix, iy + 4 * ls, w, ls)
 
-	tessera.graphics.set_line_width(5)
-	tessera.graphics.polyline({ 24, 24, 60, 60, 90, 100 })
-	tessera.graphics.set_line_width()
+	-- tessera.graphics.set_line_width(5)
+	-- tessera.graphics.polyline(self.line_x, self.line_y)
+	-- tessera.graphics.set_line_width()
+
+	tessera.graphics.polyline_w(self.line_x, self.line_y, self.line_w)
+end
+
+function Debug:mousepressed()
+	local mx, my = self:get_mouse()
+
+	if mouse.button == 1 then
+		table.insert(self.line_x, mx)
+		table.insert(self.line_y, my)
+		table.insert(self.line_w, math.random() * 6 + 1)
+	else
+		table.clear(self.line_x)
+		table.clear(self.line_y)
+		table.clear(self.line_w)
+	end
 end
 
 return Debug

@@ -25,14 +25,6 @@ function Box:scissor()
 	)
 end
 
-function Box:for_all(f)
-	f(self)
-	if self.children then
-		self.children[1]:for_all(f)
-		self.children[2]:for_all(f)
-	end
-end
-
 function Box:draw()
 	if self.children then
 		for _, v in ipairs(self.children) do
@@ -273,10 +265,28 @@ function Box:resize(x, y, w, h)
 	end
 end
 
+function Box:update_view()
+	if self.view then
+		self.view:update()
+	end
+	if self.children then
+		self.children[1]:update_view()
+		self.children[2]:update_view()
+	end
+end
+
 function Box:set_view(view)
 	if not self.children then
 		self.view = view
 		view.box = self
+	end
+end
+
+function Box:set_focus(focus)
+	self.focus = focus
+	if self.children then
+		self.children[1]:set_focus(focus)
+		self.children[2]:set_focus(focus)
 	end
 end
 
@@ -286,7 +296,7 @@ function workspace:load()
 	self.box = Box.new(0, ui.RIBBON_HEIGHT, width, height - ui.RIBBON_HEIGHT)
 
 	self.cpu_load = 0
-	self.meter = { l = -math.huge, r = -math.huge }
+	self.meter = { l = 0, r = 0 }
 end
 
 function workspace:resize(w, h)
@@ -329,17 +339,27 @@ function workspace:draw()
 	y1 = 0.5 * (ui.RIBBON_HEIGHT - h1)
 	x1 = self.w - 224 - y1
 
-	local ml = util.clamp((self.meter.l + 80) / 80, 0.01, 1)
-	local mr = util.clamp((self.meter.r + 80) / 80, 0.01, 1)
+	local ml = self.meter.l
+	local mr = self.meter.r
 
-	tessera.graphics.set_color(theme.widget_bg)
+	local wl = util.clamp((util.to_dB(ml) + 80) / 80, 0, 1)
+	local wr = util.clamp((util.to_dB(mr) + 80) / 80, 0, 1)
+
+	local cl = util.meter_color(ml)
+	local cr = util.meter_color(mr)
+
+	tessera.graphics.set_color(theme.bg_nested)
 	tessera.graphics.rectangle("fill", x1, y1, w1, h1, 2)
-	tessera.graphics.set_color(ml < 1.0 and theme.meter or theme.meter_clip)
-	tessera.graphics.rectangle("fill", x1, y1, w1 * ml, 0.5 * h1 - 1)
-	tessera.graphics.set_color(mr < 1.0 and theme.meter or theme.meter_clip)
-	tessera.graphics.rectangle("fill", x1, y1 + 0.5 * h1, w1 * mr, 0.5 * h1)
+	if wl > 0 then
+		tessera.graphics.set_color(cl)
+		tessera.graphics.rectangle("fill", x1, y1, w1 * wl, 0.5 * h1 - 1)
+	end
+	if wr > 0 then
+		tessera.graphics.set_color(cr)
+		tessera.graphics.rectangle("fill", x1, y1 + 0.5 * h1, w1 * wr, 0.5 * h1 - 1)
+	end
 	tessera.graphics.set_color(theme.line)
-	tessera.graphics.rectangle("line", x1, y1, w1, h1, 2)
+	tessera.graphics.rectangle("line", x1, y1 - 0.5, w1, h1, 2)
 	tessera.graphics.set_color(theme.ui_text)
 
 	self.box:draw()
@@ -350,18 +370,12 @@ function workspace:update()
 		self.drag_div:set_split(mouse.x, mouse.y)
 	end
 	-- update
-	self.box:for_all(function(b)
-		if b.view then
-			b.view:update()
-		end
-	end)
+	self.box:update_view()
 
 	local div = self.drag_div
 	if not mouse.is_down then
 		div = div or self.box:get_divider()
-		self.box:for_all(function(b)
-			b.focus = false
-		end)
+		self.box:set_focus(false)
 		self.focus = nil
 	end
 	if div then
