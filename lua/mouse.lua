@@ -1,7 +1,9 @@
 local mouse = {}
 
 local DOUBLE_CLICK_TIME = 0.35
-local DRAG_DIST = 3
+local DRAG_DIST = 5
+
+mouse.DRAG_DIST = DRAG_DIST
 
 function mouse:load()
 	self.x = 0
@@ -13,11 +15,10 @@ function mouse:load()
 	self.drag = false
 	self.relative = false
 
-	self.ix = 0
-	self.iy = 0
-
 	self.dx = 0
 	self.dy = 0
+
+	self.drag_dist = 0
 
 	self.button = false
 
@@ -28,32 +29,21 @@ function mouse:load()
 
 	self.scroll = false
 
-	self.cursors = {}
-
-	self.cursors.default = love.mouse.getSystemCursor("arrow")
-	self.cursors.v = love.mouse.getSystemCursor("sizewe")
-	self.cursors.h = love.mouse.getSystemCursor("sizens")
-	self.cursors.size = love.mouse.getSystemCursor("sizeall")
-	self.cursors.hand = love.mouse.getSystemCursor("hand")
-	self.cursors.cross = love.mouse.getSystemCursor("crosshair")
-	self.cursors.wait = love.mouse.getSystemCursor("wait")
-	self.cursors.ibeam = love.mouse.getSystemCursor("ibeam")
-
-	self.cursor = self.cursors.default
+	self.cursor = "default"
+	self.pcursor = self.cursor
 end
 
 function mouse:pressed(x, y, button)
 	self.x, self.y = x, y
 
 	if not self.button then -- ignore buttons while other is pressed
-		self.ix = x
-		self.iy = y
+		self.drag_dist = 0
 		self.dx = 0
 		self.dy = 0
 		self.drag = false
 		self.button = button
 		self.button_pressed = button
-		self.isDown = true
+		self.is_down = true
 
 		-- TODO: remove?
 		workspace:mousepressed()
@@ -64,11 +54,11 @@ function mouse:released(x, y, button)
 	self.x, self.y = x, y
 	if button == self.button then
 		self.button_released = self.button
-		self.isDown = false
+		self.is_down = false
 
 		-- double click detect
 		self.double = false
-		local new_timer = love.timer.getTime()
+		local new_timer = tessera.timer.get_time()
 		if new_timer - self.timer < DOUBLE_CLICK_TIME and self.pbutton == button then
 			self.double = true
 		end
@@ -82,58 +72,59 @@ function mouse:released(x, y, button)
 end
 
 function mouse:update(x, y)
-	self.x, self.y = love.mouse.getPosition()
-
+	self.x, self.y = tessera.mouse.get_position()
 	if self.button then
-		if math.sqrt((self.x - self.ix) ^ 2 + (self.y - self.iy) ^ 2) > DRAG_DIST then
+		if self.drag_dist > DRAG_DIST then
 			self.drag = true
 		end
 	end
 
-	self.cursor = self.cursors.default
+	self.cursor = "default"
 end
 
-function mouse:endFrame()
+function mouse:end_frame()
 	self.button_pressed = false
 	self.button_released = false
 	self.scroll = false
 
-	love.mouse.setRelativeMode(self.relative)
+	-- swap cursor only if changed
+	if self.pcursor ~= self.cursor then
+		tessera.mouse.set_cursor(self.cursor)
+	end
+	self.pcursor = self.cursor
+
+	tessera.mouse.set_relative_mode(self.relative)
 	self.relative = false
-	if self.cursor then
-		love.mouse.setVisible(true)
-		love.mouse.setCursor(self.cursor)
-	else
-		love.mouse.setVisible(false)
+
+	if self.new_x then
+		tessera.mouse.set_position(self.new_x, self.new_y)
+		self.new_x, self.new_y = nil, nil
 	end
 end
 
-function mouse:setCursor(c)
-	self.cursor = self.cursors[c]
+function mouse:set_cursor(c)
+	self.cursor = c
 end
 
-function mouse:setRelative(r)
-	-- TODO: some weird issue with sliders
-	--   Dragging them and then right clicking does not
-	--   register if the mouse hasn't moved since turning
-	--   off relative mode.
+function mouse:set_relative(r)
 	self.relative = true
 end
 
-function mouse:setPosition(x, y)
+function mouse:set_position(x, y)
 	self.x = x
 	self.y = y
-	love.mouse.setPosition(x, y)
+	self.new_x, self.new_y = x, y
 end
 
 function mouse:mousemoved(_, _, dx, dy)
-	if love.keyboard.isDown("lshift") then
+	if modifier_keys.shift then
 		self.dx = self.dx + 0.1 * dx
 		self.dy = self.dy + 0.1 * dy
 	else
 		self.dx = self.dx + dx
 		self.dy = self.dy + dy
 	end
+	self.drag_dist = self.drag_dist + util.length(self.dx, self.dy)
 end
 
 function mouse:wheelmoved(y)

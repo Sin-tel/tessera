@@ -40,15 +40,15 @@ function save.read(filename)
 	return false
 end
 
-local setup_path = love.filesystem.getSource() .. "/settings/setup.lua"
+local setup_path = "settings/setup.lua"
 
-function save.writeSetup()
+function save.write_setup()
 	local content = serialize(setup, "setup")
 	util.writefile(setup_path, content)
 end
 
-function save.readSetup()
-	if util.fileExists(setup_path) then
+function save.read_setup()
+	if util.file_exists(setup_path) then
 		local content = util.readfile(setup_path)
 		setup = setfenv(loadstring(content), {})()
 	else
@@ -61,7 +61,7 @@ function save.readSetup()
 		setup.midi = {}
 		setup.midi.inputs = { { name = "default" } }
 
-		save.writeSetup()
+		save.write_setup()
 	end
 
 	return setup

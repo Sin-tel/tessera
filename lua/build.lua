@@ -1,13 +1,12 @@
 local Device = require("device")
 local Roll = require("roll")
 local VoiceAlloc = require("voice_alloc")
-local backend = require("backend")
-local deviceList = require("device_list")
+local device_list = require("device_list")
 local widgets = require("ui/widgets")
 
 local build = {}
 
-function build.newProject()
+function build.new_project()
 	-- init empty project
 	local project = {}
 	project.channels = {}
@@ -38,7 +37,7 @@ function build.project()
 end
 
 function build.channel(ch_index, channel)
-	local options = deviceList.instruments[channel.instrument.name]
+	local options = device_list.instruments[channel.instrument.name]
 	assert(options)
 
 	local channel_ui = { effects = {} }
@@ -46,7 +45,7 @@ function build.channel(ch_index, channel)
 	channel_ui.instrument = Device.new(channel.name, channel.instrument.state, options)
 	channel_ui.widget = widgets.Channel.new()
 
-	backend:insertChannel(ch_index, channel.instrument.name)
+	tessera.audio.insert_channel(ch_index, channel.instrument.name)
 
 	for i, v in ipairs(channel.effects) do
 		build.effect(ch_index, i, v)
@@ -59,13 +58,13 @@ function build.channel(ch_index, channel)
 end
 
 function build.effect(ch_index, effect_index, effect)
-	local options = deviceList.effects[effect.name]
+	local options = device_list.effects[effect.name]
 	assert(options)
 
 	local effect_ui = Device.new(effect.name, effect.state, options)
-	table.insert(ui_channels[ch_index].effects, effect_ui)
+	table.insert(ui_channels[ch_index].effects, effect_index, effect_ui)
 
-	backend:insertEffect(ch_index, effect_index, effect.name)
+	tessera.audio.insert_effect(ch_index, effect_index, effect.name)
 end
 
 function build.refresh_channels()

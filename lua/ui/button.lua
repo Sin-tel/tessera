@@ -15,7 +15,7 @@ function Button:update(ui)
 	local x, y, w, h = ui:next()
 	ui:hitbox(self, x, y, w, h)
 
-	ui:pushDraw(self.draw, { self, ui, x, y, w, h })
+	ui:push_draw(self.draw, { self, ui, x, y, w, h })
 
 	return ui.clicked == self
 end
@@ -30,12 +30,12 @@ function Button:draw(ui, x, y, w, h)
 		if ui.hover == self and ui.active ~= self then
 			color_line = theme.line_hover
 		end
-		love.graphics.setColor(color_fill)
-		love.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
-		love.graphics.setColor(color_line)
-		love.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
-		love.graphics.setColor(theme.ui_text)
-		util.drawText(self.text, x, y, w, h, "center")
+		tessera.graphics.set_color(color_fill)
+		tessera.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
+		tessera.graphics.set_color(color_line)
+		tessera.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
+		tessera.graphics.set_color(theme.ui_text)
+		tessera.graphics.label(self.text, x, y, w, h, tessera.graphics.ALIGN_CENTER)
 	end
 end
 

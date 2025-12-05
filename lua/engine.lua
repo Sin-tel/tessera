@@ -1,4 +1,3 @@
-local backend = require("backend")
 local log = require("log")
 local midi = require("midi")
 
@@ -11,60 +10,67 @@ engine.render_progress = 0
 engine.render_end = 8
 
 function engine.start()
-	engine.playing = true
 	engine.seek(project.transport.start_time)
+	engine.playing = true
+
+	-- TODO: expose option to chase midi notes
+	local chase = false
 
 	for _, v in ipairs(ui_channels) do
-		v.roll:start()
+		v.roll:start(chase)
 	end
 end
 
 function engine.stop()
 	engine.playing = false
 
-	for _, v in ipairs(ui_channels) do
-		v.voice_alloc:allNotesOff()
+	local added_notes = {}
+	local total = 0
+
+	for i, v in ipairs(ui_channels) do
+		v.voice_alloc:all_notes_off()
+
+		added_notes[i] = v.roll.recorded_notes
+		total = total + #added_notes[i]
 		v.roll:stop()
+	end
+	if total > 0 then
+		local c = command.NoteAdd.new(added_notes)
+		command.register(c)
 	end
 end
 
 function engine.seek(time)
+	assert(not engine.playing)
 	project.transport.time = time
-
-	if engine.playing then
-		for _, v in ipairs(ui_channels) do
-			v.voice_alloc:allNotesOff()
-			v.roll:seek()
-		end
-	end
 end
 
 function engine.update(dt)
 	if engine.playing then
 		project.transport.time = project.transport.time + dt
-		if backend:ok() then
+		if tessera.audio.ok() then
 			for _, v in ipairs(ui_channels) do
 				v.roll:playback()
 			end
 		end
 	end
 
-	engine.parseMessages()
+	engine.parse_messages()
 end
 
-function engine.renderStart()
-	backend:flush()
+function engine.render_start()
+	tessera.audio.flush()
 	midi.flush()
 
-	if not backend:ok() then
-		log.error("Can't render, backend offline.")
+	if not tessera.audio.ok() then
+		log.error("Can't render, audio offline.")
 		return
 	end
 
 	assert(audio_status == "running")
 	audio_status = "render"
 
-	engine.render_end = engine.endTime() + 2.0
+	engine.render_end = engine.end_time() + 2.0
 	engine.render_progress = 0
 
 	if engine.playing then
@@ -74,26 +80,26 @@ function engine.renderStart()
 
 	log.info("Start render.")
 
-	mouse:setCursor("wait")
-	mouse:endFrame()
+	mouse:set_cursor("wait")
+	mouse:end_frame()
 
-	backend:setRendering(true)
+	tessera.audio.set_rendering(true)
 
 	-- sleep for a bit to make sure the audio thread is done
 	-- TODO: find something better
-	love.timer.sleep(0.01)
+	tessera.timer.sleep(0.01)
 end
 
 function engine.render()
-	assert(backend:isRendering())
+	assert(tessera.audio.is_rendering())
 
-	local dt = RENDER_BLOCK_SIZE / backend:getSampleRate()
+	local dt = RENDER_BLOCK_SIZE / tessera.audio.get_samplerate()
 
 	-- Try to hit 16 ms to keep things responsive
 	local target_ms = 16
-	local t_start = love.timer.getTime()
+	local t_start = tessera.timer.get_time()
 	for i = 1, 3000 do
-		local success = backend:renderBlock()
+		local success = tessera.audio.render_block()
 		if not success then
 			log.error("Failed to render block.")
 			engine.renderCancel()
@@ -104,12 +110,12 @@ function engine.render()
 		engine.render_progress = engine.render_progress + dt
 		if engine.render_progress >= engine.render_end then
 			log.info("Finished render.")
-			backend:renderFinish()
-			engine.renderEnd()
+			tessera.audio.render_finish()
+			engine.render_finish()
 			break
 		end
 
-		local t_now = (love.timer.getTime() - t_start) * 1000
+		local t_now = (tessera.timer.get_time() - t_start) * 1000
 		if t_now > target_ms then
 			print(tostring(i) .. " blocks rendered")
 			break
@@ -117,19 +123,19 @@ function engine.render()
 	end
 end
 
-function engine.renderEnd()
+function engine.render_finish()
 	midi.flush()
 
-	backend:setRendering(false)
-	mouse:setCursor("default")
+	tessera.audio.set_rendering(false)
+	mouse:set_cursor("default")
 	audio_status = "running"
 	engine.stop()
 end
 
--- update UI with messages from backend
-function engine.parseMessages()
+-- update UI with messages from tessera.audio
+function engine.parse_messages()
 	while true do
-		local p = backend:pop()
+		local p = tessera.audio.pop()
 		if p == nil then
 			return
 		end
@@ -142,7 +148,7 @@ function engine.parseMessages()
 	end
 end
 
-function engine.endTime()
+function engine.end_time()
 	local t_end = 0.0
 	for _, ch in ipairs(project.channels) do
 		for _, v in ipairs(ch.notes) do
@@ -153,6 +159,52 @@ function engine.endTime()
 		end
 	end
 	return t_end
+end
+
+local function to_number(x)
+	if type(x) == "number" then
+		return x
+	elseif type(x) == "boolean" then
+		return x and 1 or 0
+	else
+		error("unsupported type: " .. type(x))
+	end
+end
+
+function engine.send_parameters()
+	for k, ch in ipairs(ui_channels) do
+		for l, par in ipairs(ch.instrument.parameters) do
+			local new_value = ch.instrument.state[l]
+			local old_value = ch.instrument.state_old[l]
+			if old_value ~= new_value then
+				local value = to_number(new_value)
+				tessera.audio.send_parameter(k, 0, l, value)
+				ch.instrument.state_old[l] = new_value
+			end
+		end
+
+		for e, fx in ipairs(ch.effects) do
+			for l, par in ipairs(fx.parameters) do
+				local new_value = fx.state[l]
+				local old_value = fx.state_old[l]
+				if old_value ~= new_value then
+					local value = to_number(new_value)
+					tessera.audio.send_parameter(k, e, l, value)
+					fx.state_old[l] = new_value
+				end
+			end
+		end
+	end
+end
+
+function engine.reset_parameters()
+	for k, ch in ipairs(ui_channels) do
+		ch.instrument:reset()
+
+		for e, fx in ipairs(ch.effects) do
+			fx:reset()
+		end
+	end
 end
 
 return engine

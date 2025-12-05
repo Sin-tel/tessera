@@ -1,5 +1,3 @@
-// #![allow(dead_code)]
-
 #![deny(unreachable_patterns)]
 #![warn(clippy::cast_lossless)]
 #![warn(clippy::uninlined_format_args)]
@@ -23,32 +21,16 @@
 #![allow(clippy::enum_variant_names)]
 #![allow(clippy::new_without_default)]
 #![allow(clippy::needless_range_loop)]
+#![allow(clippy::get_first)]
+#![allow(clippy::too_many_arguments)]
 
-// #![deny(clippy::pedantic)]
-// #![allow(clippy::needless_range_loop)]
-// #![allow(clippy::many_single_char_names)]
-// #![allow(clippy::cast_precision_loss)]
-// #![allow(clippy::cast_possible_truncation)]
-// #![allow(clippy::cast_sign_loss)]
-// #![allow(clippy::cast_possible_wrap)]
-// #![allow(clippy::similar_names)]
-// #![allow(clippy::unreadable_literal)]
-// #![allow(clippy::wildcard_imports)]
-// #![allow(clippy::too_many_lines)]
-// #![allow(clippy::missing_panics_doc)]
-// #![allow(clippy::missing_errors_doc)]
-// #![allow(clippy::must_use_candidate)]
-// #![allow(clippy::enum_glob_use)]
-// #![allow(clippy::struct_field_names)]
-// #![allow(clippy::module_name_repetitions)]
-
-mod audio;
+pub mod audio;
+pub mod context;
 mod effect;
 mod instrument;
-mod lua;
-mod midi;
-mod render;
-mod scope;
+pub mod midi;
+pub mod render;
+pub mod scope;
 
 #[allow(dead_code)]
 // needs to be public for benches
@@ -56,4 +38,9 @@ pub mod dsp;
 
 #[allow(unused_macros)]
 #[allow(unused_imports)]
-mod log;
+pub mod log;
+
+pub mod api;
+pub mod app;
+pub mod opengl;
+pub mod text;

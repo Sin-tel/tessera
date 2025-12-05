@@ -1,6 +1,6 @@
 local Ui = require("ui/ui")
 local View = require("view")
-local deviceList = require("device_list")
+local device_list = require("device_list")
 local widgets = require("ui/widgets")
 
 local ChannelSettings = View.derive("Channel settings")
@@ -12,7 +12,7 @@ function ChannelSettings.new()
 	self.ui = Ui.new(self)
 
 	self.effect_list = {}
-	for k, v in pairs(deviceList.effects) do
+	for k, v in pairs(device_list.effects) do
 		table.insert(self.effect_list, k)
 	end
 	table.sort(self.effect_list)
@@ -22,7 +22,7 @@ function ChannelSettings.new()
 end
 
 function ChannelSettings:update()
-	self.ui:startFrame()
+	self.ui:start_frame()
 	self.ui.layout:row(self.w)
 	local add_effect_index = self.dropdown:update(self.ui)
 
@@ -43,10 +43,10 @@ function ChannelSettings:update()
 
 		if add_effect_index then
 			local effect_name = self.effect_list[add_effect_index]
-			command.run_and_register(command.newEffect.new(selection.ch_index, effect_name))
+			command.run_and_register(command.NewEffect.new(selection.ch_index, effect_name))
 		end
 	end
-	self.ui:endFrame()
+	self.ui:end_frame()
 end
 
 function ChannelSettings:draw()

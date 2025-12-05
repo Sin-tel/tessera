@@ -1,3 +1,9 @@
+implement undo for recording
+
+note datastructure:
+pitch = {base_pitch, start_time, velocity, verts}
+verts = list of {time, pitch_offset, pressure}
+
 rename channel -> layer?
 
 save transform in project
@@ -7,7 +13,6 @@ allow only one instance of each view?
 
 make tuning settings
 
-fix up undos for editing
 save undo history?
 
 sync polyphony / voice count somehow

@@ -8,7 +8,7 @@ use bencher::Bencher;
 use fastrand::Rng;
 use std::f32::consts::PI;
 use tessera::dsp::delayline::*;
-use tessera::dsp::resample::*;
+use tessera::dsp::resample_fir::*;
 use tessera::dsp::*;
 
 const ITERATIONS: u32 = 1000;
@@ -125,7 +125,7 @@ fn rand_bench(bench: &mut Bencher) {
 }
 
 fn upsample_bench(bench: &mut Bencher) {
-	let mut upsampler = Upsampler31::new();
+	let mut upsampler = Upsampler31::default();
 	run(bench, |b| {
 		let (x1, x2) = upsampler.process(b);
 		x1 * x2
@@ -133,7 +133,7 @@ fn upsample_bench(bench: &mut Bencher) {
 }
 
 fn downsample_bench(bench: &mut Bencher) {
-	let mut downsampler = Downsampler51::new();
+	let mut downsampler = Downsampler51::default();
 	run(bench, |b| downsampler.process(b, b + 0.5))
 }
 
@@ -186,7 +186,8 @@ fn skf_bench(bench: &mut Bencher) {
 			i = 0;
 			filter.set(x, 0.7);
 		}
-		filter.process_lowpass(x)
+		let (y, _, _) = filter.process_all(x);
+		y
 	})
 }
 

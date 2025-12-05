@@ -10,7 +10,7 @@ function Device.new(name, state, options)
 	self.name = name
 
 	self.state = state
-	-- copy of state that is already send to backend
+	-- copy of state that is already sent to backend
 	self.state_old = {}
 
 	-- UI stuff and parameter handlers
@@ -51,18 +51,22 @@ function Device:update(ui, index, w, w_label)
 		for i, v in ipairs(self.parameters) do
 			ui.layout:col(w_label)
 			if v.label then
-				ui:label(v.label, "right")
+				ui:label(v.label, tessera.graphics.ALIGN_RIGHT)
 			end
 			ui.layout:col(w - w_label) -- max
 			v.widget:update(ui, self.state, i)
-			ui.layout:newRow()
+			ui.layout:new_row()
 		end
 		ui:background()
 	end
 
 	-- detect hit anywhere inside of the device
 	local end_y = ui.layout.y
-	return ui:hitArea(start_x, start_y, w, end_y - start_y) and mouse.button_released
+	return ui:hit_area(start_x, start_y, w, end_y - start_y) and mouse.button_released
+end
+
+function Device:reset()
+	self.state_old = {}
 end
 
 return Device
