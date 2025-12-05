@@ -10,6 +10,8 @@ local pan = require("tools/pan")
 local scale = require("tools/scale")
 local set_transport_time = require("tools/set_transport_time")
 
+local RIBBON_H = 20
+
 local Canvas = View.derive("Canvas")
 Canvas.__index = Canvas
 
@@ -33,6 +35,11 @@ function Canvas:update()
 
 	if self:focus() then
 		local mx, my = self:get_mouse()
+
+		if 0 < my and my < RIBBON_H then
+			-- hovering on ribbon
+			mouse:set_cursor("hand")
+		end
 
 		if mouse.scroll then
 			local zoom_factor = math.exp(0.15 * mouse.scroll)
@@ -216,18 +223,23 @@ function Canvas:draw()
 
 	-- top 'ribbon'
 	tessera.graphics.set_color(theme.background)
-	tessera.graphics.rectangle("fill", 0, -1, self.w, 16)
+	tessera.graphics.rectangle("fill", 0, -1, self.w, RIBBON_H)
 	tessera.graphics.set_color(theme.background)
-	tessera.graphics.rectangle("line", 0, 0, self.w, 16)
+	tessera.graphics.rectangle("line", 0, 0, self.w, RIBBON_H)
 
 	-- playhead
-	local px = self.transform:time(engine.time)
+	local px = self.transform:time(project.transport.start_time)
+	tessera.graphics.set_color(theme.line_hover)
+	tessera.graphics.line(px, 0, px, RIBBON_H)
+
+	px = self.transform:time(engine.time)
 	if project.transport.recording then
 		tessera.graphics.set_color(theme.recording)
 	else
 		tessera.graphics.set_color(theme.widget)
 	end
 	tessera.graphics.line(px, 0, px, self.h)
+	tessera.graphics.rectangle("fill", px - 2, 0, 4, RIBBON_H)
 
 	self.current_tool:draw(self)
 end
@@ -249,12 +261,13 @@ function Canvas:keypressed(key)
 	elseif key == "left" then
 		move_right = -1
 	elseif key == "a" and modifier_keys.ctrl then
-		-- select all in channel
+		-- select all
 		local mask = {}
-		if selection.ch_index then
-			local channel = project.channels[selection.ch_index]
-			for i, v in ipairs(channel.notes) do
-				mask[v] = true
+		for _, channel in ipairs(project.channels) do
+			if channel.visible and not channel.lock then
+				for _, note in ipairs(channel.notes) do
+					mask[note] = true
+				end
 			end
 		end
 		selection.set(mask)
@@ -277,7 +290,6 @@ function Canvas:keypressed(key)
 			-- get notes and paste them
 			local notes = util.clone(clipboard.notes)
 			local c = command.NoteAdd.new(notes)
-
 			-- drag tool is responsible for registering the actual command
 			c:run()
 
@@ -466,7 +478,7 @@ function Canvas:mousepressed()
 	if mouse.button == 1 then
 		local _, my = self:get_mouse()
 
-		if my > 0 and my < 16 then
+		if 0 < my and my < RIBBON_H then
 			-- clicked on top ribbon
 			self.current_tool = set_transport_time
 		end

@@ -4,7 +4,8 @@ local serialize = require("lib/serialize")
 
 local save = {}
 
-save.last_save_location = "out/project.sav"
+save.default_save_location = "out/project.sav"
+save.last_save_location = save.default_save_location
 
 local last_save = "out/last_save"
 

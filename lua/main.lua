@@ -72,6 +72,8 @@ local function build_startup_project()
 		-- command.NewChannel.new("epiano"):run()
 		-- command.NewChannel.new("polysine"):run()
 		project.channels[1].armed = true
+
+		save.set_save_location(save.default_save_location)
 	end
 end
 
