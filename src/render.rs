@@ -133,7 +133,7 @@ impl Render {
 		}
 
 		// Calculate peak
-		let (peak_l, peak_r) = dsp::peak(buffer);
+		let [peak_l, peak_r] = dsp::peak(buffer);
 		self.peak_l.set(peak_l);
 		self.peak_r.set(peak_r);
 
