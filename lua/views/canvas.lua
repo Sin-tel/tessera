@@ -2,6 +2,7 @@ local Transform = require("views/transform")
 local View = require("view")
 local engine = require("engine")
 local tuning = require("tuning")
+require("table.new")
 
 -- sub tools
 local drag = require("tools/drag")
@@ -36,27 +37,29 @@ function Canvas:update()
 	if self:focus() then
 		local mx, my = self:get_mouse()
 
-		if 0 < my and my < RIBBON_H then
-			-- hovering on ribbon
-			mouse:set_cursor("hand")
-		end
-
-		if mouse.scroll then
-			local zoom_factor = math.exp(0.15 * mouse.scroll)
-			if not modifier_keys.ctrl then
-				self.transform:zoom_x(mx, zoom_factor)
+		if my > 0 then
+			if mouse.scroll then
+				local zoom_factor = math.exp(0.15 * mouse.scroll)
+				if not modifier_keys.ctrl then
+					self.transform:zoom_x(mx, zoom_factor)
+				end
+				if not modifier_keys.shift then
+					self.transform:zoom_y(my, zoom_factor)
+				end
 			end
-			if not modifier_keys.shift then
-				self.transform:zoom_y(my, zoom_factor)
+
+			if self.current_tool.update then
+				self.current_tool:update(self)
 			end
-		end
 
-		if self.current_tool.update then
-			self.current_tool:update(self)
-		end
+			if self.tool_active then
+				self.current_tool:mousedown(self)
+			end
 
-		if self.tool_active then
-			self.current_tool:mousedown(self)
+			if my < RIBBON_H then
+				-- hovering on ribbon
+				mouse:set_cursor("hand")
+			end
 		end
 	end
 end
@@ -150,9 +153,10 @@ function Canvas:draw()
 						c = c_select
 					end
 
-					local lx = {}
-					local ly = {}
-					local lw = {}
+					local n = #note.verts
+					local lx = table.new(n, 0)
+					local ly = table.new(n, 0)
+					local lw = table.new(n, 0)
 
 					for i = 1, #note.verts do
 						local x = self.transform:time(t_start + note.verts[i][1])
@@ -166,7 +170,6 @@ function Canvas:draw()
 
 					-- draw temp lines for notes that are not yet finished
 					if note.is_recording then
-						local n = #note.verts
 						local x = self.transform:time(engine.time)
 						local y = self.transform:pitch(p_start + note.verts[n][2])
 						local w = note.verts[n][3] * w_scale
@@ -473,29 +476,34 @@ function Canvas:mousepressed()
 		return
 	end
 
-	self.current_tool = self.selected_tool
+	local _, my = self:get_mouse()
+	if my > 0 then
+		self.current_tool = self.selected_tool
 
-	if mouse.button == 1 then
-		local _, my = self:get_mouse()
-
-		if 0 < my and my < RIBBON_H then
-			-- clicked on top ribbon
-			self.current_tool = set_transport_time
+		if mouse.button == 1 then
+			if my < RIBBON_H then
+				-- clicked on top ribbon
+				self.current_tool = set_transport_time
+			end
+		elseif mouse.button == 2 then
+			return
+		elseif mouse.button == 3 then
+			self.current_tool = pan
 		end
-	elseif mouse.button == 2 then
-		return
-	elseif mouse.button == 3 then
-		self.current_tool = pan
-	end
 
-	self.current_tool:mousepressed(self)
-	self.tool_active = true
+		self.current_tool:mousepressed(self)
+		self.tool_active = true
+	end
 end
 
 function Canvas:mousereleased()
 	if mouse.button == 2 then
 		return
 	end
+	if not self.tool_active then
+		return
+	end
+
 	self.current_tool:mousereleased(self)
 	self.tool_active = false
 	self.current_tool = self.selected_tool
