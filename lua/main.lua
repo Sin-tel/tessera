@@ -211,6 +211,10 @@ function tessera.draw()
 	tessera.graphics.set_color(theme.ui_text)
 	tessera.graphics.label(draw_time_l, 10, 0, 100, 32)
 
+	-- if modifier_keys.alt then
+	-- 	tessera.graphics.draw_debug_atlas()
+	-- end
+
 	if audio_status == "render" then
 		tessera.graphics.set_color_f(0, 0, 0, 0.2)
 		tessera.graphics.rectangle("fill", 0, 0, width, height)
