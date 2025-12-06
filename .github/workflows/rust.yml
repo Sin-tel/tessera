@@ -59,7 +59,7 @@ jobs:
     - name: Build Release
       env:
         CPAL_ASIO_DIR: ${{ github.workspace }}/asio
-        RUSTFLAGS = "-C target-feature=+avx2"
+        RUSTFLAGS: "-C target-feature=+avx2"
 
       run: cargo build --release
     - name: Upload Artifact
