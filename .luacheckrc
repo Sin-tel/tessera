@@ -1,4 +1,4 @@
-exclude_files = { "**/lib/*.lua" }
+-- exclude_files = { "**/lib/*.lua" }
 
 std = "max+tessera"
 stds.tessera = {
@@ -29,8 +29,9 @@ stds.tessera = {
 
 ignore = {
    "212", -- unused function arg
-   "213", -- unused loop variable
+   -- "213", -- unused loop variable
    "561", -- cyclomatic complexity
+   "631", -- line too long
 }
 
 -- allow_defined_top = true
