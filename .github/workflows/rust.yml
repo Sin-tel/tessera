@@ -50,6 +50,9 @@ jobs:
         choco install asio4all
         choco install llvm
     - name: Build
+      env:
+        CPAL_ASIO_DIR: ${{ github.workspace }}/asio
+
       run: cargo build --verbose
     - name: Run tests
       run: cargo test verbose -- --nocapture
