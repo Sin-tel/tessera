@@ -64,6 +64,111 @@ function Canvas:update()
 	end
 end
 
+function Canvas:draw_channel(ch, w_scale)
+	if not ch.visible then
+		return
+	end
+	local c_normal = tessera.graphics.get_color_hsv(ch.hue / 360, 0.75, 0.80)
+	local c_select = tessera.graphics.get_color_hsv(ch.hue / 360, 0.50, 0.95)
+	local c_lock = tessera.graphics.get_color_hsv(ch.hue / 360, 0.40, 0.40)
+	local c_vert = tessera.graphics.get_color_hsv(ch.hue / 360, 0.70, 1.00)
+
+	for _, note in ipairs(ch.notes) do
+		local t_start = note.time
+		local p_start = tuning.get_pitch(note.pitch)
+		local x0 = self.transform:time(t_start)
+		local y0 = self.transform:pitch(p_start)
+
+		local x_end = self.transform:time(t_start + note.verts[#note.verts][1])
+
+		-- cull only based on time
+		if x_end > 0 and x0 < self.w then
+			-- y0 offset by first vert
+			local y0t = y0 + note.verts[1][2] * self.transform.sy
+
+			-- velocity
+			tessera.graphics.set_color_f(0.6, 0.6, 0.6)
+			local vo = 32 * note.vel
+			tessera.graphics.line(x0, y0t, x0, y0t - vo)
+			tessera.graphics.line(x0 - 2, y0t - vo, x0 + 2, y0t - vo)
+
+			-- note
+			local c = c_normal
+			if ch.lock then
+				c = c_lock
+			elseif selection.mask[note] then
+				c = c_select
+			end
+
+			local n = #note.verts
+			local lx = table.new(n, 0)
+			local ly = table.new(n, 0)
+			local lw = table.new(n, 0)
+
+			for i = 1, #note.verts do
+				local x = self.transform:time(t_start + note.verts[i][1])
+				local y = self.transform:pitch(p_start + note.verts[i][2])
+				local w = note.verts[i][3] * w_scale
+
+				table.insert(lx, x)
+				table.insert(ly, y)
+				table.insert(lw, w + 0.01)
+			end
+
+			-- draw temp lines for notes that are not yet finished
+			if note.is_recording then
+				local x = self.transform:time(engine.time)
+				local y = self.transform:pitch(p_start + note.verts[n][2])
+				local w = note.verts[n][3] * w_scale
+
+				table.insert(lx, x)
+				table.insert(ly, y)
+				table.insert(lw, w)
+			end
+
+			-- tessera.graphics.set_color_f(c[1] * 0.5, c[2] * 0.5, c[3] * 0.5)
+			tessera.graphics.set_color_f(c[1] * 0.5, c[2] * 0.5, c[3] * 0.5)
+			tessera.graphics.polyline_w(lx, ly, lw)
+
+			tessera.graphics.set_color(c)
+			tessera.graphics.polyline(lx, ly)
+
+			if self.transform.sy < -70 then
+				tessera.graphics.set_color(c_vert)
+				tessera.graphics.verts(lx, ly, 2)
+			end
+
+			-- note head
+			tessera.graphics.set_color(c)
+			tessera.graphics.circle("fill", x0, y0t, 3)
+
+			-- note names
+			if self.transform.sy < -20 then
+				tessera.graphics.set_color(c)
+				local note_name = tuning.get_name(note.pitch)
+				tessera.graphics.text(note_name, x0 + 5, y0t - 20)
+			end
+		end
+	end
+
+	-- sustain pedal
+	if ch.control.sustain then
+		local w = w_scale
+		local y = self.h - w
+		for i = 1, #ch.control.sustain - 1 do
+			local c = ch.control.sustain[i]
+			local c2 = ch.control.sustain[i + 1]
+
+			if c.value and not c2.value then
+				local x1 = self.transform:time(c.time)
+				local x2 = self.transform:time(c2.time)
+				tessera.graphics.set_color_f(0.3, 0.3, 0.3)
+				tessera.graphics.rectangle("fill", x1, y, x2 - x1, w)
+			end
+		end
+	end
+end
+
 function Canvas:draw()
 	tessera.graphics.set_color(theme.bg_nested)
 	tessera.graphics.rectangle("fill", 0, 0, self.w, self.h)
@@ -110,121 +215,28 @@ function Canvas:draw()
 		self.transform.ox_ = -engine.time * self.transform.sx + self.w * 0.5
 	end
 
+	-- draw notes
 	local w_scale = 0.3 * math.sqrt(-self.transform.sy * self.transform.sx)
 	w_scale = math.min(20, w_scale)
 
-	-- draw notes
 	tessera.graphics.set_line_width(2.0)
 	tessera.graphics.set_font_notes()
 	tessera.graphics.set_font_size()
 
 	for ch_index = #project.channels, 1, -1 do
-		local ch = project.channels[ch_index]
-		if ch.visible then
-			local c_normal = tessera.graphics.get_color_hsv(ch.hue / 360, 0.75, 0.80)
-			local c_select = tessera.graphics.get_color_hsv(ch.hue / 360, 0.50, 0.95)
-			local c_lock = tessera.graphics.get_color_hsv(ch.hue / 360, 0.40, 0.40)
-			local c_vert = tessera.graphics.get_color_hsv(ch.hue / 360, 0.70, 1.00)
-
-			for _, note in ipairs(ch.notes) do
-				local t_start = note.time
-				local p_start = tuning.get_pitch(note.pitch)
-				local x0 = self.transform:time(t_start)
-				local y0 = self.transform:pitch(p_start)
-
-				local x_end = self.transform:time(t_start + note.verts[#note.verts][1])
-
-				-- cull only based on time
-				if x_end > 0 and x0 < self.w then
-					-- y0 offset by first vert
-					local y0t = y0 + note.verts[1][2] * self.transform.sy
-
-					-- velocity
-					tessera.graphics.set_color_f(0.6, 0.6, 0.6)
-					local vo = 32 * note.vel
-					tessera.graphics.line(x0, y0t, x0, y0t - vo)
-					tessera.graphics.line(x0 - 2, y0t - vo, x0 + 2, y0t - vo)
-
-					-- note
-					local c = c_normal
-					if ch.lock then
-						c = c_lock
-					elseif selection.mask[note] then
-						c = c_select
-					end
-
-					local n = #note.verts
-					local lx = table.new(n, 0)
-					local ly = table.new(n, 0)
-					local lw = table.new(n, 0)
-
-					for i = 1, #note.verts do
-						local x = self.transform:time(t_start + note.verts[i][1])
-						local y = self.transform:pitch(p_start + note.verts[i][2])
-						local w = note.verts[i][3] * w_scale
-
-						table.insert(lx, x)
-						table.insert(ly, y)
-						table.insert(lw, w + 0.01)
-					end
-
-					-- draw temp lines for notes that are not yet finished
-					if note.is_recording then
-						local x = self.transform:time(engine.time)
-						local y = self.transform:pitch(p_start + note.verts[n][2])
-						local w = note.verts[n][3] * w_scale
-
-						table.insert(lx, x)
-						table.insert(ly, y)
-						table.insert(lw, w)
-					end
-
-					-- tessera.graphics.set_color_f(c[1] * 0.5, c[2] * 0.5, c[3] * 0.5)
-					tessera.graphics.set_color_f(c[1] * 0.5, c[2] * 0.5, c[3] * 0.5)
-					tessera.graphics.polyline_w(lx, ly, lw)
-
-					tessera.graphics.set_color(c)
-					tessera.graphics.polyline(lx, ly)
-
-					if self.transform.sy < -70 then
-						tessera.graphics.set_color(c_vert)
-						tessera.graphics.verts(lx, ly, 2)
-					end
-
-					-- note head
-					tessera.graphics.set_color(c)
-					tessera.graphics.circle("fill", x0, y0t, 3)
-
-					-- note names
-					if self.transform.sy < -20 then
-						tessera.graphics.set_color(c)
-						local note_name = tuning.get_name(note.pitch)
-						tessera.graphics.text(note_name, x0 + 5, y0t - 20)
-					end
-				end
-			end
-
-			-- sustain pedal
-			if ch.control.sustain then
-				local w = w_scale
-				local y = self.h - w
-				for i = 1, #ch.control.sustain - 1 do
-					local c = ch.control.sustain[i]
-					local c2 = ch.control.sustain[i + 1]
-
-					if c.value and not c2.value then
-						local x1 = self.transform:time(c.time)
-						local x2 = self.transform:time(c2.time)
-						tessera.graphics.set_color_f(0.3, 0.3, 0.3)
-						tessera.graphics.rectangle("fill", x1, y, x2 - x1, w)
-					end
-				end
-			end
+		if ch_index ~= selection.ch_index then
+			local ch = project.channels[ch_index]
+			self:draw_channel(ch, w_scale)
 		end
 	end
-	tessera.graphics.set_line_width()
+	-- make sure currently active channel is on top
+	if selection.ch_index then
+		local ch = project.channels[selection.ch_index]
+		self:draw_channel(ch, w_scale)
+	end
 
 	-- top 'ribbon'
+	tessera.graphics.set_line_width()
 	tessera.graphics.set_color(theme.background)
 	tessera.graphics.rectangle("fill", 0, -1, self.w, RIBBON_H)
 	tessera.graphics.set_color(theme.background)

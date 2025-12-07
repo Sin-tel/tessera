@@ -3,6 +3,8 @@ local Ui = require("ui/ui")
 local Toggle = {}
 Toggle.__index = Toggle
 
+-- Note internal state is a float (0, 1) not a bool
+
 function Toggle.new(text, options)
 	local self = setmetatable({}, Toggle)
 

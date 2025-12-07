@@ -33,6 +33,8 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		lua.create_function(|lua, font_size: Option<f32>| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 			state.font_size = font_size.unwrap_or(DEFAULT_FONT_SIZE);
+			// round to quarter increments to avoid spamming the cache
+			state.font_size = (state.font_size * 4.0).round() / 4.0;
 			Ok(())
 		})?,
 	)?;
@@ -63,8 +65,12 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	graphics.set(
 		"get_dimensions",
 		lua.create_function(|lua, ()| {
-			let state = lua.app_data_ref::<State>().unwrap();
-			Ok(state.window_size)
+			// This function runs on load so it needs to work without any state attached
+			if let Some(state) = lua.app_data_ref::<State>() {
+				Ok(state.window_size)
+			} else {
+				Ok((400, 400))
+			}
 		})?,
 	)?;
 
@@ -533,6 +539,17 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 
 			let color = state.current_color;
 			audio_ctx.scope.draw_scope(w, h, color, &mut state.canvas);
+
+			Ok(())
+		})?,
+	)?;
+
+	graphics.set(
+		"draw_debug_atlas",
+		lua.create_function(|lua, ()| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			state.text_engine.draw_debug_atlas(&mut state.canvas);
 
 			Ok(())
 		})?,

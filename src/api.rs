@@ -7,6 +7,7 @@ mod mouse;
 pub mod project;
 
 use crate::app::State;
+use crate::embed::setup_lua_loader;
 use crate::log::log_warn;
 use mlua::prelude::*;
 use std::sync::mpsc;
@@ -17,6 +18,8 @@ pub fn create_lua() -> LuaResult<Lua> {
 
 	// #[cfg(not(debug_assertions))]
 	// let lua = Lua::new();
+
+	setup_lua_loader(&lua)?;
 
 	// main tessera table
 	let tessera = lua.create_table()?;
@@ -140,4 +143,52 @@ pub fn create_lua() -> LuaResult<Lua> {
 	lua.globals().set("tessera", tessera)?;
 
 	Ok(lua)
+}
+
+pub struct Hooks {
+	pub load: LuaFunction,
+	pub update: LuaFunction,
+	pub draw: LuaFunction,
+	pub draw_error: LuaFunction,
+	pub keypressed: LuaFunction,
+	pub keyreleased: LuaFunction,
+	pub mousepressed: LuaFunction,
+	pub mousereleased: LuaFunction,
+	pub mousemoved: LuaFunction,
+	pub wheelmoved: LuaFunction,
+	pub resize: LuaFunction,
+	pub quit: LuaFunction,
+}
+
+impl Hooks {
+	pub fn new(lua: &Lua) -> LuaResult<Self> {
+		let tessera: LuaTable = lua.globals().get("tessera").unwrap();
+		let load: LuaFunction = tessera.get("load").unwrap();
+		let update: LuaFunction = tessera.get("update").unwrap();
+		let draw: LuaFunction = tessera.get("draw").unwrap();
+		let draw_error: LuaFunction = tessera.get("draw_error").unwrap();
+		let keypressed: LuaFunction = tessera.get("keypressed").unwrap();
+		let keyreleased: LuaFunction = tessera.get("keyreleased").unwrap();
+		let mousepressed: LuaFunction = tessera.get("mousepressed").unwrap();
+		let mousereleased: LuaFunction = tessera.get("mousereleased").unwrap();
+		let mousemoved: LuaFunction = tessera.get("mousemoved").unwrap();
+		let wheelmoved: LuaFunction = tessera.get("wheelmoved").unwrap();
+		let resize: LuaFunction = tessera.get("resize").unwrap();
+		let quit: LuaFunction = tessera.get("quit").unwrap();
+
+		Ok(Self {
+			load,
+			update,
+			draw,
+			draw_error,
+			keypressed,
+			keyreleased,
+			mousepressed,
+			mousereleased,
+			mousemoved,
+			wheelmoved,
+			resize,
+			quit,
+		})
+	}
 }

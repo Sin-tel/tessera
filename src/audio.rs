@@ -70,7 +70,7 @@ pub fn build_stream(
 		U32 => build_stream_inner::<u32>(device, config, render, stream_rx, error_tx),
 		I16 => build_stream_inner::<i16>(device, config, render, stream_rx, error_tx),
 		U16 => build_stream_inner::<u16>(device, config, render, stream_rx, error_tx),
-		f => panic!("Unsupported sample format '{f}'"),
+		f => Err(format!("Unsupported sample format '{f}'").into()),
 	}?;
 
 	// immediately start the stream
@@ -201,13 +201,14 @@ fn error_closure(mut error_tx: HeapProd<bool>) -> impl FnMut(StreamError) + Send
 			log_error!("Stream error: device not available.");
 		},
 		StreamError::BackendSpecific { err: BackendSpecificError { ref description } } => {
-			// TODO: hopefully future versions of CPAL will handle this
-			if description.contains("ASIO reset request") {
-				log_info!("ASIO reset request");
-				error_tx.try_push(true).expect("Could not send message.");
-			} else {
-				log_error!("Stream error: {error}.");
-			}
+			log_error!("Device error: {description}");
+		},
+		StreamError::AsioResetRequest => {
+			log_info!("ASIO reset request");
+			error_tx.try_push(true).expect("Could not send message.");
+		},
+		_ => {
+			log_error!("Stream error: {error}");
 		},
 	}
 }

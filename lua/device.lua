@@ -14,7 +14,7 @@ function Device.new(data, options, meter_id)
 
 	self.meter_id = meter_id
 	self.meter_l = 0.0
-	self.meter_r = 1.0
+	self.meter_r = 0.0
 
 	-- copy of state that is already sent to backend
 	self.state_old = {}
