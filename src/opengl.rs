@@ -1,5 +1,6 @@
 use crate::app::INIT_HEIGHT;
 use crate::app::INIT_WIDTH;
+use crate::embed::Asset;
 use winit::window::Icon;
 use winit::window::Window;
 
@@ -51,7 +52,7 @@ impl WindowSurface for Surface {
 
 fn load_icon() -> Icon {
 	let (icon_rgba, icon_width, icon_height) = {
-		let image = image::load_from_memory(include_bytes!("../assets/icon.png"))
+		let image = image::load_from_memory(&Asset::get("icon.png").unwrap().data)
 			.unwrap()
 			.into_rgba8();
 		let (width, height) = image.dimensions();

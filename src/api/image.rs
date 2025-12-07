@@ -1,17 +1,18 @@
 // image.rs
 use crate::app::State;
+use crate::embed::Asset;
 use femtovg::ImageFlags;
 use mlua::prelude::*;
 
 #[rustfmt::skip]
-pub const BUILTIN_ICONS: &[(&str, &[u8])] = &[
-	("solo",       include_bytes!("../../assets/icons/solo.png")),
-	("mute",       include_bytes!("../../assets/icons/mute.png")),
-	("armed",      include_bytes!("../../assets/icons/armed.png")),
-	("visible",    include_bytes!("../../assets/icons/visible.png")),
-	("invisible",  include_bytes!("../../assets/icons/invisible.png")),
-	("lock",       include_bytes!("../../assets/icons/lock.png")),
-	("unlock",     include_bytes!("../../assets/icons/unlock.png")),
+pub const BUILTIN_ICONS: &[(&str, &str)] = &[
+	("solo",       "icons/solo.png"),
+	("mute",       "icons/mute.png"),
+	("armed",      "icons/armed.png"),
+	("visible",    "icons/visible.png"),
+	("invisible",  "icons/invisible.png"),
+	("lock",       "icons/lock.png"),
+	("unlock",     "icons/unlock.png"),
 ];
 
 pub fn load_images(lua: &Lua) -> LuaResult<()> {
@@ -21,8 +22,9 @@ pub fn load_images(lua: &Lua) -> LuaResult<()> {
 
 	let mut image_ids = Vec::new();
 
-	for (index, (name, bytes)) in BUILTIN_ICONS.iter().enumerate() {
-		let image_id = state.canvas.load_image_mem(bytes, ImageFlags::empty()).unwrap();
+	for (index, (name, path)) in BUILTIN_ICONS.iter().enumerate() {
+		let bytes = Asset::get(path).unwrap().data;
+		let image_id = state.canvas.load_image_mem(&bytes, ImageFlags::empty()).unwrap();
 
 		image.set(*name, index)?;
 		image_ids.push(image_id);

@@ -4,6 +4,7 @@ use std::iter::zip;
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::lerp;
 use crate::effect::*;
+use crate::embed::Asset;
 
 #[derive(Debug)]
 pub struct Convolve {
@@ -14,12 +15,10 @@ pub struct Convolve {
 impl Effect for Convolve {
 	fn new(_sample_rate: f32) -> Self {
 		// TODO: abstract out wav handling into seperate module
-		// TODO: share resources (lazy_static?). we dont need to reload the file for every instance.
-		//       can also just include_bytes and not deal with any resource loading
+		// TODO: select between different samples
 
-		// let reader = hound::WavReader::open("assets/samples/noise_ir.wav").unwrap();
-		// let reader = hound::WavReader::open("assets/samples/noise_ir2.wav").unwrap();
-		let reader = hound::WavReader::open("assets/samples/noise_ir3.wav").unwrap();
+		let file: &[u8] = &Asset::get("samples/noise_ir3.wav").unwrap().data;
+		let reader = hound::WavReader::new(file).unwrap();
 
 		let spec = reader.spec();
 

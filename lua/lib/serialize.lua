@@ -58,6 +58,8 @@ local function write_table(t, depth)
 
 	depth = depth + 1
 	for k, v in pairs(t) do
+		assert(type(k) ~= "function")
+		assert(type(v) ~= "function")
 		if type(v) == "table" then
 			if type(k) == "string" then
 				indent(b, depth)

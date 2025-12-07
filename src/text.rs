@@ -1,3 +1,4 @@
+use crate::embed::Asset;
 use crate::log_info;
 use crate::opengl::Renderer;
 use cosmic_text::fontdb;
@@ -102,14 +103,14 @@ impl RenderCache {
 						if rendered.content == Content::Color {
 							return None;
 						}
-						let radius = 2;
-						let (new_data, new_w, new_h) =
-							apply_blur(&rendered.data, content_w, content_h, radius);
+						let pad = 3;
+						let sigma = 1.2;
+						let new_data = blur(&rendered.data, content_w, content_h, pad, sigma);
 						rendered.data = new_data;
-						content_x -= radius as i32;
-						content_y -= radius as i32 - 1;
-						content_w = new_w;
-						content_h = new_h;
+						content_x -= pad as i32;
+						content_y -= pad as i32;
+						content_w += 2 * pad;
+						content_h += 2 * pad;
 					}
 
 					// Check if there is some space
@@ -147,7 +148,8 @@ impl RenderCache {
 					match rendered.content {
 						Content::Mask => {
 							for chunk in rendered.data.chunks_exact(1) {
-								src_buf.push(RGBA8::new(chunk[0], 0, 0, 0));
+								// Technically we only need to fill the red channel but this helps debugging the atlas
+								src_buf.push(RGBA8::new(chunk[0], chunk[0], chunk[0], 255));
 							}
 						},
 						Content::Color => {
@@ -248,15 +250,18 @@ pub struct TextEngine {
 	scratch_buffer: Buffer,
 }
 
-const SHAPING: Shaping = Shaping::Basic;
+const SHAPING: Shaping = Shaping::Advanced;
 
 impl TextEngine {
 	pub fn new() -> Self {
 		// let mut font_system = FontSystem::new();
 
 		let mut db = fontdb::Database::new();
-		db.load_font_data(include_bytes!("../assets/font/inter.ttf").to_vec());
-		db.load_font_data(include_bytes!("../assets/font/notes.ttf").to_vec());
+
+		db.load_font_data(Asset::get("font/inter.ttf").unwrap().data.to_vec());
+		db.load_font_data(Asset::get("font/notes.ttf").unwrap().data.to_vec());
+
+		// dbg!(&db.faces().last().unwrap().families);
 
 		let mut font_system =
 			FontSystem::new_with_locale_and_db_and_fallback("en-US".into(), db, MyFallback {});
@@ -404,14 +409,52 @@ impl TextEngine {
 		);
 		canvas.draw_glyph_commands(cmds, paint);
 	}
+
+	pub fn draw_debug_atlas(&self, canvas: &mut Canvas<Renderer>) {
+		let mut x = 0.;
+		let mut y = 32.;
+		for tex in &self.glyph_cache.glyph_textures {
+			let image_id = tex.image_id;
+
+			let info = canvas.image_info(image_id).unwrap();
+			let w = info.width() as f32;
+			let h = info.height() as f32;
+
+			let mut path = femtovg::Path::new();
+			path.rect(x, y, w, h);
+
+			let paint = femtovg::Paint::color(Color::black());
+			canvas.fill_path(&path, &paint);
+			let paint = femtovg::Paint::image(image_id, x, y, w, h, 0.0, 1.0);
+			canvas.fill_path(&path, &paint);
+
+			x += w;
+			if x > canvas.width() as f32 {
+				x = 0.;
+				y += h;
+			}
+		}
+	}
 }
 
-// TODO: this is just a box blur, can do better.
-fn apply_blur(src: &[u8], width: usize, height: usize, radius: usize) -> (Vec<u8>, usize, usize) {
-	let padding = radius;
+fn blur(src: &[u8], width: usize, height: usize, size: usize, sigma: f32) -> Vec<u8> {
+	let padding = size;
 	let new_w = width + padding * 2;
 	let new_h = height + padding * 2;
 	let mut out = vec![0.0f32; new_w * new_h];
+
+	let mut kernel = Vec::with_capacity(size * size);
+	let mut kernel_sum = 0.0;
+
+	// generate gaussian kernel
+	for y in -(size as i32)..=(size as i32) {
+		for x in -(size as i32)..=(size as i32) {
+			let dist_sq = (x * x + y * y) as f32;
+			let weight = (-dist_sq / (2.0 * sigma * sigma)).exp();
+			kernel.push(weight);
+			kernel_sum += weight;
+		}
+	}
 
 	for y in 0..new_h {
 		for x in 0..new_w {
@@ -419,27 +462,28 @@ fn apply_blur(src: &[u8], width: usize, height: usize, radius: usize) -> (Vec<u8
 			let src_y = (y as i32) - padding as i32;
 
 			let mut acc: f32 = 0.0;
-			let mut count: u32 = 0;
 
-			for ky in -(radius as i32)..=(radius as i32) {
-				for kx in -(radius as i32)..=(radius as i32) {
+			let mut k_idx = 0;
+
+			for ky in -(size as i32)..=(size as i32) {
+				for kx in -(size as i32)..=(size as i32) {
 					let sx = src_x + kx;
 					let sy = src_y + ky;
 
+					let weight = kernel[k_idx];
+					k_idx += 1;
+
 					if sx >= 0 && sx < width as i32 && sy >= 0 && sy < height as i32 {
 						let val = src[(sy as usize * width) + sx as usize];
-						acc += f32::from(val);
+						acc += f32::from(val) * weight;
 					}
-					count += 1;
 				}
 			}
 
-			out[y * new_w + x] = acc / (count as f32);
+			out[y * new_w + x] = acc / kernel_sum;
 		}
 	}
 
-	// slightly darken and convert to u8
-	let out = out.iter_mut().map(|x| (*x * 1.3).clamp(0., 255.) as u8).collect();
-
-	(out, new_w, new_h)
+	// darken and convert to u8
+	out.iter_mut().map(|x| (*x * 1.7).clamp(0., 255.) as u8).collect()
 }

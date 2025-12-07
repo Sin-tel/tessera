@@ -1,6 +1,47 @@
 note datastructure:
-pitch = {base_pitch, start_time, velocity, verts}
-verts = list of {time, pitch_offset, pressure}
+pitch: {
+    pitch: table,
+    time: float, // start_time
+    velocity: float,
+    verts: list of vert
+}
+vert: {
+    time: float // relative (first point always 0)
+    pitch_offset: float
+    pressure: float
+}
+
+File
+ - new project
+ - open project
+ - save project
+ - save project as...
+ - export audio
+ - reset view
+
+Options
+ - follow
+ - chase midi notes
+
+switch back to hsl, was better
+
+make the add device/channel button smaller
+
+make channels + buttons bigger
+
+add master meter to atomics
+add cpu to atomics
+
+
+
+
+CI:
+    https://corrode.dev/blog/tips-for-faster-ci-builds/
+      - uses: Swatinem/rust-cache@v2
+    pack settings (not assets)
+    fix path
+    add cargo run --test-run
+
 
 rename channel -> layer?
 
@@ -15,6 +56,12 @@ add view resized callback
 
 add some way to tune instruments properly
  - can be done semi-automatically?
+
+render in HDR and add bloom?
+
+fix gain to be smoothed
+
+mute declicking
 
 ## piano roll
 
@@ -45,10 +92,6 @@ pluck model:
 * multiple strings?
     - coupling -> two stage decay
     - rotation matrix
-* sitar bridge?
-* fretboard rattle?
-* control allpass dispersion
-    - fix tuning
 
 ## tuning
 make tuning import/export and add to project settings
@@ -213,48 +256,6 @@ when 243/242 is tempered out (rastmic), these should revert to normal sharps/fla
 
 load tuning from text file (just lua?)
 
-
-# Style
-lua style:
-
-  - classes: PascalCase
-  - instances/tables: camelCase, index with :
-  - methods/functions: camelCase
-  - variables: snake_case
-  - constants: SCREAMING_SNAKE_CASE
-  - singletons: camelCase, index with :
-
-Switch to common style for lua classes
-
-```lua
-local Class = {}
-
-function Class:new(args)
-    local new = {}
-    setmetatable(new, self)
-    self.__index = self
-
-    return new
-end
-
-return Class
-```
-
-better way:
-```lua
-local Class = {}
-Class.__index = Class
--- ClassMt = {__index = Class}
-
--- ! note . and not :
-function Class.new(args)
-    local self = setmetatable({}, Class)
-
-    return self
-end
-
-return Class
-```
 
 ## parameter macro
 ```rust

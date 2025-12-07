@@ -1,89 +1,92 @@
-// #![windows_subsystem = "windows"]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use femtovg::Color;
 use mlua::prelude::*;
+use std::error::Error;
 use std::fs;
 use std::time::{Duration, Instant};
+use tessera::api::Hooks;
 use tessera::app::State;
 use tessera::log::{init_logging, log_error};
 use winit::application::ApplicationHandler;
 use winit::event::DeviceId;
 use winit::event::{DeviceEvent, ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
-use winit::keyboard::{Key, PhysicalKey};
+use winit::keyboard::{Key, KeyCode, PhysicalKey};
 use winit::window::WindowId;
 
 use tessera::api::create_lua;
 use tessera::api::image::load_images;
 use tessera::api::keycodes::keycode_to_str;
+use tessera::embed::Script;
 use tessera::opengl::Surface;
 use tessera::opengl::WindowSurface;
 use tessera::opengl::setup_window;
 
-fn wrap_call<T: IntoLuaMulti>(lua_fn: &LuaFunction, args: T) {
+fn wrap_call<T: IntoLuaMulti>(status: &mut Status, lua_fn: &LuaFunction, args: T) {
+	if let Status::Error(_) = status {
+		return;
+	}
 	if let Err(e) = lua_fn.call::<()>(args) {
-		// For now we just panic
-
 		log_error!("{e}");
-		panic!("Lua error");
-		// println!("{e}");
-		// panic!("Lua error");
+		*status = Status::Error(e.to_string())
+	} else {
+		*status = Status::Running
 	}
 }
 
-fn main() {
-	if let Err(e) = run() {
-		log_error!("{e}");
+fn main() -> Result<(), Box<dyn Error>> {
+	// Make sure output folder exists before we do anything
+	fs::create_dir_all("./out")?;
+
+	if std::env::args().any(|arg| arg == "--test-run") {
+		test_run()?
+	} else {
+		if let Err(e) = run() {
+			log_error!("{e}");
+		}
 	}
+
+	Ok(())
+}
+
+fn test_run() -> LuaResult<()> {
+	// Basic checks for CI without initializing any graphics or audio
+	let lua = create_lua()?;
+
+	init_logging();
+
+	let lua_main = &*Script::get("main.lua").unwrap().data;
+	lua.load(lua_main).set_name("@lua/main.lua").exec()?;
+
+	let hooks = Hooks::new(&lua)?;
+	hooks.load.call::<()>(true).unwrap();
+
+	// TODO: query audio and midi devices
+
+	hooks.quit.call::<()>(()).unwrap();
+	return Ok(());
 }
 
 fn run() -> LuaResult<()> {
 	let (canvas, event_loop, surface, window) = setup_window();
 
 	let lua = create_lua()?;
-	lua.set_app_data(State::new(canvas, window));
 
-	// set import path so 'require' works
-	lua.load("package.path = package.path .. ';lua/?.lua;'").exec()?;
+	lua.set_app_data(State::new(canvas, window));
 
 	init_logging();
 
-	let lua_main = fs::read_to_string("lua/main.lua").unwrap();
+	let lua_main = &*Script::get("main.lua").unwrap().data;
 	lua.load(lua_main).set_name("@lua/main.lua").exec()?;
 
 	load_images(&lua)?;
 
-	let tessera: LuaTable = lua.globals().get("tessera")?;
-	let load: LuaFunction = tessera.get("load").unwrap();
-	let update: LuaFunction = tessera.get("update").unwrap();
-	let draw: LuaFunction = tessera.get("draw").unwrap();
-	let keypressed: LuaFunction = tessera.get("keypressed").unwrap();
-	let keyreleased: LuaFunction = tessera.get("keyreleased").unwrap();
-	let mousepressed: LuaFunction = tessera.get("mousepressed").unwrap();
-	let mousereleased: LuaFunction = tessera.get("mousereleased").unwrap();
-	let mousemoved: LuaFunction = tessera.get("mousemoved").unwrap();
-	let wheelmoved: LuaFunction = tessera.get("wheelmoved").unwrap();
-	let resize: LuaFunction = tessera.get("resize").unwrap();
-	let quit: LuaFunction = tessera.get("quit").unwrap();
+	let hooks = Hooks::new(&lua)?;
 
-	wrap_call(&load, ());
+	let mut app = App::new(lua, surface, hooks);
 
-	let last_update = Instant::now();
-	let mut app = App {
-		lua,
-		surface,
-		last_update,
-		update,
-		draw,
-		keypressed,
-		keyreleased,
-		mousepressed,
-		mousereleased,
-		mousemoved,
-		wheelmoved,
-		resize,
-		quit,
-	};
+	wrap_call(&mut app.status, &app.hooks.load, ());
 
 	if let Err(e) = event_loop.run_app(&mut app) {
 		log_error!("{e}");
@@ -91,20 +94,25 @@ fn run() -> LuaResult<()> {
 	Ok(())
 }
 
+#[derive(Debug, Clone)]
+enum Status {
+	Running,
+	Error(String),
+}
+
 struct App {
 	lua: Lua,
 	surface: Surface,
 	last_update: Instant,
-	update: LuaFunction,
-	draw: LuaFunction,
-	keypressed: LuaFunction,
-	keyreleased: LuaFunction,
-	mousepressed: LuaFunction,
-	mousereleased: LuaFunction,
-	mousemoved: LuaFunction,
-	wheelmoved: LuaFunction,
-	resize: LuaFunction,
-	quit: LuaFunction,
+	hooks: Hooks,
+	status: Status,
+}
+
+impl App {
+	pub fn new(lua: Lua, surface: Surface, hooks: Hooks) -> Self {
+		let last_update = Instant::now();
+		Self { lua, surface, last_update, hooks, status: Status::Running }
+	}
 }
 
 impl ApplicationHandler for App {
@@ -123,7 +131,18 @@ impl ApplicationHandler for App {
 		match event {
 			WindowEvent::RedrawRequested => {
 				render_start(&self.lua);
-				wrap_call(&self.draw, ());
+				match &self.status {
+					Status::Running => {
+						wrap_call(&mut self.status, &self.hooks.draw, ());
+					},
+					Status::Error(msg) => {
+						if let Err(e) = self.hooks.draw_error.call::<()>(msg.clone()) {
+							// If we can't even display the error message then just panic
+							log_error!("{e}");
+							panic!("Error in draw_err");
+						}
+					},
+				}
 				render_end(&self.surface, &self.lua);
 			},
 			WindowEvent::KeyboardInput {
@@ -146,10 +165,19 @@ impl ApplicationHandler for App {
 
 				match state {
 					ElementState::Pressed => {
-						wrap_call(&self.keypressed, (key, key_str, repeat));
+						if let Status::Error(_) = self.status
+							&& keycode == KeyCode::Escape
+						{
+							event_loop.exit();
+						}
+						wrap_call(&mut self.status, &self.hooks.keypressed, (key, key_str, repeat));
 					},
 					ElementState::Released => {
-						wrap_call(&self.keyreleased, (key, key_str, repeat));
+						wrap_call(
+							&mut self.status,
+							&self.hooks.keyreleased,
+							(key, key_str, repeat),
+						);
 					},
 				}
 			},
@@ -167,7 +195,7 @@ impl ApplicationHandler for App {
 					let mut app_state = self.lua.app_data_mut::<State>().unwrap();
 					app_state.window_size = (w, h);
 					drop(app_state);
-					wrap_call(&self.resize, (w, h));
+					wrap_call(&mut self.status, &self.hooks.resize, (w, h));
 				}
 			},
 			WindowEvent::MouseInput { state, button, .. } => {
@@ -182,10 +210,18 @@ impl ApplicationHandler for App {
 				let (x, y) = self.lua.app_data_ref::<State>().unwrap().mouse_position;
 				match state {
 					ElementState::Pressed => {
-						wrap_call(&self.mousepressed, (x, y, button_number));
+						wrap_call(
+							&mut self.status,
+							&self.hooks.mousepressed,
+							(x, y, button_number),
+						);
 					},
 					ElementState::Released => {
-						wrap_call(&self.mousereleased, (x, y, button_number));
+						wrap_call(
+							&mut self.status,
+							&self.hooks.mousereleased,
+							(x, y, button_number),
+						);
 					},
 				}
 			},
@@ -194,7 +230,7 @@ impl ApplicationHandler for App {
 					MouseScrollDelta::LineDelta(x, y) => (x, y),
 					MouseScrollDelta::PixelDelta(d) => (d.x as f32 / 14., d.y as f32 / 14.),
 				};
-				wrap_call(&self.wheelmoved, (x, y));
+				wrap_call(&mut self.status, &self.hooks.wheelmoved, (x, y));
 			},
 			WindowEvent::CloseRequested => event_loop.exit(),
 			_ => {},
@@ -212,7 +248,7 @@ impl ApplicationHandler for App {
 			DeviceEvent::MouseMotion { delta } => {
 				let (x, y) = self.lua.app_data_ref::<State>().unwrap().mouse_position;
 				let (dx, dy) = delta;
-				wrap_call(&self.mousemoved, (x, y, dx, dy));
+				wrap_call(&mut self.status, &self.hooks.mousemoved, (x, y, dx, dy));
 			},
 			_ => {},
 		}
@@ -227,7 +263,7 @@ impl ApplicationHandler for App {
 			let dt = (now - self.last_update).as_secs_f64();
 			self.last_update = now;
 
-			wrap_call(&self.update, dt);
+			wrap_call(&mut self.status, &self.hooks.update, dt);
 
 			accum += dt;
 			if accum >= 1.0 / 60.0 {
@@ -245,7 +281,7 @@ impl ApplicationHandler for App {
 	}
 
 	fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
-		wrap_call(&self.quit, ());
+		wrap_call(&mut self.status, &self.hooks.quit, ());
 	}
 }
 

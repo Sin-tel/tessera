@@ -5,9 +5,14 @@ edition = "2024"
 
 # ASIO requirements
 [target.'cfg(target_os = "windows")'.dependencies]
-cpal = { version = "0.16", features = ["asio"], git = "https://github.com/Sin-tel/cpal.git", branch = "asio_message_callback" }
+cpal = { version = "0.16", features = ["asio"], git = "https://github.com/Sin-tel/cpal.git", rev = "1074160b7d647243f35ab708c91942f2c776d183" }
 [target.'cfg(not(target_os = "windows"))'.dependencies]
-cpal = { version = "0.16", git = "https://github.com/Sin-tel/cpal.git", branch = "asio_message_callback" }
+cpal = { version = "0.16", git = "https://github.com/Sin-tel/cpal.git", rev = "1074160b7d647243f35ab708c91942f2c776d183" }
+
+# [target.'cfg(target_os = "windows")'.dependencies]
+# cpal = { version = "0.16", features = ["asio"], path = "../cpal_proj/cpal" }
+# [target.'cfg(not(target_os = "windows"))'.dependencies]
+# cpal = { version = "0.16", path = "../cpal_proj/cpal" }
 
 
 [dependencies]
@@ -45,16 +50,15 @@ parking_lot = "0.12.5"
 rfd = "0.16"
 okhsl = "1.0.1"
 serde = { version = "1.0", features = ["derive"] }
+# rust-embed = { version = "8.9", features = ["debug-embed"] }
+rust-embed = "8.9"
 
 [[bench]]
 name = "bench"
 harness = false
 
-[profile.dev]
-# opt-level = 1
-
-[profile.dev.package."*"]
-opt-level = 3
+# [profile.dev.package."*"]
+# opt-level = 3
 
 [profile.release]
 debug = 1 # for profiling

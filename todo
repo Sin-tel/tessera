@@ -28,9 +28,8 @@
   [x] rect select
   [x] edit tool routes rect select / move
   [x] move notes with keyboard
-  [x] move notes with keyboard
   [x] undo
-[ ] fix grab end
+[x] fix grab end
 [ ] pen tool
   [ ] line
   [ ] freehand
@@ -42,6 +41,7 @@
   [ ] vibrato
 [ ] lasso
 [x] better hit detection
+[ ] global UI scale
 
 [ ] Project tempo
 [ ] Project grid / time division
@@ -53,6 +53,8 @@
 [ ] UI editable labels
 [ ] UI context menu
 [-] UI dropdown
+[ ] allow dragging effects for reordering
+[ ] reorder channels
 [x] add instrument menu/list
 [x] add effects menu/list
 [x] Remove effect
@@ -134,4 +136,16 @@ Devices
 [ ] Modal synth
 [ ] Prepare for play (reset envs etc)
 [ ] Change sample rate
+[ ] Group channels
+[ ] Master channel
+[ ] Return tracks?
+[x] Polyphonic instruments
+[x] binaural panning
+[x] Support WASAPI
+[ ] Support macOS
+[ ] Support linux
+[ ] Automation
+[ ] Simple audio flow (parallel)
+[ ] Vst hosting (pianoteq)
+[x] FFT convolver
 

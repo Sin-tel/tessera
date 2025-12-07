@@ -23,14 +23,15 @@
 #![allow(clippy::get_first)]
 #![allow(clippy::too_many_arguments)]
 
-pub mod audio;
-pub mod context;
+mod audio;
+mod context;
 mod effect;
+pub mod embed;
 mod instrument;
-pub mod meters;
-pub mod midi;
-pub mod render;
-pub mod scope;
+mod meters;
+mod midi;
+mod render;
+mod scope;
 mod voice_manager;
 
 #[allow(dead_code)]
@@ -43,4 +44,4 @@ pub mod log;
 pub mod api;
 pub mod app;
 pub mod opengl;
-pub mod text;
+mod text;

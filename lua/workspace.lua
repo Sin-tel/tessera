@@ -1,313 +1,164 @@
+local Box = require("box")
 local ui = require("ui/ui")
+local views = require("views")
 
 local workspace = {}
 
-local Box = {}
-Box.__index = Box
+local Tab = {}
+Tab.__index = Tab
 
-function Box.new(x, y, w, h)
-	local self = setmetatable({}, Box)
+function Tab.new(name)
+	local self = setmetatable({}, Tab)
 
-	self.x = x or 0
-	self.y = y or 0
-	self.w = w or width
-	self.h = h or height
-
+	self.name = name
+	self.box = Box.new(0, ui.RIBBON_HEIGHT, width, height - ui.RIBBON_HEIGHT)
 	return self
 end
 
-function Box:scissor()
-	tessera.graphics.set_scissor(
-		self.x + ui.BORDER_SIZE,
-		self.y + ui.BORDER_SIZE,
-		self.w - (2 * ui.BORDER_SIZE),
-		self.h - (2 * ui.BORDER_SIZE)
-	)
+function Tab.from_data(data)
+	assert(data.name)
+	assert(data.box)
+	local box = Box.from_data(data.box)
+	return Tab.new(data.name, box)
 end
 
-function Box:draw()
-	if self.children then
-		for _, v in ipairs(self.children) do
-			v:draw()
-		end
-	else
-		self:scissor()
-
-		tessera.graphics.set_color(theme.background)
-		tessera.graphics.rectangle("fill", self.x, self.y, self.w, self.h)
-
-		tessera.graphics.push()
-		tessera.graphics.translate(self.x, self.y)
-		self.view:draw_full()
-		tessera.graphics.pop()
-
-		tessera.graphics.reset_scissor()
-
-		tessera.graphics.set_color(theme.borders)
-		tessera.graphics.rectangle(
-			"line",
-			self.x + ui.BORDER_SIZE,
-			self.y + ui.BORDER_SIZE,
-			self.w - (2 * ui.BORDER_SIZE),
-			self.h - (2 * ui.BORDER_SIZE),
-			ui.BORDER_RADIUS
-		)
-	end
+function Tab:to_data()
+	return {
+		name = self.name,
+		box = self.box:to_data(),
+	}
 end
 
-function Box:get_divider()
-	local mx = mouse.x - self.x
-	local my = mouse.y - self.y
-	if mx < 0 or my < 0 or mx > self.w or my > self.h then
-		return false
-	end
-	if self.children then
-		if self.vertical then
-			if math.abs(self.r - mx) < ui.RESIZE_W then
-				return self
-			else
-				local d1 = self.children[1]:get_divider()
-				if d1 then
-					return d1
-				end
-				local d2 = self.children[2]:get_divider()
-				if d2 then
-					return d2
-				end
-			end
-		else
-			if math.abs(self.r - my) < ui.RESIZE_W then
-				return self
-			else
-				local d1 = self.children[1]:get_divider()
-				if d1 then
-					return d1
-				end
-				local d2 = self.children[2]:get_divider()
-				if d2 then
-					return d2
-				end
-			end
-		end
-	end
-	return false
-end
-
-function Box:get()
-	local mx = mouse.x - self.x
-	local my = mouse.y - self.y
-	if mx < 0 or my < 0 or mx > self.w or my > self.h then
-		return false
-	end
-	if self.children then
-		if self.vertical then
-			local d1 = self.children[1]:get()
-			if d1 then
-				return d1
-			end
-			local d2 = self.children[2]:get()
-			if d2 then
-				return d2
-			end
-		else
-			local d1 = self.children[1]:get()
-			if d1 then
-				return d1
-			end
-			local d2 = self.children[2]:get()
-			if d2 then
-				return d2
-			end
-		end
-	end
-	return self
-end
-
-function Box:recalc(x, y, w, h)
-	if x then
-		if self.children then
-			if self.vertical then
-				self.r = self.r + (self.x - x)
-			else
-				self.r = self.r + (self.y - y)
-			end
-		end
-		self.x = x
-		self.y = y
-		self.w = w
-		self.h = h
-	end
-
-	self.x = math.floor(self.x)
-	self.y = math.floor(self.y)
-	self.w = math.floor(self.w)
-	self.h = math.floor(self.h)
-
-	if self.children then
-		if self.vertical then
-			self.children[1]:recalc(self.x, self.y, self.r, self.h)
-			self.children[2]:recalc(self.x + self.r, self.y, self.w - self.r, self.h)
-		else
-			self.children[1]:recalc(self.x, self.y, self.w, self.r)
-			self.children[2]:recalc(self.x, self.y + self.r, self.w, self.h - self.r)
-		end
-	end
-
-	if self.view then
-		self.view:set_dimensions()
-	end
-end
-
-function Box:get_bound_left()
-	if self.children then
-		return math.max(self.children[1]:get_bound_left(), self.children[2]:get_bound_left())
-	else
-		return self.x
-	end
-end
-
-function Box:get_bound_right()
-	if self.children then
-		return math.min(self.children[1]:get_bound_right(), self.children[2]:get_bound_right())
-	else
-		return self.x + self.w
-	end
-end
-
-function Box:get_bound_up()
-	if self.children then
-		return math.max(self.children[1]:get_bound_up(), self.children[2]:get_bound_up())
-	else
-		return self.y
-	end
-end
-
-function Box:get_bound_down()
-	if self.children then
-		return math.min(self.children[1]:get_bound_down(), self.children[2]:get_bound_down())
-	else
-		return self.y + self.h
-	end
-end
-
-function Box:set_split(x, y)
-	if not self.children then
-		error("Box has no div")
-	end
-	if self.vertical then
-		self.r = (x - self.x)
-	else
-		self.r = (y - self.y)
-	end
-
-	if self.vertical then
-		local bleft = self.children[1]:get_bound_left() - self.x + ui.MIN_SIZE
-		local bright = self.children[2]:get_bound_right() - self.x - ui.MIN_SIZE
-		self.r = math.min(math.max(self.r, bleft), bright)
-	else
-		local bup = self.children[1]:get_bound_up() - self.y + ui.MIN_SIZE
-		local bdown = self.children[2]:get_bound_down() - self.y - ui.MIN_SIZE
-		self.r = math.min(math.max(self.r, bup), bdown)
-	end
-
-	self:recalc()
-end
-
-function Box:split(r, vertical)
-	if self.children then
-		return false
-	end
-	self.children = {}
-	self.vertical = vertical
-	if vertical then
-		self.r = self.w * r
-		table.insert(self.children, Box.new())
-		table.insert(self.children, Box.new())
-	else
-		self.r = self.h * r
-		table.insert(self.children, Box.new())
-		table.insert(self.children, Box.new())
-	end
-
-	self:recalc()
-
-	return self.children[1], self.children[2]
-end
-
-function Box:resize(x, y, w, h)
-	if self.children then
-		if self.vertical then
-			self.r = w * self.r / self.w
-		else
-			self.r = h * self.r / self.h
-		end
-	end
-	self.x = x
-	self.y = y
-	self.w = w
-	self.h = h
-
-	if self.children then
-		if self.vertical then
-			self.r = math.min(math.max(self.r, ui.MIN_SIZE), self.w - ui.MIN_SIZE)
-		else
-			self.r = math.min(math.max(self.r, ui.MIN_SIZE), self.h - ui.MIN_SIZE)
-		end
-		if self.vertical then
-			self.children[1]:resize(self.x, self.y, self.r, self.h)
-			self.children[2]:resize(self.x + self.r, self.y, self.w - self.r, self.h)
-		else
-			self.children[1]:resize(self.x, self.y, self.w, self.r)
-			self.children[2]:resize(self.x, self.y + self.r, self.w, self.h - self.r)
-		end
-
-		self:set_split(self.x + self.r, self.y + self.r)
-	end
-end
-
-function Box:update_view()
-	if self.view then
-		self.view:update()
-	end
-	if self.children then
-		self.children[1]:update_view()
-		self.children[2]:update_view()
-	end
-end
-
-function Box:set_view(view)
-	if not self.children then
-		self.view = view
-		view.box = self
-	end
-end
-
-function Box:set_focus(focus)
-	self.focus = focus
-	if self.children then
-		self.children[1]:set_focus(focus)
-		self.children[2]:set_focus(focus)
-	end
+function Tab:update_view()
+	self.box:update_view()
 end
 
 function workspace:load()
 	self.w = width
 	self.h = height
-	self.box = Box.new(0, ui.RIBBON_HEIGHT, width, height - ui.RIBBON_HEIGHT)
+
+	self.tab_current = 1
+	self.tab_hover = nil
 
 	self.cpu_load = 0
 	self.meter = { l = 0, r = 0 }
+
+	self.tabs = {}
+
+	-- Load default workspace
+
+	--- main
+	local main = Tab.new("Main")
+
+	local left, right = main.box:split(0.7, true)
+	local top_left, middle_left = left:split(0.2, false)
+	local top_right, bottom_rigth = right:split(0.35, false)
+
+	top_left:set_view(views.Scope.new(false))
+	middle_left:set_view(views.Canvas.new())
+
+	-- top_left:set_view(views.Canvas.new())
+	-- middle_left:set_view(views.TestPad.new())
+
+	top_right:set_view(views.Channels.new())
+	bottom_rigth:set_view(views.ChannelSettings.new())
+
+	table.insert(self.tabs, main)
+
+	--- settings
+	local settings = Tab.new("Settings")
+	settings.box:set_view(views.Settings.new())
+
+	table.insert(self.tabs, settings)
+
+	--- debug
+	if not release then
+		local debug_tab = Tab.new("Debug")
+		local left2, right2 = debug_tab.box:split(0.5, true)
+		left2:set_view(views.Debug.new())
+		right2:set_view(views.UiTest.new())
+		table.insert(self.tabs, debug_tab)
+	end
+end
+
+function workspace:to_data()
+	local data = {}
+
+	data.tabs = {}
+	for i, v in ipairs(self.tabs) do
+		data.tabs[i] = v:to_data()
+	end
+
+	data.tab_current = self.tab_current
+
+	return data
+end
+
+function workspace:switch_tab(prev)
+	if prev then
+		if self.tab_current == 1 then
+			self.tab_current = #self.tabs
+		else
+			self.tab_current = self.tab_current - 1
+		end
+	else
+		if self.tab_current == #self.tabs then
+			self.tab_current = 1
+		else
+			self.tab_current = self.tab_current + 1
+		end
+	end
+	-- refresh the new tab
+	self:resize(self.w, self.h)
 end
 
 function workspace:resize(w, h)
 	self.w = w
 	self.h = h
 
-	self.box:resize(0, ui.RIBBON_HEIGHT, w, h - ui.RIBBON_HEIGHT)
-	self.box:resize(0, ui.RIBBON_HEIGHT, w, h - ui.RIBBON_HEIGHT) -- second time to satisfy constraints properly
+	local box = self.tabs[self.tab_current].box
+	local y = ui.RIBBON_HEIGHT
+	local h2 = h - ui.RIBBON_HEIGHT - ui.STATUS_HEIGHT
+	box:resize(0, y, w, h2)
+	-- second time to satisfy constraints properly
+	-- box:resize(0, y, w, h2)
 end
 
 function workspace:draw()
+	tessera.graphics.set_font_size()
+	-- menus
+	-- TODO: just a mockup currently
+	local sw = 60
+	tessera.graphics.set_color(theme.ui_text)
+	tessera.graphics.label("File", 16, 2, sw, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_LEFT)
+	tessera.graphics.label("Options", 16 + sw, 2, sw, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_LEFT)
+
+	-- tabs
+	-- TODO: just a mockup currently
+	local st = 160
+
+	local pad = ui.PAD
+	tessera.graphics.set_font_size()
+	for i, v in ipairs(self.tabs) do
+		if i == self.tab_current then
+			tessera.graphics.set_color(theme.header)
+		elseif i == self.tab_hover then
+			tessera.graphics.set_color(theme.bg_highlight)
+		else
+			tessera.graphics.set_color(theme.background)
+		end
+		tessera.graphics.rectangle("fill", st * i, pad, st - pad, ui.RIBBON_HEIGHT + 10, ui.BORDER_RADIUS)
+
+		tessera.graphics.set_color(theme.ui_text)
+		tessera.graphics.label(v.name, st * i, 2, st - pad, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_CENTER)
+	end
+
+	tessera.graphics.set_color(theme.background)
+	tessera.graphics.rectangle("fill", st * (#self.tabs + 1), pad, 32, ui.RIBBON_HEIGHT + 10, ui.BORDER_RADIUS)
+	tessera.graphics.set_color(theme.ui_text)
+	tessera.graphics.label("+", st * (#self.tabs + 1), 2, 32, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_CENTER)
+
+	-- CPU meter
 	local ll = util.clamp(self.cpu_load, 0.01, 1)
 	local hl_col = theme.cpu_meter
 	if self.cpu_load > 1.0 then
@@ -325,14 +176,16 @@ function workspace:draw()
 	tessera.graphics.rectangle("fill", x1, y1, w1 * ll, h1)
 	tessera.graphics.set_color(theme.line)
 	tessera.graphics.rectangle("line", x1, y1, w1, h1, 2)
-	tessera.graphics.set_color(theme.ui_text)
 
+	tessera.graphics.set_color(theme.ui_text)
 	local cpu_label = "offline"
 	if tessera.audio.ok() then
 		cpu_label = string.format("%d %%", 100 * self.cpu_load)
 	end
 	tessera.graphics.label(cpu_label, x1, 0, w1, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_CENTER)
 	tessera.graphics.label("CPU: ", x1 - w1, 0, w1, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_RIGHT)
+
+	-- master meters
 
 	w1 = 96
 	h1 = 16
@@ -362,20 +215,28 @@ function workspace:draw()
 	tessera.graphics.rectangle("line", x1, y1 - 0.5, w1, h1, 2)
 	tessera.graphics.set_color(theme.ui_text)
 
-	self.box:draw()
+	self.tabs[self.tab_current].box:draw()
+
+	-- status bar
+	tessera.graphics.set_color(theme.background)
+	tessera.graphics.rectangle("fill", 0, self.h - ui.STATUS_HEIGHT, self.w, ui.STATUS_HEIGHT)
+	tessera.graphics.set_color(theme.borders)
+	tessera.graphics.line(0, self.h - ui.STATUS_HEIGHT, self.w, self.h - ui.STATUS_HEIGHT)
 end
 
 function workspace:update()
 	if self.drag_div and mouse.drag then
 		self.drag_div:set_split(mouse.x, mouse.y)
 	end
-	-- update
-	self.box:update_view()
+
+	-- update active tab
+	local tab = self.tabs[self.tab_current]
+	tab.box:update_view()
 
 	local div = self.drag_div
 	if not mouse.is_down then
-		div = div or self.box:get_divider()
-		self.box:set_focus(false)
+		div = div or tab.box:get_divider()
+		tab.box:set_focus(false)
 		self.focus = nil
 	end
 	if div then
@@ -386,10 +247,10 @@ function workspace:update()
 		end
 	else
 		if not mouse.is_down then
-			local b = self.box:get()
+			local b = tab.box:get()
 			if b then
 				b.focus = true
-				self.focus = b.view
+				self.focus = b
 			end
 		end
 	end
@@ -398,27 +259,28 @@ end
 function workspace:mousepressed()
 	local div = false
 	if mouse.button == 1 then
-		div = self.box:get_divider(mouse.x, mouse.y)
+		local tab = self.tabs[self.tab_current]
+		div = tab.box:get_divider(mouse.x, mouse.y)
 		if div then
 			self.drag_div = div
 		end
 	end
 
 	if not div and self.focus then
-		self.focus:mousepressed()
+		self.focus.view:mousepressed()
 	end
 end
 
 function workspace:mousereleased()
 	self.drag_div = nil
 	if self.focus then
-		self.focus:mousereleased()
+		self.focus.view:mousereleased()
 	end
 end
 
 function workspace:keypressed(key)
 	if self.focus then
-		return self.focus:keypressed(key)
+		return self.focus.view:keypressed(key)
 	end
 end
 

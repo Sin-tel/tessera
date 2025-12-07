@@ -54,10 +54,6 @@ local function do_patches(p)
 	end
 end
 
-local function version_str(version)
-	return version.MAJOR .. "." .. version.MINOR .. "." .. version.PATCH
-end
-
 function save.read(filename)
 	if not util.file_exists(filename) then
 		log.warn('could not find "' .. filename .. '"')
@@ -71,8 +67,8 @@ function save.read(filename)
 	local new_project = setfenv(loadstring(content), {})()
 
 	-- we will check versions, but only emit a warning
-	local current_v = version_str(VERSION)
-	local project_v = version_str(new_project.VERSION)
+	local current_v = util.version_str(VERSION)
+	local project_v = util.version_str(new_project.VERSION)
 	if project_v ~= current_v then
 		log.warn(
 			"Save file was created with version "

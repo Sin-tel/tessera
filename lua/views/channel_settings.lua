@@ -12,8 +12,8 @@ function ChannelSettings.new()
 	self.ui = Ui.new(self)
 
 	self.effect_list = {}
-	for k, v in pairs(device_list.effects) do
-		table.insert(self.effect_list, k)
+	for key in pairs(device_list.effects) do
+		table.insert(self.effect_list, key)
 	end
 	table.sort(self.effect_list)
 	self.dropdown = widgets.Dropdown.new({ title = "add effect", list = self.effect_list })
@@ -23,7 +23,7 @@ end
 
 function ChannelSettings:update()
 	self.ui:start_frame()
-	self.ui.layout:row(self.w)
+	self.ui.layout:col(self.w * 0.33)
 	local add_effect_index = self.dropdown:update(self.ui)
 
 	-- TODO: should calculate this in device instead
