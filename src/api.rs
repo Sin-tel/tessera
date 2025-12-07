@@ -7,6 +7,7 @@ mod mouse;
 pub mod project;
 
 use crate::app::State;
+use crate::embed::setup_lua_loader;
 use crate::log::log_warn;
 use mlua::prelude::*;
 use std::sync::mpsc;
@@ -17,6 +18,8 @@ pub fn create_lua() -> LuaResult<Lua> {
 
 	// #[cfg(not(debug_assertions))]
 	// let lua = Lua::new();
+
+	setup_lua_loader(&lua)?;
 
 	// main tessera table
 	let tessera = lua.create_table()?;

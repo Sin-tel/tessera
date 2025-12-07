@@ -12,15 +12,16 @@ use winit::application::ApplicationHandler;
 use winit::event::DeviceId;
 use winit::event::{DeviceEvent, ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
-use winit::keyboard::{Key, PhysicalKey, KeyCode};
+use winit::keyboard::{Key, KeyCode, PhysicalKey};
 use winit::window::WindowId;
 
 use tessera::api::create_lua;
 use tessera::api::image::load_images;
 use tessera::api::keycodes::keycode_to_str;
-use tessera::opengl::setup_window;
+use tessera::embed::Script;
 use tessera::opengl::Surface;
 use tessera::opengl::WindowSurface;
+use tessera::opengl::setup_window;
 
 fn wrap_call<T: IntoLuaMulti>(status: &mut Status, lua_fn: &LuaFunction, args: T) {
 	if let Status::Error(_) = status {
@@ -52,11 +53,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn test_run() -> LuaResult<()> {
 	// Basic checks for CI without initializing any graphics or audio
 	let lua = create_lua()?;
-	lua.load("package.path = package.path .. ';lua/?.lua;'").exec()?;
 
 	init_logging();
 
-	let lua_main = fs::read_to_string("lua/main.lua").unwrap();
+	let lua_main = &*Script::get("main.lua").unwrap().data;
 	lua.load(lua_main).set_name("@lua/main.lua").exec()?;
 
 	let hooks = Hooks::new(&lua)?;
@@ -72,14 +72,12 @@ fn run() -> LuaResult<()> {
 	let (canvas, event_loop, surface, window) = setup_window();
 
 	let lua = create_lua()?;
-	lua.set_app_data(State::new(canvas, window));
 
-	// set import path so 'require' works
-	lua.load("package.path = package.path .. ';lua/?.lua;'").exec()?;
+	lua.set_app_data(State::new(canvas, window));
 
 	init_logging();
 
-	let lua_main = fs::read_to_string("lua/main.lua").unwrap();
+	let lua_main = &*Script::get("main.lua").unwrap().data;
 	lua.load(lua_main).set_name("@lua/main.lua").exec()?;
 
 	load_images(&lua)?;
@@ -167,7 +165,9 @@ impl ApplicationHandler for App {
 
 				match state {
 					ElementState::Pressed => {
-						if let Status::Error(_) = self.status && keycode == KeyCode::Escape {
+						if let Status::Error(_) = self.status
+							&& keycode == KeyCode::Escape
+						{
 							event_loop.exit();
 						}
 						wrap_call(&mut self.status, &self.hooks.keypressed, (key, key_str, repeat));
@@ -210,7 +210,6 @@ impl ApplicationHandler for App {
 				let (x, y) = self.lua.app_data_ref::<State>().unwrap().mouse_position;
 				match state {
 					ElementState::Pressed => {
-
 						wrap_call(
 							&mut self.status,
 							&self.hooks.mousepressed,

@@ -26,6 +26,7 @@
 mod audio;
 mod context;
 mod effect;
+pub mod embed;
 mod instrument;
 mod meters;
 mod midi;
