@@ -378,3 +378,27 @@ function tessera.quit()
 	-- save.write_workspace()
 	log.info("Quitting")
 end
+
+function tessera.draw_error(msg)
+	-- TODO: we can save project here, and try to restore on next run
+
+	tessera.graphics.set_color(theme.borders)
+	tessera.graphics.rectangle("fill", 0, 0, width, height)
+
+	tessera.graphics.set_color(theme.background)
+	tessera.graphics.rectangle("fill", 16, 16, width - 32, height - 32)
+
+	tessera.graphics.set_color(theme.ui_text)
+	tessera.graphics.set_font_size(20)
+	tessera.graphics.set_font_main()
+
+	local x, y = 80, 80
+	for line in msg:gmatch("([^\n]*)\n?") do
+		y = y + 24
+		tessera.graphics.text(line, x, y)
+	end
+
+	y = y + 10
+	tessera.graphics.set_font_size(16)
+	tessera.graphics.text("Press escape to exit.", x, y)
+end
