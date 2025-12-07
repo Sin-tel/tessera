@@ -38,7 +38,7 @@ add cpu to atomics
 CI:
     https://corrode.dev/blog/tips-for-faster-ci-builds/
       - uses: Swatinem/rust-cache@v2
-    pack settings/lua (not assets)
+    pack settings (not assets)
     fix path
     add cargo run --test-run
 
@@ -56,10 +56,6 @@ add view resized callback
 
 add some way to tune instruments properly
  - can be done semi-automatically?
-
-cargo-embed
-
-lua error state
 
 render in HDR and add bloom?
 

@@ -1,3 +1,4 @@
+use crate::embed::Asset;
 use crate::log_info;
 use crate::opengl::Renderer;
 use cosmic_text::fontdb;
@@ -256,8 +257,9 @@ impl TextEngine {
 		// let mut font_system = FontSystem::new();
 
 		let mut db = fontdb::Database::new();
-		db.load_font_data(include_bytes!("../assets/font/inter.ttf").to_vec());
-		db.load_font_data(include_bytes!("../assets/font/notes.ttf").to_vec());
+
+		db.load_font_data(Asset::get("font/inter.ttf").unwrap().data.to_vec());
+		db.load_font_data(Asset::get("font/notes.ttf").unwrap().data.to_vec());
 
 		// dbg!(&db.faces().last().unwrap().families);
 
