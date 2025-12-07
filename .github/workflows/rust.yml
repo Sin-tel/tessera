@@ -16,6 +16,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - uses: Swatinem/rust-cache@v2
     - name: Cache Linux audio packages
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
@@ -24,11 +25,11 @@ jobs:
     - name: Build
       run: cargo build --verbose
 
-    - name: Run tests
+    - name: Tests
       run: cargo test --verbose -- --nocapture
 
     - name: Test run
-      run: cargo run --release -- --test-run
+      run: cargo run -- --test-run
 
   build-macos:
 
@@ -36,14 +37,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - uses: Swatinem/rust-cache@v2
     - name: Build
       run: cargo build --verbose
 
-    - name: Run tests
+    - name: Tests
       run: cargo test verbose -- --nocapture
 
     - name: Test run
-      run: cargo run --release -- --test-run
+      run: cargo run -- --test-run
 
   build-windows:
 
@@ -54,6 +56,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - uses: Swatinem/rust-cache@v2
     - name: Setup ASIO SDK
       run: |
         curl -L -o asio.zip https://www.steinberg.net/asiosdk
@@ -65,19 +68,24 @@ jobs:
     - name: Build
       run: cargo build --verbose
 
-    - name: Run tests
+    - name: Tests
       run: cargo test verbose -- --nocapture
+
+    - name: Test run
+      run: cargo run -- --test-run
 
     - name: Build Release
       run: cargo build --release
 
-    - name: Test run
-      run: cargo run --release -- --test-run
+    - name: Prepare artifact
+      run: |
+        rm settings/setup.lua
+        mkdir artifact
+        cp target/release/tessera.exe artifact/
+        cp -r settings artifact/
 
-    - name: Upload Artifact
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: tessera_win
-        path: |
-          target/release/tessera.exe
-          settings/
+        path: artifact/
