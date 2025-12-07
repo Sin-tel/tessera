@@ -78,7 +78,7 @@ function engine.render_start()
 	audio_status = "render"
 
 	engine.render_end = engine.end_time() + 2.0
-	engine.render_progress = 0
+	engine.render_progress = project.transport.start_time
 
 	if engine.playing then
 		engine.stop()
@@ -92,6 +92,10 @@ function engine.render_start()
 
 	tessera.audio.set_rendering(true)
 	tessera.audio.clear_messages()
+end
+
+function engine.get_progress_relative()
+	return (engine.render_progress - project.transport.start_time) / (engine.render_end - project.transport.start_time)
 end
 
 function engine.render()
@@ -185,6 +189,9 @@ local M_DECAY = 0.7
 
 function engine.update_meters()
 	local meters = tessera.audio.get_meters()
+	if not meters then
+		return
+	end
 	for _, ch in ipairs(ui_channels) do
 		local i = ch.instrument.meter_id
 		ch.instrument.meter_l = math.max(meters[i][1], ch.instrument.meter_l * M_DECAY)

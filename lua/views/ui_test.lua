@@ -9,7 +9,7 @@ function UiTest.new()
 	local self = setmetatable({}, UiTest)
 
 	self.state = {
-		toggle = false,
+		toggle = 0,
 		combo = 1,
 		slider = 200,
 	}
@@ -29,9 +29,8 @@ end
 function UiTest:update()
 	self.ui:start_frame()
 
-	self.ui:label("left aligned label")
-
 	self.ui.layout:col(self.w * 0.5)
+	self.ui:label("left aligned label")
 	self.ui.layout:col(self.w * 0.3)
 	self.dropdown:update(self.ui, self.state, "combo")
 	self.ui.layout:new_row()
@@ -41,7 +40,11 @@ function UiTest:update()
 
 	self.ui.layout:col(self.w * 0.3)
 	if self.button:update(self.ui) then
-		command.run_and_register(command.Change.new(self.state, "toggle", not self.state.toggle))
+		local new_text = self.button.text .. "!"
+		if self.button.text == "click me" then
+			new_text = "click!"
+		end
+		command.run_and_register(command.Change.new(self.button, "text", new_text))
 	end
 	self.ui.layout:new_row()
 

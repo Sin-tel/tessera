@@ -183,6 +183,10 @@ function util.capitalize(s)
 	return s:sub(1, 1):upper() .. s:sub(2):lower()
 end
 
+function util.version_str(version)
+	return version.MAJOR .. "." .. version.MINOR .. "." .. version.PATCH
+end
+
 function util.writefile(filename, contents)
 	local file, err = io.open(filename, "w")
 	if err then
