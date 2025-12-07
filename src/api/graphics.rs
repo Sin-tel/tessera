@@ -65,8 +65,12 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	graphics.set(
 		"get_dimensions",
 		lua.create_function(|lua, ()| {
-			let state = lua.app_data_ref::<State>().unwrap();
-			Ok(state.window_size)
+			// This function runs on load so it needs to work without any state attached
+			if let Some(state) = lua.app_data_ref::<State>() {
+				Ok(state.window_size)
+			} else {
+				Ok((400, 400))
+			}
 		})?,
 	)?;
 

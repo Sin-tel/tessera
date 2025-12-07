@@ -1,7 +1,8 @@
-// #![windows_subsystem = "windows"]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use femtovg::Color;
 use mlua::prelude::*;
+use std::error::Error;
 use std::fs;
 use std::time::{Duration, Instant};
 use tessera::app::State;
@@ -31,10 +32,41 @@ fn wrap_call<T: IntoLuaMulti>(lua_fn: &LuaFunction, args: T) {
 	}
 }
 
-fn main() {
-	if let Err(e) = run() {
-		log_error!("{e}");
+fn main() -> Result<(), Box<dyn Error>> {
+	// Make sure output folder exists before we do anything
+	fs::create_dir_all("./out")?;
+
+	if std::env::args().any(|arg| arg == "--test-run") {
+		test_run()?
+	} else {
+		if let Err(e) = run() {
+			log_error!("{e}");
+		}
 	}
+
+	Ok(())
+}
+
+fn test_run() -> LuaResult<()> {
+	// Basic checks for CI without initializing any graphics or audio
+	let lua = create_lua()?;
+	lua.load("package.path = package.path .. ';lua/?.lua;'").exec()?;
+
+	init_logging();
+
+	let lua_main = fs::read_to_string("lua/main.lua").unwrap();
+	lua.load(lua_main).set_name("@lua/main.lua").exec()?;
+
+	let tessera: LuaTable = lua.globals().get("tessera")?;
+	let load: LuaFunction = tessera.get("load").unwrap();
+	wrap_call(&load, true);
+
+	// TODO: query audio and midi devices
+
+	let quit: LuaFunction = tessera.get("quit").unwrap();
+	wrap_call(&quit, ());
+
+	return Ok(());
 }
 
 fn run() -> LuaResult<()> {

@@ -14,12 +14,10 @@ pub struct Convolve {
 impl Effect for Convolve {
 	fn new(_sample_rate: f32) -> Self {
 		// TODO: abstract out wav handling into seperate module
-		// TODO: share resources (lazy_static?). we dont need to reload the file for every instance.
-		//       can also just include_bytes and not deal with any resource loading
+		// TODO: select between different samples
 
-		// let reader = hound::WavReader::open("assets/samples/noise_ir.wav").unwrap();
-		// let reader = hound::WavReader::open("assets/samples/noise_ir2.wav").unwrap();
-		let reader = hound::WavReader::open("assets/samples/noise_ir3.wav").unwrap();
+		const FILE: &[u8] = include_bytes!("../../assets/samples/noise_ir3.wav");
+		let reader = hound::WavReader::new(FILE).unwrap();
 
 		let spec = reader.spec();
 

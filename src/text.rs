@@ -259,6 +259,8 @@ impl TextEngine {
 		db.load_font_data(include_bytes!("../assets/font/inter.ttf").to_vec());
 		db.load_font_data(include_bytes!("../assets/font/notes.ttf").to_vec());
 
+		// dbg!(&db.faces().last().unwrap().families);
+
 		let mut font_system =
 			FontSystem::new_with_locale_and_db_and_fallback("en-US".into(), db, MyFallback {});
 
