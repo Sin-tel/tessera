@@ -12,12 +12,12 @@ function Channels.new()
 	self.ui = Ui.new(self)
 
 	self.intrument_list = {}
-	for k, v in pairs(device_list.instruments) do
-		table.insert(self.intrument_list, k)
+	for key in pairs(device_list.instruments) do
+		table.insert(self.intrument_list, key)
 	end
 	table.sort(self.intrument_list)
 
-	self.dropdown = widgets.Dropdown.new({ title = "add instrument", list = self.intrument_list, has_state = false })
+	self.dropdown = widgets.Dropdown.new({ title = "add channel", list = self.intrument_list, has_state = false })
 
 	return self
 end
@@ -25,11 +25,10 @@ end
 function Channels:update()
 	self.ui:start_frame()
 	self.ui.layout:padding()
-	self.ui.layout:row(self.w)
+	self.ui.layout:col(self.w * 0.33)
 	local add_instrument_index = self.dropdown:update(self.ui)
 
 	self.ui.layout:padding(0)
-
 	if add_instrument_index then
 		local intrument_name = self.intrument_list[add_instrument_index]
 

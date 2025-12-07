@@ -20,8 +20,9 @@ function Debug:draw()
 
 	tessera.graphics.set_color(theme.ui_text)
 
-	local fsize = mx * 0.01 + 12
-	-- fsize = math.floor(fsize * 4) / 4
+	-- local fsize = mx * 0.01 + 12
+	local fsize = 18
+
 	tessera.graphics.set_font_size(fsize)
 
 	local ls = fsize * 1.5
