@@ -1,6 +1,6 @@
 -- exclude_files = { "**/lib/*.lua" }
 
-std = "max+tessera"
+std = "luajit+tessera"
 stds.tessera = {
    globals = {
       "tessera",
