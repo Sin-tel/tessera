@@ -249,7 +249,7 @@ pub struct TextEngine {
 	scratch_buffer: Buffer,
 }
 
-const SHAPING: Shaping = Shaping::Basic;
+const SHAPING: Shaping = Shaping::Advanced;
 
 impl TextEngine {
 	pub fn new() -> Self {
