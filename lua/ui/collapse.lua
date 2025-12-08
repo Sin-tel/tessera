@@ -54,7 +54,7 @@ function Collapse:draw(x, y, w, h)
 
 	tessera.graphics.set_font_size(Ui.TITLE_FONT_SIZE)
 	tessera.graphics.label(self.text, x + left_pad, y, w - left_pad, h)
-	tessera.graphics.set_font_size(Ui.DEFAULT_FONT_SIZE)
+	tessera.graphics.set_font_size()
 end
 
 return Collapse

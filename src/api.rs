@@ -12,12 +12,12 @@ use crate::log::log_warn;
 use mlua::prelude::*;
 use std::sync::mpsc;
 
-pub fn create_lua() -> LuaResult<Lua> {
-	// #[cfg(debug_assertions)]
+pub fn create_lua(scale_factor: f64) -> LuaResult<Lua> {
+	#[cfg(debug_assertions)]
 	let lua = unsafe { Lua::unsafe_new() };
 
-	// #[cfg(not(debug_assertions))]
-	// let lua = Lua::new();
+	#[cfg(not(debug_assertions))]
+	let lua = Lua::new();
 
 	setup_lua_loader(&lua)?;
 
@@ -25,7 +25,7 @@ pub fn create_lua() -> LuaResult<Lua> {
 	let tessera = lua.create_table()?;
 
 	// tessera.graphics
-	tessera.set("graphics", graphics::create(&lua)?)?;
+	tessera.set("graphics", graphics::create(&lua, scale_factor)?)?;
 
 	// tessera.mouse
 	tessera.set("mouse", mouse::create(&lua)?)?;

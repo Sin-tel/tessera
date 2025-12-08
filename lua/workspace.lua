@@ -79,6 +79,9 @@ function workspace:load()
 		right2:set_view(views.UiTest.new())
 		table.insert(self.tabs, debug_tab)
 	end
+
+	-- set initial size
+	self:resize(self.w, self.h)
 end
 
 function workspace:to_data()
@@ -120,8 +123,6 @@ function workspace:resize(w, h)
 	local y = ui.RIBBON_HEIGHT
 	local h2 = h - ui.RIBBON_HEIGHT - ui.STATUS_HEIGHT
 	box:resize(0, y, w, h2)
-	-- second time to satisfy constraints properly
-	-- box:resize(0, y, w, h2)
 end
 
 function workspace:draw()

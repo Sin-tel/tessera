@@ -38,12 +38,14 @@ pub struct State {
 	pub project: Option<Project>,
 	pub canvas: Canvas<Renderer>,
 	pub window: Window,
+	pub scale_factor: f32,
 	pub dialog_rx: Option<mpsc::Receiver<Option<PathBuf>>>,
 	token: Token,
 }
 
 impl State {
 	pub fn new(canvas: Canvas<Renderer>, window: Window) -> Self {
+		let scale_factor = window.scale_factor() as f32;
 		State {
 			current_color: Color::white(),
 			mouse_position: (0., 0.),
@@ -62,6 +64,7 @@ impl State {
 			token: 0,
 			canvas,
 			window,
+			scale_factor,
 			dialog_rx: None,
 		}
 	}

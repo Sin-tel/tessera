@@ -4,23 +4,28 @@ local mouse = require("mouse")
 local Ui = {}
 Ui.__index = Ui
 
-Ui.RESIZE_W = 5
-Ui.MIN_SIZE = 32
-Ui.HEADER = 32
-Ui.BORDER_RADIUS = 4
-Ui.BORDER_SIZE = 1
-Ui.RIBBON_HEIGHT = 32
-Ui.STATUS_HEIGHT = 20
+-- TODO: we need to update this in a lot more places
+local function scale(x)
+	return math.floor(x * tessera.graphics.scale_factor + 0.5)
+end
+Ui.scale = scale
 
-Ui.ROW_HEIGHT = 28
-Ui.PARAMETER_LABEL_WIDTH = 150 -- max width of parameter labels
-Ui.PARAMETER_PAD = 8 -- padding for parameters
-Ui.BUTTON_SMALL = 18
-Ui.CORNER_RADIUS = 4
+Ui.RESIZE_W = scale(5)
+Ui.MIN_SIZE = scale(32)
+Ui.HEADER = scale(32)
+Ui.BORDER_RADIUS = scale(4)
+Ui.BORDER_SIZE = scale(1)
+Ui.RIBBON_HEIGHT = scale(32)
+Ui.STATUS_HEIGHT = scale(20)
 
-Ui.PAD = 5
-Ui.DEFAULT_FONT_SIZE = 14
-Ui.TITLE_FONT_SIZE = 16
+Ui.ROW_HEIGHT = scale(28)
+Ui.PARAMETER_LABEL_WIDTH = scale(150) -- max width of parameter labels
+Ui.PARAMETER_PAD = scale(8) -- padding for parameters
+Ui.BUTTON_SMALL = scale(18)
+Ui.CORNER_RADIUS = scale(4)
+
+Ui.PAD = scale(5)
+Ui.TITLE_FONT_SIZE = scale(16)
 
 function Ui.new(view)
 	local self = setmetatable({}, Ui)
