@@ -26,48 +26,61 @@ pub struct Connection {
 	pub name: String,
 }
 
-pub fn port_names() -> Vec<String> {
-	let midi_in = MidiInput::new("midir test input").unwrap();
-	let ports = midi_in.ports();
+pub fn open_midi() -> Option<MidiInput> {
+	match MidiInput::new("midir input") {
+		Ok(midi_in) => Some(midi_in),
+		Err(e) => {
+			log_error!("{e}");
+			None
+		},
+	}
+}
 
-	ports.iter().map(|p| midi_in.port_name(p).unwrap()).collect()
+pub fn port_names() -> Vec<String> {
+	if let Some(midi_in) = open_midi() {
+		let ports = midi_in.ports();
+		ports.iter().map(|p| midi_in.port_name(p).unwrap()).collect()
+	} else {
+		Vec::new()
+	}
 }
 
 pub fn connect(port_name: &str) -> Option<Connection> {
-	let mut midi_in = MidiInput::new("midir input").unwrap();
-	// ignore sysex and such
-	midi_in.ignore(Ignore::All);
+	if let Some(mut midi_in) = open_midi() {
+		// ignore sysex and such
+		midi_in.ignore(Ignore::All);
 
-	for p in &midi_in.ports() {
-		let name = midi_in.port_name(p).unwrap();
+		for p in &midi_in.ports() {
+			let name = midi_in.port_name(p).unwrap();
 
-		if name.to_lowercase().contains(&port_name.to_lowercase()) {
-			let (midi_tx, midi_rx) = HeapRb::<Event>::new(256).split();
+			if name.to_lowercase().contains(&port_name.to_lowercase()) {
+				let (midi_tx, midi_rx) = HeapRb::<Event>::new(256).split();
 
-			let connect_result = midi_in.connect(
-				p,
-				"midir-test",
-				|_stamp, message, midi_rx| {
-					let event = Event::from_bytes(message);
-					if let Some(e) = event
-						&& midi_rx.try_push(e).is_err()
-					{
-						log_warn!("Midi queue full!");
-					}
-				},
-				midi_tx,
-			);
+				let connect_result = midi_in.connect(
+					p,
+					"midir-test",
+					|_stamp, message, midi_rx| {
+						let event = Event::from_bytes(message);
+						if let Some(e) = event
+							&& midi_rx.try_push(e).is_err()
+						{
+							log_warn!("Midi queue full!");
+						}
+					},
+					midi_tx,
+				);
 
-			match connect_result {
-				Ok(connection) => {
-					log_info!("Succesfully opened midi port \"{name}\".");
-					return Some(Connection { connection, midi_rx, name });
-				},
-				Err(err) => {
-					log_error!("Failed to open midi port \"{port_name}\".");
-					log_error!("\t{err}");
-					return None;
-				},
+				match connect_result {
+					Ok(connection) => {
+						log_info!("Succesfully opened midi port \"{name}\".");
+						return Some(Connection { connection, midi_rx, name });
+					},
+					Err(err) => {
+						log_error!("Failed to open midi port \"{port_name}\".");
+						log_error!("\t{err}");
+						return None;
+					},
+				}
 			}
 		}
 	}

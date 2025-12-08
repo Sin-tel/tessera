@@ -14,16 +14,22 @@ local function event_note_index(event)
 end
 
 function midi.load()
-	devices = {}
+	midi.ok = tessera.midi.status()
 
-	local ports = tessera.midi.ports()
-	if #ports == 0 then
-		log.info("No midi input ports available.")
-	else
-		log.info("Available midi input ports:")
-		for i, name in ipairs(ports) do
-			log.info(" - " .. tostring(i) .. ': "' .. name .. '"')
+	if midi.ok then
+		devices = {}
+
+		local ports = tessera.midi.ports()
+		if #ports == 0 then
+			log.info("No midi input ports available.")
+		else
+			log.info("Available midi input ports:")
+			for i, name in ipairs(ports) do
+				log.info(" - " .. tostring(i) .. ': "' .. name .. '"')
+			end
 		end
+	else
+		log.info("Midi failed to intialize. Proceeding without.")
 	end
 end
 
@@ -80,6 +86,10 @@ function midi.new_device(settings, name, config_name)
 end
 
 function midi.update(dt)
+	if not midi.ok then
+		return
+	end
+
 	scan_device_timer = scan_device_timer - dt
 	if scan_device_timer < 0 then
 		-- scan every .5 seconds
