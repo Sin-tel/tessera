@@ -267,9 +267,8 @@ function Box:resize(x, y, w, h)
 			self.children[1]:resize(self.x, self.y, self.w, h2)
 			self.children[2]:resize(self.x, self.y + h2, self.w, self.h - h2)
 		end
-
-		self:set_split(self.x + w2, self.y + h2)
 	end
+	self:recalc()
 end
 
 function Box:update_view()
