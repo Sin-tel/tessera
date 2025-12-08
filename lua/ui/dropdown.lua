@@ -1,3 +1,5 @@
+-- TODO: replace this with an overlay of sorts
+
 local Ui = require("ui/ui")
 
 local Button = {}
@@ -12,9 +14,11 @@ function Dropdown.new(options)
 	self.title = options.title
 	self.open = false
 
-	self.has_state = options.has_state
+	self.no_state = options.no_state
 
-	if not self.has_state then
+	self.no_undo = options.no_undo
+
+	if self.no_state then
 		assert(self.title)
 	end
 
@@ -27,7 +31,7 @@ function Dropdown.new(options)
 end
 
 function Dropdown:update(ui, target, key)
-	-- note: no need to pass `target, key` if `has_state = false`
+	-- note: no need to pass `target, key` if `no_state = true`
 
 	local x, y, w, h = ui:next()
 	local new_index
@@ -43,8 +47,12 @@ function Dropdown:update(ui, target, key)
 			end
 		end
 
-		if new_index and self.has_state then
-			command.run_and_register(command.Change.new(target, key, new_index))
+		if new_index and not self.no_state then
+			if self.no_undo then
+				target[key] = new_index
+			else
+				command.run_and_register(command.Change.new(target, key, new_index))
+			end
 		end
 
 		if mouse.button_released then
@@ -58,7 +66,7 @@ function Dropdown:update(ui, target, key)
 	end
 
 	local label = self.title
-	if self.has_state then
+	if not self.no_state then
 		local index = target[key]
 		label = self.list[index].text
 	end
@@ -93,7 +101,11 @@ function Dropdown:draw(ui, label, x, y, w, h)
 		tessera.graphics.rectangle("line", x, y, w, th, Ui.CORNER_RADIUS)
 	end
 
-	tessera.graphics.set_color(theme.ui_text)
+	if self.open then
+		tessera.graphics.set_color(theme.text_tip)
+	else
+		tessera.graphics.set_color(theme.ui_text)
+	end
 	tessera.graphics.label(label, x, y, w, h, tessera.graphics.ALIGN_CENTER)
 end
 

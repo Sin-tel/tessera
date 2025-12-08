@@ -23,6 +23,9 @@ Options
  - follow
  - chase midi notes
 
+get rid of /settings
+just embed default theme for now
+
 switch back to hsl, was better
 
 make the add device/channel button smaller
@@ -31,16 +34,6 @@ make channels + buttons bigger
 
 add master meter to atomics
 add cpu to atomics
-
-
-
-
-CI:
-    https://corrode.dev/blog/tips-for-faster-ci-builds/
-      - uses: Swatinem/rust-cache@v2
-    pack settings (not assets)
-    fix path
-    add cargo run --test-run
 
 
 rename channel -> layer?
@@ -62,6 +55,18 @@ render in HDR and add bloom?
 fix gain to be smoothed
 
 mute declicking
+
+## building
+
+on linux:
+# compiling for alsa
+sudo apt install libasound2-dev
+# windowing support
+sudo apt install libwayland-dev libxkbcommon-dev libegl1-mesa-dev
+sudo apt install libasound2-plugins pulseaudio
+
+
+support JACK? optionally?
 
 ## piano roll
 
@@ -146,14 +151,6 @@ midi impl is now kind of stupidly polling, but we can get better latency if we d
  - this is good though, since eventually we want to move as much as possible to rust
  - for now, lets leave it like this!
 
-## compressor
-Digital Dynamic Range Compressor Design - A Tutorial and Analysis
-https://www.eecs.qmul.ac.uk/~josh/documents/2012/GiannoulisMassbergReiss-dynamicrangecompression-JAES2012.pdf
-Parameter Automation in a Dynamic Range Compressor
-https://www.eecs.qmul.ac.uk/~josh/documents/2013/Giannoulis%20Massberg%20Reiss%20-%20dynamic%20range%20compression%20automation%20-%20JAES%202013.pdf
-
-stereo linking?
-
 ## other notes
 
 reverb
@@ -189,22 +186,13 @@ should use amplitude / energy preserving depending on context
 debugger where you can type lua commands and monitor variables (pretty print tables, maybe even with a foldable UI)
 (command palette?)
 
-use scancode instead of keycode
 custom keyboard shortcut config?
 
 spiral fft (maybe even something like harmonic CQT)
 
 correct LUFS loudness monitoring
 
-tonewheel emulation
-* (mod pitch by noise bandpassed at some division of pitch )
-* motor synth uses 7 cycles / rotation
-* slightly non-linear optical transfer function + lowpass filter (different a/r)
-
 synth where osc is nonlinear system
-
-experiment with noise types and shaping
-  - grainy, pink, velvet etc
 
 some kind of simple but nice polysynth with good MPE
  - phase dist?
@@ -256,38 +244,3 @@ when 243/242 is tempered out (rastmic), these should revert to normal sharps/fla
 
 load tuning from text file (just lua?)
 
-
-## parameter macro
-```rust
-// expands match arms for parameters
-//     match_parameter!(index; a = value, b = value, c = value)
-// becomes:
-//     match index {
-//         0 => a = value,
-//         1 => b = value,
-//         2 => c = value,
-//         _ => eprintln!("Parameter with index {} not found", index),
-//     }
-macro_rules! match_parameter {
-    ($e:expr; $($rest:tt)*) => {
-        match_parameter!{@(0; $e; $($rest)*,)}
-    };
-
-    (@($idx:expr; $e:expr; $val:expr, $($rest:tt)*) $($arms:tt)*) => {
-        match_parameter!{
-            @(1+$idx; $e; $($rest)*)
-            $($arms)*
-            x if x == $idx => $val,
-        }
-    };
-
-    (@($idx:expr; $e:expr; $(,)?) $($arms:tt)* ) => {
-        match $e {
-            $($arms)*
-            _ => eprintln!("Parameter with index {} not found", $idx)
-        }
-    };
-}
-
-pub(crate) use match_parameter;
-```

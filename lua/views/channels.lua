@@ -17,7 +17,7 @@ function Channels.new()
 	end
 	table.sort(self.intrument_list)
 
-	self.dropdown = widgets.Dropdown.new({ title = "add channel", list = self.intrument_list, has_state = false })
+	self.dropdown = widgets.Dropdown.new({ title = "add channel", list = self.intrument_list, no_state = true })
 
 	return self
 end

@@ -8,15 +8,17 @@ Button.__index = Button
 local Selector = {}
 Selector.__index = Selector
 
-function Selector.new(list, index)
+function Selector.new(options)
 	local self = setmetatable({}, Selector)
 
+	self.no_undo = options.no_undo
+
 	self.list = {}
-	for _, v in ipairs(list) do
+	for _, v in ipairs(options.list) do
 		table.insert(self.list, Button.new(v))
 	end
 
-	index = index or 1
+	local index = options.index or 1
 
 	self.list[index].checked = true
 	return self
@@ -39,7 +41,11 @@ function Selector:update(ui, target, key)
 	end
 
 	if new_index then
-		command.run_and_register(command.Change.new(target, key, new_index))
+		if self.no_undo then
+			target[key] = new_index
+		else
+			command.run_and_register(command.Change.new(target, key, new_index))
+		end
 	end
 
 	for i, v in ipairs(self.list) do

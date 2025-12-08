@@ -14,7 +14,7 @@ function Scope.new(spectrum)
 
 	self.ui = Ui.new(self)
 
-	self.selector = widgets.Selector.new({ "scope", "spectrum" })
+	self.selector = widgets.Selector.new({ list = { "scope", "spectrum" } })
 
 	self.lines = {}
 	for i = 1, 7 do
