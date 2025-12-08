@@ -1,6 +1,7 @@
 use assert_no_alloc::*;
 use cpal::{
-	BackendSpecificError, BufferSize, Device, SampleFormat, Stream, StreamConfig, StreamError,
+	BackendSpecificError, BufferSize, Device, HostId, SampleFormat, Stream, StreamConfig,
+	StreamError,
 	traits::{DeviceTrait, HostTrait, StreamTrait},
 };
 use no_denormals::no_denormals;
@@ -10,12 +11,13 @@ use ringbuf::{HeapCons, HeapProd, HeapRb};
 use std::error::Error;
 use std::panic;
 use std::panic::AssertUnwindSafe;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::context::LuaMessage;
 use crate::dsp::env::AttackRelease;
-use crate::log::{log_error, log_info, log_warn};
+use crate::log::{log_error, log_info};
 use crate::render::Render;
 
 #[cfg(debug_assertions)] // required when disable_release is set (default)
@@ -47,18 +49,9 @@ pub fn get_hosts() -> (String, Vec<String>) {
 }
 
 #[allow(deprecated)]
-pub fn get_output_devices(host_name: &str) -> Result<(String, Vec<String>), Box<dyn Error>> {
-	let available_hosts = cpal::available_hosts();
-
-	let mut host = None;
-	for host_id in available_hosts {
-		if host_id.name().to_lowercase().contains(&host_name.to_lowercase()) {
-			host = Some(cpal::host_from_id(host_id)?);
-			break;
-		}
-	}
-
-	let host = host.unwrap();
+pub fn get_output_devices(host_str: &str) -> Result<(String, Vec<String>), Box<dyn Error>> {
+	let host_id = HostId::from_str(host_str)?;
+	let host = cpal::host_from_id(host_id)?;
 
 	let mut devices = Vec::new();
 
@@ -66,30 +59,61 @@ pub fn get_output_devices(host_name: &str) -> Result<(String, Vec<String>), Box<
 		devices.push(d.name()?)
 	}
 
+	// It's possible there are no devices at all
 	let default_device = match host.default_output_device() {
 		Some(device) => device.name()?,
-		None => "unknown".to_string(),
+		None => "null".to_string(),
 	};
 
 	Ok((default_device, devices))
 }
 
-pub fn get_device_and_config(
-	host_name: &str,
-	output_device_name: &str,
+// search output device by name
+// TODO: use DeviceId instead to simplify
+// We can use device.id()?.to_string() to get a unique id, convert back using from_str
+// device_id.0 should contain HostId
+pub fn find_output_device(host_str: &str, device_name: &str) -> Result<Device, Box<dyn Error>> {
+	let host_id = HostId::from_str(host_str)?;
+	let host = cpal::host_from_id(host_id)?;
+
+	log_info!("Using host: {}", host.id().name());
+
+	let mut output_device = None;
+
+	for device in host.output_devices()? {
+		if let Ok(description) = device.description()
+			&& description.name() == device_name
+		{
+			output_device = Some(device);
+		}
+	}
+
+	let output_device =
+		output_device.ok_or_else(|| format!("Couldn't find device \"{device_name}\""))?;
+
+	let description = output_device.description()?;
+	let name = description.name();
+	log_info!("Using output device: \"{name}\"");
+
+	Ok(output_device)
+}
+
+pub fn build_config(
+	device: &cpal::Device,
 	buffer_size: Option<u32>,
-) -> Result<(Device, StreamConfig, SampleFormat), Box<dyn Error>> {
-	let output_device = find_output_device(host_name, output_device_name)?;
-	let config = output_device.default_output_config()?;
+) -> Result<(StreamConfig, SampleFormat), Box<dyn Error>> {
+	let config = device.default_output_config()?;
 
 	let mut stream_config: StreamConfig = config.clone().into();
 	stream_config.channels = 2; // only allow stereo output
+
+	stream_config.sample_rate = cpal::SampleRate(44100);
 
 	if let Some(buffer_size) = buffer_size {
 		stream_config.buffer_size = BufferSize::Fixed(buffer_size);
 	}
 
-	Ok((output_device, stream_config, config.sample_format()))
+	Ok((stream_config, config.sample_format()))
 }
 
 #[allow(clippy::type_complexity)]
@@ -242,78 +266,14 @@ fn error_closure(mut error_tx: HeapProd<bool>) -> impl FnMut(StreamError) + Send
 		StreamError::DeviceNotAvailable => {
 			log_error!("Stream error: device not available.");
 		},
+		StreamError::StreamInvalidated => {
+			log_info!("Stream reset request");
+			error_tx.try_push(true).expect("Could not send message.");
+		},
 		StreamError::BackendSpecific { err: BackendSpecificError { ref description } } => {
 			log_error!("Device error: {description}");
 		},
-		StreamError::AsioResetRequest => {
-			log_info!("ASIO reset request");
-			error_tx.try_push(true).expect("Could not send message.");
-		},
-		_ => {
-			log_error!("Stream error: {error}");
-		},
 	}
-}
-
-fn find_output_device(host_name: &str, output_device_name: &str) -> Result<Device, Box<dyn Error>> {
-	let available_hosts = cpal::available_hosts();
-	log_info!("Available hosts: {available_hosts:?}");
-
-	let mut host = None;
-	if host_name == "default" {
-		host = Some(cpal::default_host());
-	} else {
-		for host_id in available_hosts {
-			if host_id.name().to_lowercase().contains(&host_name.to_lowercase()) {
-				host = Some(cpal::host_from_id(host_id)?);
-				break;
-			}
-		}
-	}
-	let host = if let Some(h) = host {
-		h
-	} else {
-		log_warn!("Couldn't find {host_name}. Using default instead");
-		cpal::default_host()
-	};
-
-	log_info!("Using host: {}", host.id().name());
-
-	log_info!("Avaliable output devices:");
-	for d in host.output_devices()? {
-		#[allow(deprecated)]
-		let name = d.name()?;
-		log_info!(" - \"{name}\"");
-	}
-
-	let mut output_device = None;
-
-	if output_device_name == "default" {
-		output_device = host.default_output_device();
-	} else {
-		for device in host.output_devices().map_err(|_| "No output devices found.")? {
-			#[allow(deprecated)]
-			if let Ok(name) = device.name()
-				&& name.to_lowercase().contains(&output_device_name.to_lowercase())
-			{
-				output_device = Some(device);
-			}
-		}
-	}
-
-	let output_device = if let Some(d) = output_device {
-		d
-	} else {
-		log_warn!("Couldn't find {output_device_name}. Using default instead");
-		host.default_output_device()
-			.ok_or("No default output device found.")?
-	};
-
-	#[allow(deprecated)]
-	let name = output_device.name()?;
-	log_info!("Using output device: \"{name}\"");
-
-	Ok(output_device)
 }
 
 pub fn write_wav(filename: &str, samples: &[f32], sample_rate: u32) -> Result<(), Box<dyn Error>> {

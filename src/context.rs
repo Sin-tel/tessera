@@ -1,5 +1,4 @@
-use crate::audio::build_stream;
-use crate::audio::get_device_and_config;
+use crate::audio::{build_config, build_stream, find_output_device};
 use crate::log::{log_info, log_warn};
 use crate::meters::Meters;
 use crate::midi;
@@ -30,12 +29,12 @@ pub struct AudioContext {
 
 impl AudioContext {
 	pub fn new(
-		host_name: &str,
-		output_device_name: &str,
+		host_str: &str,
+		device_name: &str,
 		buffer_size: Option<u32>,
 	) -> Result<AudioContext, Box<dyn Error>> {
-		let (device, config, format) =
-			get_device_and_config(host_name, output_device_name, buffer_size)?;
+		let device = find_output_device(host_str, device_name)?;
+		let (config, format) = build_config(&device, buffer_size)?;
 		let sample_rate = config.sample_rate.0;
 
 		let (audio_tx, audio_rx) = HeapRb::<AudioMessage>::new(1024).split();
@@ -67,15 +66,14 @@ impl AudioContext {
 
 	pub fn rebuild_stream(
 		&mut self,
-		host_name: &str,
-		output_device_name: &str,
+		host_str: &str,
+		device_name: &str,
 		buffer_size: Option<u32>,
 	) -> Result<(), Box<dyn Error>> {
 		// drop old stream
 		self.stream = None;
-
-		let (device, config, format) =
-			get_device_and_config(host_name, output_device_name, buffer_size)?;
+		let device = find_output_device(host_str, device_name)?;
+		let (config, format) = build_config(&device, buffer_size)?;
 
 		// TODO: handle this properly
 		assert_eq!(config.sample_rate.0, self.sample_rate, "Sample rate mismatch during rebuild");

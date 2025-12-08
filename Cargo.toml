@@ -5,15 +5,14 @@ edition = "2024"
 
 # Pull in the right cpal features depending on platform
 [target.'cfg(target_os = "windows")'.dependencies]
-cpal = { version = "0.16", features = ["asio"], git = "https://github.com/Sin-tel/cpal.git", rev = "1074160b7d647243f35ab708c91942f2c776d183" }
+cpal = { version = "0.16", features = ["asio"], git = "https://github.com/Sin-tel/cpal.git", rev = "b235999d560dfe5b36d0e8b034f6b352123324e2" }
 [target.'cfg(target_os = "macos")'.dependencies]
-cpal = { version = "0.16", git = "https://github.com/Sin-tel/cpal.git", rev = "1074160b7d647243f35ab708c91942f2c776d183" }
+cpal = { version = "0.16", git = "https://github.com/Sin-tel/cpal.git", rev = "b235999d560dfe5b36d0e8b034f6b352123324e2" }
 [target.'cfg(target_os = "linux")'.dependencies]
-cpal = { version = "0.16", features = ["jack"], git = "https://github.com/Sin-tel/cpal.git", rev = "1074160b7d647243f35ab708c91942f2c776d183" }
-
-# cpal = { version = "0.16", features = ["asio"], path = "../cpal_proj/cpal" }
+cpal = { version = "0.16", features = ["jack"], git = "https://github.com/Sin-tel/cpal.git", rev = "b235999d560dfe5b36d0e8b034f6b352123324e2" }
 
 [dependencies]
+# cpal = { version = "0.16", features = ["asio"], path = "../cpal_proj/cpal" }
 assert_no_alloc = {version = "1.1", features = ["warn_debug"]}
 no_denormals = "0.3"
 ringbuf = "0.4"
