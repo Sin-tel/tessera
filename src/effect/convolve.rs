@@ -6,7 +6,6 @@ use crate::dsp::lerp;
 use crate::effect::*;
 use crate::embed::Asset;
 
-#[derive(Debug)]
 pub struct Convolve {
 	balance: f32,
 	convolver: FFTConvolver<f32>,
