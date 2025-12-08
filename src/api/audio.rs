@@ -1,6 +1,6 @@
 use crate::app::State;
 use crate::audio;
-use crate::audio::check_architecture;
+use crate::audio::{check_architecture, get_hosts, get_output_devices};
 use crate::context::{AudioContext, AudioMessage};
 use crate::log::{log_error, log_info};
 use crate::voice_manager::Token;
@@ -11,11 +11,23 @@ use ringbuf::traits::*;
 pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	let audio = lua.create_table()?;
 
+	audio.set("get_hosts", lua.create_function(|_, ()| Ok(get_hosts()))?)?;
+
+	audio.set(
+		"get_output_devices",
+		lua.create_function(|_, host_name: String| match get_output_devices(&host_name) {
+			Ok(result) => Ok(result),
+			Err(e) => Err(mlua::Error::RuntimeError(e.to_string())),
+		})?,
+	)?;
+
 	audio.set(
 		"setup",
 		lua.create_function(
 			|lua, (host_name, device_name, buffer_size): (String, String, Option<u32>)| {
-				check_architecture().unwrap();
+				if let Err(e) = check_architecture() {
+					return Err(mlua::Error::RuntimeError(e.to_string()));
+				}
 
 				let state = &mut *lua.app_data_mut::<State>().unwrap();
 				match AudioContext::new(&host_name, &device_name, buffer_size) {

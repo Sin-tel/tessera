@@ -35,7 +35,7 @@ device_list.instruments.analog = {
 		{ "mix saw", "slider", { default = 0, t = "dB" } },
 		{ "mix sub", "slider", { default = -INF, t = "dB" } },
 		{ "mix noise", "slider", { default = -30, t = "dB" } },
-		{ "vcf mode", "selector", { "lowpass", "bandpass", "highpass" } },
+		{ "vcf mode", "selector", { lsit = { "lowpass", "bandpass", "highpass" } } },
 		{ "vcf freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
 		{ "vcf res", "slider", { default = 0.3, min = 0.0, max = 1.25 } },
 		{ "vcf env", "slider", { default = 0.5 } },
@@ -123,7 +123,7 @@ device_list.effects.wide = {
 device_list.effects.drive = {
 	parameters = {
 		{ "dry wet", "slider", { default = 1.0 } },
-		{ "mode", "selector", { "soft", "hard" } },
+		{ "mode", "selector", { list = { "soft", "hard" } } },
 		{ "gain", "slider", { default = 6, min = -6, max = 36 } },
 		{ "post gain", "slider", { default = 0, min = 0, max = 12 } },
 		{ "bias", "slider", { default = 0.2, max = 1.0 } },

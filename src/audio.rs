@@ -35,6 +35,45 @@ pub fn check_architecture() -> Result<(), String> {
 	Ok(())
 }
 
+// Get the string representation for HostId for available and default hosts
+pub fn get_hosts() -> (String, Vec<String>) {
+	let hosts = cpal::available_hosts()
+		.into_iter()
+		.map(|host| host.to_string())
+		.collect();
+
+	let default_host = cpal::default_host().id().to_string();
+	(default_host, hosts)
+}
+
+#[allow(deprecated)]
+pub fn get_output_devices(host_name: &str) -> Result<(String, Vec<String>), Box<dyn Error>> {
+	let available_hosts = cpal::available_hosts();
+
+	let mut host = None;
+	for host_id in available_hosts {
+		if host_id.name().to_lowercase().contains(&host_name.to_lowercase()) {
+			host = Some(cpal::host_from_id(host_id)?);
+			break;
+		}
+	}
+
+	let host = host.unwrap();
+
+	let mut devices = Vec::new();
+
+	for d in host.output_devices()? {
+		devices.push(d.name()?)
+	}
+
+	let default_device = match host.default_output_device() {
+		Some(device) => device.name()?,
+		None => "unknown".to_string(),
+	};
+
+	Ok((default_device, devices))
+}
+
 pub fn get_device_and_config(
 	host_name: &str,
 	output_device_name: &str,
@@ -45,7 +84,10 @@ pub fn get_device_and_config(
 
 	let mut stream_config: StreamConfig = config.clone().into();
 	stream_config.channels = 2; // only allow stereo output
-	stream_config.buffer_size = BufferSize::Fixed(buffer_size.unwrap_or(128));
+
+	if let Some(buffer_size) = buffer_size {
+		stream_config.buffer_size = BufferSize::Fixed(buffer_size);
+	}
 
 	Ok((output_device, stream_config, config.sample_format()))
 }

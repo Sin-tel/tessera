@@ -52,7 +52,9 @@ function Ui.new(view)
 	return self
 end
 
-function Ui:start_frame()
+function Ui:start_frame(x, y)
+	x = x or 0
+	y = y or 0
 	self.mx, self.my = self.view:get_mouse()
 
 	self.bg_color = nil
@@ -71,7 +73,7 @@ function Ui:start_frame()
 	self.scroll = util.lerp(self.scroll, self.scroll_goal, 0.3)
 	self.scroll = util.towards(self.scroll, self.scroll_goal, 3.0)
 
-	self.layout:start(0, -self.scroll)
+	self.layout:start(x, y - self.scroll)
 end
 
 function Ui:end_frame()
@@ -91,14 +93,15 @@ function Ui:next()
 	return self.layout:get()
 end
 
-local function draw_label(text, align, x, y, w, h)
-	tessera.graphics.set_color(theme.ui_text)
+local function draw_label(text, align, color, x, y, w, h)
+	tessera.graphics.set_color(color)
 	tessera.graphics.label(text, x, y, w, h, align)
 end
 
-function Ui:label(text, align)
+function Ui:label(text, align, color)
 	local x, y, w, h = self:next()
-	self:push_draw(draw_label, { text, align, x, y, w, h })
+	color = color or theme.ui_text
+	self:push_draw(draw_label, { text, align, color, x, y, w, h })
 end
 
 function Ui:hitbox(widget, x, y, w, h)

@@ -8,6 +8,8 @@ Slider.__index = Slider
 function Slider.new(options)
 	local self = setmetatable({}, Slider)
 
+	self.no_undo = options.no_undo
+
 	self.value = SliderValue.new(options)
 	self.drag_start = 0.0
 
@@ -20,11 +22,16 @@ function Slider:update(ui, target, key)
 
 	local v = self.value:to_normal(target[key])
 
-	local interact = false
+	local value
+	local commit = false
 
 	if mouse.button_pressed == 3 and hit then
 		if target[key] ~= self.value.default then
-			command.run_and_register(command.Change.new(target, key, self.value.default))
+			if self.no_undo then
+				target[key] = self.value.default
+			else
+				command.run_and_register(command.Change.new(target, key, self.value.default))
+			end
 		end
 	end
 
@@ -41,7 +48,7 @@ function Slider:update(ui, target, key)
 			local new_normalized = util.clamp(self.drag_start + scale * mouse.dx, 0, 1)
 			self.new_value = self.value:from_normal(new_normalized)
 			target[key] = self.new_value
-			interact = true
+			value = self.new_value
 		end
 	end
 
@@ -49,9 +56,15 @@ function Slider:update(ui, target, key)
 		self.active = false
 
 		if self.new_value ~= self.prev_value then
-			local c = command.Change.new(target, key, self.new_value)
-			c.prev_value = self.prev_value
-			command.register(c)
+			if self.no_undo then
+				target[key] = self.new_value
+			else
+				-- only commit on release
+				local c = command.Change.new(target, key, self.new_value)
+				c.prev_value = self.prev_value
+				command.register(c)
+			end
+			commit = true
 		end
 
 		if mouse.drag then
@@ -73,7 +86,7 @@ function Slider:update(ui, target, key)
 
 	ui:push_draw(self.draw, { self, v, display, color_fill, color_line, x, y, w, h })
 
-	return interact
+	return value, commit
 end
 
 function Slider:draw(v, display, color_fill, color_line, x, y, w, h)

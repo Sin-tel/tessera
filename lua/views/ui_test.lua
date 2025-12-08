@@ -17,10 +17,10 @@ function UiTest.new()
 	self.ui = Ui.new(self)
 
 	self.button = widgets.Button.new("click me")
-	self.dropdown = widgets.Dropdown.new({ list = { "AAA", "BBB", "CCC" }, has_state = true })
+	self.dropdown = widgets.Dropdown.new({ list = { "AAA", "BBB", "CCC" } })
 	self.slider = widgets.Slider.new({ min = 20, max = 20000, fmt = "Hz", t = "log" })
 	self.checkbox = widgets.Toggle.new("checkbox widget", {})
-	self.selector = widgets.Selector.new({ "one", "two", "three" })
+	self.selector = widgets.Selector.new({ list = { "one", "two", "three" } })
 	self.toggle = widgets.Toggle.new("toggle widget", { style = "toggle" })
 
 	return self
