@@ -51,6 +51,16 @@ local function indent(b, n)
 	table.insert(b, ("\t"):rep(n))
 end
 
+local function key_str(k)
+	-- If key contains a space, format it using brackets
+	assert(type(k) == "string")
+	local write_k = k
+	if string.find(k, " ") then
+		write_k = '["' .. k .. '"]'
+	end
+	return write_k
+end
+
 local function write_table(t, depth)
 	local b = {}
 
@@ -59,11 +69,12 @@ local function write_table(t, depth)
 	depth = depth + 1
 	for k, v in pairs(t) do
 		assert(type(k) ~= "function")
+		assert(type(k) ~= "table")
 		assert(type(v) ~= "function")
 		if type(v) == "table" then
 			if type(k) == "string" then
 				indent(b, depth)
-				local s = ("%s"):format(k) .. " = {\n" .. write_table(v, depth) .. ",\n"
+				local s = ("%s"):format(key_str(k)) .. " = {\n" .. write_table(v, depth) .. ",\n"
 				table.insert(b, s)
 			else
 				if arr then
@@ -82,7 +93,7 @@ local function write_table(t, depth)
 				local value = write_value(v)
 
 				indent(b, depth)
-				local s = ("%s = %s,\n"):format(k, value)
+				local s = ("%s = %s,\n"):format(key_str(k), value)
 				table.insert(b, s)
 			else
 				local write_key, write_value = get_writer(k), get_writer(v)
