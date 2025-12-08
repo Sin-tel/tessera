@@ -7,6 +7,8 @@ use ringbuf::traits::*;
 pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	let midi = lua.create_table()?;
 
+	midi.set("status", lua.create_function(|_, ()| Ok(midi::open_midi().is_some()))?)?;
+
 	midi.set(
 		"ports",
 		lua.create_function(|_, ()| {
