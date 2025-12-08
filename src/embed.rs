@@ -11,13 +11,16 @@ pub struct Script;
 
 // Add a module loader that works with embedded files
 pub fn setup_lua_loader(lua: &Lua) -> LuaResult<()> {
-	let searcher = lua.create_function(|lua, mod_name: String| {
+	let loader = lua.create_function(|lua, mod_name: String| {
 		// Convert "ui.button" -> "ui/button.lua"
 		let path = mod_name.replace('.', "/") + ".lua";
 
 		match Script::get(&path) {
 			Some(script) => {
-				let loader = lua.load(&*script.data).into_function()?;
+				let loader = lua
+					.load(&*script.data)
+					.set_name(format!("@lua/{}", path))
+					.into_function()?;
 				Ok(Some(loader))
 			},
 			None => Ok(None),
@@ -29,7 +32,7 @@ pub fn setup_lua_loader(lua: &Lua) -> LuaResult<()> {
 
 	// Append loader to the end
 	let len = loaders.len()?;
-	loaders.set(len + 1, searcher)?;
+	loaders.set(len + 1, loader)?;
 
 	Ok(())
 }

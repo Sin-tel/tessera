@@ -12,7 +12,7 @@ use winit::application::ApplicationHandler;
 use winit::event::DeviceId;
 use winit::event::{DeviceEvent, ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
-use winit::keyboard::{Key, KeyCode, PhysicalKey};
+use winit::keyboard::{Key, KeyCode, NamedKey, PhysicalKey};
 use winit::window::WindowId;
 
 use tessera::api::create_lua;
@@ -52,7 +52,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn test_run() -> LuaResult<()> {
 	// Basic checks for CI without initializing any graphics or audio
-	let lua = create_lua()?;
+	let lua = create_lua(1.0)?;
 
 	init_logging();
 
@@ -71,7 +71,9 @@ fn test_run() -> LuaResult<()> {
 fn run() -> LuaResult<()> {
 	let (canvas, event_loop, surface, window) = setup_window();
 
-	let lua = create_lua()?;
+	// We check scale factor before loading lua, and assume it doesn't change for simplicity
+	let scale_factor = window.scale_factor();
+	let lua = create_lua(scale_factor)?;
 
 	lua.set_app_data(State::new(canvas, window));
 
@@ -159,7 +161,7 @@ impl ApplicationHandler for App {
 				let key = keycode_to_str(keycode);
 				let key_str: Option<String> = match logical_key {
 					Key::Character(s) => Some(s.into()),
-					// Key::Named(s) => s.to_text().map(str::to_string),
+					Key::Named(NamedKey::Space) => Some(" ".to_string()),
 					_ => None,
 				};
 
@@ -301,7 +303,9 @@ fn render_start(lua: &Lua) {
 
 fn render_end(surface: &Surface, lua: &Lua) {
 	let mut state = lua.app_data_mut::<State>().unwrap();
-	assert!(state.transform_stack.is_empty());
+	if !state.transform_stack.is_empty() {
+		log_error!("Transform stack should be empty.");
+	}
 
 	state.canvas.reset_scissor();
 	state.current_scissor = None;

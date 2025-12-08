@@ -7,8 +7,10 @@ use femtovg::{Color, LineCap, LineJoin, Paint, Path};
 use mlua::Variadic;
 use mlua::prelude::*;
 
-pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
+pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 	let graphics = lua.create_table()?;
+
+	graphics.set("scale_factor", scale_factor)?;
 
 	graphics.set(
 		"set_font_main",
@@ -32,7 +34,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"set_font_size",
 		lua.create_function(|lua, font_size: Option<f32>| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
-			state.font_size = font_size.unwrap_or(DEFAULT_FONT_SIZE);
+			state.font_size = font_size.unwrap_or(DEFAULT_FONT_SIZE * state.scale_factor);
 			// round to quarter increments to avoid spamming the cache
 			state.font_size = (state.font_size * 4.0).round() / 4.0;
 			Ok(())
@@ -105,7 +107,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		lua.create_function(|lua, line_width: Option<f32>| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 
-			state.line_width = line_width.unwrap_or(DEFAULT_LINE_WIDTH);
+			state.line_width = line_width.unwrap_or(DEFAULT_LINE_WIDTH * state.scale_factor);
 			Ok(())
 		})?,
 	)?;
