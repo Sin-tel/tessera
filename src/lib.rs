@@ -23,7 +23,7 @@
 #![allow(clippy::get_first)]
 #![allow(clippy::too_many_arguments)]
 
-mod audio;
+pub mod audio;
 mod context;
 mod effect;
 pub mod embed;
