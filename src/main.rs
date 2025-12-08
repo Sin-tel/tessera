@@ -18,6 +18,7 @@ use winit::window::WindowId;
 use tessera::api::create_lua;
 use tessera::api::image::load_images;
 use tessera::api::keycodes::keycode_to_str;
+use tessera::audio;
 use tessera::embed::Script;
 use tessera::opengl::Surface;
 use tessera::opengl::WindowSurface;
@@ -62,7 +63,14 @@ fn test_run() -> LuaResult<()> {
 	let hooks = Hooks::new(&lua)?;
 	hooks.load.call::<()>(true).unwrap();
 
-	// TODO: query audio and midi devices
+	let (default_host, hosts) = audio::get_hosts();
+	println!("Available hosts: {:?}", hosts);
+
+	if let Ok((_, devices)) = audio::get_output_devices(&default_host) {
+		println!("Available devices: {:?}", devices);
+	} else {
+		println!("No devices");
+	}
 
 	hooks.quit.call::<()>(()).unwrap();
 	return Ok(());

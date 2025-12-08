@@ -63,7 +63,11 @@ on linux:
 sudo apt install libasound2-dev
 # windowing support
 sudo apt install libwayland-dev libxkbcommon-dev libegl1-mesa-dev
+# alsa
 sudo apt install libasound2-plugins pulseaudio
+# jack
+sudo apt install libjack-dev
+
 
 
 support JACK? optionally?
