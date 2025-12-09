@@ -11,18 +11,19 @@ struct Voice {
 	pitch: f32,
 	vel: f32,
 	key_down: bool,
+	active: bool,
 	age: u64,
 }
 
 impl Default for Voice {
 	fn default() -> Self {
-		Self { token: 0, pitch: 0.0, vel: 0.0, key_down: false, age: 0 }
+		Self { token: 0, pitch: 0.0, vel: 0.0, key_down: false, age: 0, active: false }
 	}
 }
 
 impl Voice {
 	fn new(token: Token, pitch: f32, vel: f32) -> Self {
-		Self { token, pitch, vel, key_down: true, ..Default::default() }
+		Self { token, pitch, vel, key_down: true, active: true, ..Default::default() }
 	}
 }
 
@@ -116,6 +117,7 @@ impl VoiceManager {
 		if self.queue.is_empty() {
 			self.voices[i].key_down = false;
 			if !self.sustain {
+				self.voices[i].active = false;
 				self.instrument.note_off(i);
 			}
 		} else {
@@ -153,7 +155,8 @@ impl VoiceManager {
 		self.sustain = sustain;
 		if !sustain {
 			for (i, v) in self.voices.iter_mut().enumerate() {
-				if !v.key_down {
+				if !v.key_down && v.active {
+					v.active = false;
 					self.instrument.note_off(i);
 				}
 			}

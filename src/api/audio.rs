@@ -68,11 +68,11 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 			|lua, (host_name, device_name, buffer_size): (String, String, Option<u32>)| {
 				#[allow(clippy::collapsible_if)]
 				let state = &mut *lua.app_data_mut::<State>().unwrap();
-				if let Some(ctx) = &mut state.audio {
-					if let Err(e) = ctx.rebuild_stream(&host_name, &device_name, buffer_size) {
-						state.audio = None;
-						log_error!("{e}");
-					}
+				if let Some(ctx) = &mut state.audio
+					&& let Err(e) = ctx.rebuild_stream(&host_name, &device_name, buffer_size)
+				{
+					state.audio = None;
+					log_error!("{e}");
 				}
 				Ok(())
 			},

@@ -57,7 +57,7 @@ pub fn get_output_devices(host_str: &str) -> Result<Vec<String>, Box<dyn Error>>
 	let mut devices = Vec::new();
 
 	for d in host.output_devices()? {
-		devices.push(d.description()?.name().to_string())
+		devices.push(d.description()?.name().to_string());
 	}
 
 	Ok(devices)

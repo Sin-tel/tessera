@@ -29,7 +29,7 @@ mod effect;
 pub mod embed;
 mod instrument;
 mod meters;
-mod midi;
+pub mod midi;
 mod render;
 mod scope;
 mod voice_manager;
