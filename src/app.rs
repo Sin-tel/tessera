@@ -2,7 +2,10 @@ use crate::api::project::Project;
 use crate::audio::AUDIO_PANIC;
 use crate::context::AudioContext;
 use crate::log::log_warn;
+use crate::midi;
+use crate::opengl::Renderer;
 use crate::text::Font;
+use crate::text::TextEngine;
 use crate::voice_manager::Token;
 use femtovg::ImageId;
 use femtovg::{Canvas, Color};
@@ -11,9 +14,6 @@ use std::sync::atomic::Ordering;
 use std::sync::mpsc;
 use std::time::Instant;
 use winit::window::Window;
-
-use crate::opengl::Renderer;
-use crate::text::TextEngine;
 
 pub const INIT_WIDTH: u32 = 1280;
 pub const INIT_HEIGHT: u32 = 720;
@@ -40,6 +40,8 @@ pub struct State {
 	pub window: Window,
 	pub scale_factor: f32,
 	pub dialog_rx: Option<mpsc::Receiver<Option<PathBuf>>>,
+	pub midi_session: Option<midir::MidiInput>,
+	pub midi_connections: Vec<midi::Connection>,
 	token: Token,
 }
 
@@ -66,6 +68,8 @@ impl State {
 			window,
 			scale_factor,
 			dialog_rx: None,
+			midi_session: None,
+			midi_connections: Vec::new(),
 		}
 	}
 

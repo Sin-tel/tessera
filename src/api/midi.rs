@@ -10,24 +10,21 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	midi.set(
 		"init",
 		lua.create_function(|lua, ()| {
-			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				if ctx.midi_session.is_some() {
-					log_error!("Midi already initialized");
-					return Ok(false);
-				}
-				ctx.midi_session = midi::open_midi();
-				return Ok(ctx.midi_session.is_some());
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			if state.midi_session.is_some() {
+				log_error!("Midi already initialized");
+				return Ok(false);
 			}
-			Ok(false)
+			state.midi_session = midi::open_midi();
+			Ok(state.midi_session.is_some())
 		})?,
 	)?;
 
 	midi.set(
 		"ports",
 		lua.create_function(|lua, ()| {
-			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio
-				&& let Some(midi_session) = &ctx.midi_session
-			{
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			if let Some(midi_session) = &state.midi_session {
 				let list = midi::port_names(midi_session);
 				return Ok(list);
 			}
@@ -38,13 +35,12 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	midi.set(
 		"open_connection",
 		lua.create_function(|lua, port_name: String| {
-			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let connection = midi::connect(&port_name);
-				if let Some(c) = connection {
-					let index = ctx.midi_connections.len() + 1;
-					ctx.midi_connections.push(c);
-					return Ok(Some(index));
-				}
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			let connection = midi::connect(&port_name);
+			if let Some(c) = connection {
+				let index = state.midi_connections.len() + 1;
+				state.midi_connections.push(c);
+				return Ok(Some(index));
 			}
 			Ok(None)
 		})?,
@@ -53,15 +49,14 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	midi.set(
 		"close_connection",
 		lua.create_function(|lua, port_name: String| {
-			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let index = ctx.midi_connections.iter().position(|v| v.name == port_name);
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			let index = state.midi_connections.iter().position(|v| v.name == port_name);
 
-				if let Some(index) = index {
-					let connection = ctx.midi_connections.remove(index);
-					connection.connection.close();
-					log_info!("Closed connection \"{}\"", connection.name);
-					return Ok(Some(index + 1));
-				}
+			if let Some(index) = index {
+				let connection = state.midi_connections.remove(index);
+				connection.connection.close();
+				log_info!("Closed connection \"{}\"", connection.name);
+				return Ok(Some(index + 1));
 			}
 			Ok(None)
 		})?,
@@ -70,17 +65,16 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	midi.set(
 		"poll",
 		lua.create_function(|lua, connection_index: usize| {
-			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let connection = ctx.midi_connections.get_mut(connection_index - 1);
-				match connection {
-					Some(c) => {
-						let events: Vec<midi::Event> = c.midi_rx.pop_iter().collect();
-						return Ok(Some(events));
-					},
-					None => {
-						log_error!("Bad midi connection index: {connection_index}");
-					},
-				}
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			let connection = state.midi_connections.get_mut(connection_index - 1);
+			match connection {
+				Some(c) => {
+					let events: Vec<midi::Event> = c.midi_rx.pop_iter().collect();
+					return Ok(Some(events));
+				},
+				None => {
+					log_error!("Bad midi connection index: {connection_index}");
+				},
 			}
 			Ok(None)
 		})?,

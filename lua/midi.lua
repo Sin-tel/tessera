@@ -12,7 +12,7 @@ midi.open_ports = {}
 -- set of currently available ports
 midi.available_ports = {}
 
--- this list should be in sync with tessera.audio midi_connections
+-- this list should be in sync with backend midi_connections
 local devices = {}
 
 local scan_timer = 0
@@ -114,7 +114,7 @@ function midi.new_device(config)
 end
 
 function midi.update(dt)
-	if not midi.ok or not tessera.audio.ok() then
+	if not midi.ok then
 		return
 	end
 
@@ -160,6 +160,7 @@ function midi.update_device(device_index, device)
 end
 
 function midi.event(device, sink, event)
+	util.pprint(event)
 	if event.name == "note_on" then
 		local n_index = event_note_index(event)
 		local token = tessera.audio.get_token()
