@@ -3,6 +3,9 @@ name = "tessera"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+doctest = false
+
 # Pull in the right cpal features depending on platform
 [target.'cfg(target_os = "windows")'.dependencies]
 cpal = { version = "0.16", features = ["asio"], git = "https://github.com/Sin-tel/cpal.git", rev = "b235999d560dfe5b36d0e8b034f6b352123324e2" }
