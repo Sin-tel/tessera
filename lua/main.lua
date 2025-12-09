@@ -58,6 +58,23 @@ tessera.graphics.set_color = function(t)
 	tessera.graphics.set_color_f(unpack(t))
 end
 
+local function init_setup()
+	-- if setup is not properly configured, populate it with defaults
+	local hosts = tessera.audio.get_hosts()
+	for _, host in ipairs(hosts) do
+		if not setup.configs[host] then
+			setup.configs[host] = {}
+		end
+		if not setup.configs[host].device then
+			setup.configs[host].device = tessera.audio.get_default_output_device(host)
+		end
+	end
+
+	if not setup.host then
+		setup.host = tessera.audio.get_default_host()
+	end
+end
+
 local function build_startup_project()
 	local success = false
 	if load_last_save then
@@ -67,9 +84,7 @@ local function build_startup_project()
 
 	if not success then
 		log.info("Loading default project")
-		command.NewChannel.new("pluck"):run()
-		-- command.NewChannel.new("epiano"):run()
-		-- command.NewChannel.new("polysine"):run()
+		command.NewChannel.new("epiano"):run()
 		project.channels[1].armed = true
 
 		save.set_save_location(save.default_save_location)
@@ -78,10 +93,19 @@ end
 
 local function audio_setup()
 	if not tessera.audio.ok() then
-		tessera.audio.setup(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
+		engine.setup_stream()
+		if not tessera.audio.ok() then
+			-- if we fail here, try a fallback to default settings
+			local default_host = tessera.audio.get_default_host()
+			log.warn(("Setup failed for %q, retrying with default %q"):format(setup.host, default_host))
+			setup.host = default_host
+			engine.setup_stream()
+		end
+
 		midi.load()
 		engine.reset_parameters()
 	else
+		-- this should probably never happen
 		log.warn("Audio already set up")
 	end
 	audio_status = "running"
@@ -130,6 +154,7 @@ function tessera.load(test_run)
 	math.randomseed(os.time())
 
 	setup = save.read_setup()
+	init_setup()
 
 	mouse:load()
 
@@ -137,7 +162,9 @@ function tessera.load(test_run)
 	workspace:load()
 
 	-- load empty project
-	if not test_run then
+	if test_run then
+		midi.load()
+	else
 		build.new_project()
 	end
 end
@@ -147,8 +174,7 @@ function tessera.update(dt)
 	dt = math.min(dt, 1 / 60)
 
 	if tessera.audio.check_should_rebuild() then
-		log.info("Rebuilding stream")
-		tessera.audio.rebuild(setup.audio.default_host, setup.audio.default_device, setup.audio.buffer_size)
+		engine.rebuild_stream()
 	end
 
 	if audio_status == "render" then
@@ -374,7 +400,7 @@ function tessera.resize(w, h)
 end
 
 function tessera.quit()
-	-- save.write_setup()
+	save.write_setup()
 	-- save.write_workspace()
 	log.info("Quitting")
 end

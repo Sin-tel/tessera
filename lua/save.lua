@@ -85,7 +85,7 @@ function save.read(filename)
 	return true
 end
 
-local setup_path = "settings/setup.lua"
+local setup_path = "out/setup.lua"
 
 function save.write_setup()
 	local content = serialize(setup, "setup")
@@ -97,16 +97,10 @@ function save.read_setup()
 		local content = util.readfile(setup_path)
 		setup = setfenv(loadstring(content), {})()
 	else
-		-- build default setup and save it
+		log.info("No settings found, generating default.")
 		setup = {}
-		setup.audio = {}
-		setup.audio.default_host = "default"
-		setup.audio.default_device = "default"
-		setup.audio.buffer_size = 128
-		setup.midi = {}
-		setup.midi.inputs = { { name = "default" } }
-
-		save.write_setup()
+		setup.configs = {}
+		setup.midi_ports = {}
 	end
 
 	return setup

@@ -5,9 +5,6 @@ use mlua::prelude::*;
 use std::error::Error;
 use std::fs;
 use std::time::{Duration, Instant};
-use tessera::api::Hooks;
-use tessera::app::State;
-use tessera::log::{init_logging, log_error};
 use winit::application::ApplicationHandler;
 use winit::event::DeviceId;
 use winit::event::{DeviceEvent, ElementState, MouseButton, MouseScrollDelta, WindowEvent};
@@ -15,11 +12,14 @@ use winit::event_loop::ActiveEventLoop;
 use winit::keyboard::{Key, KeyCode, NamedKey, PhysicalKey};
 use winit::window::WindowId;
 
+use tessera::api::Hooks;
 use tessera::api::create_lua;
 use tessera::api::image::load_images;
 use tessera::api::keycodes::keycode_to_str;
+use tessera::app::State;
 use tessera::audio;
 use tessera::embed::Script;
+use tessera::log::*;
 use tessera::opengl::Surface;
 use tessera::opengl::WindowSurface;
 use tessera::opengl::setup_window;
@@ -61,16 +61,19 @@ fn test_run() -> LuaResult<()> {
 	lua.load(lua_main).set_name("@lua/main.lua").exec()?;
 
 	let hooks = Hooks::new(&lua)?;
-	hooks.load.call::<()>(true).unwrap();
 
-	let (default_host, hosts) = audio::get_hosts();
-	println!("Available hosts: {:?}", hosts);
+	let hosts = audio::get_hosts();
+	log_info!("Available hosts: {:?}", hosts);
 
-	if let Ok((_, devices)) = audio::get_output_devices(&default_host) {
-		println!("Available devices: {:?}", devices);
-	} else {
-		println!("No devices");
+	for host in hosts {
+		if let Ok(devices) = audio::get_output_devices(&host) {
+			log_info!("Available devices ({}): {:?}", host, devices);
+		} else {
+			log_warn!("No devices");
+		}
 	}
+
+	hooks.load.call::<()>(true).unwrap();
 
 	hooks.quit.call::<()>(()).unwrap();
 	return Ok(());

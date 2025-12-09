@@ -37,35 +37,43 @@ pub fn check_architecture() -> Result<(), String> {
 	Ok(())
 }
 
-// Get the string representation for HostId for available and default hosts
-pub fn get_hosts() -> (String, Vec<String>) {
-	let hosts = cpal::available_hosts()
+// Get the string representation for HostId for available hosts
+pub fn get_hosts() -> Vec<String> {
+	cpal::available_hosts()
 		.into_iter()
 		.map(|host| host.to_string())
-		.collect();
-
-	let default_host = cpal::default_host().id().to_string();
-	(default_host, hosts)
+		.collect()
 }
 
-#[allow(deprecated)]
-pub fn get_output_devices(host_str: &str) -> Result<(String, Vec<String>), Box<dyn Error>> {
+// Get the string representation for HostId for default host
+pub fn get_default_host() -> String {
+	cpal::default_host().id().to_string()
+}
+
+pub fn get_output_devices(host_str: &str) -> Result<Vec<String>, Box<dyn Error>> {
 	let host_id = HostId::from_str(host_str)?;
 	let host = cpal::host_from_id(host_id)?;
 
 	let mut devices = Vec::new();
 
 	for d in host.output_devices()? {
-		devices.push(d.name()?)
+		devices.push(d.description()?.name().to_string())
 	}
+
+	Ok(devices)
+}
+
+pub fn get_default_output_device(host_str: &str) -> Result<String, Box<dyn Error>> {
+	let host_id = HostId::from_str(host_str)?;
+	let host = cpal::host_from_id(host_id)?;
 
 	// It's possible there are no devices at all
 	let default_device = match host.default_output_device() {
-		Some(device) => device.name()?,
-		None => "null".to_string(),
+		Some(device) => device.description()?.name().to_string(),
+		None => return Err("No default device found.".into()),
 	};
 
-	Ok((default_device, devices))
+	Ok(default_device)
 }
 
 // search output device by name

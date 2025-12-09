@@ -1,5 +1,6 @@
 local Ui = require("ui/ui")
 local View = require("view")
+local engine = require("engine")
 local widgets = require("ui/widgets")
 
 local Settings = View.derive("Settings")
@@ -22,6 +23,10 @@ local function display_name(host_str)
 	end
 end
 
+-- TODO: defer queries to first time we need them
+-- TODO: share static state (if we happen to open multiple settings windows)
+-- TODO: add a reset button in case backend died
+
 function Settings.new()
 	local self = setmetatable({}, Settings)
 
@@ -29,37 +34,12 @@ function Settings.new()
 	self.ui.layout.h = 32
 	self.ui.layout:padding(6)
 
-	-- audio device setup
-
-	-- In cpal these are called hosts, but for the menu we will call them "drivers"
-	local default_driver, drivers = tessera.audio.get_hosts()
-
-	-- use first one by if there is no proper default, though cpal should always return a valid one
-	local host_id = 1
-	local driver_display_names = {}
-	for i, v in ipairs(drivers) do
-		if default_driver == v then
-			host_id = i
-		end
-		driver_display_names[i] = display_name(v)
-	end
-
-	local default_device, devices = tessera.audio.get_output_devices(drivers[host_id])
-
-	local device_id = 1
-	for i, v in ipairs(devices) do
-		if default_device == v then
-			device_id = i
-		end
-	end
-
-	-- midi device setup
-
+	-- TODO
 	self.midi_ports = tessera.midi.ports()
 
 	self.state = {
-		driver = host_id,
-		output_device = device_id,
+		host_id = 1,
+		device_id = 1,
 		buffer_size = 128,
 		toggle_buffer = false,
 		midi_ports = {},
@@ -67,9 +47,9 @@ function Settings.new()
 
 	self.indent = 32
 
-	-- self.select_driver = widgets.Dropdown.new({ list = driver_display_names,  no_undo = true })
-	self.select_driver = widgets.Selector.new({ list = driver_display_names, no_undo = true })
-	self.select_device = widgets.Dropdown.new({ list = devices, no_undo = true })
+	-- self.select_driver = widgets.Selector.new({ list = { "null" }, no_undo = true })
+	-- self.select_device = widgets.Dropdown.new({ list = { "null" }, no_undo = true })
+
 	self.slider =
 		widgets.Slider.new({ min = 64, max = 256, step = 64, default = 128, fmt = "%d samples", no_undo = true })
 	self.toggle_buffer_size =
@@ -81,7 +61,57 @@ function Settings.new()
 		table.insert(self.midi_toggles, toggle)
 	end
 
+	self:rebuild()
+
 	return self
+end
+
+function Settings:rebuild()
+	-- this rebuilds all the widgets and does some queries, so only call when something changed
+
+	-- HOST
+	self.hosts = tessera.audio.get_hosts()
+
+	-- build list of hosts for display and find current index
+	local host_id = 1
+	local host_display_names = {}
+	for i, v in ipairs(self.hosts) do
+		if v == setup.host then
+			host_id = i
+		end
+		host_display_names[i] = display_name(v)
+	end
+	self.state.host_id = host_id
+
+	-- build the widget
+	self.select_driver = widgets.Selector.new({ list = host_display_names, no_undo = true })
+
+	-- DEVICE
+	self.devices = tessera.audio.get_output_devices(setup.host)
+
+	-- In case devices is empty we add a dummy value
+	if #self.devices == 0 then
+		self.devices = { "null" }
+	end
+
+	-- build list of devices for display and find current index
+	local device_id = 1
+	for i, v in ipairs(self.devices) do
+		if v == setup.configs[setup.host].device then
+			device_id = i
+		end
+	end
+	self.state.device_id = device_id
+
+	if setup.configs[setup.host].buffer_size then
+		self.state.toggle_buffer = 1
+		self.state.buffer_size = setup.configs[setup.host].buffer_size
+	else
+		self.state.toggle_buffer = 0
+	end
+
+	-- build the widget
+	self.select_device = widgets.Dropdown.new({ list = self.devices, no_undo = true })
 end
 
 function Settings:update()
@@ -104,23 +134,50 @@ function Settings:update()
 	self.ui.layout:col(c2)
 	self.ui:label("Driver type")
 	self.ui.layout:col(c3)
-	self.select_driver:update(self.ui, self.state, "driver")
+	local host_id = self.select_driver:update(self.ui, self.state, "host_id")
+	if host_id then
+		setup.host = self.hosts[host_id]
+		self:rebuild()
+		engine.rebuild_stream()
+	end
 
 	self.ui.layout:new_row()
 	self.ui.layout:col(c1)
 	self.ui.layout:col(c2)
 	self.ui:label("Output device")
 	self.ui.layout:col(c3)
-	self.select_device:update(self.ui, self.state, "output_device")
+	local device_id = self.select_device:update(self.ui, self.state, "device_id")
+	if device_id then
+		local new_device = self.devices[device_id]
+		if setup.configs[setup.host].device ~= new_device then
+			setup.configs[setup.host].device = new_device
+			self:rebuild()
+			engine.rebuild_stream()
+		end
+	end
 
 	self.ui.layout:new_row()
 	self.ui.layout:col(c1 + c2)
-	self.toggle_buffer_size:update(self.ui, self.state, "toggle_buffer")
+	local update_buffer_size = self.toggle_buffer_size:update(self.ui, self.state, "toggle_buffer")
 
 	if self.state.toggle_buffer == 1 then
 		self.ui.layout:col(c3)
-		self.slider:update(self.ui, self.state, "buffer_size")
+		local _, commit = self.slider:update(self.ui, self.state, "buffer_size")
+
+		update_buffer_size = update_buffer_size or commit
 	end
+
+	if update_buffer_size then
+		if self.state.toggle_buffer == 1 then
+			setup.configs[setup.host].buffer_size = self.state.buffer_size
+		else
+			setup.configs[setup.host].buffer_size = nil
+		end
+		self:rebuild()
+		engine.rebuild_stream()
+	end
+
+	-- MIDI
 
 	self.ui.layout:new_row()
 	self.ui.layout:col(lw)
