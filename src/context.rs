@@ -33,7 +33,7 @@ impl AudioContext {
 	) -> Result<AudioContext, Box<dyn Error>> {
 		let device = find_output_device(host_str, device_name)?;
 		let (config, format) = build_config(&device, buffer_size)?;
-		let sample_rate = config.sample_rate.0;
+		let sample_rate = config.sample_rate;
 
 		let (audio_tx, audio_rx) = HeapRb::<AudioMessage>::new(1024).split();
 		let (lua_tx, lua_rx) = HeapRb::<LuaMessage>::new(256).split();
@@ -73,7 +73,7 @@ impl AudioContext {
 		let (config, format) = build_config(&device, buffer_size)?;
 
 		// TODO: handle this properly
-		assert_eq!(config.sample_rate.0, self.sample_rate, "Sample rate mismatch during rebuild");
+		assert_eq!(config.sample_rate, self.sample_rate, "Sample rate mismatch during rebuild");
 
 		let (stream, stream_tx, error_rx) =
 			build_stream(&device, &config, format, Arc::clone(&self.render))?;

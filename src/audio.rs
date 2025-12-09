@@ -115,7 +115,7 @@ pub fn build_config(
 	let mut stream_config: StreamConfig = config.clone().into();
 	stream_config.channels = 2; // only allow stereo output
 
-	stream_config.sample_rate = cpal::SampleRate(44100);
+	stream_config.sample_rate = 44100;
 
 	if let Some(buffer_size) = buffer_size {
 		stream_config.buffer_size = BufferSize::Fixed(buffer_size);
@@ -151,7 +151,6 @@ pub fn build_stream(
 	stream.play()?;
 
 	log_info!("Stream set up succesfully!");
-	log_info!("Sample rate: {}", config.sample_rate.0);
 
 	Ok((stream, stream_tx, error_rx))
 }
@@ -284,6 +283,7 @@ fn error_closure(mut error_tx: HeapProd<ErrorMessage>) -> impl FnMut(StreamError
 				.try_push(ErrorMessage::ResetRequest)
 				.expect("Could not send message.");
 		},
+		StreamError::BufferUnderrun => {}, // Do nothing
 		StreamError::BackendSpecific { err: BackendSpecificError { ref description } } => {
 			log_error!("Device error: {description}");
 			// TODO should we handle these?
