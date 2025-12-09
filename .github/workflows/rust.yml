@@ -22,14 +22,20 @@ jobs:
       with:
         packages: libasound2-dev libjack-jackd2-dev libjack-jackd2-0 libdbus-1-dev
 
-    - name: Build
-      run: cargo build --verbose
+    - name: Build Release
+      run: cargo build --release
 
     - name: Tests
-      run: cargo test --verbose -- --nocapture
+      run: cargo test --release -- --nocapture
 
     - name: Test run
-      run: cargo run -- --test-run
+      run: cargo run --release -- --test-run
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: tessera_linux
+        path: target/release/tessera
 
   build-macos:
 
@@ -38,21 +44,27 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: Swatinem/rust-cache@v2
-    - name: Build
-      run: cargo build --verbose
+
+    - name: Build Release
+      run: cargo build --release
 
     - name: Tests
-      run: cargo test verbose -- --nocapture
+      run: cargo test --release -- --nocapture
 
     - name: Test run
-      run: cargo run -- --test-run
+      run: cargo run --release -- --test-run
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: tessera_macos
+        path: target/release/tessera
 
   build-windows:
 
     runs-on: windows-latest
     env:
       CPAL_ASIO_DIR: ${{ github.workspace }}/asio
-      RUSTFLAGS: "-C target-feature=+avx2"
 
     steps:
     - uses: actions/checkout@v3
@@ -66,26 +78,16 @@ jobs:
         choco install llvm
 
     - name: Build
-      run: cargo build --verbose
-
-    - name: Tests
-      run: cargo test verbose -- --nocapture
-
-    - name: Test run
-      run: cargo run -- --test-run
-
-    - name: Build Release
       run: cargo build --release
 
-    - name: Prepare artifact
-      run: |
-        rm settings/setup.lua
-        mkdir artifact
-        cp target/release/tessera.exe artifact/
-        cp -r settings artifact/
+    - name: Tests
+      run: cargo test --release -- --nocapture
+
+    - name: Test run
+      run: cargo run --release -- --test-run
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: tessera_win
-        path: artifact/
+        name: tessera_windows
+        path: target/release/tessera.exe
