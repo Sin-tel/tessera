@@ -31,7 +31,7 @@ command = require("command")
 
 width, height = tessera.graphics.get_dimensions()
 
-theme = require("settings/theme")
+theme = require("default/theme")
 selection = require("selection")
 clipboard = require("clipboard")
 setup = {}
