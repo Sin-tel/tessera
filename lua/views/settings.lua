@@ -1,6 +1,7 @@
 local Ui = require("ui/ui")
 local View = require("view")
 local engine = require("engine")
+local midi = require("midi")
 local widgets = require("ui/widgets")
 
 local Settings = View.derive("Settings")
@@ -33,9 +34,7 @@ function Settings.new()
 	self.ui = Ui.new(self)
 	self.ui.layout.h = 32
 	self.ui.layout:padding(6)
-
-	-- TODO
-	self.midi_ports = tessera.midi.ports()
+	self.indent = 32
 
 	self.state = {
 		host_id = 1,
@@ -45,25 +44,30 @@ function Settings.new()
 		midi_ports = {},
 	}
 
-	self.indent = 32
-
-	-- self.select_driver = widgets.Selector.new({ list = { "null" }, no_undo = true })
-	-- self.select_device = widgets.Dropdown.new({ list = { "null" }, no_undo = true })
-
+	-- these don't need to be rebuilt
 	self.slider =
 		widgets.Slider.new({ min = 64, max = 256, step = 64, default = 128, fmt = "%d samples", no_undo = true })
 	self.toggle_buffer_size =
 		widgets.Toggle.new("Request buffer size", { style = "checkbox", pad = self.indent, no_undo = true })
 
-	self.midi_toggles = {}
-	for _, v in ipairs(self.midi_ports) do
-		local toggle = widgets.Toggle.new(v, { style = "checkbox", pad = self.indent, no_undo = true })
-		table.insert(self.midi_toggles, toggle)
-	end
-
 	self:rebuild()
+	self:rebuild_midi()
 
 	return self
+end
+
+function Settings:rebuild_midi()
+	self.midi_toggles = {}
+	self.state.midi_ports = {}
+
+	for _, v in ipairs(setup.midi_devices) do
+		local toggle = widgets.Toggle.new(v.name, { style = "checkbox", pad = self.indent, no_undo = true })
+		table.insert(self.midi_toggles, toggle)
+
+		if v.enable then
+			self.state.midi_ports[v.name] = 1
+		end
+	end
 end
 
 function Settings:rebuild()
@@ -84,7 +88,7 @@ function Settings:rebuild()
 	self.state.host_id = host_id
 
 	-- build the widget
-	self.select_driver = widgets.Selector.new({ list = host_display_names, no_undo = true })
+	self.select_host = widgets.Selector.new({ list = host_display_names, no_undo = true })
 
 	-- DEVICE
 	self.devices = tessera.audio.get_output_devices(setup.host)
@@ -134,7 +138,7 @@ function Settings:update()
 	self.ui.layout:col(c2)
 	self.ui:label("Driver type")
 	self.ui.layout:col(c3)
-	local host_id = self.select_driver:update(self.ui, self.state, "host_id")
+	local host_id = self.select_host:update(self.ui, self.state, "host_id")
 	if host_id then
 		setup.host = self.hosts[host_id]
 		self:rebuild()
@@ -179,22 +183,53 @@ function Settings:update()
 
 	-- MIDI
 
-	self.ui.layout:new_row()
-	self.ui.layout:col(lw)
-	self.ui:background(theme.background)
-	self.ui:label("Midi devices")
+	if midi.ports_changed then
+		self:rebuild_midi()
+		midi.ports_changed = false
+	end
 
+	self.ui:background(theme.background)
+	self.ui.layout:new_row()
+	self.ui.layout:col(c1 + c2)
+	self.ui:label("Midi devices")
+	self.ui.layout:col(c3)
+	self.ui:label("Status")
 	self.ui:background(theme.bg_nested)
-	for _, v in ipairs(self.midi_toggles) do
-		self.ui.layout:new_row()
-		self.ui.layout:col(c1 + c2)
-		v:update(self.ui, self.state.midi_ports, v.text)
-		self.ui.layout:col(c3)
-		if self.state.midi_ports[v.text] == 1 then
-			self.ui:label("OK")
+	if midi.ok then
+		if #self.midi_toggles == 0 then
+			self.ui.layout:new_row()
+			self.ui.layout:col(c1)
+			self.ui.layout:col(c2 + c3)
+			self.ui:label("No MIDI devices")
 		else
-			self.ui:label("disabled", nil, theme.text_dim)
+			for i, v in ipairs(setup.midi_devices) do
+				self.ui.layout:new_row()
+				self.ui.layout:col(c1 + c2)
+				local update = self.midi_toggles[i]:update(self.ui, self.state.midi_ports, v.name)
+				self.ui.layout:col(c3)
+
+				if update then
+					local enable = self.state.midi_ports[v.name] == 1
+					setup.midi_devices[i].enable = enable
+					if midi.available_ports[v.name] then
+						midi.update_port(enable, setup.midi_devices[i])
+					end
+				end
+
+				if midi.open_ports[v.name] then
+					self.ui:label("Active")
+				elseif midi.available_ports[v.name] then
+					self.ui:label("Disabled", nil, theme.text_dim)
+				else
+					self.ui:label("Not found", nil, theme.text_dim)
+				end
+			end
 		end
+	else
+		self.ui.layout:new_row()
+		self.ui.layout:col(c1)
+		self.ui.layout:col(c2 + c3)
+		self.ui:label("MIDI not available")
 	end
 
 	self.ui:end_frame()

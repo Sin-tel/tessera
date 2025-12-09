@@ -7,13 +7,31 @@ use ringbuf::traits::*;
 pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	let midi = lua.create_table()?;
 
-	midi.set("status", lua.create_function(|_, ()| Ok(midi::open_midi().is_some()))?)?;
+	midi.set(
+		"init",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				if ctx.midi_session.is_some() {
+					log_error!("Midi already initialized");
+					return Ok(false);
+				}
+				ctx.midi_session = midi::open_midi();
+				return Ok(ctx.midi_session.is_some());
+			}
+			Ok(false)
+		})?,
+	)?;
 
 	midi.set(
 		"ports",
-		lua.create_function(|_, ()| {
-			let list = midi::port_names();
-			Ok(list)
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio
+				&& let Some(midi_session) = &ctx.midi_session
+			{
+				let list = midi::port_names(midi_session);
+				return Ok(list);
+			}
+			Ok(vec![])
 		})?,
 	)?;
 
@@ -23,29 +41,29 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				let connection = midi::connect(&port_name);
 				if let Some(c) = connection {
-					let name = c.name.clone();
 					let index = ctx.midi_connections.len() + 1;
 					ctx.midi_connections.push(c);
-					return Ok((Some(name), Some(index)));
+					return Ok(Some(index));
 				}
 			}
-			Ok((None, None))
+			Ok(None)
 		})?,
 	)?;
 
 	midi.set(
 		"close_connection",
-		lua.create_function(|lua, connection_index: usize| {
+		lua.create_function(|lua, port_name: String| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				if ctx.midi_connections.len() < connection_index - 1 {
-					log_error!("Bad midi connection index: {connection_index}");
-				} else {
-					let connection = ctx.midi_connections.remove(connection_index - 1);
+				let index = ctx.midi_connections.iter().position(|v| v.name == port_name);
+
+				if let Some(index) = index {
+					let connection = ctx.midi_connections.remove(index);
 					connection.connection.close();
-					log_info!("Closed connection \"{0}\"", connection.name);
+					log_info!("Closed connection \"{}\"", connection.name);
+					return Ok(Some(index + 1));
 				}
 			}
-			Ok(())
+			Ok(None)
 		})?,
 	)?;
 

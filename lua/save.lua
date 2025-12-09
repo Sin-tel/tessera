@@ -99,8 +99,9 @@ function save.read_setup()
 	else
 		log.info("No settings found, generating default.")
 		setup = {}
+		setup.VERSION = util.clone(VERSION)
 		setup.configs = {}
-		setup.midi_ports = {}
+		setup.midi_devices = {}
 	end
 
 	return setup

@@ -161,10 +161,8 @@ function tessera.load(test_run)
 	-- setup workspace
 	workspace:load()
 
-	-- load empty project
-	if test_run then
-		midi.load()
-	else
+	if not test_run then
+		-- set up empty project
 		build.new_project()
 	end
 end
@@ -401,7 +399,6 @@ end
 
 function tessera.quit()
 	save.write_setup()
-	-- save.write_workspace()
 	log.info("Quitting")
 end
 
