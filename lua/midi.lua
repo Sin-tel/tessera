@@ -3,10 +3,19 @@ local tuning = require("tuning")
 
 local midi = {}
 
+-- TODO: other config stuff like MPE
+
+-- used by Settings to check if list should be updated
+midi.ports_changed = false
+-- set of currently open ports
+midi.open_ports = {}
+-- set of currently available ports
+midi.available_ports = {}
+
 -- this list should be in sync with tessera.audio midi_connections
 local devices = {}
 
-local scan_device_timer = 0
+local scan_timer = 0
 
 -- unique index for a midi note
 local function event_note_index(event)
@@ -14,68 +23,79 @@ local function event_note_index(event)
 end
 
 function midi.load()
-	midi.ok = tessera.midi.status()
+	devices = {}
+	midi.ok = tessera.midi.init()
 
-	if midi.ok then
-		devices = {}
+	if not midi.ok then
+		log.info("Midi failed to intialize.")
+	end
+end
 
-		local ports = tessera.midi.ports()
-		if #ports == 0 then
-			log.info("No midi input ports available.")
+function midi.update_port(enable, config)
+	if enable then
+		local index = tessera.midi.open_connection(config.name)
+		if index then
+			assert(not devices[index])
+			devices[index] = midi.new_device(config)
+			midi.open_ports[config.name] = true
 		else
-			log.info("Available midi input ports:")
-			for i, name in ipairs(ports) do
-				log.info(" - " .. tostring(i) .. ': "' .. name .. '"')
-			end
+			log.warn(("Midi device %q not found"):format(config.name))
 		end
 	else
-		log.info("Midi failed to intialize. Proceeding without.")
-	end
-end
-
-function midi.scan_ports(input_ports)
-	-- TODO: 'default' should just open first port
-
-	local available_ports = tessera.midi.ports()
-	local devices_open = {}
-
-	for _, v in ipairs(devices) do
-		local ok = false
-		for _, name in ipairs(available_ports) do
-			if name == v.name then
-				ok = true
-			end
-		end
-		if ok then
-			devices_open[v.config_name] = true
+		local index = tessera.midi.close_connection(config.name)
+		if index then
+			assert(devices[index])
+			table.remove(devices, index)
+			midi.open_ports[config.name] = nil
 		else
-			midi.close_device(v.index)
+			log.warn(("Midi device %q not found"):format(config.name))
 		end
 	end
+end
 
-	for _, v in ipairs(input_ports) do
-		local config_name = v.name
+function midi.scan_ports()
+	local available_ports = tessera.midi.ports()
 
-		if not devices_open[config_name] then
-			local name, index = tessera.midi.open_connection(config_name)
-			if name then
-				assert(not devices[index])
-				devices[index] = midi.new_device(v, name, config_name)
+	midi.available_ports = {}
+	for _, name in ipairs(available_ports) do
+		midi.available_ports[name] = true
+
+		-- check if it is preset in setup
+		local found = false
+		for _, c in ipairs(setup.midi_devices) do
+			if name == c.name then
+				found = true
+				break
 			end
 		end
+
+		-- if not, add it to setup
+		if not found then
+			midi.ports_changed = true
+			log.info(("Found new midi device: %q"):format(name))
+			table.insert(setup.midi_devices, { name = name })
+		end
+	end
+
+	for _, c in ipairs(setup.midi_devices) do
+		-- new ports to add
+		if c.enable and midi.available_ports[c.name] and not midi.open_ports[c.name] then
+			midi.ports_changed = true
+			midi.update_port(true, c)
+		end
+
+		-- stale ports to delete
+		if (not c.enable or not midi.available_ports[c.name]) and midi.open_ports[c.name] then
+			midi.ports_changed = true
+			midi.update_port(false, c)
+		end
 	end
 end
 
-function midi.close_device(index)
-	tessera.midi.close_connection(index)
-	table.remove(devices, index)
-end
-
-function midi.new_device(settings, name, config_name)
+function midi.new_device(config)
 	local new = {}
-	new.mpe = settings.mpe
-	new.name = name
-	new.config_name = config_name
+	new.mpe = config.mpe
+	new.name = config.name
 	new.pitchbend_range = 2
 	if new.mpe then
 		new.pitchbend_range = 48
@@ -90,11 +110,11 @@ function midi.update(dt)
 		return
 	end
 
-	scan_device_timer = scan_device_timer - dt
-	if scan_device_timer < 0 then
+	scan_timer = scan_timer - dt
+	if scan_timer < 0 then
 		-- scan every .5 seconds
-		scan_device_timer = 0.5
-		midi.scan_ports(setup.midi_ports)
+		scan_timer = 0.5
+		midi.scan_ports()
 	end
 
 	for i, device in ipairs(devices) do

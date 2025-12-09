@@ -5,6 +5,8 @@ use mlua::prelude::*;
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd, HeapRb};
 
+// TODO: some kind of de-duplication logic in case we have two ports with the same name. (port.id() is unreliable)
+
 #[derive(Debug)]
 pub struct Event {
 	pub channel: u8,
@@ -26,6 +28,7 @@ pub struct Connection {
 	pub name: String,
 }
 
+// Create a midi input "session" and keep it alive for querying port_names
 pub fn open_midi() -> Option<MidiInput> {
 	match MidiInput::new("midir input") {
 		Ok(midi_in) => Some(midi_in),
@@ -36,13 +39,9 @@ pub fn open_midi() -> Option<MidiInput> {
 	}
 }
 
-pub fn port_names() -> Vec<String> {
-	if let Some(midi_in) = open_midi() {
-		let ports = midi_in.ports();
-		ports.iter().map(|p| midi_in.port_name(p).unwrap()).collect()
-	} else {
-		Vec::new()
-	}
+pub fn port_names(midi_in: &MidiInput) -> Vec<String> {
+	let ports = midi_in.ports();
+	ports.iter().map(|p| midi_in.port_name(p).unwrap()).collect()
 }
 
 pub fn connect(port_name: &str) -> Option<Connection> {
@@ -53,7 +52,7 @@ pub fn connect(port_name: &str) -> Option<Connection> {
 		for p in &midi_in.ports() {
 			let name = midi_in.port_name(p).unwrap();
 
-			if name.to_lowercase().contains(&port_name.to_lowercase()) {
+			if name == port_name {
 				let (midi_tx, midi_rx) = HeapRb::<Event>::new(256).split();
 
 				let connect_result = midi_in.connect(
@@ -90,7 +89,10 @@ pub fn connect(port_name: &str) -> Option<Connection> {
 impl Event {
 	pub fn from_bytes(data: &[u8]) -> Option<Self> {
 		use Message::*;
-		assert!(data.len() == 2 || data.len() == 3);
+		if data.len() < 2 || data.len() > 3 {
+			log_error!("Malformed midi message: {:?}", data);
+			return None;
+		}
 
 		let status: u8 = data[0] >> 4;
 		let channel: u8 = data[0] & 0x0f;
