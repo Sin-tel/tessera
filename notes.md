@@ -6,9 +6,9 @@ pitch: {
     verts: list of vert
 }
 vert: {
-    time: float // relative (first point always 0)
-    pitch_offset: float
-    pressure: float
+    [1] time: float // relative (first point always 0)
+    [2] pitch_offset: float
+    [3] pressure: float
 }
 
 File
@@ -23,21 +23,21 @@ Options
  - follow
  - chase midi notes
 
-display audio status
-display current buffer size (message from backend)
+display midi activity indicator for each device
+enable MPE in settings for each device
+
+reset config file if new version
+
+in principle, the stream and render instances could be seperated
+  allows for rendering even when there's no stream
 
 get rid of /settings
 just embed default theme for now
 
-switch back to hsl, was better
-
-make the add device/channel button smaller
-
-make channels + buttons bigger
+make channels and buttons bigger
 
 add master meter to atomics
 add cpu to atomics
-
 
 rename channel -> layer?
 

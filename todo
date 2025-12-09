@@ -18,9 +18,9 @@
 [X] Load/save file dialogs
 [-] handle MPE input
 [ ] linnstrument custom handler
-[ ] Settings menu
+[x] Settings menu
 [ ] Switch views with dropdown
-[ ] Switch workspace (tabs)
+[-] Switch workspace (tabs)
 [ ] Save workspace
 [ ] Rename project
 [x] Static piano roll setup
@@ -98,7 +98,7 @@
 [ ] Move sequencer to rust (sync?)
 [ ] Move pitch system to rust
 [ ] Move midi routing to rust
-[ ] Poll audio/midi settings
+[x] Poll audio/midi settings
 [x] Reset audio driver to change settings in ASIO panel
 [ ] Group channels
 [ ] Master channel
