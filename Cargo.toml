@@ -58,7 +58,7 @@ harness = false
 # opt-level = 3
 
 [profile.release]
-debug = 1 # for profiling
+# debug = 1 # for profiling
 # lto = "thin"
 # codegen-units = 1
 # panic = "abort"

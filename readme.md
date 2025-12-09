@@ -8,11 +8,29 @@ GUI parts are written in lua, the audio backend is in Rust.
 
 ### How to build
 * Make sure you have installed [Rust](https://www.rust-lang.org/tools/install).
-* For Windows builds, you'll want ASIO support. Detailed build instructions are on the [cpal repo](https://github.com/RustAudio/cpal#asio-on-windows).
-* Use `cargo run` to build and start the application.
-
-A setup file will automatically be generated in the [settings directory](./settings) where you can configure your audio/midi device, see [example_setup.lua](./settings/example_setup.lua) for instructions.
+* Use `cargo run` to build and start the application in debug mode.
 
 For an optimized build, use `cargo run --release`.
 
 When things stabilize I will provide builds.
+
+## Platform specific build instructions
+### Windows
+To use ASIO, we need the sdk. Download it from <https://www.steinberg.net/asiosdk> and put it in some convenient like `C:\sdk\ASIOSDK`.
+Then, set "CPAL_ASIO_DIR" in your environment variables to this path.
+
+You also need LLVM installed. If you haven't, go to <https://github.com/llvm/llvm-project/releases/latest> and get 'clang+llvm-<version>-x86_64-pc-windows-msvc.tar.xz'
+
+More detailed build instructions are on the [cpal repo](https://github.com/RustAudio/cpal#asio-on-windows).
+
+### Linux
+JACK is enabled by default.
+
+Install the necessary dependencies:
+```bash
+sudo apt get libasound2-dev libjack-jackd2-dev libjack-jackd2-0 libdbus-1-dev
+```
+
+### MacOS
+Not tested.
+
