@@ -313,7 +313,6 @@ function tessera.keypressed(key, key_str, isrepeat)
 		tessera.audio.clear_messages()
 		tessera.audio.flush()
 	elseif modifier_keys.ctrl and key == "k" then
-		midi.quit()
 		tessera.audio.quit()
 	elseif modifier_keys.ctrl and key == "w" then
 		-- for testing panic recovery
