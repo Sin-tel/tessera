@@ -1,8 +1,17 @@
 local Box = require("box")
-local ui = require("ui/ui")
+local Ui = require("ui/ui")
 local views = require("views")
 
 local workspace = {}
+
+local function unpack_r(rect)
+	return rect.x, rect.y, rect.w, rect.h
+end
+
+local function hit(rect, mx, my)
+	local x, y, w, h = unpack_r(rect)
+	return mx >= x - 1 and my >= y - 1 and mx <= x + w + 2 and my <= y + h + 2
+end
 
 local Tab = {}
 Tab.__index = Tab
@@ -10,9 +19,33 @@ Tab.__index = Tab
 function Tab.new(name)
 	local self = setmetatable({}, Tab)
 
+	self.rect = {
+		x = 0,
+		y = Ui.PAD,
+		w = 32,
+		h = Ui.RIBBON_HEIGHT,
+	}
+
 	self.name = name
-	self.box = Box.new(0, ui.RIBBON_HEIGHT, width, height - ui.RIBBON_HEIGHT)
+	self.box = Box.new(0, Ui.RIBBON_HEIGHT, width, height - Ui.RIBBON_HEIGHT)
 	return self
+end
+
+function Tab:draw(i)
+	local x, y, w, h = unpack_r(self.rect)
+
+	if i == workspace.tab_current then
+		tessera.graphics.set_color(theme.header)
+	elseif i == workspace.tab_hover then
+		tessera.graphics.set_color(theme.bg_highlight)
+	else
+		tessera.graphics.set_color(theme.background)
+	end
+
+	tessera.graphics.rectangle("fill", x, y, w, h + 10, Ui.BORDER_RADIUS)
+
+	tessera.graphics.set_color(theme.ui_text)
+	tessera.graphics.label(self.name, x, y - 3, w, h, tessera.graphics.ALIGN_CENTER)
 end
 
 function Tab.from_data(data)
@@ -120,8 +153,8 @@ function workspace:resize(w, h)
 	self.h = h
 
 	local box = self.tabs[self.tab_current].box
-	local y = ui.RIBBON_HEIGHT
-	local h2 = h - ui.RIBBON_HEIGHT - ui.STATUS_HEIGHT
+	local y = Ui.RIBBON_HEIGHT
+	local h2 = h - Ui.RIBBON_HEIGHT - Ui.STATUS_HEIGHT
 	box:resize(0, y, w, h2)
 end
 
@@ -131,33 +164,15 @@ function workspace:draw()
 	-- TODO: just a mockup currently
 	local sw = 60
 	tessera.graphics.set_color(theme.ui_text)
-	tessera.graphics.label("File", 16, 2, sw, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_LEFT)
-	tessera.graphics.label("Options", 16 + sw, 2, sw, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_LEFT)
+	tessera.graphics.label("File", 16, 2, sw, Ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_LEFT)
+	tessera.graphics.label("Options", 16 + sw, 2, sw, Ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_LEFT)
 
 	-- tabs
-	-- TODO: just a mockup currently
-	local st = 160
 
-	local pad = ui.PAD
 	tessera.graphics.set_font_size()
 	for i, v in ipairs(self.tabs) do
-		if i == self.tab_current then
-			tessera.graphics.set_color(theme.header)
-		elseif i == self.tab_hover then
-			tessera.graphics.set_color(theme.bg_highlight)
-		else
-			tessera.graphics.set_color(theme.background)
-		end
-		tessera.graphics.rectangle("fill", st * i, pad, st - pad, ui.RIBBON_HEIGHT + 10, ui.BORDER_RADIUS)
-
-		tessera.graphics.set_color(theme.ui_text)
-		tessera.graphics.label(v.name, st * i, 2, st - pad, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_CENTER)
+		v:draw(i)
 	end
-
-	tessera.graphics.set_color(theme.background)
-	tessera.graphics.rectangle("fill", st * (#self.tabs + 1), pad, 32, ui.RIBBON_HEIGHT + 10, ui.BORDER_RADIUS)
-	tessera.graphics.set_color(theme.ui_text)
-	tessera.graphics.label("+", st * (#self.tabs + 1), 2, 32, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_CENTER)
 
 	-- CPU meter
 	local ll = util.clamp(self.cpu_load, 0.01, 1)
@@ -168,7 +183,7 @@ function workspace:draw()
 
 	local w1 = 64
 	local h1 = 16
-	local y1 = 0.5 * (ui.RIBBON_HEIGHT - h1)
+	local y1 = 0.5 * (Ui.RIBBON_HEIGHT - h1)
 	local x1 = self.w - 64 - y1
 
 	tessera.graphics.set_color(theme.widget_bg)
@@ -183,14 +198,14 @@ function workspace:draw()
 	if tessera.audio.ok() then
 		cpu_label = string.format("%d %%", 100 * self.cpu_load)
 	end
-	tessera.graphics.label(cpu_label, x1, 0, w1, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_CENTER)
-	tessera.graphics.label("CPU: ", x1 - w1, 0, w1, ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_RIGHT)
+	tessera.graphics.label(cpu_label, x1, 0, w1, Ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_CENTER)
+	tessera.graphics.label("CPU: ", x1 - w1, 0, w1, Ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_RIGHT)
 
 	-- master meters
 
 	w1 = 96
 	h1 = 16
-	y1 = 0.5 * (ui.RIBBON_HEIGHT - h1)
+	y1 = 0.5 * (Ui.RIBBON_HEIGHT - h1)
 	x1 = self.w - 224 - y1
 
 	local ml = self.meter.l
@@ -220,12 +235,33 @@ function workspace:draw()
 
 	-- status bar
 	tessera.graphics.set_color(theme.background)
-	tessera.graphics.rectangle("fill", 0, self.h - ui.STATUS_HEIGHT, self.w, ui.STATUS_HEIGHT)
+	tessera.graphics.rectangle("fill", 0, self.h - Ui.STATUS_HEIGHT, self.w, Ui.STATUS_HEIGHT)
 	tessera.graphics.set_color(theme.borders)
-	tessera.graphics.line(0, self.h - ui.STATUS_HEIGHT, self.w, self.h - ui.STATUS_HEIGHT)
+	tessera.graphics.line(0, self.h - Ui.STATUS_HEIGHT, self.w, self.h - Ui.STATUS_HEIGHT)
 end
 
 function workspace:update()
+	-- calculate layout of the top bar
+	-- TODO: menus
+	-- TODO: meters and tabs overlap at small sizes
+
+	local x = 160
+	local tab_w = 160
+	self.tab_hover = nil
+	for i, v in ipairs(self.tabs) do
+		if hit(v.rect, mouse.x, mouse.y) then
+			self.tab_hover = i
+		end
+		if mouse.button_pressed == 1 and self.tab_hover == i then
+			self.tab_current = self.tab_hover
+			self:resize(self.w, self.h)
+		end
+		v.rect.x = x
+		v.rect.w = tab_w - Ui.PAD
+		x = x + tab_w
+	end
+
+	--
 	if self.drag_div and mouse.drag then
 		self.drag_div:set_split(mouse.x, mouse.y)
 	end

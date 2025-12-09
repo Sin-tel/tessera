@@ -144,7 +144,7 @@ function Settings:update()
 	self.ui:background(theme.bg_nested)
 
 	self.ui.layout:new_row()
-	self.ui.layout:col(c1, 32)
+	self.ui.layout:col(c1)
 	self.ui.layout:col(c2)
 	self.ui:label("Driver type")
 	self.ui.layout:col(c3)
