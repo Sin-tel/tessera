@@ -109,6 +109,8 @@ function midi.new_device(config)
 		new.pitchbend_range = 48
 	end
 
+	new.offset = 0
+
 	new.notes = {}
 	return new
 end
@@ -160,7 +162,6 @@ function midi.update_device(device_index, device)
 end
 
 function midi.event(device, sink, event)
-	util.pprint(event)
 	if event.name == "note_on" then
 		local n_index = event_note_index(event)
 		local token = tessera.audio.get_token()
@@ -168,7 +169,7 @@ function midi.event(device, sink, event)
 
 		local pitch = tuning.from_midi(event.note)
 
-		sink:event({ name = "note_on", token = token, pitch = pitch, vel = event.vel })
+		sink:event({ name = "note_on", token = token, pitch = pitch, vel = event.vel, offset = device.offset })
 	elseif event.name == "note_off" then
 		local n_index = event_note_index(event)
 		local token = device.notes[n_index]
@@ -181,17 +182,17 @@ function midi.event(device, sink, event)
 		device.notes[n_index] = nil
 	elseif event.name == "pitchbend" then
 		-- TODO: fix mpe pitchbend before note on
-		local offset = device.pitchbend_range * event.pitchbend
+		device.offset = device.pitchbend_range * event.pitchbend
 		if device.mpe then
 			for k, token in pairs(device.notes) do
 				local midi_ch = math.floor(k / 256)
 				if midi_ch == event.channel then
-					sink:event({ name = "pitch", token = token, offset = offset })
+					sink:event({ name = "pitch", token = token, offset = device.offset })
 				end
 			end
 		else
 			for _, token in pairs(device.notes) do
-				sink:event({ name = "pitch", token = token, offset = offset })
+				sink:event({ name = "pitch", token = token, offset = device.offset })
 			end
 		end
 	elseif event.name == "pressure" then

@@ -18,7 +18,13 @@ function note_input:keypressed(key)
 				local p = tuning.from_diatonic(i, octave)
 				local token = tessera.audio.get_token()
 				key_down[i] = token
-				ui_channels[ch_index]:event({ name = "note_on", token = token, pitch = p, vel = DEFAULT_VELOCITY })
+				ui_channels[ch_index]:event({
+					name = "note_on",
+					token = token,
+					pitch = p,
+					vel = DEFAULT_VELOCITY,
+					offset = 0,
+				})
 				return true
 			end
 		end

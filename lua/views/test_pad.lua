@@ -78,8 +78,13 @@ function TestPadView:mousepressed()
 		local note = tuning.from_midi(self.chromatic)
 		self.pitch = tuning.get_pitch(note)
 
-		ui_channels[ch_index]:event({ name = "note_on", token = self.token, pitch = note, vel = vel })
-		ui_channels[ch_index]:event({ name = "pitch", token = self.token, offset = self.f - self.pitch })
+		ui_channels[ch_index]:event({
+			name = "note_on",
+			token = self.token,
+			pitch = note,
+			vel = vel,
+			offset = self.f - self.pitch,
+		})
 	end
 end
 

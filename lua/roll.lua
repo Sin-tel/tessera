@@ -100,7 +100,13 @@ function Roll:playback(channel)
 		local token = tessera.audio.get_token()
 		table.insert(self.voices, { n_index = self.n_index, v_index = 1, token = token })
 
-		channel:send_event({ name = "note_on", token = token, pitch = note.pitch, vel = note.vel })
+		channel:send_event({
+			name = "note_on",
+			token = token,
+			pitch = note.pitch,
+			vel = note.vel,
+			offset = note.verts[1][2],
+		})
 
 		self.n_index = self.n_index + 1
 	end
@@ -143,7 +149,7 @@ function Roll:event(event)
 				time = time,
 				vel = event.vel,
 				-- TODO: initial pressure?
-				verts = { { 0.0, 0.0, DEFAULT_PRESSURE } },
+				verts = { { 0.0, event.offset, DEFAULT_PRESSURE } },
 				is_recording = true,
 			}
 
