@@ -6,20 +6,18 @@ Experimental DAW with a focus on microtonal composition, expressiveness and phys
 
 GUI parts are written in lua, the audio backend is in Rust.
 
-### How to build
+When things stabilize I will provide builds.
+
+## Build instructions
 * Make sure you have installed [Rust](https://www.rust-lang.org/tools/install).
 * Use `cargo run` to build and start the application in debug mode.
 
 For an optimized build, use `cargo run --release`.
-
-When things stabilize I will provide builds.
-
-## Platform specific build instructions
 ### Windows
 To use ASIO, we need the sdk. Download it from <https://www.steinberg.net/asiosdk> and put it in some convenient like `C:\sdk\ASIOSDK`.
 Then, set "CPAL_ASIO_DIR" in your environment variables to this path.
 
-You also need LLVM installed. If you haven't, go to <https://github.com/llvm/llvm-project/releases/latest> and get 'clang+llvm-<version>-x86_64-pc-windows-msvc.tar.xz'
+You also need LLVM installed. If you haven't, go to <https://github.com/llvm/llvm-project/releases/latest> and get 'clang+llvm-[version]-x86_64-pc-windows-msvc.tar.xz'
 
 More detailed build instructions are on the [cpal repo](https://github.com/RustAudio/cpal#asio-on-windows).
 
