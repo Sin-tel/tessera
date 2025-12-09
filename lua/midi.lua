@@ -38,8 +38,10 @@ function midi.update_port(enable, config)
 			assert(not devices[index])
 			devices[index] = midi.new_device(config)
 			midi.open_ports[config.name] = true
+			return true
 		else
 			log.warn(("Midi device %q not found"):format(config.name))
+			return false
 		end
 	else
 		local index = tessera.midi.close_connection(config.name)
@@ -47,8 +49,10 @@ function midi.update_port(enable, config)
 			assert(devices[index])
 			table.remove(devices, index)
 			midi.open_ports[config.name] = nil
+			return true
 		else
 			log.warn(("Midi device %q not found"):format(config.name))
+			return false
 		end
 	end
 end
@@ -81,7 +85,11 @@ function midi.scan_ports()
 		-- new ports to add
 		if c.enable and midi.available_ports[c.name] and not midi.open_ports[c.name] then
 			midi.ports_changed = true
-			midi.update_port(true, c)
+			local success = midi.update_port(true, c)
+			if not success then
+				-- disable it so we don't try opening it again next scan
+				c.enable = false
+			end
 		end
 
 		-- stale ports to delete
@@ -106,7 +114,7 @@ function midi.new_device(config)
 end
 
 function midi.update(dt)
-	if not midi.ok then
+	if not midi.ok or not tessera.audio.ok() then
 		return
 	end
 

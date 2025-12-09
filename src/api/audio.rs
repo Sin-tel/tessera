@@ -89,17 +89,6 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	audio.set(
-		"check_should_rebuild",
-		lua.create_function(|lua, ()| {
-			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				Ok(ctx.check_should_rebuild())
-			} else {
-				Ok(false)
-			}
-		})?,
-	)?;
-
-	audio.set(
 		"panic",
 		lua.create_function(|lua, ()| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
@@ -123,16 +112,6 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	audio.set(
 		"ok",
 		lua.create_function(|lua, ()| Ok(lua.app_data_mut::<State>().unwrap().audio.is_some()))?,
-	)?;
-
-	audio.set(
-		"get_samplerate",
-		lua.create_function(|lua, ()| {
-			if let Some(ctx) = &lua.app_data_ref::<State>().unwrap().audio {
-				return Ok(Some(ctx.sample_rate));
-			}
-			Ok(None)
-		})?,
 	)?;
 
 	audio.set(
@@ -438,6 +417,20 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		lua.create_function(|lua, ()| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				match ctx.lua_rx.try_pop() {
+					Some(p) => Ok(Some(lua.to_value(&p)?)),
+					None => Ok(None),
+				}
+			} else {
+				Ok(None)
+			}
+		})?,
+	)?;
+
+	audio.set(
+		"pop_error",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				match ctx.error_rx.try_pop() {
 					Some(p) => Ok(Some(lua.to_value(&p)?)),
 					None => Ok(None),
 				}

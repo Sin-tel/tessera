@@ -62,6 +62,7 @@ impl Meters {
 	}
 
 	// get a flat array for all active slots
+	// TODO: probably more efficient to send (Vec<f32>, Vec<f32>)
 	pub fn collect(&self) -> Vec<[f32; 2]> {
 		let mut result = Vec::with_capacity(self.global_index);
 
