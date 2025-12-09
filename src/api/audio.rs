@@ -1,6 +1,8 @@
 use crate::app::State;
 use crate::audio;
-use crate::audio::{check_architecture, get_hosts, get_output_devices};
+use crate::audio::{
+	check_architecture, get_default_host, get_default_output_device, get_hosts, get_output_devices,
+};
 use crate::context::{AudioContext, AudioMessage};
 use crate::log::{log_error, log_info};
 use crate::voice_manager::Token;
@@ -12,12 +14,27 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	let audio = lua.create_table()?;
 
 	audio.set("get_hosts", lua.create_function(|_, ()| Ok(get_hosts()))?)?;
+	audio.set("get_default_host", lua.create_function(|_, ()| Ok(get_default_host()))?)?;
 
 	audio.set(
 		"get_output_devices",
 		lua.create_function(|_, host_name: String| match get_output_devices(&host_name) {
-			Ok(result) => Ok(result),
-			Err(e) => Err(mlua::Error::RuntimeError(e.to_string())),
+			Ok(devices) => Ok(devices),
+			Err(e) => {
+				log_error!("{e}");
+				Ok(vec![])
+			},
+		})?,
+	)?;
+
+	audio.set(
+		"get_default_output_device",
+		lua.create_function(|_, host_name: String| match get_default_output_device(&host_name) {
+			Ok(name) => Ok(Some(name)),
+			Err(e) => {
+				log_error!("{e}");
+				Ok(None)
+			},
 		})?,
 	)?;
 
@@ -50,8 +67,10 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		lua.create_function(
 			|lua, (host_name, device_name, buffer_size): (String, String, Option<u32>)| {
 				#[allow(clippy::collapsible_if)]
-				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				let state = &mut *lua.app_data_mut::<State>().unwrap();
+				if let Some(ctx) = &mut state.audio {
 					if let Err(e) = ctx.rebuild_stream(&host_name, &device_name, buffer_size) {
+						state.audio = None;
 						log_error!("{e}");
 					}
 				}

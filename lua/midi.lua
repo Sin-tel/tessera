@@ -94,7 +94,7 @@ function midi.update(dt)
 	if scan_device_timer < 0 then
 		-- scan every .5 seconds
 		scan_device_timer = 0.5
-		midi.scan_ports(setup.midi.inputs)
+		midi.scan_ports(setup.midi_ports)
 	end
 
 	for i, device in ipairs(devices) do

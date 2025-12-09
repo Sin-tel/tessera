@@ -23,6 +23,9 @@ Options
  - follow
  - chase midi notes
 
+display audio status
+display current buffer size (message from backend)
+
 get rid of /settings
 just embed default theme for now
 
@@ -56,9 +59,11 @@ fix gain to be smoothed
 
 mute declicking
 
+should we use audio_thread_priority?
+
 ## building
 
-on linux:
+on WSL:
 # compiling for alsa
 sudo apt install libasound2-dev
 # windowing support

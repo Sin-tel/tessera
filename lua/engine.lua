@@ -140,6 +140,34 @@ function engine.render_finish()
 	engine.stop()
 end
 
+function engine.setup_stream()
+	local host = setup.host
+	local device = setup.configs[host].device
+	local buffer_size = setup.configs[host].buffer_size
+	if device then
+		tessera.audio.setup(host, device, buffer_size)
+	else
+		log.error("No device.")
+	end
+end
+
+function engine.rebuild_stream()
+	if tessera.audio.ok() then
+		log.info("Rebuilding stream")
+		local host = setup.host
+		local device = setup.configs[host].device
+		local buffer_size = setup.configs[host].buffer_size
+		if device then
+			tessera.audio.rebuild(host, device, buffer_size)
+		else
+			log.error("No device.")
+			tessera.audio.quit()
+		end
+	else
+		audio_status = "request"
+	end
+end
+
 -- update UI with messages from tessera.audio
 function engine.parse_messages()
 	while true do
@@ -190,8 +218,17 @@ local M_DECAY = 0.7
 function engine.update_meters()
 	local meters = tessera.audio.get_meters()
 	if not meters then
+		for _, ch in ipairs(ui_channels) do
+			ch.instrument.meter_l = 0
+			ch.instrument.meter_r = 0
+			for _, fx in ipairs(ch.effects) do
+				fx.meter_l = 0
+				fx.meter_r = 0
+			end
+		end
 		return
 	end
+
 	for _, ch in ipairs(ui_channels) do
 		local i = ch.instrument.meter_id
 		ch.instrument.meter_l = math.max(meters[i][1], ch.instrument.meter_l * M_DECAY)
