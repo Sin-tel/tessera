@@ -23,6 +23,9 @@ local function event_note_index(event)
 end
 
 function midi.load()
+	if midi.ok then
+		return
+	end
 	devices = {}
 	midi.ok = tessera.midi.init()
 
