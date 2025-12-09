@@ -19,7 +19,7 @@ pub fn setup_lua_loader(lua: &Lua) -> LuaResult<()> {
 			Some(script) => {
 				let loader = lua
 					.load(&*script.data)
-					.set_name(format!("@lua/{}", path))
+					.set_name(format!("@lua/{path}"))
 					.into_function()?;
 				Ok(Some(loader))
 			},

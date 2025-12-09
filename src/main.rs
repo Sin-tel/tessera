@@ -20,6 +20,7 @@ use tessera::app::State;
 use tessera::audio;
 use tessera::embed::Script;
 use tessera::log::*;
+use tessera::midi;
 use tessera::opengl::Surface;
 use tessera::opengl::WindowSurface;
 use tessera::opengl::setup_window;
@@ -41,13 +42,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 	fs::create_dir_all("./out")?;
 
 	if std::env::args().any(|arg| arg == "--test-run") {
-		test_run()?
-	} else {
-		if let Err(e) = run() {
-			log_error!("{e}");
-		}
+		test_run()?;
+		return Ok(());
 	}
 
+	if let Err(e) = run() {
+		log_error!("{e}");
+	}
 	Ok(())
 }
 
@@ -73,10 +74,16 @@ fn test_run() -> LuaResult<()> {
 		}
 	}
 
+	if let Some(midi_input) = midi::open_midi() {
+		log_info!("Available midi ports: {:?}", midi::port_names(&midi_input));
+	} else {
+		log_warn!("Midi failed to init");
+	}
+
 	hooks.load.call::<()>(true).unwrap();
 
 	hooks.quit.call::<()>(()).unwrap();
-	return Ok(());
+	Ok(())
 }
 
 fn run() -> LuaResult<()> {

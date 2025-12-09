@@ -26,10 +26,7 @@ function build.new_project()
 	-- init empty project
 	project = {}
 	project.channels = {}
-	project.VERSION = {}
-	project.VERSION.MAJOR = VERSION.MAJOR
-	project.VERSION.MINOR = VERSION.MINOR
-	project.VERSION.PATCH = VERSION.PATCH
+	project.VERSION = util.clone(VERSION)
 	project.name = "Untitled project"
 	project.transport = {}
 	project.transport.start_time = 0
