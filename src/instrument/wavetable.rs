@@ -9,10 +9,10 @@ const WT_NUM: usize = 16;
 
 // TODO: probably faster to store all of the wavetables in frequency domain and then mix those (only requires fwd fft)
 
+use crate::embed::Asset;
 use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
-use std::fs::File;
 use std::io::{BufReader, Read};
 use std::sync::Arc;
 
@@ -56,7 +56,7 @@ impl Instrument for Wavetable {
 		let buffer_b = c2r.make_output_vec();
 
 		// read binary file
-		let file = File::open("./res/wavetable.bin").unwrap();
+		let file: &[u8] = &Asset::get("wavetable.bin").unwrap().data;
 		let mut reader = BufReader::new(file);
 		let mut table = vec![0.0f32; WT_SIZE * WT_NUM];
 		let mut buffer = [0u8; 4];
