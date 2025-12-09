@@ -205,6 +205,17 @@ function Settings:update()
 	self.ui.layout:col(c3)
 	self.ui:label(tostring(engine.sample_rate or "?"))
 
+	-- check if the device changed due to fallback
+	local find_id = nil
+	for i, v in ipairs(self.hosts) do
+		if v == setup.host then
+			find_id = i
+		end
+	end
+	if find_id and self.state.host_id ~= find_id then
+		self:rebuild()
+	end
+
 	-- MIDI
 
 	if midi.ports_changed then
