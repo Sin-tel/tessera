@@ -15,7 +15,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::context::LuaMessage;
+use crate::context::{ErrorMessage, LuaMessage};
 use crate::dsp::env::AttackRelease;
 use crate::log::{log_error, log_info};
 use crate::render::Render;
@@ -130,9 +130,9 @@ pub fn build_stream(
 	config: &StreamConfig,
 	format: SampleFormat,
 	render: Arc<Mutex<Render>>,
-) -> Result<(Stream, HeapProd<bool>, HeapCons<bool>), Box<dyn Error>> {
+) -> Result<(Stream, HeapProd<bool>, HeapCons<ErrorMessage>), Box<dyn Error>> {
 	let (stream_tx, stream_rx) = HeapRb::<bool>::new(8).split();
-	let (error_tx, error_rx) = HeapRb::<bool>::new(8).split();
+	let (error_tx, error_rx) = HeapRb::<ErrorMessage>::new(8).split();
 
 	use SampleFormat::*;
 	let stream = match format {
@@ -161,7 +161,7 @@ pub fn build_stream_inner<T>(
 	config: &StreamConfig,
 	render: Arc<Mutex<Render>>,
 	stream_rx: HeapCons<bool>,
-	error_tx: HeapProd<bool>,
+	error_tx: HeapProd<ErrorMessage>,
 ) -> Result<Stream, Box<dyn Error>>
 where
 	T: 'static + cpal::SizedSample + cpal::FromSample<f32>,
@@ -193,12 +193,13 @@ where
 				#[cfg(debug_assertions)]
 				enable_fpu_traps();
 
-				let cpal_buffer_size = cpal_buffer.len() / 2;
+				let buffer_size = cpal_buffer.len() / 2;
 				match render.try_lock() {
 					Some(mut render) if !is_rendering => {
 						if !start {
 							start = true;
-							log_info!("Buffer size: {cpal_buffer_size:?}");
+							let sample_rate = render.sample_rate;
+							render.send(LuaMessage::StreamSettings { buffer_size, sample_rate });
 						}
 
 						let time = std::time::Instant::now();
@@ -228,8 +229,8 @@ where
 						}
 
 						let t = time.elapsed();
-						let p = t.as_secs_f64()
-							/ (cpal_buffer_size as f64 / f64::from(render.sample_rate));
+						let p =
+							t.as_secs_f64() / (buffer_size as f64 / f64::from(render.sample_rate));
 						cpu_load.set(p as f32);
 						let load = cpu_load.process();
 						render.send(LuaMessage::Cpu { load });
@@ -269,17 +270,23 @@ where
 	}
 }
 
-fn error_closure(mut error_tx: HeapProd<bool>) -> impl FnMut(StreamError) + Send + 'static {
+fn error_closure(mut error_tx: HeapProd<ErrorMessage>) -> impl FnMut(StreamError) + Send + 'static {
 	move |error| match error {
 		StreamError::DeviceNotAvailable => {
 			log_error!("Stream error: device not available.");
+			error_tx
+				.try_push(ErrorMessage::DeviceNotAvailable)
+				.expect("Could not send message.");
 		},
 		StreamError::StreamInvalidated => {
 			log_info!("Stream reset request");
-			error_tx.try_push(true).expect("Could not send message.");
+			error_tx
+				.try_push(ErrorMessage::ResetRequest)
+				.expect("Could not send message.");
 		},
 		StreamError::BackendSpecific { err: BackendSpecificError { ref description } } => {
 			log_error!("Device error: {description}");
+			// TODO should we handle these?
 		},
 	}
 }

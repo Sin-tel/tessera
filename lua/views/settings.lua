@@ -114,6 +114,8 @@ function Settings:rebuild()
 		self.state.toggle_buffer = 0
 	end
 
+	self.reset_button = widgets.Button.new("Audio offline. Click to reset.")
+
 	-- build the widget
 	self.select_device = widgets.Dropdown.new({ list = self.devices, no_undo = true })
 end
@@ -121,7 +123,7 @@ end
 function Settings:update()
 	local lw = math.min(800, self.w - 64)
 	local x = 64
-	local y = 32
+	local y = 24
 
 	self.ui:start_frame(x, y)
 
@@ -130,11 +132,19 @@ function Settings:update()
 	local c3 = c2
 
 	self.ui.layout:col(lw)
+	if not tessera.audio.ok() then
+		if self.reset_button:update(self.ui) then
+			engine.rebuild_stream()
+		end
+	end
+	self.ui.layout:new_row()
+	self.ui.layout:col(lw)
 	self.ui:label("Audio settings")
+
 	self.ui:background(theme.bg_nested)
 
 	self.ui.layout:new_row()
-	self.ui.layout:col(c1)
+	self.ui.layout:col(c1, 32)
 	self.ui.layout:col(c2)
 	self.ui:label("Driver type")
 	self.ui.layout:col(c3)
@@ -180,6 +190,20 @@ function Settings:update()
 		self:rebuild()
 		engine.rebuild_stream()
 	end
+
+	self.ui.layout:new_row()
+	self.ui.layout:col(c1)
+	self.ui.layout:col(c2)
+	self.ui:label("Buffer size")
+	self.ui.layout:col(c3)
+	self.ui:label(tostring(engine.buffer_size or "?"))
+
+	self.ui.layout:new_row()
+	self.ui.layout:col(c1)
+	self.ui.layout:col(c2)
+	self.ui:label("Sample rate")
+	self.ui.layout:col(c3)
+	self.ui:label(tostring(engine.sample_rate or "?"))
 
 	-- MIDI
 

@@ -60,7 +60,7 @@ function engine.update(dt)
 			end
 		end
 	end
-
+	engine.parse_errors()
 	engine.parse_messages()
 end
 
@@ -101,7 +101,7 @@ end
 function engine.render()
 	assert(tessera.audio.is_rendering())
 
-	local dt = RENDER_BLOCK_SIZE / tessera.audio.get_samplerate()
+	local dt = RENDER_BLOCK_SIZE / engine.sample_rate
 
 	-- Try to hit 16 ms to keep things responsive
 	local target_ms = 16
@@ -152,6 +152,8 @@ function engine.setup_stream()
 end
 
 function engine.rebuild_stream()
+	engine.buffer_size = nil
+	engine.sample_rate = nil
 	if tessera.audio.ok() then
 		log.info("Rebuilding stream")
 		local host = setup.host
@@ -171,15 +173,38 @@ end
 -- update UI with messages from tessera.audio
 function engine.parse_messages()
 	while true do
-		local p = tessera.audio.pop()
-		if p == nil then
+		local msg = tessera.audio.pop()
+		if msg == nil then
 			return
 		end
-		if p.tag == "Cpu" then
-			workspace.cpu_load = p.load
-		elseif p.tag == "Meter" then
-			workspace.meter.l = p.l
-			workspace.meter.r = p.r
+		if msg.tag == "Cpu" then
+			workspace.cpu_load = msg.load
+		elseif msg.tag == "Meter" then
+			workspace.meter.l = msg.l
+			workspace.meter.r = msg.r
+		elseif msg.tag == "StreamSettings" then
+			engine.buffer_size = msg.buffer_size
+			engine.sample_rate = msg.sample_rate
+		else
+			log.warn("unhandled message:")
+			log.warn(util.dump(msg))
+		end
+	end
+end
+
+function engine.parse_errors()
+	while true do
+		local msg = tessera.audio.pop_error()
+		if msg == nil then
+			return
+		end
+		if msg.tag == "ResetRequest" then
+			engine.rebuild_stream()
+		elseif msg.tag == "DeviceNotAvailable" then
+			tessera.audio.quit()
+		else
+			log.warn("unhandled message:")
+			log.warn(util.dump(msg))
 		end
 	end
 end

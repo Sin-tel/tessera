@@ -171,10 +171,6 @@ function tessera.update(dt)
 	-- protect against huge dt from frozen window
 	dt = math.min(dt, 1 / 60)
 
-	if tessera.audio.check_should_rebuild() then
-		engine.rebuild_stream()
-	end
-
 	if audio_status == "render" then
 		engine.render()
 	elseif audio_status == "running" then
@@ -317,12 +313,8 @@ function tessera.keypressed(key, key_str, isrepeat)
 		tessera.audio.clear_messages()
 		tessera.audio.flush()
 	elseif modifier_keys.ctrl and key == "k" then
-		if tessera.audio.ok() then
-			midi.quit()
-			tessera.audio.quit()
-		else
-			audio_status = "request"
-		end
+		midi.quit()
+		tessera.audio.quit()
 	elseif modifier_keys.ctrl and key == "w" then
 		-- for testing panic recovery
 		tessera.audio.panic()
