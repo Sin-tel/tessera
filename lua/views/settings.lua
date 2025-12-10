@@ -7,6 +7,9 @@ local widgets = require("ui/widgets")
 local Settings = View.derive("Settings")
 Settings.__index = Settings
 
+-- cache devices
+local DEVICES = {}
+
 -- fix some capitalization, host_str has to match with backend
 local function display_name(host_str)
 	if host_str == "alsa" then
@@ -92,6 +95,12 @@ function Settings:rebuild()
 
 	-- DEVICE
 	self.devices = tessera.audio.get_output_devices(setup.host)
+
+	-- cache call to devices since it doesn't properly work if a stream is already running
+	if not DEVICES[setup.host] then
+		DEVICES[setup.host] = tessera.audio.get_output_devices(setup.host)
+	end
+	self.devices = DEVICES[setup.host]
 
 	-- In case devices is empty we add a dummy value
 	if #self.devices == 0 then
