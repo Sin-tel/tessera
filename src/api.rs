@@ -1,5 +1,6 @@
 mod audio;
 pub mod graphics;
+pub mod icon;
 pub mod image;
 pub mod keycodes;
 mod midi;

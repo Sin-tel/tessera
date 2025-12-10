@@ -12,6 +12,8 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 
 	graphics.set("scale_factor", scale_factor)?;
 
+	// Draw functions
+
 	graphics.set(
 		"set_font_main",
 		lua.create_function(|lua, ()| {
@@ -57,6 +59,27 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 
 			let paint = Paint::image_tint(image_id, x, y, w, h, 0.0, state.current_color);
 			state.canvas.fill_path(&path, &paint);
+
+			Ok(())
+		})?,
+	)?;
+
+	graphics.set(
+		"draw_path",
+		lua.create_function(|lua, (path_id, x, y): (usize, f32, f32)| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			let transform = state.canvas.transform();
+			state.canvas.translate(x, y);
+			state.canvas.scale(state.scale_factor, state.scale_factor);
+
+			let path = &state.paths[path_id];
+
+			let paint = Paint::color(state.current_color);
+			state.canvas.fill_path(&path, &paint);
+
+			state.canvas.reset_transform();
+			state.canvas.set_transform(&transform);
 
 			Ok(())
 		})?,
@@ -273,6 +296,15 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 			);
 
 			Ok(())
+		})?,
+	)?;
+
+	graphics.set(
+		"measure_width",
+		lua.create_function(|lua, text: String| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			Ok(state.text_engine.measure_width(&text, state.font, state.font_size))
 		})?,
 	)?;
 
