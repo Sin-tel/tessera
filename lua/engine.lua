@@ -152,6 +152,7 @@ function engine.setup_stream()
 end
 
 function engine.rebuild_stream()
+	engine.flush_messages()
 	engine.buffer_size = nil
 	engine.sample_rate = nil
 	if tessera.audio.ok() then
@@ -206,6 +207,23 @@ function engine.parse_errors()
 			log.warn("unhandled message:")
 			log.warn(util.dump(msg))
 		end
+	end
+end
+
+function engine.flush_messages()
+	-- TODO: probably better to do this on the backend just before we rebuild stream
+	while true do
+		local msg = tessera.audio.pop()
+		if msg == nil then
+			break
+		end
+	end
+	while true do
+		local msg = tessera.audio.pop_error()
+		if msg == nil then
+			break
+		end
+		log.info("Ignored error message: " .. msg.tag)
 	end
 end
 
