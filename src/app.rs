@@ -46,8 +46,7 @@ pub struct State {
 }
 
 impl State {
-	pub fn new(canvas: Canvas<Renderer>, window: Window) -> Self {
-		let scale_factor = window.scale_factor() as f32;
+	pub fn new(canvas: Canvas<Renderer>, window: Window, scale_factor: f32) -> Self {
 		State {
 			current_color: Color::white(),
 			mouse_position: (0., 0.),

@@ -93,7 +93,7 @@ fn run() -> LuaResult<()> {
 	let scale_factor = window.scale_factor();
 	let lua = create_lua(scale_factor)?;
 
-	lua.set_app_data(State::new(canvas, window));
+	lua.set_app_data(State::new(canvas, window, scale_factor as f32));
 
 	init_logging();
 

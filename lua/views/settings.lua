@@ -35,9 +35,9 @@ function Settings.new()
 	local self = setmetatable({}, Settings)
 
 	self.ui = Ui.new(self)
-	self.ui.layout.h = 32
+	self.ui.layout.h = Ui.scale(32)
 	self.ui.layout:padding(6)
-	self.indent = 32
+	self.indent = Ui.scale(32)
 
 	self.state = {
 		host_id = 1,

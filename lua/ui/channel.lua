@@ -153,7 +153,7 @@ function Channel:draw(ui, ch_index, x, y, w, h)
 	local wr = util.clamp((util.to_dB(mr) + 80) / 80, 0, 1)
 
 	local x1 = w_text * 0.6
-	local h1 = 16
+	local h1 = Ui.scale(16)
 	local y1 = y + 0.5 * (h - h1)
 	local w1 = w - x1 - w_buttons - 20
 	local h2 = 0.5 * h1
