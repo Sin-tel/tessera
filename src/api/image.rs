@@ -1,18 +1,11 @@
-// image.rs
 use crate::app::State;
 use crate::embed::Asset;
 use femtovg::ImageFlags;
 use mlua::prelude::*;
 
 #[rustfmt::skip]
-pub const BUILTIN_ICONS: &[(&str, &str)] = &[
-	("solo",       "icons/solo.png"),
-	("mute",       "icons/mute.png"),
-	("armed",      "icons/armed.png"),
-	("visible",    "icons/visible.png"),
-	("invisible",  "icons/invisible.png"),
-	("lock",       "icons/lock.png"),
-	("unlock",     "icons/unlock.png"),
+const BUILTIN_IMG: &[(&str, &str)] = &[
+	("color_wheel",       "img/color_wheel.png"),
 ];
 
 pub fn load_images(lua: &Lua) -> LuaResult<()> {
@@ -22,7 +15,7 @@ pub fn load_images(lua: &Lua) -> LuaResult<()> {
 
 	let mut image_ids = Vec::new();
 
-	for (index, (name, path)) in BUILTIN_ICONS.iter().enumerate() {
+	for (index, (name, path)) in BUILTIN_IMG.iter().enumerate() {
 		let bytes = Asset::get(path).unwrap().data;
 		let image_id = state.canvas.load_image_mem(&bytes, ImageFlags::empty()).unwrap();
 

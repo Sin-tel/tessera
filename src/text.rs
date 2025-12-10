@@ -410,6 +410,22 @@ impl TextEngine {
 		canvas.draw_glyph_commands(cmds, paint);
 	}
 
+	pub fn measure_width(&mut self, text: &str, font: Font, font_size: f32) -> f32 {
+		let line_height = font_size;
+
+		let metrics = Metrics::new(font_size, line_height);
+		self.scratch_buffer.set_metrics(&mut self.font_system, metrics);
+
+		let attrs = Attrs::new().family(Family::Name(font.as_str()));
+
+		self.scratch_buffer
+			.set_text(&mut self.font_system, text, &attrs, SHAPING, None);
+
+		self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
+
+		self.scratch_buffer.layout_runs().next().unwrap().line_w
+	}
+
 	pub fn draw_debug_atlas(&self, canvas: &mut Canvas<Renderer>) {
 		let mut x = 0.;
 		let mut y = 32.;

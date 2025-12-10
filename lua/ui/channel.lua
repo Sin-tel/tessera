@@ -52,11 +52,12 @@ Channel.__index = Channel
 function Channel.new()
 	local self = setmetatable({}, Channel)
 
-	self.button_mute = Button.new({ img_on = tessera.image.mute, color_on = theme.mute })
-	self.button_solo = Button.new({ img_on = tessera.image.solo, color_on = theme.solo })
-	self.button_armed = Button.new({ img_on = tessera.image.armed, color_on = theme.recording })
-	self.button_visible = Button.new({ img_on = tessera.image.visible, img_off = tessera.image.invisible })
-	self.button_lock = Button.new({ img_on = tessera.image.lock, img_off = tessera.image.unlock })
+	self.button_mute = Button.new({ label = "m", color_on = theme.mute })
+	self.button_solo = Button.new({ label = "s", color_on = theme.solo })
+
+	self.button_armed = Button.new({ img_on = tessera.icon.armed, color_on = theme.recording })
+	self.button_visible = Button.new({ img_on = tessera.icon.visible, img_off = tessera.icon.invisible })
+	self.button_lock = Button.new({ img_on = tessera.icon.lock, img_off = tessera.icon.unlock })
 
 	return self
 end
@@ -179,6 +180,7 @@ end
 function Button.new(options)
 	local self = setmetatable({}, Button)
 
+	self.label = options.label
 	self.img_on = options.img_on
 	self.img_off = options.img_off or options.img_on
 	self.color_on = options.color_on or theme.ui_text
@@ -206,10 +208,21 @@ function Button:draw(ui, checked, x, y, w, h)
 
 	if checked then
 		tessera.graphics.set_color(self.color_on)
-		tessera.graphics.draw(self.img_on, x, y)
 	else
 		tessera.graphics.set_color(self.color_off)
-		tessera.graphics.draw(self.img_off, x, y)
+	end
+	if self.label then
+		tessera.graphics.set_font_size(18)
+		local tw = tessera.graphics.measure_width(self.label)
+		local o = 0.5 * (w - tw)
+		tessera.graphics.text(self.label, x + o, y - 3)
+		tessera.graphics.set_font_size()
+	else
+		if checked then
+			tessera.graphics.draw_path(self.img_on, x, y)
+		else
+			tessera.graphics.draw_path(self.img_off, x, y)
+		end
 	end
 end
 

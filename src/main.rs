@@ -14,6 +14,7 @@ use winit::window::WindowId;
 
 use tessera::api::Hooks;
 use tessera::api::create_lua;
+use tessera::api::icon::load_icons;
 use tessera::api::image::load_images;
 use tessera::api::keycodes::keycode_to_str;
 use tessera::app::State;
@@ -101,6 +102,7 @@ fn run() -> LuaResult<()> {
 	lua.load(lua_main).set_name("@lua/main.lua").exec()?;
 
 	load_images(&lua)?;
+	load_icons(&lua)?;
 
 	let hooks = Hooks::new(&lua)?;
 

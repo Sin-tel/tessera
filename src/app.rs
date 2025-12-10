@@ -4,11 +4,9 @@ use crate::context::AudioContext;
 use crate::log::log_warn;
 use crate::midi;
 use crate::opengl::Renderer;
-use crate::text::Font;
-use crate::text::TextEngine;
+use crate::text::{Font, TextEngine};
 use crate::voice_manager::Token;
-use femtovg::ImageId;
-use femtovg::{Canvas, Color};
+use femtovg::{Canvas, Color, ImageId, Path};
 use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc;
@@ -28,6 +26,7 @@ pub struct State {
 	pub font_size: f32,
 	pub text_engine: TextEngine,
 	pub image_ids: Vec<ImageId>,
+	pub paths: Vec<Path>,
 	pub mouse_position: (f32, f32),
 	pub window_size: (u32, u32),
 	pub exit: bool,
@@ -56,6 +55,7 @@ impl State {
 			font_size: DEFAULT_FONT_SIZE,
 			text_engine: TextEngine::new(),
 			image_ids: Vec::new(),
+			paths: Vec::new(),
 			exit: false,
 			start_time: std::time::Instant::now(),
 			transform_stack: Vec::new(),
