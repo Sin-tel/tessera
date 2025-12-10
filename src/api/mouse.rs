@@ -1,6 +1,6 @@
 use crate::app::State;
 use mlua::prelude::*;
-use winit::dpi::LogicalPosition;
+use winit::dpi::PhysicalPosition;
 use winit::window::{CursorGrabMode, CursorIcon};
 
 pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
@@ -78,7 +78,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"set_position",
 		lua.create_function(|lua, (x, y): (f32, f32)| {
 			let state = lua.app_data_ref::<State>().unwrap();
-			state.window.set_cursor_position(LogicalPosition::new(x, y)).unwrap();
+			state.window.set_cursor_position(PhysicalPosition::new(x, y)).unwrap();
 			Ok(())
 		})?,
 	)?;

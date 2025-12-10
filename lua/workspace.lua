@@ -181,10 +181,10 @@ function workspace:draw()
 		hl_col = theme.warning
 	end
 
-	local w1 = 64
-	local h1 = 16
+	local w1 = Ui.scale(64)
+	local h1 = Ui.scale(16)
 	local y1 = 0.5 * (Ui.RIBBON_HEIGHT - h1)
-	local x1 = self.w - 64 - y1
+	local x1 = self.w - w1 - y1
 
 	tessera.graphics.set_color(theme.widget_bg)
 	tessera.graphics.rectangle("fill", x1, y1, w1, h1, 2)
@@ -203,10 +203,10 @@ function workspace:draw()
 
 	-- master meters
 
-	w1 = 96
-	h1 = 16
+	w1 = Ui.scale(96)
+	h1 = Ui.scale(16)
 	y1 = 0.5 * (Ui.RIBBON_HEIGHT - h1)
-	x1 = self.w - 224 - y1
+	x1 = self.w - Ui.scale(224) - y1
 
 	local ml = self.meter.l
 	local mr = self.meter.r
@@ -245,8 +245,8 @@ function workspace:update()
 	-- TODO: menus
 	-- TODO: meters and tabs overlap at small sizes
 
-	local x = 160
-	local tab_w = 160
+	local x = Ui.scale(160)
+	local tab_w = Ui.scale(160)
 	self.tab_hover = nil
 	for i, v in ipairs(self.tabs) do
 		if hit(v.rect, mouse.x, mouse.y) then
