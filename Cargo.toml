@@ -13,11 +13,11 @@ doctest = false
 
 # Pull in the right cpal features depending on platform
 [target.'cfg(target_os = "windows")'.dependencies]
-cpal = { version = "0.16", features = ["asio"], git = "https://github.com/RustAudio/cpal.git", rev = "a8b016c3a844d574d6969c0877ec89a81f7e7379" }
+cpal = { version = "0.16", features = ["asio"], git = "https://github.com/RustAudio/cpal.git", rev = "54e0b76677ed8c9c7f1f1dfc9de05f104278444c" }
 [target.'cfg(target_os = "macos")'.dependencies]
-cpal = { version = "0.16", git = "https://github.com/RustAudio/cpal.git", rev = "a8b016c3a844d574d6969c0877ec89a81f7e7379" }
+cpal = { version = "0.16", git = "https://github.com/RustAudio/cpal.git", rev = "54e0b76677ed8c9c7f1f1dfc9de05f104278444c" }
 [target.'cfg(target_os = "linux")'.dependencies]
-cpal = { version = "0.16", features = ["jack"], git = "https://github.com/RustAudio/cpal.git", rev = "a8b016c3a844d574d6969c0877ec89a81f7e7379" }
+cpal = { version = "0.16", features = ["jack"], git = "https://github.com/RustAudio/cpal.git", rev = "54e0b76677ed8c9c7f1f1dfc9de05f104278444c" }
 
 [dependencies]
 # cpal = { version = "0.16", features = ["asio"], path = "../cpal_proj/cpal" }
