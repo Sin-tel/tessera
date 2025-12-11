@@ -189,7 +189,6 @@ where
 	move |cpal_buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
 		let result = panic::catch_unwind(AssertUnwindSafe(|| {
 			assert_no_alloc(|| {
-				#[cfg(debug_assertions)]
 				enable_fpu_traps();
 
 				let buffer_size = cpal_buffer.len() / 2;
@@ -315,23 +314,18 @@ fn convert_sample_wav(x: f32) -> i16 {
 	(if x >= 0.0 { x * f32::from(i16::MAX) } else { -x * f32::from(i16::MIN) }) as i16
 }
 
-#[cfg(debug_assertions)]
-#[cfg(target_arch = "x86_64")]
+#[cfg(all(target_arch = "x86_64", feature = "fpu_traps"))]
 #[allow(deprecated)]
 fn enable_fpu_traps() {
 	unsafe {
 		use std::arch::x86_64::*;
 		let mut mxcsr = _mm_getcsr();
-		// clear the mask bits for all of the traps except _MM_EXCEPT_INEXACT.
-		mxcsr &= !(_MM_MASK_INVALID
-			| _MM_EXCEPT_DENORM
-			| _MM_MASK_DIV_ZERO
-			| _MM_EXCEPT_OVERFLOW
-			| _MM_EXCEPT_UNDERFLOW);
+
+		// clear the mask bits for exceptions that we care about.
+		mxcsr &= !(_MM_MASK_INVALID | _MM_MASK_DIV_ZERO | _MM_MASK_OVERFLOW);
 		_mm_setcsr(mxcsr);
 	}
 }
 
-#[cfg(debug_assertions)]
-#[cfg(not(target_arch = "x86_64"))]
+#[cfg(any(not(target_arch = "x86_64"), not(feature = "fpu_traps")))]
 fn enable_fpu_traps() {}
