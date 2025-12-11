@@ -10,6 +10,7 @@ engine.chase = false -- set in Options menu
 engine.render_progress = 0
 engine.render_end = 8
 engine.time = 0
+engine.frame_time = 0
 
 function engine.start()
 	engine.seek(project.transport.start_time)
@@ -52,6 +53,7 @@ end
 function engine.update(dt)
 	if engine.playing then
 		engine.time = engine.time + dt
+		engine.frame_time = engine.frame_time + dt
 		if tessera.audio.ok() then
 			for _, v in ipairs(ui_channels) do
 				v.roll:playback(v)
@@ -60,6 +62,10 @@ function engine.update(dt)
 	end
 	engine.parse_errors()
 	engine.parse_messages()
+end
+
+function engine.update_frame()
+	engine.frame_time = 0
 end
 
 function engine.render_start()

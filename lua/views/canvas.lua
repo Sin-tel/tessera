@@ -33,6 +33,18 @@ end
 function Canvas:update()
 	self.transform:update()
 
+	if self.follow and engine.playing then
+		local px = self.transform.ox_ + engine.time * self.transform.sx
+
+		if px < self.w * 0.1 then
+			self.transform.ox_ = -engine.time * self.transform.sx + self.w * 0.1
+		elseif px > self.w * 0.9 then
+			self.transform.ox_ = -engine.time * self.transform.sx + self.w * 0.9
+		else
+			self.transform.ox_ = self.transform.ox_ - engine.frame_time * self.transform.sx
+		end
+	end
+
 	if self:focus() then
 		local mx, my = self:get_mouse()
 
@@ -207,11 +219,6 @@ function Canvas:draw()
 		end
 		local px = self.transform:time(i * grid_t_res)
 		tessera.graphics.line(px, 0, px, self.h)
-	end
-
-	-- if self.follow and px > self.w * 0.9 then
-	if self.follow and engine.playing then
-		self.transform.ox_ = -engine.time * self.transform.sx + self.w * 0.33
 	end
 
 	-- draw notes
