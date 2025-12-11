@@ -20,10 +20,12 @@ function Button:update(ui)
 	local x, y, w, h = ui:next()
 	ui:hitbox(self, x, y, w, h)
 
-	if not self.style then
+	if self.style == "normal" then
 		ui:push_draw(self.draw, { self, ui, x, y, w, h })
 	elseif self.style == "menu" then
 		ui:push_draw(self.draw_menu, { self, ui, x, y, w, h })
+	else
+		error("unreachable")
 	end
 
 	return ui.clicked == self

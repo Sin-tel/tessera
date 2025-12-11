@@ -3,7 +3,7 @@ local Ui = require("ui/ui")
 local Toggle = {}
 Toggle.__index = Toggle
 
-function Toggle.new(text, target, key, options)
+function Toggle.new(target, key, options)
 	local self = setmetatable({}, Toggle)
 
 	self.no_undo = options.no_undo
@@ -11,7 +11,8 @@ function Toggle.new(text, target, key, options)
 	self.target = target
 	self.key = key
 
-	self.text = text
+	assert(options.label)
+	self.label = options.label
 	self.style = options.style or "checkbox"
 
 	self.pad = options.pad
@@ -63,7 +64,7 @@ function Toggle:update(ui)
 	elseif self.style == "toggle" then
 		ui:push_draw(self.draw_toggle, { self, color_fill, color_line, x, y, w, h })
 	else
-		print("Unknown style", self.style)
+		error("unreachable")
 	end
 
 	return clicked
@@ -76,7 +77,7 @@ function Toggle:draw_toggle(color_fill, color_line, x, y, w, h)
 		tessera.graphics.set_color(color_line)
 		tessera.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
 		tessera.graphics.set_color(theme.ui_text)
-		tessera.graphics.label(self.text, x, y, w, h, tessera.graphics.ALIGN_CENTER)
+		tessera.graphics.label(self.label, x, y, w, h, tessera.graphics.ALIGN_CENTER)
 	end
 end
 
@@ -91,7 +92,7 @@ function Toggle:draw_checkbox(color_fill, color_line, x, y, w, h)
 	tessera.graphics.rectangle("line", x1, y1, s, s, Ui.CORNER_RADIUS)
 	tessera.graphics.set_color(theme.ui_text)
 	local left_pad = self.pad or h + Ui.PAD
-	tessera.graphics.label(self.text, x + left_pad, y, w - left_pad, h)
+	tessera.graphics.label(self.label, x + left_pad, y, w - left_pad, h)
 end
 
 function Toggle:draw_menu(hover, color_fill, color_line, x, y, w, h)
@@ -111,7 +112,7 @@ function Toggle:draw_menu(hover, color_fill, color_line, x, y, w, h)
 
 	tessera.graphics.set_color(theme.ui_text)
 	local left_pad = self.pad or h + Ui.PAD
-	tessera.graphics.label(self.text, x + left_pad, y, w - left_pad, h)
+	tessera.graphics.label(self.label, x + left_pad, y, w - left_pad, h)
 end
 
 return Toggle

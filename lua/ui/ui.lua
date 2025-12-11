@@ -113,6 +113,8 @@ function Ui:hitbox(widget, x, y, w, h)
 		and self.my <= y + h + 2
 	then
 		if mouse.button_pressed == 1 and not self.active then
+			-- cancel press for any overlapping elements
+			mouse.button_pressed = nil
 			self.active = widget
 		end
 		if (mouse.button_released == 1 and self.was_active == widget) and not self.clicked then
@@ -145,15 +147,11 @@ function Ui:draw()
 		tessera.graphics.rectangle("fill", 0, b[1], self.view.w, b[2])
 	end
 
-	-- draw in reverse order to handle overlaps
-	-- for i = #self.draw_queue, 1, -1 do
-	-- FIXME broken
 	for i in ipairs(self.draw_queue) do
 		local f, args = unpack(self.draw_queue[i])
 		f(unpack(args))
 	end
 
-	-- TODO: maybe we can cache these?
 	self.bg_list = {}
 	self.draw_queue = {}
 end

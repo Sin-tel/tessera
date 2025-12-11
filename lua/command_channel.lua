@@ -30,7 +30,7 @@ local function find_hue()
     return hue
 end
 
-local function new_device_data(name, options)
+local function new_device_data(key, options)
     local state = {}
 
     for i, v in ipairs(options.parameters) do
@@ -43,7 +43,11 @@ local function new_device_data(name, options)
         elseif widget_type == "selector" then
             state[i] = widget_options.default or 1
         elseif widget_type == "toggle" then
-            state[i] = widget_options.default and 1 or 0
+            if widget_options.default == nil then
+                state[i] = false
+            else
+                state[i] = widget_options.default
+            end
         else
             error(widget_type .. " not supported!")
         end
@@ -51,12 +55,12 @@ local function new_device_data(name, options)
         assert(state[i] ~= nil)
     end
 
-    return { name = name, display_name = util.capitalize(name), state = state, mute = false }
+    return { name = key, display_name = options.name, state = state, mute = false }
 end
 
-local function new_channel_data(name, options)
+local function new_channel_data(key, options)
     return {
-        instrument = new_device_data(name, options),
+        instrument = new_device_data(key, options),
         effects = {},
         notes = {},
         control = {},
@@ -66,7 +70,8 @@ local function new_channel_data(name, options)
         visible = true,
         lock = false,
         hue = find_hue(),
-        name = "Channel " .. #project.channels .. " (" .. util.capitalize(name) .. ")",
+        -- name = "Channel " .. #project.channels .. " (" .. options.name .. ")",
+        name = options.name,
     }
 end
 

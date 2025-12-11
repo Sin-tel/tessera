@@ -94,7 +94,7 @@ function workspace:update()
 	end
 
 	x = x + Ui.PAD
-	local tab_w = Ui.scale(160)
+	local tab_w = Ui.scale(120)
 	self.tab_hover = nil
 	for i, v in ipairs(self.tabs) do
 		if util.hit(v.rect, mouse.x, mouse.y) then
@@ -115,22 +115,26 @@ function workspace:update()
 	end
 
 	-- check overlay
+
 	if overlay then
 		overlay:update()
 		if overlay.should_close or (mouse.button_pressed and not overlay:focus()) then
 			self:close_overlay()
 		end
 	end
+	local overlay_focus = overlay and overlay:focus()
 
 	-- update active tab
 	local tab = self.tabs[self.tab_current]
 	tab.box:update_view()
 
 	local div = self.drag_div
-	if not mouse.is_down and not (overlay and overlay:focus()) then
-		div = div or tab.box:get_divider()
+	if not mouse.is_down then
 		tab.box:set_focus(false)
 		self.focus = nil
+		if not overlay_focus then
+			div = div or tab.box:get_divider()
+		end
 	end
 	if div then
 		if div.vertical then
@@ -139,7 +143,7 @@ function workspace:update()
 			mouse:set_cursor("h")
 		end
 	else
-		if not mouse.is_down and not (overlay and overlay:focus()) then
+		if not mouse.is_down and not overlay_focus then
 			local b = tab.box:get()
 			if b then
 				b.focus = true

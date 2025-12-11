@@ -35,8 +35,11 @@ function Device.new(data, options, meter_id)
 		elseif widget_type == "selector" then
 			p.widget = widgets.Selector.new(self.state, i, widget_options)
 		elseif widget_type == "toggle" then
-			p.widget =
-				widgets.Toggle.new(p.label, self.state, i, { style = "checkbox", default = widget_options.default })
+			p.widget = widgets.Toggle.new(
+				self.state,
+				i,
+				{ label = p.label, style = "checkbox", default = widget_options.default }
+			)
 			p.label = nil
 		else
 			error(widget_type .. " not supported!")

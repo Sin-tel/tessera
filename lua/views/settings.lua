@@ -30,7 +30,6 @@ end
 
 -- TODO: defer queries to first time we need them
 -- TODO: share static state (if we happen to open multiple settings windows)
--- TODO: add a reset button in case backend died
 
 function Settings.new()
 	local self = setmetatable({}, Settings)
@@ -55,10 +54,9 @@ function Settings.new()
 	)
 
 	self.toggle_buffer_size = widgets.Toggle.new(
-		"Request buffer size",
 		self,
 		"toggle_buffer",
-		{ style = "checkbox", pad = self.indent, no_undo = true }
+		{ label = "Request buffer size", style = "checkbox", pad = self.indent, no_undo = true }
 	)
 
 	self.reset_button = widgets.Button.new("Audio offline. Click to reset.")
@@ -75,10 +73,9 @@ function Settings:rebuild_midi()
 
 	for _, v in ipairs(setup.midi_devices) do
 		local toggle = widgets.Toggle.new(
-			v.name,
 			self.midi_ports,
 			v.name,
-			{ style = "checkbox", pad = self.indent, no_undo = true }
+			{ label = v.name, style = "checkbox", pad = self.indent, no_undo = true }
 		)
 		table.insert(self.midi_toggles, toggle)
 
