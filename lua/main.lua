@@ -48,10 +48,7 @@ modifier_keys.shift = false
 modifier_keys.alt = false
 modifier_keys.any = false
 
-local Menu = require("menu")
-
 local project_initialized = false
-
 local draw_time_s = 0
 
 -- patch up set_color to work with tables
@@ -225,10 +222,6 @@ end
 
 function tessera.mousepressed(x, y, button)
 	if audio_status == "render" then
-		return
-	end
-	if button == 2 then
-		workspace:set_overlay(Menu.file(mouse.x, mouse.y))
 		return
 	end
 	mouse:pressed(x, y, button)

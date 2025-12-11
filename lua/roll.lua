@@ -1,5 +1,4 @@
 local engine = require("engine")
-local log = require("log")
 
 local Roll = {}
 Roll.__index = Roll
@@ -31,7 +30,7 @@ function Roll:start(chase)
 	self.control_table = {}
 	self.voices = {}
 
-	for i, v in ipairs(project.channels[self.ch_index].notes) do
+	for _, v in ipairs(project.channels[self.ch_index].notes) do
 		assert(v.verts[1][1] == 0)
 		table.insert(self.note_table, v)
 	end
@@ -40,7 +39,7 @@ function Roll:start(chase)
 	-- dump all control messages in one table
 	-- TODO: don't know if it's good to have two seperate tables
 	for k, c in pairs(project.channels[self.ch_index].control) do
-		for i, v in ipairs(c) do
+		for _, v in ipairs(c) do
 			table.insert(self.control_table, { name = k, value = v.value, time = v.time })
 		end
 	end

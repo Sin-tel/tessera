@@ -108,7 +108,7 @@ function NoteUpdate.new(prev_state, new_state)
 
     -- keep ref to actual notes, state is just copies
     self.notes = {}
-    for i, v in ipairs(new_state) do
+    for _, v in ipairs(new_state) do
         table.insert(self.notes, v)
     end
 
@@ -120,7 +120,7 @@ end
 
 function NoteUpdate:run()
     for i, v in ipairs(self.notes) do
-        for key, value in pairs(v) do
+        for key in pairs(v) do
             self.notes[i][key] = self.new_state[i][key]
         end
     end
@@ -128,7 +128,7 @@ end
 
 function NoteUpdate:reverse()
     for i, v in ipairs(self.notes) do
-        for key, value in pairs(v) do
+        for key in pairs(v) do
             self.notes[i][key] = self.prev_state[i][key]
         end
     end
