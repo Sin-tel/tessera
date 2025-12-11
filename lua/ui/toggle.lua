@@ -15,6 +15,7 @@ function Toggle.new(text, options)
 	self.style = options.style or "checkbox"
 
 	self.pad = options.pad
+	self.size = options.size or 1.0
 
 	return self
 end
@@ -49,14 +50,19 @@ function Toggle:update(ui, target, key)
 	if ui.active == self then
 		color_fill = theme.widget_press
 	end
-	if ui.hover == self and ui.active ~= self then
+	local hover = ui.hover == self and ui.active ~= self
+	if hover then
 		color_line = theme.line_hover
 	end
 
 	if self.style == "checkbox" then
 		ui:push_draw(self.draw_checkbox, { self, color_fill, color_line, x, y, w, h })
-	else
+	elseif self.style == "menu" then
+		ui:push_draw(self.draw_menu, { self, hover, color_fill, color_line, x, y, w, h })
+	elseif self.style == "toggle" then
 		ui:push_draw(self.draw_toggle, { self, color_fill, color_line, x, y, w, h })
+	else
+		print("Unknown style", self.style)
 	end
 
 	return clicked
@@ -74,10 +80,34 @@ function Toggle:draw_toggle(color_fill, color_line, x, y, w, h)
 end
 
 function Toggle:draw_checkbox(color_fill, color_line, x, y, w, h)
+	local s = h * self.size
+	local x1 = x + 0.5 * (h - s)
+	local y1 = y + 0.5 * (h - s)
+
 	tessera.graphics.set_color(color_fill)
-	tessera.graphics.rectangle("fill", x, y, h, h, Ui.CORNER_RADIUS)
+	tessera.graphics.rectangle("fill", x1, y1, s, s, Ui.CORNER_RADIUS)
 	tessera.graphics.set_color(color_line)
-	tessera.graphics.rectangle("line", x, y, h, h, Ui.CORNER_RADIUS)
+	tessera.graphics.rectangle("line", x1, y1, s, s, Ui.CORNER_RADIUS)
+	tessera.graphics.set_color(theme.ui_text)
+	local left_pad = self.pad or h + Ui.PAD
+	tessera.graphics.label(self.text, x + left_pad, y, w - left_pad, h)
+end
+
+function Toggle:draw_menu(hover, color_fill, color_line, x, y, w, h)
+	if hover then
+		tessera.graphics.set_color(theme.widget_bg)
+		tessera.graphics.rectangle("fill", x, y, w, h)
+	end
+
+	local s = h * self.size
+	local x1 = x + 0.5 * (h - s)
+	local y1 = y + 0.5 * (h - s)
+
+	tessera.graphics.set_color(color_fill)
+	tessera.graphics.rectangle("fill", x1, y1, s, s, Ui.CORNER_RADIUS)
+	tessera.graphics.set_color(color_line)
+	tessera.graphics.rectangle("line", x1, y1, s, s, Ui.CORNER_RADIUS)
+
 	tessera.graphics.set_color(theme.ui_text)
 	local left_pad = self.pad or h + Ui.PAD
 	tessera.graphics.label(self.text, x + left_pad, y, w - left_pad, h)

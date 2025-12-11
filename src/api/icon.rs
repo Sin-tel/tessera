@@ -13,6 +13,7 @@ const BUILTIN_ICONS: &[(&str, &str)] = &[
 	("invisible",  ICON_INVISIBLE),
 	("lock",       ICON_LOCK),
 	("unlock",     ICON_UNLOCK),
+	("save",       ICON_SAVE),
 ];
 
 pub fn parse_svg_path(path_str: &str) -> Path {

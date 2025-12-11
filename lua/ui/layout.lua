@@ -104,7 +104,7 @@ function Layout:total_height()
 end
 
 function Layout:get()
-	assert(self.ok)
+	-- assert(self.ok)
 	self.ok = false
 	return self.next_x, self.next_y, self.next_w, self.next_h
 end

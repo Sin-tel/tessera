@@ -36,6 +36,15 @@ function util.dist(x1, y1, x2, y2)
 	return math.sqrt((x1 - x2) ^ 2 + (y1 - y2) ^ 2)
 end
 
+function util.unpack_r(rect)
+	return rect.x, rect.y, rect.w, rect.h
+end
+
+function util.hit(rect, mx, my)
+	local x, y, w, h = util.unpack_r(rect)
+	return mx >= x - 1 and my >= y - 1 and mx <= x + w + 2 and my <= y + h + 2
+end
+
 function util.segment_dist_sq(px, py, x1, y1, x2, y2)
 	local l2 = (x1 - x2) ^ 2 + (y1 - y2) ^ 2
 	if l2 < EPSILON then
