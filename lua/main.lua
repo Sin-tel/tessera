@@ -178,8 +178,8 @@ function tessera.draw()
 
 	if audio_status ~= "render" then
 		mouse:update()
-
 		workspace:update()
+		engine.update_frame()
 		mouse:end_frame()
 
 		engine.send_parameters()
