@@ -80,10 +80,10 @@ function Ui:end_frame()
 	self.max_scroll = math.max(0, self.layout:total_height() - self.view.h)
 end
 
-function Ui:next()
+function Ui:next(h)
 	if not self.layout.ok then
 		-- TODO: do col("max") when in column mode
-		self.layout:row(self.view.w, Ui.ROW_HEIGHT)
+		self.layout:row(self.view.w, (h or Ui.ROW_HEIGHT))
 	end
 
 	if self.bg_color then
@@ -146,7 +146,9 @@ function Ui:draw()
 	end
 
 	-- draw in reverse order to handle overlaps
-	for i = #self.draw_queue, 1, -1 do
+	-- for i = #self.draw_queue, 1, -1 do
+	-- FIXME broken
+	for i in ipairs(self.draw_queue) do
 		local f, args = unpack(self.draw_queue[i])
 		f(unpack(args))
 	end

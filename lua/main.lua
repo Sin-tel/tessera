@@ -21,6 +21,7 @@ util = require("util")
 
 local build = require("build")
 local engine = require("engine")
+local file = require("file")
 local midi = require("midi")
 local note_input = require("note_input")
 local save = require("save")
@@ -47,11 +48,11 @@ modifier_keys.shift = false
 modifier_keys.alt = false
 modifier_keys.any = false
 
+local Menu = require("menu")
+
 local project_initialized = false
 
 local draw_time_s = 0
-
-local dialog_pending
 
 -- patch up set_color to work with tables
 tessera.graphics.set_color = function(t)
@@ -123,26 +124,6 @@ local function audio_setup()
 	end
 end
 
--- since file dialogs are spawned on new threads, we need to check the results here
-local function poll_dialogs()
-	if dialog_pending then
-		local f = tessera.dialog_poll()
-		if f then
-			if dialog_pending == "save" then
-				save.write(f)
-				save.set_save_location(f)
-				dialog_pending = nil
-			elseif dialog_pending == "open" then
-				-- TODO: undo
-				build.new_project()
-				save.read(f)
-				save.set_save_location(f)
-				dialog_pending = nil
-			end
-		end
-	end
-end
-
 function tessera.load(test_run)
 	log.info("Tessera v" .. util.version_str(VERSION))
 	if release then
@@ -191,7 +172,7 @@ function tessera.draw()
 		profile.start()
 	end
 
-	poll_dialogs()
+	file.poll_dialogs()
 
 	local t_start = tessera.get_time()
 
@@ -200,6 +181,7 @@ function tessera.draw()
 
 	if audio_status ~= "render" then
 		mouse:update()
+
 		workspace:update()
 		mouse:end_frame()
 
@@ -243,6 +225,10 @@ end
 
 function tessera.mousepressed(x, y, button)
 	if audio_status == "render" then
+		return
+	end
+	if button == 2 then
+		workspace:set_overlay(Menu.file(mouse.x, mouse.y))
 		return
 	end
 	mouse:pressed(x, y, button)
@@ -328,17 +314,13 @@ function tessera.keypressed(key, key_str, isrepeat)
 	elseif key == "r" and modifier_keys.ctrl then
 		engine.render_start()
 	elseif key == "n" and modifier_keys.ctrl then
-		command.run_and_register(command.NewProject.new())
+		file.new()
 	elseif key == "o" and modifier_keys.ctrl then
-		if tessera.dialog_open() then
-			dialog_pending = "open"
-		end
+		file.open()
 	elseif key == "s" and modifier_keys.ctrl and modifier_keys.shift then
-		if tessera.dialog_save("my_project") then
-			dialog_pending = "save"
-		end
+		file.save_as()
 	elseif key == "s" and modifier_keys.ctrl then
-		save.write(save.last_save_location)
+		file.save()
 	elseif key == "b" then
 		project.transport.recording = not project.transport.recording
 	elseif key == "down" and modifier_keys.shift then

@@ -53,6 +53,8 @@ function Settings.new()
 	self.toggle_buffer_size =
 		widgets.Toggle.new("Request buffer size", { style = "checkbox", pad = self.indent, no_undo = true })
 
+	self.reset_button = widgets.Button.new("Audio offline. Click to reset.")
+
 	self:rebuild()
 	self:rebuild_midi()
 
@@ -122,8 +124,6 @@ function Settings:rebuild()
 	else
 		self.state.toggle_buffer = 0
 	end
-
-	self.reset_button = widgets.Button.new("Audio offline. Click to reset.")
 
 	-- build the widget
 	self.select_device = widgets.Dropdown.new({ list = self.devices, no_undo = true })
