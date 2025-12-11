@@ -16,15 +16,14 @@ local RIBBON_H = 20
 local Canvas = View.derive("Canvas")
 Canvas.__index = Canvas
 
+Canvas.follow = false -- set in Options menu
+
 function Canvas.new()
 	local self = setmetatable({}, Canvas)
 
 	self.selected_tool = edit
 	self.current_tool = self.selected_tool
 	self.tool_active = false
-
-	-- TODO: expose this as an option
-	self.follow = false
 
 	self.transform = Transform.new()
 
@@ -212,7 +211,7 @@ function Canvas:draw()
 
 	-- if self.follow and px > self.w * 0.9 then
 	if self.follow and engine.playing then
-		self.transform.ox_ = -engine.time * self.transform.sx + self.w * 0.5
+		self.transform.ox_ = -engine.time * self.transform.sx + self.w * 0.33
 	end
 
 	-- draw notes

@@ -3,13 +3,13 @@ local Ui = require("ui/ui")
 local Toggle = {}
 Toggle.__index = Toggle
 
--- Note internal state is a float (0, 1) not a bool
--- use state == 1 for bool
-
-function Toggle.new(text, options)
+function Toggle.new(text, target, key, options)
 	local self = setmetatable({}, Toggle)
 
 	self.no_undo = options.no_undo
+
+	self.target = target
+	self.key = key
 
 	self.text = text
 	self.style = options.style or "checkbox"
@@ -20,7 +20,7 @@ function Toggle.new(text, options)
 	return self
 end
 
-function Toggle:update(ui, target, key)
+function Toggle:update(ui)
 	local x, y, w, h = ui:next()
 
 	ui:hitbox(self, x, y, w, h)
@@ -28,14 +28,15 @@ function Toggle:update(ui, target, key)
 	local clicked = false
 
 	if ui.clicked == self then
-		local new_v = 1
-		if target[key] == 1 then
-			new_v = 0
+		local new_v = true
+		if self.target[self.key] then
+			new_v = false
 		end
+
 		if self.no_undo then
-			target[key] = new_v
+			self.target[self.key] = new_v
 		else
-			command.run_and_register(command.Change.new(target, key, new_v))
+			command.run_and_register(command.Change.new(self.target, self.key, new_v))
 		end
 
 		clicked = true
@@ -44,7 +45,7 @@ function Toggle:update(ui, target, key)
 	local color_fill = theme.widget_bg
 	local color_line = theme.line
 
-	if target[key] == 1 then
+	if self.target[self.key] then
 		color_fill = theme.widget
 	end
 	if ui.active == self then

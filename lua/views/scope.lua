@@ -14,7 +14,7 @@ function Scope.new(spectrum)
 
 	self.ui = Ui.new(self)
 
-	self.selector = widgets.Selector.new({ list = { "scope", "spectrum" } })
+	self.selector = widgets.Selector.new(self, "index", { list = { "scope", "spectrum" } })
 
 	self.lines = {}
 	for i = 1, 7 do
@@ -27,7 +27,7 @@ end
 function Scope:update()
 	self.ui:start_frame()
 	self.ui.layout:col(Ui.scale(200))
-	self.selector:update(self.ui, self, "index")
+	self.selector:update(self.ui)
 	self.ui:end_frame()
 end
 

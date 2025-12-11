@@ -1,3 +1,4 @@
+local Canvas = require("views/canvas")
 local Ui = require("ui/ui")
 local engine = require("engine")
 local file = require("file")
@@ -52,16 +53,24 @@ function Menu.file(x, y)
 	return Menu.new(items, x, y)
 end
 
-local state = {}
-
 function Menu.options(x, y)
 	local indent_s = Ui.scale(indent)
 	local items = {
 		{
-			widget = widgets.Toggle.new("Chase notes", { style = "menu", pad = indent_s, size = 0.66, no_undo = true }),
+			widget = widgets.Toggle.new(
+				"Chase notes",
+				engine,
+				"chase",
+				{ style = "menu", pad = indent_s, size = 0.66, no_undo = true }
+			),
 		},
 		{
-			widget = widgets.Toggle.new("Follow", { style = "menu", pad = indent_s, size = 0.66, no_undo = true }),
+			widget = widgets.Toggle.new(
+				"Follow",
+				Canvas,
+				"follow",
+				{ style = "menu", pad = indent_s, size = 0.66, no_undo = true }
+			),
 		},
 	}
 	return Menu.new(items, x, y)

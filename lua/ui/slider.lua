@@ -5,33 +5,36 @@ local CORNER_RADIUS = 6
 local Slider = {}
 Slider.__index = Slider
 
-function Slider.new(options)
+function Slider.new(target, key, options)
 	local self = setmetatable({}, Slider)
 
 	self.no_undo = options.no_undo
 
+	self.target = target
+	self.key = key
 	self.value = SliderValue.new(options)
 	self.drag_start = 0.0
 
 	return self
 end
 
-function Slider:update(ui, target, key)
+function Slider:update(ui)
 	local x, y, w, h = ui:next()
 	local hit = ui:hitbox(self, x, y, w, h)
 
-	local v = self.value:to_normal(target[key])
+	local v = self.value:to_normal(self.target[self.key])
 
 	local value
 	local commit = false
 
 	if mouse.button_pressed == 3 and hit then
-		if target[key] ~= self.value.default then
+		if self.target[self.key] ~= self.value.default then
 			if self.no_undo then
-				target[key] = self.value.default
+				self.target[self.key] = self.value.default
 			else
-				command.run_and_register(command.Change.new(target, key, self.value.default))
+				command.run_and_register(command.Change.new(self.target, self.key, self.value.default))
 			end
+			commit = true
 		end
 	end
 
@@ -39,7 +42,7 @@ function Slider:update(ui, target, key)
 		mouse:set_relative(true)
 		if mouse.button_pressed then
 			self.drag_start = v
-			self.prev_value = target[key]
+			self.prev_value = self.target[self.key]
 			self.active = true
 		end
 		if mouse.drag then
@@ -47,7 +50,7 @@ function Slider:update(ui, target, key)
 			local scale = 0.7 / w
 			local new_normalized = util.clamp(self.drag_start + scale * mouse.dx, 0, 1)
 			self.new_value = self.value:from_normal(new_normalized)
-			target[key] = self.new_value
+			self.target[self.key] = self.new_value
 			value = self.new_value
 		end
 	end
@@ -57,10 +60,10 @@ function Slider:update(ui, target, key)
 
 		if self.new_value ~= self.prev_value then
 			if self.no_undo then
-				target[key] = self.new_value
+				self.target[self.key] = self.new_value
 			else
 				-- only commit on release
-				local c = command.Change.new(target, key, self.new_value)
+				local c = command.Change.new(self.target, self.key, self.new_value)
 				c.prev_value = self.prev_value
 				command.register(c)
 			end
@@ -82,7 +85,7 @@ function Slider:update(ui, target, key)
 		color_line = theme.line_hover
 	end
 
-	local display = self.value:to_string(target[key])
+	local display = self.value:to_string(self.target[self.key])
 
 	ui:push_draw(self.draw, { self, v, display, color_fill, color_line, x, y, w, h })
 

@@ -8,10 +8,13 @@ Button.__index = Button
 local Selector = {}
 Selector.__index = Selector
 
-function Selector.new(options)
+function Selector.new(target, key, options)
 	local self = setmetatable({}, Selector)
 
 	self.no_undo = options.no_undo
+
+	self.target = target
+	self.key = key
 
 	self.list = {}
 	for _, v in ipairs(options.list) do
@@ -24,7 +27,7 @@ function Selector.new(options)
 	return self
 end
 
-function Selector:update(ui, target, key)
+function Selector:update(ui)
 	local x, y, w, h = ui:next()
 
 	local tx, ty = x, y
@@ -33,7 +36,7 @@ function Selector:update(ui, target, key)
 	local new_index = nil
 	for i, v in ipairs(self.list) do
 		if v:update(ui, tx, ty, tw, h) then
-			if i ~= target[key] then
+			if i ~= self.target[self.key] then
 				new_index = i
 			end
 		end
@@ -42,14 +45,14 @@ function Selector:update(ui, target, key)
 
 	if new_index then
 		if self.no_undo then
-			target[key] = new_index
+			self.target[self.key] = new_index
 		else
-			command.run_and_register(command.Change.new(target, key, new_index))
+			command.run_and_register(command.Change.new(self.target, self.key, new_index))
 		end
 	end
 
 	for i, v in ipairs(self.list) do
-		v.checked = (i == target[key])
+		v.checked = (i == self.target[self.key])
 	end
 
 	return new_index

@@ -17,11 +17,11 @@ function UiTest.new()
 	self.ui = Ui.new(self)
 
 	self.button = widgets.Button.new("click me")
-	self.dropdown = widgets.Dropdown.new({ list = { "AAA", "BBB", "CCC" } })
-	self.slider = widgets.Slider.new({ min = 20, max = 20000, fmt = "Hz", t = "log" })
-	self.checkbox = widgets.Toggle.new("checkbox widget", {})
-	self.selector = widgets.Selector.new({ list = { "one", "two", "three" } })
-	self.toggle = widgets.Toggle.new("toggle widget", { style = "toggle" })
+	self.dropdown = widgets.Dropdown.new(self.state, "combo", { list = { "AAA", "BBB", "CCC" } })
+	self.slider = widgets.Slider.new(self.state, "slider", { min = 20, max = 20000, fmt = "Hz", t = "log" })
+	self.checkbox = widgets.Toggle.new("checkbox widget", self.state, "toggle", {})
+	self.selector = widgets.Selector.new(self.state, "combo", { list = { "one", "two", "three" } })
+	self.toggle = widgets.Toggle.new("toggle widget", self.state, "toggle", { style = "toggle" })
 
 	return self
 end
@@ -32,7 +32,7 @@ function UiTest:update()
 	self.ui.layout:col(self.w * 0.5)
 	self.ui:label("left aligned label")
 	self.ui.layout:col(self.w * 0.3)
-	self.dropdown:update(self.ui, self.state, "combo")
+	self.dropdown:update(self.ui)
 	self.ui.layout:new_row()
 
 	self.ui.layout:col(self.w * 0.5)
@@ -53,15 +53,15 @@ function UiTest:update()
 
 	self.ui:label("a slider", tessera.graphics.ALIGN_RIGHT)
 	self.ui.layout:col(self.w - w_label)
-	self.slider:update(self.ui, self.state, "slider")
+	self.slider:update(self.ui)
 
-	self.checkbox:update(self.ui, self.state, "toggle")
-
-	self.ui.layout:col(self.w * 0.5)
-	self.toggle:update(self.ui, self.state, "toggle")
+	self.checkbox:update(self.ui)
 
 	self.ui.layout:col(self.w * 0.5)
-	self.selector:update(self.ui, self.state, "combo")
+	self.toggle:update(self.ui)
+
+	self.ui.layout:col(self.w * 0.5)
+	self.selector:update(self.ui)
 
 	-- if self.state.toggle then
 	-- 	self.ui:label("pew!", "center")

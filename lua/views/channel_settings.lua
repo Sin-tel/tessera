@@ -16,7 +16,7 @@ function ChannelSettings.new()
 		table.insert(self.effect_list, key)
 	end
 	table.sort(self.effect_list)
-	self.dropdown = widgets.Dropdown.new({ title = "add effect", list = self.effect_list, no_state = true })
+	self.dropdown = widgets.Dropdown.new(nil, nil, { title = "add effect", list = self.effect_list })
 
 	return self
 end

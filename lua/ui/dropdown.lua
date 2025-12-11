@@ -8,14 +8,16 @@ Button.__index = Button
 local Dropdown = {}
 Dropdown.__index = Dropdown
 
-function Dropdown.new(options)
+function Dropdown.new(target, key, options)
 	local self = setmetatable({}, Dropdown)
 
 	self.title = options.title
 	self.open = false
 
-	self.no_state = options.no_state
+	self.target = target
+	self.key = key
 
+	self.no_state = target == nil
 	self.no_undo = options.no_undo
 
 	if self.no_state then
@@ -30,11 +32,18 @@ function Dropdown.new(options)
 	return self
 end
 
-function Dropdown:update(ui, target, key)
-	-- note: no need to pass `target, key` if `no_state = true`
-
+function Dropdown:update(ui)
 	local x, y, w, h = ui:next()
 	local new_index
+
+	local label = self.title
+	if not self.no_state then
+		local index = self.target[self.key]
+		label = self.list[index].text
+	end
+
+	ui:push_draw(self.draw, { self, ui, label, x, y, w, h })
+
 	if self.open then
 		local tx, ty = x, y
 		local p = Ui.PAD
@@ -49,9 +58,9 @@ function Dropdown:update(ui, target, key)
 
 		if new_index and not self.no_state then
 			if self.no_undo then
-				target[key] = new_index
+				self.target[self.key] = new_index
 			else
-				command.run_and_register(command.Change.new(target, key, new_index))
+				command.run_and_register(command.Change.new(self.target, self.key, new_index))
 			end
 		end
 
@@ -64,14 +73,6 @@ function Dropdown:update(ui, target, key)
 			self.open = true
 		end
 	end
-
-	local label = self.title
-	if not self.no_state then
-		local index = target[key]
-		label = self.list[index].text
-	end
-
-	ui:push_draw(self.draw, { self, ui, label, x, y, w, h })
 
 	return new_index
 end

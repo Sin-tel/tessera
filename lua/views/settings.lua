@@ -48,10 +48,18 @@ function Settings.new()
 	}
 
 	-- these don't need to be rebuilt
-	self.slider =
-		widgets.Slider.new({ min = 64, max = 256, step = 64, default = 128, fmt = "%d samples", no_undo = true })
-	self.toggle_buffer_size =
-		widgets.Toggle.new("Request buffer size", { style = "checkbox", pad = self.indent, no_undo = true })
+	self.slider = widgets.Slider.new(
+		self.state,
+		"buffer_size",
+		{ min = 64, max = 256, step = 64, default = 128, fmt = "%d samples", no_undo = true }
+	)
+
+	self.toggle_buffer_size = widgets.Toggle.new(
+		"Request buffer size",
+		self.state,
+		"toggle_buffer",
+		{ style = "checkbox", pad = self.indent, no_undo = true }
+	)
 
 	self.reset_button = widgets.Button.new("Audio offline. Click to reset.")
 
@@ -66,7 +74,12 @@ function Settings:rebuild_midi()
 	self.state.midi_ports = {}
 
 	for _, v in ipairs(setup.midi_devices) do
-		local toggle = widgets.Toggle.new(v.name, { style = "checkbox", pad = self.indent, no_undo = true })
+		local toggle = widgets.Toggle.new(
+			v.name,
+			self.state.midi_ports,
+			v.name,
+			{ style = "checkbox", pad = self.indent, no_undo = true }
+		)
 		table.insert(self.midi_toggles, toggle)
 
 		if v.enable then
@@ -93,7 +106,7 @@ function Settings:rebuild()
 	self.state.host_id = host_id
 
 	-- build the widget
-	self.select_host = widgets.Selector.new({ list = host_display_names, no_undo = true })
+	self.select_host = widgets.Selector.new(self.state, "host_id", { list = host_display_names, no_undo = true })
 
 	-- DEVICE
 	self.devices = tessera.audio.get_output_devices(setup.host)
@@ -126,7 +139,7 @@ function Settings:rebuild()
 	end
 
 	-- build the widget
-	self.select_device = widgets.Dropdown.new({ list = self.devices, no_undo = true })
+	self.select_device = widgets.Dropdown.new(self.state, "device_id", { list = self.devices, no_undo = true })
 end
 
 function Settings:update()
@@ -157,7 +170,7 @@ function Settings:update()
 	self.ui.layout:col(c2)
 	self.ui:label("Driver type")
 	self.ui.layout:col(c3)
-	local host_id = self.select_host:update(self.ui, self.state, "host_id")
+	local host_id = self.select_host:update(self.ui)
 	if host_id then
 		setup.host = self.hosts[host_id]
 		self:rebuild()
@@ -169,7 +182,8 @@ function Settings:update()
 	self.ui.layout:col(c2)
 	self.ui:label("Output device")
 	self.ui.layout:col(c3)
-	local device_id = self.select_device:update(self.ui, self.state, "device_id")
+
+	local device_id = self.select_device:update(self.ui)
 	if device_id then
 		local new_device = self.devices[device_id]
 		if setup.configs[setup.host].device ~= new_device then
@@ -181,17 +195,17 @@ function Settings:update()
 
 	self.ui.layout:new_row()
 	self.ui.layout:col(c1 + c2)
-	local update_buffer_size = self.toggle_buffer_size:update(self.ui, self.state, "toggle_buffer")
+	local update_buffer_size = self.toggle_buffer_size:update(self.ui)
 
-	if self.state.toggle_buffer == 1 then
+	if self.state.toggle_buffer then
 		self.ui.layout:col(c3)
-		local _, commit = self.slider:update(self.ui, self.state, "buffer_size")
+		local _, commit = self.slider:update(self.ui)
 
 		update_buffer_size = update_buffer_size or commit
 	end
 
 	if update_buffer_size then
-		if self.state.toggle_buffer == 1 then
+		if self.state.toggle_buffer then
 			setup.configs[setup.host].buffer_size = self.state.buffer_size
 		else
 			setup.configs[setup.host].buffer_size = nil
@@ -249,11 +263,11 @@ function Settings:update()
 			for i, v in ipairs(setup.midi_devices) do
 				self.ui.layout:new_row()
 				self.ui.layout:col(c1 + c2)
-				local update = self.midi_toggles[i]:update(self.ui, self.state.midi_ports, v.name)
+				local update = self.midi_toggles[i]:update(self.ui)
 				self.ui.layout:col(c3)
 
 				if update then
-					local enable = self.state.midi_ports[v.name] == 1
+					local enable = self.state.midi_ports[v.name]
 					setup.midi_devices[i].enable = enable
 					if midi.available_ports[v.name] then
 						midi.update_port(enable, setup.midi_devices[i])
