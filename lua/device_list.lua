@@ -13,6 +13,7 @@ local DEFAULT_Q = 1 / math.sqrt(2)
 device_list.instruments = {}
 
 device_list.instruments.sine = {
+	name = "Test Sine",
 	parameters = {
 		{ "fixed", "toggle" },
 		{ "freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
@@ -22,6 +23,7 @@ device_list.instruments.sine = {
 }
 
 device_list.instruments.wavetable = {
+	name = "Wavetable",
 	parameters = {
 		{ "vel mod", "slider", { default = 0.0 } },
 		{ "pres mod", "slider", { default = 0.25 } },
@@ -29,6 +31,7 @@ device_list.instruments.wavetable = {
 }
 
 device_list.instruments.analog = {
+	name = "Analog",
 	parameters = {
 		{ "pulse width", "slider", { default = 0.5, min = 0.5, max = 0.99, fmt = "%0.2f" } },
 		{ "mix pulse", "slider", { default = -INF, t = "dB" } },
@@ -52,6 +55,7 @@ device_list.instruments.analog = {
 }
 
 device_list.instruments.fm = {
+	name = "FM",
 	parameters = {
 		{ "feedback", "slider", { default = 0.0, min = -1.0, max = 1.0, centered = true } },
 		{ "depth", "slider", { default = 0.2, min = 0, max = 1.0 } },
@@ -72,6 +76,7 @@ device_list.instruments.fm = {
 }
 
 device_list.instruments.polysine = {
+	name = "Simple Poly",
 	parameters = {
 		{ "feedback", "slider", { default = 0.5, max = 2.0 } },
 		{ "attack", "slider", { default = 40.0, min = 1.0, max = 20000.0, t = "log", fmt = "ms" } },
@@ -80,6 +85,7 @@ device_list.instruments.polysine = {
 }
 
 device_list.instruments.pluck = {
+	name = "Pluck",
 	parameters = {
 		{ "decay", "slider", { default = 0.66, min = 0.0, max = 1.0 } },
 		{ "release", "slider", { default = 0.5, min = -1.0, max = 1.0, centered = true } },
@@ -92,6 +98,7 @@ device_list.instruments.pluck = {
 }
 
 device_list.instruments.epiano = {
+	name = "Epiano",
 	parameters = {
 		{ "gain", "slider", { default = -6, min = -24, max = 6, fmt = "%0.1f dB" } },
 		{ "wobble", "slider", { default = 0.3 } },
@@ -102,6 +109,7 @@ device_list.instruments.epiano = {
 device_list.effects = {}
 
 device_list.effects.pan = {
+	name = "Pan",
 	parameters = {
 		{ "gain", "slider", { default = 0, t = "dB" } },
 		{ "pan", "slider", { default = 0, min = -1, max = 1, centered = true, fmt = "%0.2f" } },
@@ -109,18 +117,21 @@ device_list.effects.pan = {
 }
 
 device_list.effects.gain = {
+	name = "Gain",
 	parameters = {
 		{ "gain", "slider", { default = 0, max = 12, t = "dB" } },
 	},
 }
 
 device_list.effects.wide = {
+	name = "Wide",
 	parameters = {
 		{ "amount", "slider", { default = 0.2, max = 1 } },
 	},
 }
 
 device_list.effects.drive = {
+	name = "Drive",
 	parameters = {
 		{ "dry wet", "slider", { default = 1.0 } },
 		{ "mode", "selector", { list = { "soft", "hard" } } },
@@ -133,6 +144,7 @@ device_list.effects.drive = {
 }
 
 device_list.effects.delay = {
+	name = "Delay",
 	parameters = {
 		{ "dry wet", "slider", { default = 0.33 } },
 		{ "time", "slider", { default = 0.4, min = 0.1, max = 1.0, t = "log" } },
@@ -144,6 +156,7 @@ device_list.effects.delay = {
 }
 
 device_list.effects.reverb = {
+	name = "Reverb",
 	parameters = {
 		{ "dry wet", "slider", { default = 0.33 } },
 		{ "size", "slider", { default = 0.8, min = 0.3, max = 1.0 } },
@@ -154,6 +167,7 @@ device_list.effects.reverb = {
 }
 
 device_list.effects.testfilter = {
+	name = "Test Filter",
 	parameters = {
 		{ "freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
 		{ "Q", "slider", { default = DEFAULT_Q, min = 0.5, max = 10, t = "log" } },
@@ -163,6 +177,7 @@ device_list.effects.testfilter = {
 }
 
 device_list.effects.equalizer = {
+	name = "Equalizer",
 	parameters = {
 		{ "low gain", "slider", { default = 0, min = -24, max = 24, centered = true, fmt = "%0.1f dB" } },
 		{ "band 1 gain", "slider", { default = 0, min = -24, max = 24, centered = true, fmt = "%0.1f dB" } },
@@ -178,18 +193,21 @@ device_list.effects.equalizer = {
 }
 
 device_list.effects.tilt = {
+	name = "Tilt",
 	parameters = {
 		{ "slope", "slider", { default = 0, min = -12, max = 12, centered = true, fmt = "%0.1f dB/oct" } },
 	},
 }
 
 device_list.effects.convolve = {
+	name = "Body",
 	parameters = {
 		{ "dry wet", "slider", { default = 1.0 } },
 	},
 }
 
 device_list.effects.compressor = {
+	name = "Compressor",
 	parameters = {
 		{ "dry wet", "slider", { default = 1.0 } },
 		{ "treshold", "slider", { default = -24, min = -48, max = 0, fmt = "%0.1f dB" } },

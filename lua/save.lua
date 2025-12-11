@@ -96,16 +96,26 @@ end
 function save.read_setup()
 	if util.file_exists(setup_path) then
 		local content = util.readfile(setup_path)
-		setup = setfenv(loadstring(content), {})()
+		local new_setup = setfenv(loadstring(content), {})()
+
+		local current_v = util.version_str(VERSION)
+		local new_v = util.version_str(new_setup.VERSION)
+		if new_v ~= current_v then
+			-- Losing the setup file is not really a big deal, so don't try to be clever about it
+			log.warn("File setup.lua created with version " .. new_v .. ". Ignoring.")
+		else
+			log.info("Loaded setup.lua")
+			return new_setup
+		end
 	else
-		log.info("No settings found, generating default.")
-		setup = {}
-		setup.VERSION = util.clone(VERSION)
-		setup.configs = {}
-		setup.midi_devices = {}
+		log.info("No setup.lua found, generating default.")
 	end
 
-	return setup
+	local new_setup = {}
+	new_setup.VERSION = util.clone(VERSION)
+	new_setup.configs = {}
+	new_setup.midi_devices = {}
+	return new_setup
 end
 
 return save

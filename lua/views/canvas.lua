@@ -44,7 +44,6 @@ function Canvas:update()
 			self.transform.ox_ = self.transform.ox_ - engine.frame_time * self.transform.sx
 		end
 	end
-
 	if self:focus() then
 		local mx, my = self:get_mouse()
 

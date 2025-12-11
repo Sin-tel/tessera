@@ -9,7 +9,7 @@ function UiTest.new()
 	local self = setmetatable({}, UiTest)
 
 	self.state = {
-		toggle = 0,
+		toggle = false,
 		combo = 1,
 		slider = 200,
 	}
@@ -19,9 +19,9 @@ function UiTest.new()
 	self.button = widgets.Button.new("click me")
 	self.dropdown = widgets.Dropdown.new(self.state, "combo", { list = { "AAA", "BBB", "CCC" } })
 	self.slider = widgets.Slider.new(self.state, "slider", { min = 20, max = 20000, fmt = "Hz", t = "log" })
-	self.checkbox = widgets.Toggle.new("checkbox widget", self.state, "toggle", {})
+	self.checkbox = widgets.Toggle.new(self.state, "toggle", { label = "checkbox widget" })
 	self.selector = widgets.Selector.new(self.state, "combo", { list = { "one", "two", "three" } })
-	self.toggle = widgets.Toggle.new("toggle widget", self.state, "toggle", { style = "toggle" })
+	self.toggle = widgets.Toggle.new(self.state, "toggle", { label = "toggle widget", style = "toggle" })
 
 	return self
 end

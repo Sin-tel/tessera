@@ -40,7 +40,7 @@ function Slider:update(ui)
 
 	if ui.active == self then
 		mouse:set_relative(true)
-		if mouse.button_pressed then
+		if not self.active then
 			self.drag_start = v
 			self.prev_value = self.target[self.key]
 			self.active = true

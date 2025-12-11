@@ -1,3 +1,4 @@
+local Menu = require("menu")
 local Ui = require("ui/ui")
 local View = require("view")
 local device_list = require("device_list")
@@ -11,13 +12,16 @@ function Channels.new()
 
 	self.ui = Ui.new(self)
 
+	-- make list of instrument (name, key) and sort them
 	self.intrument_list = {}
-	for key in pairs(device_list.instruments) do
-		table.insert(self.intrument_list, key)
+	for key, v in pairs(device_list.instruments) do
+		table.insert(self.intrument_list, { v.name, key })
 	end
-	table.sort(self.intrument_list)
+	table.sort(self.intrument_list, function(a, b)
+		return a[1] < b[1]
+	end)
 
-	self.dropdown = widgets.Dropdown.new(nil, nil, { title = "add channel", list = self.intrument_list })
+	self.dropdown = widgets.Button.new("Add channel")
 
 	return self
 end
@@ -26,13 +30,16 @@ function Channels:update()
 	self.ui:start_frame()
 	self.ui.layout:padding()
 	self.ui.layout:col(self.w * 0.33)
-	local add_instrument_index = self.dropdown:update(self.ui)
+
+	if self.dropdown:update(self.ui) then
+		workspace:set_overlay(self:menu())
+	end
 
 	self.ui.layout:padding(0)
-	if add_instrument_index then
-		local intrument_name = self.intrument_list[add_instrument_index]
-
-		command.run_and_register(command.NewChannel.new(intrument_name))
+	if self.add_instrument_index then
+		local key = self.intrument_list[self.add_instrument_index][2]
+		command.run_and_register(command.NewChannel.new(key))
+		self.add_instrument_index = nil
 	end
 
 	for i, v in ipairs(ui_channels) do
@@ -44,6 +51,24 @@ end
 
 function Channels:draw()
 	self.ui:draw()
+end
+
+function Channels:menu()
+	local options = {
+		style = "menu",
+		align = tessera.graphics.ALIGN_CENTER,
+	}
+	local items = {}
+	for i, v in ipairs(self.intrument_list) do
+		table.insert(items, {
+			widget = widgets.Button.new(v[1], options),
+			action = function()
+				self.add_instrument_index = i
+			end,
+		})
+	end
+
+	return Menu.new(items)
 end
 
 return Channels

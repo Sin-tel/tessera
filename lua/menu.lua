@@ -58,18 +58,16 @@ function Menu.options(x, y)
 	local items = {
 		{
 			widget = widgets.Toggle.new(
-				"Chase notes",
 				engine,
 				"chase",
-				{ style = "menu", pad = indent_s, size = 0.66, no_undo = true }
+				{ label = "Chase notes", style = "menu", pad = indent_s, size = 0.66, no_undo = true }
 			),
 		},
 		{
 			widget = widgets.Toggle.new(
-				"Follow",
 				Canvas,
 				"follow",
-				{ style = "menu", pad = indent_s, size = 0.66, no_undo = true }
+				{ label = "Follow", style = "menu", pad = indent_s, size = 0.66, no_undo = true }
 			),
 		},
 	}
@@ -79,14 +77,16 @@ end
 function Menu.new(items, x, y)
 	local self = setmetatable({}, Menu)
 
-	assert(x)
-	assert(y)
-
 	self.items = items
 
 	self.x, self.y = x, y
 	self.w = Ui.scale(260)
 	self.h = 0 -- gets updated automatically
+
+	if not x then
+		self.x = mouse.x - 0.6 * self.w
+		self.y = mouse.y - Ui.ROW_HEIGHT * 0.5
+	end
 
 	self.ui = Ui.new(self)
 	self.ui.layout:padding(2)
