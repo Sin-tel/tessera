@@ -5,7 +5,7 @@ local device_list = require("device_list")
 local function min_hue_dist(hue)
     -- calculate distance to closest hue that already exists
     local min_dist = 180.0
-    for i, v in ipairs(project.channels) do
+    for _, v in ipairs(project.channels) do
         -- distance in degrees
         local a = math.abs(hue - v.hue - 360.0 * math.floor(0.5 + (hue - v.hue) / 360.0))
         if a < min_dist then
@@ -19,7 +19,7 @@ local function find_hue()
     -- try some random hues, pick  the one that is furthest away from existing ones
     local hue = math.random() * 360.0
     local min_dist = min_hue_dist(hue)
-    for i = 1, 10 do
+    for _ = 1, 10 do
         local p_hue = math.random() * 360.0
         local p_min_dist = min_hue_dist(p_hue)
         if p_min_dist > min_dist then

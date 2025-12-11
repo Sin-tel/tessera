@@ -12,7 +12,7 @@ function scale:mousepressed(canvas)
 
 	self.start_time = math.huge
 	self.end_time = -math.huge
-	for i, v in ipairs(selection.list) do
+	for _, v in ipairs(selection.list) do
 		if v.time < self.start_time then
 			self.start_time = v.time
 		end

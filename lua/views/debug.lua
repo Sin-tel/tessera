@@ -1,6 +1,5 @@
 require("table.clear")
 local View = require("view")
-local midi = require("midi")
 
 local Debug = View.derive("Debug")
 Debug.__index = Debug
@@ -16,7 +15,7 @@ end
 
 function Debug:draw()
 	local ix, iy = 32, 32
-	local mx, my = self:get_mouse()
+	-- local mx, my = self:get_mouse()
 
 	tessera.graphics.set_color(theme.ui_text)
 

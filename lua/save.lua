@@ -70,12 +70,13 @@ function save.read(filename)
 	local current_v = util.version_str(VERSION)
 	local project_v = util.version_str(new_project.VERSION)
 	if project_v ~= current_v then
-		log.warn(
+		log.error(
 			"Save file was created with version "
 				.. project_v
 				.. " which is incompatible with current version "
 				.. current_v
 		)
+		return
 	end
 
 	-- if we can automatically upgrade save files to new version, do so here

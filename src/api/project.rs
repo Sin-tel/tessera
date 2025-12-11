@@ -1,4 +1,4 @@
-// #![allow(dead_code)]
+// Currently broken! Not going to fix until more stable
 
 use crate::app::State;
 use crate::log_error;

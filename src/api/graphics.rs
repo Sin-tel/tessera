@@ -76,7 +76,7 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 			let path = &state.paths[path_id];
 
 			let paint = Paint::color(state.current_color);
-			state.canvas.fill_path(&path, &paint);
+			state.canvas.fill_path(path, &paint);
 
 			state.canvas.reset_transform();
 			state.canvas.set_transform(&transform);

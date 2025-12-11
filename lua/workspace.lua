@@ -10,95 +10,8 @@ local overlay = nil
 local Button = {}
 Button.__index = Button
 
-function Button.new(label, menu_fn)
-	local self = setmetatable({}, Button)
-
-	self.label = label
-	self.menu_fn = menu_fn
-	self.rect = {
-		x = 0,
-		y = Ui.PAD,
-		w = 32,
-		h = Ui.RIBBON_HEIGHT - Ui.PAD,
-	}
-
-	return self
-end
-
-function Button:clicked(x, y)
-	if self.overlay and not self.overlay.dead then
-		self.overlay = nil
-		workspace:close_overlay()
-	else
-		self.overlay = self.menu_fn(x, y)
-		workspace:set_overlay(self.overlay)
-	end
-end
-
-function Button:draw(i)
-	local x, y, w, h = util.unpack_r(self.rect)
-
-	if i == workspace.menu_hover then
-		tessera.graphics.set_color(theme.bg_highlight)
-		tessera.graphics.rectangle("fill", x, y, w, h, Ui.BORDER_RADIUS)
-	end
-
-	tessera.graphics.set_color(theme.ui_text)
-	tessera.graphics.label(self.label, x, y, w, h, tessera.graphics.ALIGN_CENTER)
-end
-
 local Tab = {}
 Tab.__index = Tab
-
-function Tab.new(name)
-	local self = setmetatable({}, Tab)
-
-	self.rect = {
-		x = 0,
-		y = Ui.PAD,
-		w = 32,
-		h = Ui.RIBBON_HEIGHT,
-	}
-
-	self.name = name
-	self.box = Box.new(0, Ui.RIBBON_HEIGHT, width, height - Ui.RIBBON_HEIGHT)
-	return self
-end
-
-function Tab:draw(i)
-	local x, y, w, h = util.unpack_r(self.rect)
-
-	if i == workspace.tab_current then
-		tessera.graphics.set_color(theme.header)
-	elseif i == workspace.tab_hover then
-		tessera.graphics.set_color(theme.bg_highlight)
-	else
-		tessera.graphics.set_color(theme.background)
-	end
-
-	tessera.graphics.rectangle("fill", x, y, w, h + 10, Ui.BORDER_RADIUS)
-
-	tessera.graphics.set_color(theme.ui_text)
-	tessera.graphics.label(self.name, x, y, w, h, tessera.graphics.ALIGN_CENTER)
-end
-
-function Tab.from_data(data)
-	assert(data.name)
-	assert(data.box)
-	local box = Box.from_data(data.box)
-	return Tab.new(data.name, box)
-end
-
-function Tab:to_data()
-	return {
-		name = self.name,
-		box = self.box:to_data(),
-	}
-end
-
-function Tab:update_view()
-	self.box:update_view()
-end
 
 function workspace:load()
 	self.w = width
@@ -157,45 +70,83 @@ function workspace:load()
 	self:resize(self.w, self.h)
 end
 
-function workspace:to_data()
-	local data = {}
+function workspace:update()
+	-- TODO: meters and tabs overlap at small sizes
 
-	data.tabs = {}
-	for i, v in ipairs(self.tabs) do
-		data.tabs[i] = v:to_data()
+	-- calculate layout of the top bar
+	local x = 0
+	local menu_w = Ui.scale(80)
+
+	self.menu_hover = nil
+	for i, v in ipairs(self.menus) do
+		if util.hit(v.rect, mouse.x, mouse.y) then
+			self.menu_hover = i
+		end
+		if mouse.button_pressed == 1 and self.menu_hover == i then
+			v:clicked(x, Ui.RIBBON_HEIGHT)
+			-- cancel press
+			mouse.button_pressed = false
+		end
+		v.rect.x = x + Ui.PAD
+		v.rect.w = menu_w - 2 * Ui.PAD
+
+		x = x + menu_w
 	end
 
-	data.tab_current = self.tab_current
+	x = x + Ui.PAD
+	local tab_w = Ui.scale(160)
+	self.tab_hover = nil
+	for i, v in ipairs(self.tabs) do
+		if util.hit(v.rect, mouse.x, mouse.y) then
+			self.tab_hover = i
+		end
+		if mouse.button_pressed == 1 and self.tab_hover == i then
+			self.tab_current = self.tab_hover
+			self:resize(self.w, self.h)
+		end
+		v.rect.x = x
+		v.rect.w = tab_w - Ui.PAD
+		x = x + tab_w
+	end
 
-	return data
-end
+	--
+	if self.drag_div and mouse.drag then
+		self.drag_div:set_split(mouse.x, mouse.y)
+	end
 
-function workspace:switch_tab(prev)
-	if prev then
-		if self.tab_current == 1 then
-			self.tab_current = #self.tabs
+	-- check overlay
+	if overlay then
+		overlay:update()
+		if overlay.should_close or (mouse.button_pressed and not overlay:focus()) then
+			self:close_overlay()
+		end
+	end
+
+	-- update active tab
+	local tab = self.tabs[self.tab_current]
+	tab.box:update_view()
+
+	local div = self.drag_div
+	if not mouse.is_down and not (overlay and overlay:focus()) then
+		div = div or tab.box:get_divider()
+		tab.box:set_focus(false)
+		self.focus = nil
+	end
+	if div then
+		if div.vertical then
+			mouse:set_cursor("v")
 		else
-			self.tab_current = self.tab_current - 1
+			mouse:set_cursor("h")
 		end
 	else
-		if self.tab_current == #self.tabs then
-			self.tab_current = 1
-		else
-			self.tab_current = self.tab_current + 1
+		if not mouse.is_down and not (overlay and overlay:focus()) then
+			local b = tab.box:get()
+			if b then
+				b.focus = true
+				self.focus = b.view
+			end
 		end
 	end
-	-- refresh the new tab
-	self:resize(self.w, self.h)
-end
-
-function workspace:resize(w, h)
-	self.w = w
-	self.h = h
-
-	local box = self.tabs[self.tab_current].box
-	local y = Ui.RIBBON_HEIGHT
-	local h2 = h - Ui.RIBBON_HEIGHT - Ui.STATUS_HEIGHT
-	box:resize(0, y, w, h2)
 end
 
 function workspace:draw()
@@ -279,85 +230,45 @@ function workspace:draw()
 	end
 end
 
-function workspace:update()
-	-- TODO: meters and tabs overlap at small sizes
+function workspace:to_data()
+	local data = {}
 
-	-- calculate layout of the top bar
-	local x = Ui.PAD
-	local menu_w = Ui.scale(80)
-
-	self.menu_hover = nil
-	for i, v in ipairs(self.menus) do
-		if util.hit(v.rect, mouse.x, mouse.y) then
-			self.menu_hover = i
-		end
-		if mouse.button_pressed == 1 and self.menu_hover == i then
-			v:clicked(x, Ui.RIBBON_HEIGHT)
-			-- cancel press
-			mouse.button_pressed = false
-		end
-		v.rect.x = x
-		v.rect.w = menu_w - Ui.PAD
-		x = x + menu_w
-	end
-
-	x = x + Ui.PAD
-	local tab_w = Ui.scale(160)
-	self.tab_hover = nil
+	data.tabs = {}
 	for i, v in ipairs(self.tabs) do
-		if util.hit(v.rect, mouse.x, mouse.y) then
-			self.tab_hover = i
-		end
-		if mouse.button_pressed == 1 and self.tab_hover == i then
-			self.tab_current = self.tab_hover
-			self:resize(self.w, self.h)
-		end
-		v.rect.x = x
-		v.rect.w = tab_w - Ui.PAD
-		x = x + tab_w
+		data.tabs[i] = v:to_data()
 	end
 
-	--
-	if self.drag_div and mouse.drag then
-		self.drag_div:set_split(mouse.x, mouse.y)
-	end
+	data.tab_current = self.tab_current
 
-	-- check overlay
-	if overlay then
-		overlay:update()
-		if overlay.should_close then
-			self:close_overlay()
-		end
-		if mouse.button_pressed and not overlay:focus() then
-			self:close_overlay()
-		end
-	end
+	return data
+end
 
-	-- update active tab
-	local tab = self.tabs[self.tab_current]
-	tab.box:update_view()
-
-	local div = self.drag_div
-	if not mouse.is_down then
-		div = div or tab.box:get_divider()
-		tab.box:set_focus(false)
-		self.focus = nil
-	end
-	if div then
-		if div.vertical then
-			mouse:set_cursor("v")
+function workspace:switch_tab(prev)
+	if prev then
+		if self.tab_current == 1 then
+			self.tab_current = #self.tabs
 		else
-			mouse:set_cursor("h")
+			self.tab_current = self.tab_current - 1
 		end
 	else
-		if not mouse.is_down and not (overlay and overlay:focus()) then
-			local b = tab.box:get()
-			if b then
-				b.focus = true
-				self.focus = b.view
-			end
+		if self.tab_current == #self.tabs then
+			self.tab_current = 1
+		else
+			self.tab_current = self.tab_current + 1
 		end
 	end
+	-- refresh the new tab
+	self:resize(self.w, self.h)
+end
+
+function workspace:resize(w, h)
+	self.w = w
+	self.h = h
+
+	local box = self.tabs[self.tab_current].box
+	local y = Ui.RIBBON_HEIGHT
+	local h2 = h - Ui.RIBBON_HEIGHT - Ui.STATUS_HEIGHT
+	box:resize(0, y, w, h2)
 end
 
 function workspace:mousepressed()
@@ -398,6 +309,97 @@ end
 function workspace:close_overlay()
 	overlay.dead = true
 	overlay = nil
+end
+
+-- Menu buttons
+
+function Button.new(label, menu_fn)
+	local self = setmetatable({}, Button)
+
+	self.label = label
+	self.menu_fn = menu_fn
+	self.rect = {
+		x = 0,
+		y = Ui.PAD,
+		w = 32,
+		h = Ui.RIBBON_HEIGHT - Ui.PAD,
+	}
+
+	return self
+end
+
+function Button:clicked(x, y)
+	if self.overlay and not self.overlay.dead then
+		self.overlay = nil
+		workspace:close_overlay()
+	else
+		self.overlay = self.menu_fn(x, y)
+		workspace:set_overlay(self.overlay)
+	end
+end
+
+function Button:draw(i)
+	local x, y, w, h = util.unpack_r(self.rect)
+
+	if i == workspace.menu_hover then
+		tessera.graphics.set_color(theme.bg_highlight)
+		tessera.graphics.rectangle("fill", x, y, w, h, Ui.BORDER_RADIUS)
+	end
+
+	tessera.graphics.set_color(theme.ui_text)
+	tessera.graphics.label(self.label, x, y, w, h, tessera.graphics.ALIGN_CENTER)
+end
+
+--- Tabs
+
+function Tab.new(name)
+	local self = setmetatable({}, Tab)
+
+	self.rect = {
+		x = 0,
+		y = Ui.PAD,
+		w = 32,
+		h = Ui.RIBBON_HEIGHT,
+	}
+
+	self.name = name
+	self.box = Box.new(0, Ui.RIBBON_HEIGHT, width, height - Ui.RIBBON_HEIGHT)
+	return self
+end
+
+function Tab:draw(i)
+	local x, y, w, h = util.unpack_r(self.rect)
+
+	if i == workspace.tab_current then
+		tessera.graphics.set_color(theme.header)
+	elseif i == workspace.tab_hover then
+		tessera.graphics.set_color(theme.bg_highlight)
+	else
+		tessera.graphics.set_color(theme.background)
+	end
+
+	tessera.graphics.rectangle("fill", x, y, w, h + 10, Ui.BORDER_RADIUS)
+
+	tessera.graphics.set_color(theme.ui_text)
+	tessera.graphics.label(self.name, x, y, w, h, tessera.graphics.ALIGN_CENTER)
+end
+
+function Tab.from_data(data)
+	assert(data.name)
+	assert(data.box)
+	local box = Box.from_data(data.box)
+	return Tab.new(data.name, box)
+end
+
+function Tab:to_data()
+	return {
+		name = self.name,
+		box = self.box:to_data(),
+	}
+end
+
+function Tab:update_view()
+	self.box:update_view()
 end
 
 return workspace

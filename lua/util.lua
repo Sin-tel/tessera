@@ -1,4 +1,3 @@
-local Ui = require("ui/ui")
 local log = require("log")
 local serialize = require("lib.serialize")
 

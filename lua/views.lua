@@ -1,5 +1,3 @@
-local View = require("view")
-
 local views = {}
 
 views.Canvas = require("views/canvas")
