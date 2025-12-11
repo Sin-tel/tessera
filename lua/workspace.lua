@@ -283,7 +283,7 @@ function workspace:update()
 	-- TODO: meters and tabs overlap at small sizes
 
 	-- calculate layout of the top bar
-	local x = Ui.scale(16)
+	local x = Ui.PAD
 	local menu_w = Ui.scale(80)
 
 	self.menu_hover = nil
@@ -301,7 +301,7 @@ function workspace:update()
 		x = x + menu_w
 	end
 
-	x = x + Ui.scale(16)
+	x = x + Ui.PAD
 	local tab_w = Ui.scale(160)
 	self.tab_hover = nil
 	for i, v in ipairs(self.tabs) do

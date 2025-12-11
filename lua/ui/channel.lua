@@ -69,6 +69,13 @@ function Channel:update(ui, ch_index)
 
 	ui:hitbox(self, x, y, w - 5 * b, h)
 
+	ui:push_draw(self.draw, { self, ui, ch_index, x, y, w, h })
+
+	if ui.clicked == self then
+		selection.ch_index = ch_index
+		selection.device_index = nil
+	end
+
 	local ch = project.channels[ch_index]
 
 	if self.button_mute:update(ui, ch.mute, w - 5 * b, y + p, b, b) then
@@ -80,6 +87,7 @@ function Channel:update(ui, ch_index)
 	if self.button_armed:update(ui, ch.armed, w - 3 * b, y + p, b, b) then
 		do_armed(ch_index)
 	end
+
 	if self.button_visible:update(ui, ch.visible, w - 2 * b, y + p, b, b) then
 		ch.visible = not ch.visible
 
@@ -87,18 +95,13 @@ function Channel:update(ui, ch_index)
 			selection.remove_channel(ch)
 		end
 	end
+
 	if self.button_lock:update(ui, ch.lock, w - b, y + p, b, b) then
 		ch.lock = not ch.lock
 
 		if ch.lock then
 			selection.remove_channel(ch)
 		end
-	end
-	ui:push_draw(self.draw, { self, ui, ch_index, x, y, w, h })
-
-	if ui.clicked == self then
-		selection.ch_index = ch_index
-		selection.device_index = nil
 	end
 
 	return ui.clicked == self

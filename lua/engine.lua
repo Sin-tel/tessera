@@ -6,6 +6,7 @@ local RENDER_BLOCK_SIZE = 64
 local engine = {}
 
 engine.playing = false
+engine.chase = false -- set in Options menu
 engine.render_progress = 0
 engine.render_end = 8
 engine.time = 0
@@ -14,11 +15,8 @@ function engine.start()
 	engine.seek(project.transport.start_time)
 	engine.playing = true
 
-	-- TODO: expose option to chase midi notes
-	local chase = false
-
 	for _, v in ipairs(ui_channels) do
-		v.roll:start(chase)
+		v.roll:start(engine.chase)
 	end
 end
 
@@ -284,6 +282,14 @@ function engine.update_meters()
 	end
 end
 
+local function to_float(x)
+	if type(x) == "boolean" then
+		return x and 1 or 0
+	else
+		return x
+	end
+end
+
 function engine.send_parameters()
 	for ch_index, ch in ipairs(ui_channels) do
 		send_mute_channel(ch, ch_index)
@@ -295,7 +301,7 @@ function engine.send_parameters()
 			local old_value = ch.instrument.state_old[l]
 			if old_value ~= new_value then
 				local value = new_value
-				tessera.audio.send_parameter(ch_index, 0, l, value)
+				tessera.audio.send_parameter(ch_index, 0, l, to_float(value))
 				ch.instrument.state_old[l] = new_value
 			end
 		end
@@ -308,7 +314,7 @@ function engine.send_parameters()
 				local old_value = fx.state_old[l]
 				if old_value ~= new_value then
 					local value = new_value
-					tessera.audio.send_parameter(ch_index, fx_index, l, value)
+					tessera.audio.send_parameter(ch_index, fx_index, l, to_float(value))
 					fx.state_old[l] = new_value
 				end
 			end
