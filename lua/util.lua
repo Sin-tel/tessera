@@ -5,6 +5,22 @@ local util = {}
 
 local EPSILON = 1e-5
 
+function util.find(list, value)
+	for i, v in ipairs(list) do
+		if v == value then
+			return i
+		end
+	end
+end
+
+function util.map(list, fn)
+	local new = {}
+	for i, v in ipairs(list) do
+		new[i] = fn(v)
+	end
+	return new
+end
+
 function util.lerp(a, b, t)
 	return a + (b - a) * util.clamp(t, 0, 1)
 end
