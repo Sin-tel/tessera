@@ -355,16 +355,36 @@ function Canvas:keypressed(key)
 	if move_up then
 		local prev_state = util.clone(selection.list)
 
-		for _, v in ipairs(selection.list) do
-			if modifier_keys.shift then
-				tuning.move_octave(v.pitch, move_up)
-			elseif modifier_keys.ctrl then
-				tuning.move_chromatic(v.pitch, move_up)
-			elseif modifier_keys.alt then
-				tuning.move_comma(v.pitch, move_up)
-			else
-				tuning.move_diatonic(v.pitch, move_up)
+		local delta = tuning.new_note()
+
+		if modifier_keys.shift then
+			delta = tuning.mul(tuning.octave, move_up)
+		elseif modifier_keys.ctrl then
+			delta = tuning.mul(tuning.chroma, move_up)
+		elseif modifier_keys.alt then
+			delta = tuning.mul(tuning.comma, move_up)
+		else
+			-- we use the lowest note as the base.
+			-- TODO: once there's a more sophisticated key system, query that
+			local d_min = math.huge
+			local base = nil
+			for _, v in ipairs(selection.list) do
+				local n = tuning.get_diatonic_index(v.pitch)
+				if n < d_min then
+					d_min = n
+					base = v
+				end
 			end
+
+			if base then
+				local n = tuning.get_diatonic_index(base.pitch)
+				local p_origin = tuning.from_diatonic(n)
+				delta = tuning.from_diatonic(n + move_up)
+				delta = tuning.sub(delta, p_origin)
+			end
+		end
+		for _, v in ipairs(selection.list) do
+			v.pitch = tuning.add(v.pitch, delta)
 		end
 
 		command.register(command.NoteUpdate.new(prev_state, selection.list))
