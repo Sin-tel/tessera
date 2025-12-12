@@ -7,7 +7,7 @@ function Collapse.new(text)
 	local self = setmetatable({}, Collapse)
 
 	self.text = text
-	self.open = true
+	self.open = false
 	self.angle = 0
 
 	return self
@@ -21,11 +21,6 @@ function Collapse:update(ui)
 		self.open = not self.open
 	end
 
-	-- local goal = 0.0
-	-- if not self.open then
-	-- 	goal = -0.5 * math.pi
-	-- end
-	-- self.angle = util.towards(self.angle, goal, 0.5)
 	self.angle = 0.0
 	if not self.open then
 		self.angle = -0.5 * math.pi
