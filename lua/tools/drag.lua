@@ -57,7 +57,7 @@ function drag:mousedown(canvas)
 		end
 	end
 
-	if modifier_keys.ctrl then
+	if modifier_keys.shift then
 		-- Snap time to grid
 		local ix = self.note_origin.time
 		x = (math.floor((ix + x) * 4 + 0.5) / 4) - ix
@@ -70,15 +70,11 @@ function drag:mousedown(canvas)
 	local steps = math.floor(y * (7 / 12) + 0.5)
 	local p_origin = tuning.from_diatonic(n)
 	local delta = tuning.from_diatonic(n + steps)
-	for i, _ in ipairs(delta) do
-		delta[i] = delta[i] - p_origin[i]
-	end
+	delta = tuning.sub(delta, p_origin)
 
 	-- Update pitch and time
 	for i, v in ipairs(selection.list) do
-		for j, _ in ipairs(delta) do
-			v.pitch[j] = self.prev_state[i].pitch[j] + delta[j]
-		end
+		v.pitch = tuning.add(self.prev_state[i].pitch, delta)
 
 		v.time = self.prev_state[i].time + x
 	end

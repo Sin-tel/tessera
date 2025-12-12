@@ -8,7 +8,7 @@ there is also 6 extra accidental pairs
 -- TODO: load tuning info from file
 
 local tuning = {}
-local ratio = util.ratio
+-- local ratio = util.ratio
 
 -- 11-limit JI table
 -- tuning.rank = 5
@@ -102,6 +102,16 @@ tuning.chromatic_table = {
 	{  2, -2 },  -- Bb
 	{ -2,  5 },  -- B
 }
+
+tuning.octave = { 1 }
+tuning.tone = { -1, 2 } -- whole tone
+tuning.semitone = { 3, -5 } -- diatonic semitone
+tuning.chroma = { -4, 7 } -- apotome, chromatic semitone
+tuning.comma = { 7, -12 } -- Pythagorean comma / diesis
+
+if tuning.rank > 2 then
+	tuning.comma = { 0, 0, 1 }
+end
 
 function tuning.new_note()
 	local new = {}
@@ -208,43 +218,35 @@ function tuning.get_diatonic_index(p)
 	return 1 + 7 * p[1] + 4 * p[2]
 end
 
--- note: the various move commands all mutate `p` in-place
--- TODO: these should be configurable, depending on tuning
+function tuning.get_chromatic_index(p)
+	return 1 + 12 * p[1] + 7 * p[2]
+end
 
-function tuning.move_diatonic(p, steps)
-	local n = 1 + 7 * p[1] + 4 * p[2]
-
-	local p_o = tuning.from_diatonic(n)
-	local p_new = tuning.from_diatonic(n + steps)
-
+function tuning.add(a, b)
+	-- add two pitches a and b
+	local new = {}
 	for i = 1, tuning.rank do
-		p[i] = p[i] + p_new[i] - p_o[i]
+		new[i] = (a[i] or 0) + (b[i] or 0)
 	end
+	return new
 end
 
-function tuning.move_chromatic(p, steps)
-	-- apotome
-	p[1] = p[1] - 4 * steps
-	p[2] = p[2] + 7 * steps
-end
-
-function tuning.move_octave(p, steps)
-	p[1] = p[1] + steps
-end
-
-function tuning.move_comma(p, steps)
-	if tuning.rank == 2 then
-		-- hardcoded to Pythagorean comma for now
-
-		if tuning.get_pitch({ -7, 12 }) < 0 then
-			-- diesis in meantone is flipped in size
-			steps = -steps
-		end
-		p[1] = p[1] + 7 * steps
-		p[2] = p[2] - 12 * steps
-	else
-		p[3] = p[3] + steps
+function tuning.sub(a, b)
+	-- subtract b from a
+	local new = {}
+	for i = 1, tuning.rank do
+		new[i] = (a[i] or 0) - (b[i] or 0)
 	end
+	return new
+end
+
+function tuning.mul(a, b)
+	-- multiply pitch a by scalar b
+	local new = {}
+	for i = 1, tuning.rank do
+		new[i] = (a[i] or 0) * b
+	end
+	return new
 end
 
 return tuning
