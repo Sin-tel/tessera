@@ -18,6 +18,7 @@ function UiTest.new()
 
 	self.button = widgets.Button.new("click me")
 	self.dropdown = widgets.Dropdown.new(self.state, "combo", { list = { "AAA", "BBB", "CCC" } })
+	self.collapse = widgets.Collapse.new("click to reveal")
 	self.slider = widgets.Slider.new(self.state, "slider", { min = 20, max = 20000, fmt = "Hz", t = "log" })
 	self.checkbox = widgets.Toggle.new(self.state, "toggle", { label = "checkbox widget" })
 	self.selector = widgets.Selector.new(self.state, "combo", { list = { "one", "two", "three" } })
@@ -48,12 +49,16 @@ function UiTest:update()
 	end
 	self.ui.layout:new_row()
 
-	local w_label = self.w * 0.3
-	self.ui.layout:col(w_label)
+	if self.collapse:update(self.ui) then
+		self.ui:background(theme.bg_nested)
 
-	self.ui:label("a slider", tessera.graphics.ALIGN_RIGHT)
-	self.ui.layout:col(self.w - w_label)
-	self.slider:update(self.ui)
+		local w_label = self.w * 0.3
+		self.ui.layout:col(w_label)
+		self.ui:label("a slider", tessera.graphics.ALIGN_RIGHT)
+		self.ui.layout:col(self.w - w_label)
+		self.slider:update(self.ui)
+		self.ui:background()
+	end
 
 	self.checkbox:update(self.ui)
 
