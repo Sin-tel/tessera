@@ -7,7 +7,7 @@ mod midi;
 mod mouse;
 pub mod project;
 
-use crate::app::State;
+use crate::app::{State, get_version};
 use crate::embed::setup_lua_loader;
 use crate::log::log_warn;
 use mlua::prelude::*;
@@ -47,6 +47,31 @@ pub fn create_lua(scale_factor: f64) -> LuaResult<Lua> {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 			state.exit = true;
 			Ok(())
+		})?,
+	)?;
+
+	// tessera.version()
+	tessera.set(
+		"version",
+		lua.create_function(|lua, ()| {
+			let version = get_version();
+			let v = lua.create_table()?;
+			v.set("MAJOR", version.major)?;
+			v.set("MINOR", version.minor)?;
+			v.set("PATCH", version.patch)?;
+			Ok(v)
+		})?,
+	)?;
+
+	// tessera.is_release()
+	tessera.set(
+		"is_release",
+		lua.create_function(|_, ()| {
+			#[cfg(debug_assertions)]
+			return Ok(false);
+
+			#[cfg(not(debug_assertions))]
+			return Ok(true);
 		})?,
 	)?;
 
