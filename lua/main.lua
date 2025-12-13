@@ -25,6 +25,7 @@ local file = require("file")
 local midi = require("midi")
 local note_input = require("note_input")
 local save = require("save")
+local tuning = require("tuning")
 
 workspace = require("workspace")
 mouse = require("mouse")
@@ -133,6 +134,8 @@ function tessera.load(test_run)
 
 	setup = save.read_setup()
 	init_setup()
+
+	tuning.load()
 
 	mouse:load()
 

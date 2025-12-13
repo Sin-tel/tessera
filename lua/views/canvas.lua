@@ -1,4 +1,5 @@
 local Transform = require("views/transform")
+local Ui = require("ui.ui")
 local View = require("view")
 local engine = require("engine")
 local tuning = require("tuning")
@@ -8,10 +9,15 @@ require("table.new")
 local drag = require("tools/drag")
 local edit = require("tools/edit")
 local pan = require("tools/pan")
+local pen = require("tools/pen")
 local scale = require("tools/scale")
 local set_transport_time = require("tools/set_transport_time")
 
-local RIBBON_H = 20
+local Button = {}
+Button.__index = Button
+
+local BUTTON_S = Ui.scale(40)
+local RIBBON_H = Ui.scale(20)
 
 local Canvas = View.derive("Canvas")
 Canvas.__index = Canvas
@@ -21,11 +27,18 @@ Canvas.follow = false -- set in Options menu
 function Canvas.new()
 	local self = setmetatable({}, Canvas)
 
-	self.selected_tool = edit
+	-- self.selected_tool = edit
+	self.selected_tool = pen
 	self.current_tool = self.selected_tool
 	self.tool_active = false
 
 	self.transform = Transform.new()
+
+	self.tool_buttons = {}
+	local x1, y1 = 16, 16 + RIBBON_H
+	table.insert(self.tool_buttons, Button.new(x1, y1, tessera.icon.edit, edit))
+	y1 = y1 + BUTTON_S + Ui.PAD
+	table.insert(self.tool_buttons, Button.new(x1, y1, tessera.icon.pen, pen))
 
 	return self
 end
@@ -57,18 +70,23 @@ function Canvas:update()
 					self.transform:zoom_y(my, zoom_factor)
 				end
 			end
-
-			if self.current_tool.update then
-				self.current_tool:update(self)
-			end
-
 			if self.tool_active then
 				self.current_tool:mousedown(self)
+				return
 			end
-
 			if my < RIBBON_H then
 				-- hovering on ribbon
 				mouse:set_cursor("hand")
+				return
+			end
+			for _, v in ipairs(self.tool_buttons) do
+				if v:update(self, mx, my) then
+					return
+				end
+			end
+			if self.current_tool.update then
+				self.current_tool:update(self)
+				return
 			end
 		end
 	end
@@ -78,6 +96,9 @@ function Canvas:draw_channel(ch, w_scale)
 	if not ch.visible then
 		return
 	end
+	local v_scale = -self.transform.sy
+	v_scale = math.min(32, v_scale)
+
 	local c_normal = tessera.graphics.get_color_hsv(ch.hue / 360, 0.75, 0.80)
 	local c_select = tessera.graphics.get_color_hsv(ch.hue / 360, 0.50, 0.95)
 	local c_lock = tessera.graphics.get_color_hsv(ch.hue / 360, 0.40, 0.40)
@@ -97,10 +118,12 @@ function Canvas:draw_channel(ch, w_scale)
 			local y0t = y0 + note.verts[1][2] * self.transform.sy
 
 			-- velocity
-			tessera.graphics.set_color_f(0.6, 0.6, 0.6)
-			local vo = 32 * note.vel
-			tessera.graphics.line(x0, y0t, x0, y0t - vo)
-			tessera.graphics.line(x0 - 2, y0t - vo, x0 + 2, y0t - vo)
+			if v_scale > 10 then
+				tessera.graphics.set_color_f(0.6, 0.6, 0.6)
+				local vo = note.vel * v_scale
+				tessera.graphics.line(x0, y0t, x0, y0t - vo)
+				tessera.graphics.line(x0 - 2, y0t - vo, x0 + 2, y0t - vo)
+			end
 
 			-- note
 			local c = c_normal
@@ -136,9 +159,10 @@ function Canvas:draw_channel(ch, w_scale)
 				table.insert(lw, w)
 			end
 
-			-- tessera.graphics.set_color_f(c[1] * 0.5, c[2] * 0.5, c[3] * 0.5)
-			tessera.graphics.set_color_f(c[1] * 0.5, c[2] * 0.5, c[3] * 0.5)
-			tessera.graphics.polyline_w(lx, ly, lw)
+			if w_scale > 5 then
+				tessera.graphics.set_color_f(c[1] * 0.5, c[2] * 0.5, c[3] * 0.5)
+				tessera.graphics.polyline_w(lx, ly, lw)
+			end
 
 			tessera.graphics.set_color(c)
 			tessera.graphics.polyline(lx, ly)
@@ -190,19 +214,25 @@ function Canvas:draw()
 	-- pitch grid
 	local oct = tuning.generators[1]
 	for i = math.floor((ey - 60) / oct), math.floor((iy - 60) / oct) do
-		if self.transform.sy < -60 then
+		if self.transform.sy < -124 then
+			tessera.graphics.set_color(theme.grid)
+			for j, _ in ipairs(tuning.fine_table) do
+				local py = self.transform:pitch(tuning.get_pitch(tuning.from_fine(j, i)))
+				tessera.graphics.line(0, py, self.w, py)
+			end
+		elseif self.transform.sy < -48 then
 			tessera.graphics.set_color(theme.grid)
 			for j, _ in ipairs(tuning.chromatic_table) do
 				local py = self.transform:pitch(tuning.get_pitch(tuning.from_midi(j + 12 * i + 60)))
 				tessera.graphics.line(0, py, self.w, py)
 			end
-		elseif self.transform.sy < -20 then
+		elseif self.transform.sy < -28 then
 			tessera.graphics.set_color(theme.grid)
 			for j, _ in ipairs(tuning.diatonic_table) do
 				local py = self.transform:pitch(tuning.get_pitch(tuning.from_diatonic(j, i)))
 				tessera.graphics.line(0, py, self.w, py)
 			end
-		elseif self.transform.sy < -2 then
+		elseif self.transform.sy < -8 then
 			tessera.graphics.set_color(theme.grid_highlight)
 			local py = self.transform:pitch(tuning.get_pitch({ i }))
 			tessera.graphics.line(0, py, self.w, py)
@@ -210,7 +240,7 @@ function Canvas:draw()
 	end
 
 	-- time grid
-	local grid_t_res = 4 ^ math.floor(3.5 - math.log(self.transform.sx, 4))
+	local grid_t_res = 4 ^ math.floor(3.8 - math.log(self.transform.sx, 4))
 	for i = math.floor(ix / grid_t_res) + 1, math.floor(ex / grid_t_res) do
 		tessera.graphics.set_color(theme.grid)
 		if i % 4 == 0 then
@@ -262,6 +292,10 @@ function Canvas:draw()
 	tessera.graphics.rectangle("fill", px - 2, 0, 4, RIBBON_H)
 
 	self.current_tool:draw(self)
+
+	for _, v in ipairs(self.tool_buttons) do
+		v:draw(self)
+	end
 end
 
 function Canvas:keypressed(key)
@@ -468,9 +502,9 @@ function Canvas:find_closest_note(mx, my, max_distance)
 
 					-- We add a tiny bias based on distance to start of note (x0)
 					-- to prefer the start of a note if two overlap exactly
-					local tie_breaker = 0.0001 * math.abs(x0 - mx)
+					note_dist = note_dist + 0.0001 * math.abs(x0 - mx)
 
-					if note_dist + tie_breaker < dmax then
+					if note_dist < dmax then
 						dmax = note_dist
 						closest = note
 						closest_ch = ch_index
@@ -513,6 +547,12 @@ function Canvas:mousepressed()
 		return
 	end
 
+	for _, v in ipairs(self.tool_buttons) do
+		if v:mousepressed(self) then
+			return
+		end
+	end
+
 	local _, my = self:get_mouse()
 	if my > 0 then
 		self.current_tool = self.selected_tool
@@ -544,6 +584,55 @@ function Canvas:mousereleased()
 	self.current_tool:mousereleased(self)
 	self.tool_active = false
 	self.current_tool = self.selected_tool
+end
+
+function Canvas:select_tool(tool)
+	self.selected_tool = tool
+	self.current_tool = tool
+end
+
+--- Tool buttons
+
+function Button.new(x, y, icon, tool)
+	local self = setmetatable({}, Button)
+	self.x = x
+	self.y = y
+	self.w = BUTTON_S
+	self.h = BUTTON_S
+	self.icon = icon
+	self.tool = tool
+	return self
+end
+
+function Button:update(canvas)
+	local mx, my = canvas:get_mouse()
+	if util.hit(self, mx, my) then
+		mouse:set_cursor("hand")
+		return true
+	end
+end
+
+function Button:mousepressed(canvas)
+	local mx, my = canvas:get_mouse()
+
+	if util.hit(self, mx, my) then
+		canvas:select_tool(self.tool)
+		return true
+	end
+end
+
+function Button:draw(canvas)
+	if canvas.selected_tool == self.tool then
+		tessera.graphics.set_color(theme.bg_highlight)
+	else
+		tessera.graphics.set_color(theme.bg_menu)
+	end
+
+	tessera.graphics.rectangle("fill", self.x, self.y, self.w, self.h, Ui.CORNER_RADIUS)
+	tessera.graphics.set_color(theme.line)
+	tessera.graphics.rectangle("line", self.x, self.y, self.w, self.h, Ui.CORNER_RADIUS)
+	tessera.graphics.set_color(theme.white)
+	tessera.graphics.draw_path(self.icon, self.x, self.y)
 end
 
 return Canvas

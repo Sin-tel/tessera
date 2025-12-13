@@ -20,9 +20,12 @@
 [ ] linnstrument custom handler
 [x] Settings menu
 [ ] Switch views with dropdown
-[-] Switch workspace (tabs)
+[x] Switch workspace (tabs)
 [ ] Save workspace
 [ ] Rename project
+[ ] Project settings
+[ ] Tuning settings
+[ ] Edit theme
 [x] Static piano roll setup
 [x] Basic selection and editing
   [x] rect select
@@ -51,8 +54,11 @@
 [x] UI selector
 [ ] UI separators
 [ ] UI editable labels
-[ ] UI context menu
-[-] UI dropdown
+[ ] close/add tab
+[ ] Device context menu
+[ ] View context menu (close, split)
+[ ] Global transport (play/stop/record)
+[x] UI dropdown
 [ ] allow dragging effects for reordering
 [ ] reorder channels
 [x] add instrument menu/list
@@ -60,9 +66,9 @@
 [x] Remove effect
 [x] Reorder effects
 [x] Remove channel
-[ ] Effect bypass
+[x] Effect bypass
 [ ] Type value in slider
-[ ] Top ribbon menu
+[x] Top ribbon menu
 [ ] Loop
 [ ] Parse tuning files
 [ ] Keybinding file
@@ -109,8 +115,6 @@
 [ ] Support macOS
 [ ] Support linux
 [ ] Automation
-[ ] Simple audio flow (parallel)
-[ ] Vst hosting (pianoteq)
 [x] FFT convolver
 
 Devices
@@ -134,7 +138,7 @@ Devices
 [ ] Sampler?
 [ ] Bowed string
 [ ] Modal synth
-[ ] Prepare for play (reset envs etc)
+[x] Prepare for play (reset envs etc)
 [ ] Change sample rate
 [ ] Group channels
 [ ] Master channel
@@ -146,6 +150,5 @@ Devices
 [ ] Support linux
 [ ] Automation
 [ ] Simple audio flow (parallel)
-[ ] Vst hosting (pianoteq)
 [x] FFT convolver
 

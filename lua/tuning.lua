@@ -43,12 +43,14 @@ tuning.generators = {
 -- }
 
 -- archytas
+-- tuning.rank = 2
 -- tuning.generators = {
 -- 	11.96955,
 -- 	7.07522,
 -- }
 
 -- 29edo
+-- tuning.rank = 2
 -- tuning.generators = {
 -- 	12.0,
 -- 	7.03448,
@@ -74,35 +76,6 @@ tuning.generators = {
 
 tuning.circle_of_fifths = { "F", "C", "G", "D", "A", "E", "B" }
 
--- current scale expressed in generator steps
--- stylua: ignore
-tuning.diatonic_table = {
-	{  0,  0 },
-	{ -1,  2 },
-	{ -2,  4 },
-	{  1, -1 },
-	{  0,  1 },
-	{ -1,  3 },
-	{ -2,  5 },
-}
-
--- scale used for 12edo input (e.g. midi keyboard)
--- stylua: ignore
-tuning.chromatic_table = {
-	{  0,  0 },  -- C
-	{ -4,  7 },  -- C#
-	{ -1,  2 },  -- D
-	{  2, -3 },  -- Eb
-	{ -2,  4 },  -- E
-	{  1, -1 },  -- F
-	{ -3,  6 },  -- F#
-	{  0,  1 },  -- G
-	{  3, -4 },  -- Ab
-	{ -1,  3 },  -- A
-	{  2, -2 },  -- Bb
-	{ -2,  5 },  -- B
-}
-
 tuning.octave = { 1 }
 tuning.tone = { -1, 2 } -- whole tone
 tuning.semitone = { 3, -5 } -- diatonic semitone
@@ -111,6 +84,34 @@ tuning.comma = { 7, -12 } -- Pythagorean comma / diesis
 
 if tuning.rank > 2 then
 	tuning.comma = { 0, 0, 1 }
+end
+
+-- generate well-formed scale
+-- n = scale size (nr. of generators)
+-- offset = nr. of generators down from root
+function tuning.generate_scale(n, offset)
+	local scale = {}
+	local o = tuning.get_relative_pitch(tuning.octave)
+	for i = 0, n - 1 do
+		local note = { 0, i - offset }
+
+		local p = tuning.get_relative_pitch(note)
+		note[1] = -math.floor(p / o)
+		table.insert(scale, note)
+	end
+
+	table.sort(scale, function(a, b)
+		return tuning.get_relative_pitch(a) < tuning.get_relative_pitch(b)
+	end)
+
+	return scale
+end
+
+function tuning.load()
+	tuning.diatonic_table = tuning.generate_scale(7, 1)
+	tuning.chromatic_table = tuning.generate_scale(12, 4)
+	tuning.fine_table = tuning.generate_scale(31, 12)
+	-- tuning.fine_table = tuning.generate_scale(19, 7)
 end
 
 function tuning.new_note()
@@ -150,9 +151,27 @@ function tuning.from_midi(n)
 	return new
 end
 
+function tuning.from_fine(n, add_octave)
+	add_octave = add_octave or 0
+	local s = #tuning.fine_table
+	local oct = math.floor((n - 1) / s)
+	n = n - oct * s
+	local f = tuning.fine_table[n]
+
+	local new = tuning.new_note()
+	new[1] = f[1] + oct + add_octave
+	new[2] = f[2]
+
+	return new
+end
+
 -- coordinates to pitch
 function tuning.get_pitch(p)
-	local f = 60
+	return 60 + tuning.get_relative_pitch(p)
+end
+
+function tuning.get_relative_pitch(p)
+	local f = 0
 	for i, v in ipairs(p) do
 		f = f + v * (tuning.generators[i] or 0)
 	end

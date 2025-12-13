@@ -11,55 +11,65 @@ vert: {
     [3] pressure: float
 }
 
-File
- - new project
- - open project
- - save project
- - save project as...
- - export audio
- - reset view
+util
+ find_index
+ map
+ min
+ max
 
-Options
- - follow
- - chase midi notes
+
+prompt for save as.. when first saving new project
+
+File
+ - reset workspace
+
+Right click view header
+ - close
+ - split vertical
+ - split horizontal
+ - set to
+
+stencil strokes: performance / quality?
 
 display midi activity indicator for each device
 enable MPE in settings for each device
 
-reset config file if new version
-
 in principle, the stream and render instances could be seperated
   allows for rendering even when there's no stream
-
-get rid of /settings
-just embed default theme for now
 
 make channels and buttons bigger
 
 add master meter to atomics
 add cpu to atomics
 
-rename channel -> layer?
-
-save transform in project
-
 allow only one instance of each view?
  makes some logic easier
 
-make tuning settings
-
 add view resized callback
+add view enter callback
 
 add some way to tune instruments properly
  - can be done semi-automatically?
 
 render in HDR and add bloom?
 
+smooth meters
 fix gain to be smoothed
-
 mute declicking
 
 should we use audio_thread_priority?
+
+macos universal binary:
+```yml
+    - name: Build Release
+      run: |
+        rustup target add x86_64-apple-darwin
+        cargo build --release --target x86_64-apple-darwin
+        cargo build --release --target aarch64-apple-darwin
+        lipo -create -output target/release/tessera \
+          target/x86_64-apple-darwin/release/tessera \
+          target/aarch64-apple-darwin/release/tessera
+```
 
 ## building
 
@@ -73,9 +83,6 @@ sudo apt install libasound2-plugins pulseaudio
 # jack
 sudo apt install libjack-dev
 
-
-
-support JACK? optionally?
 
 ## piano roll
 
