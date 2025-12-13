@@ -243,10 +243,15 @@ pub fn build_stream(
 }
 
 pub fn open_control_panel(device: &Device) {
-	if let DeviceInner::Asio(asio) = device.as_inner()
-		&& let Err(e) = asio.open_control_panel()
-	{
-		log_error!("Could not open panel: {:?}", e);
+	if let DeviceInner::Asio(asio_device) = device.as_inner() {
+		// Opening UI panel may block, so spawn a thread for it.
+		// ASIO device is just Arc internally, co clone is cheap.
+		let asio_device = asio_device.clone();
+		std::thread::spawn(move || {
+			if let Err(e) = asio_device.open_control_panel() {
+				log_error!("Could not open panel: {:?}", e);
+			}
+		});
 	}
 }
 
