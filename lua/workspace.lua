@@ -363,7 +363,7 @@ function Tab.new(name)
 		x = 0,
 		y = Ui.PAD,
 		w = 32,
-		h = Ui.RIBBON_HEIGHT,
+		h = Ui.RIBBON_HEIGHT - Ui.PAD,
 	}
 
 	self.name = name

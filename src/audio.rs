@@ -1,4 +1,5 @@
 use assert_no_alloc::*;
+use cpal::platform::DeviceInner;
 use cpal::{
 	BackendSpecificError, BufferSize, Device, HostId, SampleFormat, Stream, StreamConfig,
 	StreamError, SupportedBufferSize, SupportedStreamConfigRange,
@@ -232,6 +233,12 @@ pub fn build_stream(
 
 	// immediately start the stream
 	stream.play()?;
+
+	// if let DeviceInner::Asio(asio) = device.as_inner() {
+	// 	if let Err(e) = asio.open_control_panel() {
+	// 		log_error!("Could not open panel: {:?}", e);
+	// 	}
+	// }
 
 	log_info!("Stream set up succesfully!");
 
