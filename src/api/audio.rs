@@ -99,17 +99,6 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	audio.set(
-		"is_release",
-		lua.create_function(|_, ()| {
-			#[cfg(debug_assertions)]
-			return Ok(false);
-
-			#[cfg(not(debug_assertions))]
-			return Ok(true);
-		})?,
-	)?;
-
-	audio.set(
 		"ok",
 		lua.create_function(|lua, ()| Ok(lua.app_data_mut::<State>().unwrap().audio.is_some()))?,
 	)?;
@@ -119,6 +108,18 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		lua.create_function(|lua, ()| {
 			let state = &mut lua.app_data_mut::<State>().unwrap();
 			Ok(state.next_token())
+		})?,
+	)?;
+
+	audio.set(
+		"open_control_panel",
+		lua.create_function(|lua, ()| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio
+				&& let Some(device) = &ctx.device
+			{
+				open_control_panel(device);
+			}
+			Ok(())
 		})?,
 	)?;
 

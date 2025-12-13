@@ -7,7 +7,9 @@ use crate::opengl::Renderer;
 use crate::text::{Font, TextEngine};
 use crate::voice_manager::Token;
 use femtovg::{Canvas, Color, ImageId, Path};
+use semver::Version;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc;
 use std::time::Instant;
@@ -42,6 +44,13 @@ pub struct State {
 	pub midi_session: Option<midir::MidiInput>,
 	pub midi_connections: Vec<midi::Connection>,
 	token: Token,
+}
+
+static VERSION: OnceLock<Version> = OnceLock::new();
+pub fn get_version() -> &'static Version {
+	VERSION.get_or_init(|| {
+		Version::parse(env!("CARGO_PKG_VERSION")).expect("Failed to parse version string")
+	})
 }
 
 impl State {

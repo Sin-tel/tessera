@@ -1,4 +1,4 @@
-release = tessera.audio.is_release()
+release = tessera.is_release()
 
 local log = require("log")
 
@@ -13,9 +13,6 @@ local profile = false
 -- local profile = require("lib.profile2")
 
 VERSION = {}
-VERSION.MAJOR = 0
-VERSION.MINOR = 1
-VERSION.PATCH = 0
 
 util = require("util")
 
@@ -123,6 +120,8 @@ local function audio_setup()
 end
 
 function tessera.load(test_run)
+	VERSION = tessera.version()
+
 	log.info("Tessera v" .. util.version_str(VERSION))
 	if release then
 		log.info("Running in release mode")
@@ -139,10 +138,10 @@ function tessera.load(test_run)
 
 	mouse:load()
 
-	-- setup workspace
-	workspace:load()
-
 	if not test_run then
+		-- setup workspace
+		workspace:load()
+
 		-- set up empty project
 		build.new_project()
 	end

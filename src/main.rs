@@ -41,6 +41,7 @@ fn wrap_call<T: IntoLuaMulti>(status: &mut Status, lua_fn: &LuaFunction, args: T
 fn main() -> Result<(), Box<dyn Error>> {
 	// Make sure output folder exists before we do anything
 	fs::create_dir_all("./out")?;
+	init_logging();
 
 	if std::env::args().any(|arg| arg == "--test-run") {
 		test_run()?;
@@ -53,14 +54,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 	Ok(())
 }
 
-fn test_run() -> LuaResult<()> {
+fn do_main(lua: &Lua) -> Result<(), Box<dyn Error>> {
+	let lua_main = &*Script::get("main.lua").ok_or("main.lua not found.")?.data;
+	lua.load(lua_main).set_name("@lua/main.lua").exec()?;
+
+	Ok(())
+}
+
+fn test_run() -> Result<(), Box<dyn Error>> {
 	// Basic checks for CI without initializing any graphics or audio
+
 	let lua = create_lua(1.0)?;
 
-	init_logging();
-
-	let lua_main = &*Script::get("main.lua").unwrap().data;
-	lua.load(lua_main).set_name("@lua/main.lua").exec()?;
+	do_main(&lua)?;
 
 	let hooks = Hooks::new(&lua)?;
 
@@ -81,26 +87,23 @@ fn test_run() -> LuaResult<()> {
 		log_warn!("Midi failed to init");
 	}
 
-	hooks.load.call::<()>(true).unwrap();
-
-	hooks.quit.call::<()>(()).unwrap();
+	hooks.load.call::<()>(true)?;
+	hooks.quit.call::<()>(())?;
 	Ok(())
 }
 
-fn run() -> LuaResult<()> {
+fn run() -> Result<(), Box<dyn Error>> {
 	let (canvas, event_loop, surface, window) = setup_window();
 
 	// We check scale factor before loading lua, and assume it doesn't change for simplicity
 	let scale_factor = window.scale_factor();
+
 	let lua = create_lua(scale_factor)?;
+	let state = State::new(canvas, window, scale_factor as f32);
 
-	lua.set_app_data(State::new(canvas, window, scale_factor as f32));
+	lua.set_app_data(state);
 
-	init_logging();
-
-	let lua_main = &*Script::get("main.lua").unwrap().data;
-	lua.load(lua_main).set_name("@lua/main.lua").exec()?;
-
+	do_main(&lua)?;
 	load_images(&lua)?;
 	load_icons(&lua)?;
 
