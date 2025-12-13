@@ -31,7 +31,7 @@ pub struct Render {
 	lua_tx: HeapProd<LuaMessage>,
 	scope_tx: HeapProd<f32>,
 	channels: Vec<Channel>,
-	buffer2: [[f32; MAX_BUF_SIZE]; 2],
+	buffer: [[f32; MAX_BUF_SIZE]; 2],
 	pub sample_rate: f32,
 
 	peak_l: AttackRelease,
@@ -50,7 +50,7 @@ impl Render {
 			lua_tx,
 			scope_tx,
 			channels: Vec::new(),
-			buffer2: [[0.0f32; MAX_BUF_SIZE]; 2],
+			buffer: [[0.0f32; MAX_BUF_SIZE]; 2],
 			sample_rate,
 			peak_l: AttackRelease::new_direct(0.5, 0.05),
 			peak_r: AttackRelease::new_direct(0.5, 0.05),
@@ -93,13 +93,13 @@ impl Render {
 		ch.effects.remove(effect_index);
 	}
 
-	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
-		let [mut l, mut r] = self.buffer2;
-		let len = buffer[0].len();
-		let buf_slice = &mut [&mut l[..len], &mut r[..len]];
+	pub fn process(&mut self, out_buffer: &mut [&mut [f32]; 2]) {
+		let (l, r) = self.buffer.split_at_mut(1);
+		let len = out_buffer[0].len();
+		let buf_slice = &mut [&mut l[0][..len], &mut r[0][..len]];
 
 		// Zero buffer
-		for sample in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
+		for sample in out_buffer.iter_mut().flat_map(|s| s.iter_mut()) {
 			*sample = 0.0;
 		}
 
@@ -122,7 +122,7 @@ impl Render {
 					check_fp(buf_slice);
 				}
 
-				for (outsample, insample) in buffer
+				for (outsample, insample) in out_buffer
 					.iter_mut()
 					.flat_map(|s| s.iter_mut())
 					.zip(buf_slice.iter().flat_map(|s| s.iter()))
@@ -133,7 +133,7 @@ impl Render {
 		}
 
 		// Calculate peak
-		let [peak_l, peak_r] = dsp::peak(buffer);
+		let [peak_l, peak_r] = dsp::peak(out_buffer);
 		self.peak_l.set(peak_l);
 		self.peak_r.set(peak_r);
 
@@ -149,12 +149,12 @@ impl Render {
 		self.send(LuaMessage::Meter { l: peak_l, r: peak_r });
 
 		// Send everything to scope.
-		for s in buffer[0].iter() {
+		for s in out_buffer[0].iter() {
 			self.scope_tx.try_push(*s).ok(); // Don't really care if its full
 		}
 
 		// hardclip
-		for s in buffer.iter_mut().flat_map(|s| s.iter_mut()) {
+		for s in out_buffer.iter_mut().flat_map(|s| s.iter_mut()) {
 			*s = s.clamp(-1.0, 1.0);
 		}
 	}
