@@ -2,6 +2,7 @@ use crate::app::State;
 use crate::audio;
 use crate::audio::{
 	check_architecture, get_default_host, get_default_output_device, get_hosts, get_output_devices,
+	open_control_panel,
 };
 use crate::context::{AudioContext, AudioMessage};
 use crate::log::{log_error, log_info};

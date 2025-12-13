@@ -12,6 +12,7 @@ function Button.new(text, options)
 	self.align = options.align or tessera.graphics.ALIGN_CENTER
 	self.style = options.style or "normal"
 	self.indent = options.indent or 0
+	self.text_color = options.text_color or theme.ui_text
 
 	return self
 end
@@ -45,7 +46,7 @@ function Button:draw(ui, x, y, w, h)
 		tessera.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
 		tessera.graphics.set_color(color_line)
 		tessera.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
-		tessera.graphics.set_color(theme.ui_text)
+		tessera.graphics.set_color(self.text_color)
 		tessera.graphics.label(self.text, x, y, w, h, self.align)
 	end
 end
@@ -62,7 +63,7 @@ function Button:draw_menu(ui, x, y, w, h)
 		tessera.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
 	end
 	tessera.graphics.set_font_size()
-	tessera.graphics.set_color(theme.ui_text)
+	tessera.graphics.set_color(self.text_color)
 	tessera.graphics.label(self.text, x + self.indent, y, w - self.indent, h, self.align)
 end
 

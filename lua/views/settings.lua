@@ -55,7 +55,8 @@ function Settings.new()
 	end
 
 	-- these don't need to be rebuilt
-	self.reset_button = widgets.Button.new("Audio offline. Click to reset.")
+	self.reset_button = widgets.Button.new("Audio offline. Click to reset.", { text_color = theme.highlight })
+	self.control_panel_button = widgets.Button.new("Open control panel")
 
 	self.state.host_id = util.find(Settings.hosts, setup.host) or 1
 	self.select_host =
@@ -140,8 +141,13 @@ function Settings:update()
 	local c2 = 0.5 * (lw - c1)
 	local c3 = c2
 
-	self.ui.layout:col(lw)
-	if not tessera.audio.ok() then
+	local audio_ok = tessera.audio.ok()
+
+	if audio_ok then
+		self.ui.layout:col(lw)
+	else
+		self.ui.layout:col(c1)
+		self.ui.layout:col(c2)
 		if self.reset_button:update(self.ui) then
 			engine.rebuild_stream()
 		end
@@ -169,7 +175,7 @@ function Settings:update()
 	self.ui.layout:col(c1)
 	self.ui.layout:col(c2)
 	self.ui:label("Output device")
-	self.ui.layout:col(c3)
+	self.ui.layout:col(c3 * 0.5)
 
 	local device_id = self.select_device:update(self.ui)
 	if device_id then
@@ -180,9 +186,15 @@ function Settings:update()
 		end
 	end
 
+	if setup.host == "asio" and audio_ok then
+		self.ui.layout:col(c3 * 0.5)
+		if self.control_panel_button:update(self.ui) then
+			tessera.audio.open_control_panel()
+		end
+	end
+
 	self.ui.layout:new_row()
 	self.ui.layout:col(c1 + c2)
-
 	local update_buffer_size = self.toggle_buffer_size:update(self.ui)
 
 	if self.state.toggle_buffer then
