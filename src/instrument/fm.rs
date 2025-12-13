@@ -123,11 +123,10 @@ impl Instrument for Fm {
 
 				*sample += 0.5 * out;
 			}
-			if voice.env.get() < 1e-4 {
+			if voice.env.done() {
 				voice.active = false;
 			}
 		}
-
 		self.dc_killer.process_block(bl);
 		br.copy_from_slice(bl);
 	}
