@@ -62,11 +62,12 @@ impl AttackRelease {
 	}
 }
 
-#[derive(Debug)]
-enum AdsrStage {
+#[derive(Debug, PartialEq)]
+pub enum AdsrStage {
 	Attack,
 	Sustain,
 	Release,
+	Done,
 }
 
 // classic ADSR envelope
@@ -77,7 +78,7 @@ pub struct Adsr {
 	sustain: f32,
 	release: f32,
 	value: f32,
-	stage: AdsrStage,
+	pub stage: AdsrStage,
 	sample_rate: f32,
 	attack_step: f32,
 	vel: f32,
@@ -93,7 +94,7 @@ impl Adsr {
 			release: 0.,
 			value: 0.,
 			vel: 1.,
-			stage: AdsrStage::Release,
+			stage: AdsrStage::Done,
 			sample_rate,
 		}
 	}
@@ -110,7 +111,13 @@ impl Adsr {
 				}
 			},
 			Sustain => self.value = lerp(self.value, self.sustain * self.vel, self.decay),
-			Release => self.value *= self.release,
+			Release => {
+				self.value *= self.release;
+				if self.value < 1e-5 {
+					self.stage = Done;
+				}
+			},
+			Done => self.value = 0.,
 		}
 		self.value
 	}
@@ -118,6 +125,10 @@ impl Adsr {
 	#[must_use]
 	pub fn get(&self) -> f32 {
 		self.value
+	}
+
+	pub fn done(&self) -> bool {
+		self.stage == AdsrStage::Done
 	}
 
 	pub fn note_on(&mut self, vel: f32) {
@@ -134,7 +145,7 @@ impl Adsr {
 	}
 
 	pub fn reset(&mut self) {
-		self.stage = AdsrStage::Release;
+		self.stage = AdsrStage::Done;
 		self.value = 0.;
 	}
 

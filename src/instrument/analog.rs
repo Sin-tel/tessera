@@ -87,6 +87,9 @@ impl Instrument for Analog {
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
+		if self.envelope.done() {
+			return;
+		}
 		let [bl, br] = buffer;
 
 		let up_len = 2 * bl.len();
