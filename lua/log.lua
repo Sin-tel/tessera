@@ -4,7 +4,7 @@ local log = {}
 
 local file = io.open("out/out.log", "a")
 assert(file, "Failed to create log file")
-file:setvbuf("full")
+file:setvbuf("line")
 
 local function write_log(level, ...)
 	local level_str = "[" .. level:upper() .. "] "

@@ -1,5 +1,5 @@
-use crate::audio::{build_config, build_stream, find_output_device};
-use crate::log::{log_info, log_warn};
+use crate::audio::{build_config, build_stream, die, find_output_device};
+use crate::log::*;
 use crate::meters::Meters;
 use crate::render::Render;
 use crate::scope::Scope;
@@ -73,7 +73,11 @@ impl AudioContext {
 		let (config, format) = build_config(&device, buffer_size)?;
 
 		// TODO: handle this properly
-		assert_eq!(config.sample_rate, self.sample_rate, "Sample rate mismatch during rebuild");
+		if config.sample_rate != self.sample_rate {
+			log_error!("Sample rate mismatch!");
+			self.sample_rate = config.sample_rate;
+			die();
+		}
 
 		let (stream, stream_tx, error_rx) =
 			build_stream(&device, &config, format, Arc::clone(&self.render))?;

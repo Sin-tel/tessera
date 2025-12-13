@@ -17,7 +17,8 @@ pub fn init_logging() {
 	File::create(filename).unwrap();
 
 	// append mode for atomic writes
-	let f = OpenOptions::new().write(true).truncate(true).open(filename).unwrap();
+	let f = OpenOptions::new().append(true).open(filename).unwrap();
+
 	// buffer lines
 	let f_write = LineWriter::new(f);
 

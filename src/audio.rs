@@ -1,23 +1,25 @@
 use assert_no_alloc::*;
 use cpal::{
 	BackendSpecificError, BufferSize, Device, HostId, SampleFormat, Stream, StreamConfig,
-	StreamError,
+	StreamError, SupportedBufferSize, SupportedStreamConfigRange,
 	traits::{DeviceTrait, HostTrait, StreamTrait},
 };
 use no_denormals::no_denormals;
 use parking_lot::Mutex;
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd, HeapRb};
+use std::cmp;
 use std::error::Error;
 use std::panic;
 use std::panic::AssertUnwindSafe;
 use std::str::FromStr;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic;
+use std::sync::atomic::AtomicBool;
 
 use crate::context::{ErrorMessage, LuaMessage};
 use crate::dsp::env::AttackRelease;
-use crate::log::{log_error, log_info};
+use crate::log::*;
 use crate::render::Render;
 
 #[cfg(debug_assertions)] // required when disable_release is set (default)
@@ -30,10 +32,12 @@ pub const MAX_BUF_SIZE: usize = 64;
 pub const SPECTRUM_SIZE: usize = 4096;
 
 pub fn check_architecture() -> Result<(), String> {
-	#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "avx2"))]
-	if !is_x86_feature_detected!("avx2") {
-		return Err("Your CPU is not supported! This release requires at least AVX2.".to_string());
-	}
+	// not enabled for now
+
+	// #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "avx2"))]
+	// if !is_x86_feature_detected!("avx2") {
+	// 	return Err("Your CPU is not supported! This release requires at least AVX2.".to_string());
+	// }
 	Ok(())
 }
 
@@ -57,7 +61,16 @@ pub fn get_output_devices(host_str: &str) -> Result<Vec<String>, Box<dyn Error>>
 	let mut devices = Vec::new();
 
 	for d in host.output_devices()? {
-		devices.push(d.description()?.name().to_string());
+		match d.description() {
+			Ok(d) => {
+				let name = d.name();
+				// TODO: FL Studio ASIO is broken
+				if name != "FL Studio ASIO" {
+					devices.push(name.to_string())
+				}
+			},
+			Err(e) => log_warn!("Couldn't get name: {e}"),
+		}
 	}
 
 	Ok(devices)
@@ -106,22 +119,92 @@ pub fn find_output_device(host_str: &str, device_name: &str) -> Result<Device, B
 	Ok(output_device)
 }
 
-pub fn build_config(
-	device: &cpal::Device,
-	buffer_size: Option<u32>,
-) -> Result<(StreamConfig, SampleFormat), Box<dyn Error>> {
-	let config = device.default_output_config()?;
+fn config_cmp(a: &SupportedStreamConfigRange, b: &SupportedStreamConfigRange) -> cmp::Ordering {
+	use SampleFormat::*;
 
-	let mut stream_config: StreamConfig = config.clone().into();
-	stream_config.channels = 2; // only allow stereo output
+	let format_score = |fmt: SampleFormat| match fmt {
+		// Best, no conversion
+		F32 => 5,
+		// Good
+		I32 | U32 | F64 => 4,
+		// OK
+		I16 | U16 => 3,
+		// No
+		_ => 0,
+	};
 
-	stream_config.sample_rate = 44100;
+	let score_a = format_score(a.sample_format());
+	let score_b = format_score(b.sample_format());
 
-	if let Some(buffer_size) = buffer_size {
-		stream_config.buffer_size = BufferSize::Fixed(buffer_size);
+	if score_a != score_b {
+		return score_a.cmp(&score_b);
 	}
 
-	Ok((stream_config, config.sample_format()))
+	// Prefer ranges that support 44100 or 48000
+	let supports_rate = |config: &SupportedStreamConfigRange, target: u32| -> bool {
+		config.min_sample_rate() <= target && config.max_sample_rate() >= target
+	};
+
+	// Check 44.1k
+	let a_44 = supports_rate(a, 44100);
+	let b_44 = supports_rate(b, 44100);
+	if a_44 != b_44 {
+		return a_44.cmp(&b_44);
+	}
+
+	// Check 48k
+	let a_48 = supports_rate(a, 48000);
+	let b_48 = supports_rate(b, 48000);
+	if a_48 != b_48 {
+		return a_48.cmp(&b_48);
+	}
+
+	cmp::Ordering::Equal
+}
+
+pub fn build_config(
+	device: &cpal::Device,
+	requested_buffer: Option<u32>,
+) -> Result<(StreamConfig, SampleFormat), Box<dyn Error>> {
+	let supported_configs = device.supported_output_configs()?;
+
+	let best_config = supported_configs
+		.filter(|c| c.channels() == 2) // only stereo
+		.max_by(config_cmp)
+		.ok_or("No supported stereo configuration found on this device.")?;
+
+	let min_rate = best_config.min_sample_rate();
+	let max_rate = best_config.max_sample_rate();
+
+	let sample_rate = if min_rate <= 44100 && max_rate >= 44100 {
+		44100
+	} else if min_rate <= 48000 && max_rate >= 48000 {
+		48000
+	} else {
+		// Fallback: Pick the closest value in range to 44100
+		min_rate.max(44100).min(max_rate)
+	};
+
+	// 4. Pick the concrete Buffer Size
+	let buffer_size = if let Some(req) = requested_buffer {
+		match best_config.buffer_size() {
+			SupportedBufferSize::Range { min, max } => BufferSize::Fixed(req.clamp(*min, *max)),
+			SupportedBufferSize::Unknown => BufferSize::Fixed(req),
+		}
+	} else {
+		BufferSize::Default
+	};
+
+	let config = StreamConfig { channels: 2, sample_rate, buffer_size };
+
+	log_info!(
+		"Selected config: sample rate: {}Hz, buffer size: {:?}, format: {:?}",
+		config.sample_rate,
+		config.buffer_size,
+		best_config.sample_format(),
+	);
+
+	Ok((config, best_config.sample_format()))
 }
 
 #[allow(clippy::type_complexity)]
@@ -183,7 +266,7 @@ where
 	// Callback data
 	let mut start = false;
 	let mut is_rendering = false;
-	let process_buffer = [[0.0f32; MAX_BUF_SIZE]; 2];
+	let mut process_buffer = [[0.0f32; MAX_BUF_SIZE]; 2];
 	let mut cpu_load = AttackRelease::new_direct(0.05, 0.01);
 
 	move |cpal_buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
@@ -210,8 +293,8 @@ where
 
 						for buffer_chunk in cpal_buffer.chunks_mut(MAX_BUF_SIZE) {
 							let chunk_size = buffer_chunk.len() / 2;
-							let [mut l, mut r] = process_buffer;
-							let buf_slice = &mut [&mut l[..chunk_size], &mut r[..chunk_size]];
+							let (l, r) = process_buffer.split_at_mut(1);
+							let buf_slice = &mut [&mut l[0][..chunk_size], &mut r[0][..chunk_size]];
 
 							unsafe {
 								no_denormals(|| {
@@ -239,11 +322,8 @@ where
 						for m in stream_rx.pop_iter() {
 							is_rendering = m;
 						}
-						// log_info!("Output silent");
-						for outsample in cpal_buffer.chunks_exact_mut(2) {
-							outsample[0] = T::from_sample(0.0f32);
-							outsample[1] = T::from_sample(0.0f32);
-						}
+						// Output silence
+						cpal_buffer.fill(T::EQUILIBRIUM);
 					},
 				}
 			});
@@ -256,16 +336,17 @@ where
 					None => "Box<Any>",
 				},
 			};
+
 			log_error!("Audio thread panic: {msg}");
+			die();
 
-			AUDIO_PANIC.store(true, Ordering::Relaxed);
-
-			for outsample in cpal_buffer.chunks_exact_mut(2) {
-				outsample[0] = T::from_sample(0.0f32);
-				outsample[1] = T::from_sample(0.0f32);
-			}
+			cpal_buffer.fill(T::EQUILIBRIUM);
 		}
 	}
+}
+
+pub fn die() {
+	AUDIO_PANIC.store(true, atomic::Ordering::Relaxed);
 }
 
 fn error_closure(mut error_tx: HeapProd<ErrorMessage>) -> impl FnMut(StreamError) + Send + 'static {
@@ -329,3 +410,10 @@ fn enable_fpu_traps() {
 
 #[cfg(any(not(target_arch = "x86_64"), not(feature = "fpu_traps")))]
 fn enable_fpu_traps() {}
+
+#[allow(dead_code)]
+fn breakpoint() {
+	unsafe {
+		std::arch::asm!("int3");
+	}
+}
