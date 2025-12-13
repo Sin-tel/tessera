@@ -90,14 +90,6 @@ end
 local function audio_setup()
 	if not tessera.audio.ok() then
 		engine.setup_stream()
-		if not tessera.audio.ok() then
-			-- if we fail here, try a fallback to default settings
-			local default_host = tessera.audio.get_default_host()
-			log.warn(("Setup failed for %q, retrying with default %q"):format(setup.host, default_host))
-			setup.host = default_host
-			engine.setup_stream()
-		end
-
 		midi.load()
 		engine.reset_parameters()
 	else

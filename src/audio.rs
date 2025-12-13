@@ -67,7 +67,7 @@ pub fn get_output_devices(host_str: &str) -> Result<Vec<String>, Box<dyn Error>>
 				let name = d.name();
 				// TODO: FL Studio ASIO is broken
 				if name != "FL Studio ASIO" {
-					devices.push(name.to_string())
+					devices.push(name.to_string());
 				}
 			},
 			Err(e) => log_warn!("Couldn't get name: {e}"),
@@ -130,6 +130,7 @@ fn config_cmp(a: &SupportedStreamConfigRange, b: &SupportedStreamConfigRange) ->
 		I32 | U32 | F64 => 4,
 		// OK
 		I16 | U16 => 3,
+		I24 => 2,
 		// No
 		_ => 0,
 	};
@@ -171,6 +172,7 @@ pub fn build_config(
 
 	let best_config = supported_configs
 		.filter(|c| c.channels() == 2) // only stereo
+		// .inspect(|c| println!("{c:?}"))
 		.max_by(config_cmp)
 		.ok_or("No supported stereo configuration found on this device.")?;
 
@@ -183,10 +185,9 @@ pub fn build_config(
 		48000
 	} else {
 		// Fallback: Pick the closest value in range to 44100
-		min_rate.max(44100).min(max_rate)
+		44100.clamp(min_rate, max_rate)
 	};
 
-	// 4. Pick the concrete Buffer Size
 	let buffer_size = if let Some(req) = requested_buffer {
 		match best_config.buffer_size() {
 			SupportedBufferSize::Range { min, max } => BufferSize::Fixed(req.clamp(*min, *max)),
@@ -199,7 +200,8 @@ pub fn build_config(
 	let config = StreamConfig { channels: 2, sample_rate, buffer_size };
 
 	log_info!(
-		"Selected config: sample rate: {}Hz, buffer size: {:?}, format: {:?}",
+		"Selected config: channels: {}, sample rate: {}Hz, buffer size: {:?}, format: {:?}",
+		config.channels,
 		config.sample_rate,
 		config.buffer_size,
 		best_config.sample_format(),
@@ -228,21 +230,24 @@ pub fn build_stream(
 		U32 => build_stream_inner::<u32>(device, config, render, stream_rx, error_tx),
 		I16 => build_stream_inner::<i16>(device, config, render, stream_rx, error_tx),
 		U16 => build_stream_inner::<u16>(device, config, render, stream_rx, error_tx),
+		I24 => build_stream_inner::<cpal::I24>(device, config, render, stream_rx, error_tx),
 		f => Err(format!("Unsupported sample format '{f}'").into()),
 	}?;
 
 	// immediately start the stream
 	stream.play()?;
 
-	// if let DeviceInner::Asio(asio) = device.as_inner() {
-	// 	if let Err(e) = asio.open_control_panel() {
-	// 		log_error!("Could not open panel: {:?}", e);
-	// 	}
-	// }
-
 	log_info!("Stream set up succesfully!");
 
 	Ok((stream, stream_tx, error_rx))
+}
+
+pub fn open_control_panel(device: &Device) {
+	if let DeviceInner::Asio(asio) = device.as_inner()
+		&& let Err(e) = asio.open_control_panel()
+	{
+		log_error!("Could not open panel: {:?}", e);
+	}
 }
 
 pub fn build_stream_inner<T>(

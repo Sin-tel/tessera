@@ -13,6 +13,7 @@ use std::sync::Arc;
 
 pub struct AudioContext {
 	pub stream: Option<cpal::Stream>,
+	pub device: Option<cpal::Device>,
 	pub audio_tx: HeapProd<AudioMessage>,
 	pub stream_tx: HeapProd<bool>,
 	pub error_rx: HeapCons<ErrorMessage>,
@@ -48,6 +49,7 @@ impl AudioContext {
 
 		Ok(AudioContext {
 			stream: Some(stream),
+			device: Some(device),
 			audio_tx,
 			stream_tx,
 			error_rx,
@@ -69,6 +71,8 @@ impl AudioContext {
 	) -> Result<(), Box<dyn Error>> {
 		// drop old stream
 		self.stream = None;
+		self.device = None;
+
 		let device = find_output_device(host_str, device_name)?;
 		let (config, format) = build_config(&device, buffer_size)?;
 
@@ -85,6 +89,7 @@ impl AudioContext {
 		self.stream_tx = stream_tx;
 		self.error_rx = error_rx;
 		self.stream = Some(stream);
+		self.device = Some(device);
 
 		Ok(())
 	}
