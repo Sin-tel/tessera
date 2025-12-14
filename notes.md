@@ -8,6 +8,14 @@ mute declicking
 project settings
  tuning presets
 
+release mode:
+fullscreen launch!
+
+snapping settings:
+ - shared between grab / pen / etc ?
+ - seperate settings for time / pitch
+ - could be entirely context-dependent, but maybe allow override
+    i.e. have "auto" snap setting by default
 
 prompt for save as.. when first saving new project
 
