@@ -1,21 +1,12 @@
-note datastructure:
-pitch: {
-    pitch: table,
-    time: float, // start_time
-    velocity: float,
-    verts: list of vert
-}
-vert: {
-    [1] time: float // relative (first point always 0)
-    [2] pitch_offset: float
-    [3] pressure: float
-}
 
-util
- find_index
- map
- min
- max
+
+meter frozen when muted
+smooth meters
+fix gain to be smoothed
+mute declicking
+
+project settings
+ tuning presets
 
 
 prompt for save as.. when first saving new project
@@ -42,6 +33,8 @@ make channels and buttons bigger
 add master meter to atomics
 add cpu to atomics
 
+spacers / collapse sections in device settings
+
 allow only one instance of each view?
  makes some logic easier
 
@@ -53,9 +46,6 @@ add some way to tune instruments properly
 
 render in HDR and add bloom?
 
-smooth meters
-fix gain to be smoothed
-mute declicking
 
 should we use audio_thread_priority?
 
@@ -83,6 +73,18 @@ sudo apt install libasound2-plugins pulseaudio
 # jack
 sudo apt install libjack-dev
 
+## note datastructure:
+pitch: {
+    pitch: table,
+    time: float, // start_time
+    velocity: float,
+    verts: list of vert
+}
+vert: {
+    [1] time: float // relative (first point always 0)
+    [2] pitch_offset: float
+    [3] pressure: float
+}
 
 ## piano roll
 

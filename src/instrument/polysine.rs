@@ -71,7 +71,7 @@ impl Instrument for Polysine {
 
 				*sample += out * 0.5;
 			}
-			if voice.vel.get() < 1e-4 {
+			if !voice.note_on && voice.vel.get() < 1e-4 {
 				voice.active = false;
 			}
 		}
