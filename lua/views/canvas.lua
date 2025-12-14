@@ -71,6 +71,7 @@ function Canvas:update()
 				end
 			end
 			if self.tool_active then
+				self.current_tool:update(self)
 				self.current_tool:mousedown(self)
 				return
 			end
@@ -207,6 +208,7 @@ function Canvas:draw()
 	tessera.graphics.set_color(theme.bg_nested)
 	tessera.graphics.rectangle("fill", 0, 0, self.w, self.h)
 
+	tessera.graphics.set_line_width()
 	-- draw grid
 	local ix, iy = self.transform:inverse(0, 0)
 	local ex, ey = self.transform:inverse(self.w, self.h)

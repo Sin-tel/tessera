@@ -186,7 +186,8 @@ function NoteAdd.new(notes)
     self.notes = notes
     self.mask = {}
 
-    for ch_index in ipairs(self.notes) do
+    -- use pairs because notes may be sparse
+    for ch_index in pairs(self.notes) do
         for _, note in ipairs(self.notes[ch_index]) do
             self.mask[note] = true
         end
@@ -195,7 +196,7 @@ function NoteAdd.new(notes)
 end
 
 function NoteAdd:run()
-    for ch_index in ipairs(self.notes) do
+    for ch_index in pairs(self.notes) do
         for _, note in ipairs(self.notes[ch_index]) do
             table.insert(project.channels[ch_index].notes, note)
         end

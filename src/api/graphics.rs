@@ -439,7 +439,7 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 			// first point
 			let (x, y, w) = (lx[0], ly[0], lw[0]);
 			path.move_to(x, y + w);
-			bottom_verts.push((x, y + w));
+			bottom_verts.push((x, y - w));
 
 			// middle points
 			for i in 1..n - 1 {
