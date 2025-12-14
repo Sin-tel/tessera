@@ -3,8 +3,6 @@ local tuning = require("tuning")
 
 local midi = {}
 
--- TODO: other config stuff like MPE
-
 -- used by Settings to check if list should be updated
 midi.ports_changed = false
 -- set of currently open ports
@@ -22,6 +20,9 @@ local function event_note_index(event)
 	return event.channel * 256 + event.note
 end
 
+local MidiDevice = {}
+MidiDevice.__index = MidiDevice
+
 function midi.load()
 	if midi.ok then
 		return
@@ -34,12 +35,13 @@ function midi.load()
 	end
 end
 
-function midi.update_port(enable, config)
+-- enable or disable a midi connection
+function midi.connect(enable, config)
 	if enable then
 		local index = tessera.midi.open_connection(config.name)
 		if index then
 			assert(not devices[index])
-			devices[index] = midi.new_device(config)
+			devices[index] = MidiDevice.new(config)
 			midi.open_ports[config.name] = true
 			return true
 		else
@@ -88,7 +90,7 @@ function midi.scan_ports()
 		-- new ports to add
 		if c.enable and midi.available_ports[c.name] and not midi.open_ports[c.name] then
 			midi.ports_changed = true
-			local success = midi.update_port(true, c)
+			local success = midi.connect(true, c)
 			if not success then
 				-- disable it so we don't try opening it again next scan
 				c.enable = false
@@ -98,24 +100,24 @@ function midi.scan_ports()
 		-- stale ports to delete
 		if (not c.enable or not midi.available_ports[c.name]) and midi.open_ports[c.name] then
 			midi.ports_changed = true
-			midi.update_port(false, c)
+			midi.connect(false, c)
 		end
 	end
 end
 
-function midi.new_device(config)
-	local new = {}
-	new.mpe = config.mpe
-	new.name = config.name
-	new.pitchbend_range = 2
-	if new.mpe then
-		new.pitchbend_range = 48
+function midi.update_config(config)
+	local device
+	for _, v in ipairs(devices) do
+		if v.name == config.name then
+			device = v
+		end
 	end
 
-	new.offset = 0
-
-	new.notes = {}
-	return new
+	if device then
+		device:set_config(config)
+	else
+		log.warn(("Device %q not found"):format(config.name))
+	end
 end
 
 function midi.update(dt)
@@ -159,48 +161,79 @@ function midi.update_device(device_index, device)
 
 	if sink then
 		for _, event in ipairs(events) do
-			midi.event(device, sink, event)
+			device:event(sink, event)
 		end
 	end
 end
 
-function midi.event(device, sink, event)
+function midi.quit()
+	devices = {}
+end
+
+function MidiDevice.new(config)
+	local self = setmetatable({}, MidiDevice)
+
+	self:set_config(config)
+
+	self.offset = 0
+	self.notes = {}
+	self.offsets = {}
+	for i = 0, 16 do
+		self.offsets[i] = 0
+	end
+	return self
+end
+
+function MidiDevice:set_config(config)
+	self.mpe = config.mpe
+	self.name = config.name
+	self.pitchbend_range = 2
+	if self.mpe then
+		self.pitchbend_range = 48
+	end
+end
+
+function MidiDevice:event(sink, event)
 	if event.name == "note_on" then
 		local n_index = event_note_index(event)
+
 		local token = tessera.audio.get_token()
-		device.notes[n_index] = token
+		self.notes[n_index] = token
 
 		local pitch = tuning.from_midi(event.note)
+		local offset = self.offsets[event.channel]
 
-		sink:event({ name = "note_on", token = token, pitch = pitch, vel = event.vel, offset = device.offset })
+		sink:event({ name = "note_on", token = token, pitch = pitch, vel = event.vel, offset = offset })
 	elseif event.name == "note_off" then
 		local n_index = event_note_index(event)
-		local token = device.notes[n_index]
-		if not token then
+		local token = self.notes[n_index]
+
+		if token then
+			sink:event({ name = "note_off", token = token })
+		else
 			log.warn("Unhandled note off event.")
 			return
 		end
 
-		sink:event({ name = "note_off", token = token })
-		device.notes[n_index] = nil
+		self.notes[n_index] = nil
 	elseif event.name == "pitchbend" then
-		-- TODO: fix mpe pitchbend before note on
-		device.offset = device.pitchbend_range * event.pitchbend
-		if device.mpe then
-			for k, token in pairs(device.notes) do
+		local offset = self.pitchbend_range * event.pitchbend
+		self.offsets[event.channel] = offset
+		if self.mpe then
+			for k, token in pairs(self.notes) do
 				local midi_ch = math.floor(k / 256)
 				if midi_ch == event.channel then
-					sink:event({ name = "pitch", token = token, offset = device.offset })
+					sink:event({ name = "pitch", token = token, offset = offset })
 				end
 			end
 		else
-			for _, token in pairs(device.notes) do
-				sink:event({ name = "pitch", token = token, offset = device.offset })
+			for _, token in pairs(self.notes) do
+				sink:event({ name = "pitch", token = token, offset = offset })
 			end
 		end
 	elseif event.name == "pressure" then
-		if device.mpe then
-			for k, token in pairs(device.notes) do
+		if self.mpe then
+			for k, token in pairs(self.notes) do
 				local midi_ch = math.floor(k / 256)
 				if midi_ch == event.channel then
 					sink:event({ name = "pressure", token = token, pressure = event.pressure })
@@ -208,7 +241,7 @@ function midi.event(device, sink, event)
 			end
 		else
 			-- TODO: untested
-			for _, token in pairs(device.notes) do
+			for _, token in pairs(self.notes) do
 				sink:event({ name = "pressure", token = token, pressure = event.pressure })
 			end
 		end
@@ -222,10 +255,6 @@ function midi.event(device, sink, event)
 			end
 		end
 	end
-end
-
-function midi.quit()
-	devices = {}
 end
 
 return midi

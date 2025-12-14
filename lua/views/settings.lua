@@ -38,6 +38,7 @@ Settings.state = {
 	buffer_size = 128,
 	toggle_buffer = false,
 	midi_ports = {},
+	mpe = {},
 	devices = {},
 }
 
@@ -85,8 +86,11 @@ end
 function Settings:rebuild_midi()
 	self.midi_toggles = {}
 	table.clear(self.state.midi_ports)
+	self.mpe_toggles = {}
+	table.clear(self.state.mpe)
 
 	for _, v in ipairs(setup.midi_devices) do
+		-- device on/off toggles
 		local toggle = widgets.Toggle.new(
 			self.state.midi_ports,
 			v.name,
@@ -96,6 +100,14 @@ function Settings:rebuild_midi()
 
 		if v.enable then
 			self.state.midi_ports[v.name] = true
+		end
+
+		-- MPE toggles
+		local toggle_mpe = widgets.Toggle.new(self.state.mpe, v.name, { style = "checkbox", no_undo = true })
+		table.insert(self.mpe_toggles, toggle_mpe)
+
+		if v.mpe then
+			self.state.mpe[v.name] = true
 		end
 	end
 end
@@ -138,8 +150,9 @@ function Settings:update()
 	self.ui:start_frame(x, y)
 
 	local c1 = self.indent
-	local c2 = 0.5 * (lw - c1)
-	local c3 = c2
+	local c2 = 0.3 * (lw - c1)
+	local c3 = 0.4 * (lw - c1)
+	local c4 = 0.3 * (lw - c1)
 
 	local audio_ok = tessera.audio.ok()
 
@@ -175,7 +188,7 @@ function Settings:update()
 	self.ui.layout:col(c1)
 	self.ui.layout:col(c2)
 	self.ui:label("Output device")
-	self.ui.layout:col(c3 * 0.5)
+	self.ui.layout:col(c3)
 
 	local device_id = self.select_device:update(self.ui)
 	if device_id then
@@ -187,7 +200,7 @@ function Settings:update()
 	end
 
 	if setup.host == "asio" and audio_ok then
-		self.ui.layout:col(c3 * 0.5)
+		self.ui.layout:col(c4)
 		if self.control_panel_button:update(self.ui) then
 			tessera.audio.open_control_panel()
 		end
@@ -235,6 +248,10 @@ function Settings:update()
 
 	-- MIDI
 
+	c2 = 0.3 * (lw - c1)
+	c3 = 0.2 * (lw - c1)
+	c4 = 0.4 * (lw - c1)
+
 	if midi.ports_changed then
 		self:rebuild_midi()
 		midi.ports_changed = false
@@ -245,6 +262,8 @@ function Settings:update()
 	self.ui.layout:col(c1 + c2)
 	self.ui:label("Midi devices")
 	self.ui.layout:col(c3)
+	self.ui:label("MPE")
+	self.ui.layout:col(c4)
 	self.ui:label("Status")
 	self.ui:background(theme.bg_nested)
 	if midi.ok then
@@ -257,16 +276,20 @@ function Settings:update()
 			for i, v in ipairs(setup.midi_devices) do
 				self.ui.layout:new_row()
 				self.ui.layout:col(c1 + c2)
-				local update = self.midi_toggles[i]:update(self.ui)
-				self.ui.layout:col(c3)
-
-				if update then
+				if self.midi_toggles[i]:update(self.ui) then
 					local enable = self.state.midi_ports[v.name]
 					setup.midi_devices[i].enable = enable
 					if midi.available_ports[v.name] then
-						midi.update_port(enable, setup.midi_devices[i])
+						midi.connect(enable, setup.midi_devices[i])
 					end
 				end
+				self.ui.layout:col(c3)
+				if self.mpe_toggles[i]:update(self.ui) then
+					setup.midi_devices[i].mpe = self.state.mpe[v.name]
+					midi.update_config(setup.midi_devices[i])
+				end
+
+				self.ui.layout:col(c4)
 
 				if midi.open_ports[v.name] then
 					self.ui:label("Active")

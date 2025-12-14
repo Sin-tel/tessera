@@ -176,30 +176,33 @@ function Roll:event(event)
 			self.active_notes[event.token] = nil
 		elseif event.name == "pitch" then
 			local note = self.active_notes[event.token]
+			if not note then
+				return
+			end
 			local t_offset = time - note.time
 
 			local v_prev = note.verts[#note.verts]
 
-			local n_new = { t_offset, event.offset, v_prev[3] }
-			-- if t_offset - v_prev[1] >= 0.008 then
-			if t_offset - v_prev[1] >= 0.0 then
+			if t_offset - v_prev[1] >= 0.008 then
+				local n_new = { t_offset, event.offset, v_prev[3] }
 				table.insert(self.active_notes[event.token].verts, n_new)
 			else
-				-- note.verts[#note.verts] = n_new
 				note.verts[#note.verts][2] = event.offset
 			end
 		elseif event.name == "pressure" then
 			local note = self.active_notes[event.token]
+			if not note then
+				return
+			end
+
 			local t_offset = time - note.time
 
 			local v_prev = note.verts[#note.verts]
 
-			local n_new = { t_offset, v_prev[2], event.pressure }
-
 			if t_offset - v_prev[1] >= 0.008 then
+				local n_new = { t_offset, v_prev[2], event.pressure }
 				table.insert(self.active_notes[event.token].verts, n_new)
 			else
-				-- note.verts[#note.verts] = n_new
 				note.verts[#note.verts][3] = event.pressure
 			end
 		elseif event.name == "sustain" then
