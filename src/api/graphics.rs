@@ -437,27 +437,21 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 			let mut bottom_verts: Vec<(f32, f32)> = Vec::with_capacity(n);
 
 			// first point
-			let (nx, ny) = get_normal(lx[0], ly[0], lx[1], ly[1]);
-
 			let (x, y, w) = (lx[0], ly[0], lw[0]);
-			path.move_to(x + nx * w, y + ny * w);
-			bottom_verts.push((x - nx * w, y - ny * w));
+			path.move_to(x, y + w);
+			bottom_verts.push((x, y + w));
 
 			// middle points
 			for i in 1..n - 1 {
-				let (nx, ny) = get_normal(lx[i - 1], ly[i - 1], lx[i + 1], ly[i + 1]);
 				let (x, y, w) = (lx[i], ly[i], lw[i]);
-
-				path.line_to(x + nx * w, y + ny * w);
-				bottom_verts.push((x - nx * w, y - ny * w));
+				path.line_to(x, y + w);
+				bottom_verts.push((x, y - w));
 			}
 
 			// last point
-			let (nx, ny) = get_normal(lx[n - 2], ly[n - 2], lx[n - 1], ly[n - 1]);
 			let (x, y, w) = (lx[n - 1], ly[n - 1], lw[n - 1]);
-
-			path.line_to(x + nx * w, y + ny * w);
-			bottom_verts.push((x - nx * w, y - ny * w));
+			path.line_to(x, y + w);
+			bottom_verts.push((x, y - w));
 
 			// draw bottom verts in reverse
 			for (bx, by) in bottom_verts.iter().rev() {
@@ -594,11 +588,4 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 	graphics.set("ALIGN_RIGHT", 2)?;
 
 	Ok(graphics)
-}
-
-fn get_normal(x1: f32, y1: f32, x2: f32, y2: f32) -> (f32, f32) {
-	let dx = x2 - x1;
-	let dy = y2 - y1;
-	let len = (dx * dx + dy * dy).sqrt();
-	if len > 0.0001 { (-dy / len, dx / len) } else { (0.0, 1.0) }
 }

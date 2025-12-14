@@ -118,7 +118,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio
 				&& let Some(device) = &ctx.device
 			{
-				open_control_panel(&device);
+				open_control_panel(device);
 			}
 			Ok(())
 		})?,
