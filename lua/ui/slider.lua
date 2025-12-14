@@ -57,8 +57,7 @@ function Slider:update(ui)
 
 	if self.active and mouse.button_released then
 		self.active = false
-
-		if self.new_value ~= self.prev_value then
+		if self.new_value and self.new_value ~= self.prev_value then
 			if self.no_undo then
 				self.target[self.key] = self.new_value
 			else
