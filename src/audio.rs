@@ -242,6 +242,7 @@ pub fn build_stream(
 	Ok((stream, stream_tx, error_rx))
 }
 
+#[cfg(target_os = "windows")]
 pub fn open_control_panel(device: &Device) {
 	if let DeviceInner::Asio(asio_device) = device.as_inner() {
 		// Opening UI panel may block, so spawn a thread for it.
@@ -254,6 +255,9 @@ pub fn open_control_panel(device: &Device) {
 		});
 	}
 }
+
+#[cfg(not(target_os = "windows"))]
+pub fn open_control_panel(_device: &Device) {}
 
 pub fn build_stream_inner<T>(
 	device: &Device,
