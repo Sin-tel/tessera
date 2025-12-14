@@ -2,7 +2,7 @@
 pitch system is based on a diatonic (octave/fifth or period/gen) generated scale (can be any rank 2 MOS)
 which is notated with alphabetic characters + b/#
 there is also 6 extra accidental pairs
-  -> total max 8 dimensions (e.g. up to 19-limit JI)
+	-> total max 8 dimensions (e.g. up to 19-limit JI)
 ]]
 
 -- TODO: load tuning info from file
@@ -266,6 +266,16 @@ function tuning.mul(a, b)
 		new[i] = (a[i] or 0) * b
 	end
 	return new
+end
+
+function tuning.eq(a, b)
+	-- check equality for a and b
+	for i = 1, tuning.rank do
+		if (a[i] or 0) ~= (b[i] or 0) then
+			return false
+		end
+	end
+	return true
 end
 
 return tuning

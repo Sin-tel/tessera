@@ -27,8 +27,7 @@ Canvas.follow = false -- set in Options menu
 function Canvas.new()
 	local self = setmetatable({}, Canvas)
 
-	-- self.selected_tool = edit
-	self.selected_tool = pen
+	self.selected_tool = edit
 	self.current_tool = self.selected_tool
 	self.tool_active = false
 
@@ -71,7 +70,6 @@ function Canvas:update()
 				end
 			end
 			if self.tool_active then
-				self.current_tool:update(self)
 				self.current_tool:mousedown(self)
 				return
 			end
@@ -316,6 +314,13 @@ function Canvas:keypressed(key)
 		move_right = 1
 	elseif key == "left" then
 		move_right = -1
+	elseif key == "tab" then
+		-- switch between edit and draw mode
+		if self.selected_tool == edit then
+			self.selected_tool = pen
+		else
+			self.selected_tool = edit
+		end
 	elseif key == "a" and modifier_keys.ctrl then
 		-- select all
 		local mask = {}

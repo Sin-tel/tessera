@@ -76,13 +76,13 @@ local function new_channel_data(key, options)
 end
 
 local function remove_channel(ch_index)
-    if selection.ch_index == ch_index then
-        selection.ch_index = nil
-    end
     table.remove(project.channels, ch_index)
     table.remove(ui_channels, ch_index)
     build.refresh_channels()
     tessera.audio.remove_channel(ch_index)
+    if selection.ch_index == ch_index then
+        selection.select_default_channel()
+    end
 end
 
 local function remove_effect(ch_index, effect_index)

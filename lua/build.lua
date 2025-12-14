@@ -42,7 +42,7 @@ local function setup_project()
 	assert(#ui_channels == #project.channels)
 
 	if #project.channels > 0 then
-		selection.ch_index = 1
+		selection.select_default_channel()
 		selection.device_index = 0
 	end
 
