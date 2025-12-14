@@ -67,6 +67,7 @@ serde = { version = "1.0", features = ["derive"] }
 rust-embed = "8.9"
 svgtypes = "0.16.0"
 semver = "1.0.27"
+open = "5.3"
 
 [[bench]]
 name = "bench"
