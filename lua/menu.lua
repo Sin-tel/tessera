@@ -44,6 +44,10 @@ function Menu.file(x, y)
 			tooltip = "ctrl+R",
 		},
 		{
+			widget = widgets.Button.new("Open manual", options),
+			action = tessera.open_help,
+		},
+		{
 			widget = widgets.Button.new("Quit", options),
 			action = tessera.exit,
 			tooltip = "escape",

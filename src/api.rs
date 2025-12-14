@@ -9,7 +9,7 @@ pub mod project;
 
 use crate::app::{State, get_version};
 use crate::embed::setup_lua_loader;
-use crate::log::log_warn;
+use crate::log::*;
 use mlua::prelude::*;
 use std::sync::mpsc;
 
@@ -163,6 +163,17 @@ pub fn create_lua(scale_factor: f64) -> LuaResult<Lua> {
 			});
 
 			Ok(true)
+		})?,
+	)?;
+
+	tessera.set(
+		"open_help",
+		lua.create_function(|_, ()| {
+			match open::that("https://github.com/Sin-tel/tessera/blob/master/manual.md") {
+				Ok(()) => {},
+				Err(e) => log_error!("{e}"),
+			}
+			Ok(())
 		})?,
 	)?;
 
