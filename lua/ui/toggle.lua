@@ -11,7 +11,6 @@ function Toggle.new(target, key, options)
 	self.target = target
 	self.key = key
 
-	assert(options.label)
 	self.label = options.label
 	self.style = options.style or "checkbox"
 
@@ -76,8 +75,10 @@ function Toggle:draw_toggle(color_fill, color_line, x, y, w, h)
 		tessera.graphics.rectangle("fill", x, y, w, h, Ui.CORNER_RADIUS)
 		tessera.graphics.set_color(color_line)
 		tessera.graphics.rectangle("line", x, y, w, h, Ui.CORNER_RADIUS)
-		tessera.graphics.set_color(theme.ui_text)
-		tessera.graphics.label(self.label, x, y, w, h, tessera.graphics.ALIGN_CENTER)
+		if self.label then
+			tessera.graphics.set_color(theme.ui_text)
+			tessera.graphics.label(self.label, x, y, w, h, tessera.graphics.ALIGN_CENTER)
+		end
 	end
 end
 
@@ -90,9 +91,11 @@ function Toggle:draw_checkbox(color_fill, color_line, x, y, w, h)
 	tessera.graphics.rectangle("fill", x1, y1, s, s, Ui.CORNER_RADIUS)
 	tessera.graphics.set_color(color_line)
 	tessera.graphics.rectangle("line", x1, y1, s, s, Ui.CORNER_RADIUS)
-	tessera.graphics.set_color(theme.ui_text)
-	local left_pad = self.pad or h + Ui.PAD
-	tessera.graphics.label(self.label, x + left_pad, y, w - left_pad, h)
+	if self.label then
+		tessera.graphics.set_color(theme.ui_text)
+		local left_pad = self.pad or h + Ui.PAD
+		tessera.graphics.label(self.label, x + left_pad, y, w - left_pad, h)
+	end
 end
 
 function Toggle:draw_menu(hover, color_fill, color_line, x, y, w, h)
