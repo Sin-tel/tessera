@@ -71,4 +71,16 @@ function selection.remove_channel(ch)
 	selection.refresh()
 end
 
+function selection.select_default_channel()
+	-- just select the first available channel
+	local index = nil
+	for i, channel in ipairs(project.channels) do
+		if channel.visible and not channel.lock then
+			index = i
+			break
+		end
+	end
+	selection.ch_index = index
+end
+
 return selection
