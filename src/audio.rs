@@ -1,5 +1,4 @@
 use assert_no_alloc::*;
-use cpal::platform::DeviceInner;
 use cpal::{
 	BackendSpecificError, BufferSize, Device, HostId, SampleFormat, Stream, StreamConfig,
 	StreamError, SupportedBufferSize, SupportedStreamConfigRange,
@@ -65,10 +64,7 @@ pub fn get_output_devices(host_str: &str) -> Result<Vec<String>, Box<dyn Error>>
 		match d.description() {
 			Ok(d) => {
 				let name = d.name();
-				// TODO: FL Studio ASIO is broken
-				if name != "FL Studio ASIO" {
-					devices.push(name.to_string());
-				}
+				devices.push(name.to_string());
 			},
 			Err(e) => log_warn!("Couldn't get name: {e}"),
 		}
@@ -244,9 +240,10 @@ pub fn build_stream(
 
 #[cfg(target_os = "windows")]
 pub fn open_control_panel(device: &Device) {
+	use cpal::platform::DeviceInner;
 	if let DeviceInner::Asio(asio_device) = device.as_inner() {
 		// Opening UI panel may block, so spawn a thread for it.
-		// ASIO device is just Arc internally, co clone is cheap.
+		// ASIO device is just Arc internally, so clone is cheap.
 		let asio_device = asio_device.clone();
 		std::thread::spawn(move || {
 			if let Err(e) = asio_device.open_control_panel() {
@@ -295,6 +292,7 @@ where
 			assert_no_alloc(|| {
 				enable_fpu_traps();
 
+				assert!(cpal_buffer.len().is_multiple_of(2));
 				let buffer_size = cpal_buffer.len() / 2;
 				match render.try_lock() {
 					Some(mut render) if !is_rendering => {
@@ -312,7 +310,9 @@ where
 						}
 						render.parse_messages();
 
-						for buffer_chunk in cpal_buffer.chunks_mut(MAX_BUF_SIZE) {
+						for buffer_chunk in cpal_buffer.chunks_mut(MAX_BUF_SIZE * 2) {
+							assert!(buffer_chunk.len().is_multiple_of(2));
+
 							let chunk_size = buffer_chunk.len() / 2;
 							let (l, r) = process_buffer.split_at_mut(1);
 							let buf_slice = &mut [&mut l[0][..chunk_size], &mut r[0][..chunk_size]];
