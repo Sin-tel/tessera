@@ -57,7 +57,7 @@ function Change.new(target, key, value)
     local self = setmetatable({}, Change)
 
     assert(type(target) == "table")
-    assert(value)
+    assert(value ~= nil)
     self.target = target
     self.key = key
     self.value = value
