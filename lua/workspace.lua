@@ -37,14 +37,15 @@ function workspace:load()
 	local main = Tab.new("Main")
 
 	local left, right = main.box:split(0.7, true)
-	local top_left, middle_left = left:split(0.2, false)
+	local top_left, _middle_left = left:split(0.2, false)
+	local middle_left, bottom_left = _middle_left:split(0.9, false)
 	local top_right, bottom_rigth = right:split(0.35, false)
 
 	top_left:set_view(views.Scope.new(false))
 	middle_left:set_view(views.Canvas.new())
 
 	-- top_left:set_view(views.Canvas.new())
-	-- middle_left:set_view(views.TestPad.new())
+	bottom_left:set_view(views.TestPad.new())
 
 	top_right:set_view(views.Channels.new())
 	bottom_rigth:set_view(views.ChannelSettings.new())
