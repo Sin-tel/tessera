@@ -6,8 +6,6 @@ Experimental DAW with a focus on microtonal composition, expressiveness and phys
 
 [Get the latest release here.](https://github.com/Sin-tel/tessera/releases/latest)
 
-Windows only for now, if you want to help test the Linux and MacOS builds, you can download them from the workflows in the [actions](https://github.com/Sin-tel/tessera/actions) tab.
-
 For help, see the [manual](./manual.md).
 
 ## Build instructions
