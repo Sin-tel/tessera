@@ -144,6 +144,8 @@ impl ApplicationHandler for App {
 	fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
 		// Only show window after initializing state to prevent blank screen
 		let app_state = self.lua.app_data_mut::<State>().unwrap();
+		#[cfg(not(debug_assertions))]
+		app_state.window.set_maximized(true);
 		app_state.window.set_visible(true);
 	}
 
