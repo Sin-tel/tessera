@@ -4,37 +4,37 @@ local serialize = require("lib/serialize")
 
 local save = {}
 
-save.default_save_location = "out/project.sav"
-save.last_save_location = save.default_save_location
-
 local last_save = "out/last_save"
 
 function save.set_save_location(filename)
-	save.last_save_location = filename
-	save.write_save_location()
+	assert(filename)
+	util.writefile(last_save, filename)
 end
 
-function save.write_save_location()
-	util.writefile(last_save, save.last_save_location)
-end
-
-function save.get_last_save_location()
+function save.get_save_location()
 	if util.file_exists(last_save) then
-		save.last_save_location = util.readfile(last_save)
-	else
-		util.writefile(last_save, save.last_save_location)
+		local filename = util.readfile(last_save)
+		if filename and filename ~= "" then
+			return filename
+		end
 	end
-
-	return save.last_save_location
 end
 
 function save.write(filename)
-	-- TODO: check overwrite
 	log.info('saving project "' .. filename .. '"')
 
 	local content = serialize(project, "project")
 	util.writefile(filename, content)
 	save.set_save_location(filename)
+end
+
+local function is_compatible(a, b)
+	-- note: unlike semver, we don't have a special case for 0.x.y
+	if a.MAJOR == b.MAJOR and a.MINOR == b.MINOR then
+		return true
+	end
+
+	return false
 end
 
 local function do_patches(p)
@@ -73,7 +73,7 @@ function save.read(filename)
 	-- we will check versions, but only emit a warning
 	local current_v = util.version_str(VERSION)
 	local project_v = util.version_str(new_project.VERSION)
-	if project_v ~= current_v then
+	if not is_compatible(VERSION, new_project.VERSION) then
 		log.error(
 			"Save file was created with version "
 				.. project_v
@@ -87,6 +87,8 @@ function save.read(filename)
 	do_patches(new_project)
 
 	build.load_project(new_project)
+
+	save.set_save_location(filename)
 	return true
 end
 
@@ -102,14 +104,13 @@ function save.read_setup()
 		local content = util.readfile(setup_path)
 		local new_setup = setfenv(loadstring(content), {})()
 
-		local current_v = util.version_str(VERSION)
 		local new_v = util.version_str(new_setup.VERSION)
-		if new_v ~= current_v then
-			-- Losing the setup file is not really a big deal, so don't try to be clever about it
-			log.warn("File setup.lua created with version " .. new_v .. ". Ignoring.")
-		else
+		if is_compatible(VERSION, new_setup.VERSION) then
 			log.info("Loaded setup.lua")
 			return new_setup
+		else
+			-- Losing the setup file is not really a big deal, so don't try to be clever about it
+			log.warn("File setup.lua created with version " .. new_v .. ". Ignoring.")
 		end
 	else
 		log.info("No setup.lua found, generating default.")
