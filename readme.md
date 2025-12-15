@@ -4,9 +4,11 @@
 
 Experimental DAW with a focus on microtonal composition, expressiveness and physical modelling.
 
-GUI parts are written in lua, the audio backend is in Rust.
+[Get the latest release here.](https://github.com/Sin-tel/tessera/releases/latest)
 
-When things stabilize I will provide builds.
+Windows only for now, if you want to help test the Linux and MacOS builds, you can download them in from the workflows in the [actions](https://github.com/Sin-tel/tessera/actions) tab.
+
+For help, see the [manual](./manual.md).
 
 ## Build instructions
 * Make sure you have installed [Rust](https://www.rust-lang.org/tools/install).
