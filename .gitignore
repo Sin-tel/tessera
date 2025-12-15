@@ -4,3 +4,4 @@ settings/setup.lua
 settings/workspace.lua
 *.sublime-project
 *.sublime-workspace
+/out
