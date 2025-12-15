@@ -22,8 +22,6 @@ local RIBBON_H = Ui.scale(20)
 local Canvas = View.derive("Canvas")
 Canvas.__index = Canvas
 
-Canvas.follow = false -- set in Options menu
-
 function Canvas.new()
 	local self = setmetatable({}, Canvas)
 
@@ -45,7 +43,7 @@ end
 function Canvas:update()
 	self.transform:update()
 
-	if self.follow and engine.playing then
+	if project.settings.follow and engine.playing then
 		local px = self.transform.ox_ + engine.time * self.transform.sx
 
 		if px < self.w * 0.1 then
@@ -317,9 +315,9 @@ function Canvas:keypressed(key)
 	elseif key == "tab" then
 		-- switch between edit and draw mode
 		if self.selected_tool == edit then
-			self.selected_tool = pen
+			self:select_tool(pen)
 		else
-			self.selected_tool = edit
+			self:select_tool(edit)
 		end
 	elseif key == "a" and modifier_keys.ctrl then
 		-- select all

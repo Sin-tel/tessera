@@ -62,14 +62,21 @@ function Menu.options(x, y)
 	local items = {
 		{
 			widget = widgets.Toggle.new(
-				engine,
+				project.settings,
+				"preview_notes",
+				{ label = "Preview notes", style = "menu", pad = indent_s, size = 0.66, no_undo = true }
+			),
+		},
+		{
+			widget = widgets.Toggle.new(
+				project.settings,
 				"chase",
 				{ label = "Chase notes", style = "menu", pad = indent_s, size = 0.66, no_undo = true }
 			),
 		},
 		{
 			widget = widgets.Toggle.new(
-				Canvas,
+				project.settings,
 				"follow",
 				{ label = "Follow", style = "menu", pad = indent_s, size = 0.66, no_undo = true }
 			),

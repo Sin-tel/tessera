@@ -6,7 +6,6 @@ local RENDER_BLOCK_SIZE = 64
 local engine = {}
 
 engine.playing = false
-engine.chase = false -- set in Options menu
 engine.render_progress = 0
 engine.render_end = 8
 engine.time = 0
@@ -17,7 +16,7 @@ function engine.start()
 	engine.playing = true
 
 	for _, v in ipairs(ui_channels) do
-		v.roll:start(engine.chase)
+		v.roll:start(project.settings.chase)
 	end
 end
 

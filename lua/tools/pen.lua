@@ -50,14 +50,16 @@ function pen:mousepressed(canvas)
 		self.active = true
 
 		-- trigger note_on
-		self.token = tessera.audio.get_token()
-		ui_channels[selection.ch_index]:send_event({
-			name = "note_on",
-			token = self.token,
-			pitch = self.pitch,
-			vel = DEFAULT_VELOCITY,
-			offset = 0,
-		})
+		if project.settings.preview_notes then
+			self.token = tessera.audio.get_token()
+			ui_channels[selection.ch_index]:send_event({
+				name = "note_on",
+				token = self.token,
+				pitch = self.pitch,
+				vel = DEFAULT_VELOCITY,
+				offset = 0,
+			})
+		end
 	end
 end
 
@@ -71,23 +73,29 @@ function pen:mousedown(canvas)
 		self.t2 = canvas.transform:time_inv(mx)
 		local new_pitch = get_pitch(canvas, my)
 
-		-- trigger a new note if pitch dragged
-		if not tuning.eq(new_pitch, self.pitch) then
-			self.pitch = new_pitch
-			assert(self.token)
-			ui_channels[selection.ch_index]:send_event({
-				name = "note_off",
-				token = self.token,
-			})
+		if project.settings.preview_notes then
+			-- trigger a new note if pitch dragged
+			if not tuning.eq(new_pitch, self.pitch) then
+				if project.settings.preview_notes then
+					self.pitch = new_pitch
+					assert(self.token)
+					ui_channels[selection.ch_index]:send_event({
+						name = "note_off",
+						token = self.token,
+					})
 
-			self.token = tessera.audio.get_token()
-			ui_channels[selection.ch_index]:send_event({
-				name = "note_on",
-				token = self.token,
-				pitch = self.pitch,
-				vel = DEFAULT_VELOCITY,
-				offset = 0,
-			})
+					self.token = tessera.audio.get_token()
+					ui_channels[selection.ch_index]:send_event({
+						name = "note_on",
+						token = self.token,
+						pitch = self.pitch,
+						vel = DEFAULT_VELOCITY,
+						offset = 0,
+					})
+				end
+			end
+		else
+			self.pitch = new_pitch
 		end
 	end
 end
@@ -125,12 +133,14 @@ function pen:mousereleased(canvas)
 	local c = command.NoteAdd.new(notes)
 	command.run_and_register(c)
 
-	assert(self.token)
-	ui_channels[selection.ch_index]:send_event({
-		name = "note_off",
-		token = self.token,
-	})
-	self.token = nil
+	if project.settings.preview_notes then
+		assert(self.token)
+		ui_channels[selection.ch_index]:send_event({
+			name = "note_off",
+			token = self.token,
+		})
+		self.token = nil
+	end
 end
 
 function pen:draw(canvas)

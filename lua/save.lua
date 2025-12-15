@@ -52,6 +52,10 @@ local function do_patches(p)
 			end
 		end
 	end
+
+	if not p.settings then
+		p.settings = { preview_notes = true }
+	end
 end
 
 function save.read(filename)
