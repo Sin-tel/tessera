@@ -25,8 +25,13 @@ More detailed build instructions are on the [cpal repo](https://github.com/RustA
 JACK is enabled by default.
 
 Install the necessary dependencies:
+#### Debian based
 ```bash
 sudo apt get libasound2-dev libjack-jackd2-dev libjack-jackd2-0 libdbus-1-dev
+```
+#### Fedora based
+```bash
+sudo dnf install alsa-lib-devel jack-audio-connection-kit-devel
 ```
 
 ### MacOS
