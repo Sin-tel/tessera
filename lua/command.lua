@@ -1,4 +1,5 @@
 local build = require("build")
+local load_default_project = require("default.project")
 
 local command = {}
 
@@ -89,6 +90,7 @@ end
 function NewProject:run()
     -- cleanup current project
     build.new_project()
+    load_default_project()
 end
 
 function NewProject:reverse()
