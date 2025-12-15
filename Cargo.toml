@@ -77,7 +77,7 @@ harness = false
 # opt-level = 3
 
 [profile.release]
-strip = "debuginfo"
+strip = true
 # debug = 1 # for profiling
 # lto = "thin"
 # codegen-units = 1
