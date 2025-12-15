@@ -279,14 +279,14 @@ function tessera.keypressed(key, key_str, isrepeat)
 		end
 	elseif modifier_keys.ctrl and key == "tab" then
 		workspace:switch_tab(modifier_keys.shift)
-	elseif modifier_keys.ctrl and key == "t" then
-		util.pprint(workspace:to_data())
-	elseif modifier_keys.ctrl and key == "f" then
-		engine.stop()
-		tessera.audio.clear_messages()
-		tessera.audio.flush()
-	elseif modifier_keys.ctrl and key == "k" then
-		tessera.audio.quit()
+	-- elseif modifier_keys.ctrl and key == "t" then
+	-- 	util.pprint(workspace:to_data())
+	-- elseif modifier_keys.ctrl and key == "f" then
+	-- 	engine.stop()
+	-- 	tessera.audio.clear_messages()
+	-- 	tessera.audio.flush()
+	-- elseif modifier_keys.ctrl and key == "k" then
+	-- 	tessera.audio.quit()
 	elseif modifier_keys.ctrl and key == "w" then
 		-- for testing panic recovery
 		tessera.audio.panic()

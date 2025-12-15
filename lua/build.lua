@@ -31,6 +31,11 @@ function build.new_project()
 	project.transport = {}
 	project.transport.start_time = 0
 	project.transport.recording = true
+
+	project.settings = {}
+	project.settings.preview_notes = true
+	project.settings.chase = false
+	project.settings.follow = false
 end
 
 -- build the given "project" is set but nothing else is
