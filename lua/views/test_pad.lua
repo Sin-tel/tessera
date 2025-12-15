@@ -1,7 +1,7 @@
 local View = require("view")
 local tuning = require("tuning")
 
-local TestPadView = View.derive("TestPad")
+local TestPadView = View.derive("note pad")
 TestPadView.__index = TestPadView
 
 function TestPadView.new()
@@ -19,10 +19,10 @@ end
 function TestPadView:draw()
 	local mx, my = self:get_mouse()
 
-	local x1 = self.w * 0.05
-	local y1 = self.h * 0.05
-	local x2 = self.w * 0.95
-	local y2 = self.h * 0.95
+	local x1 = 4
+	local y1 = 4
+	local x2 = self.w - 4
+	local y2 = self.h - 4
 
 	tessera.graphics.set_color(theme.bg_nested)
 	tessera.graphics.rectangle("fill", x1, y1, x2 - x1, y2 - y1)
