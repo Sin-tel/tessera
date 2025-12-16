@@ -3,7 +3,7 @@ local engine = require("engine")
 local Roll = {}
 Roll.__index = Roll
 
-local DEFAULT_PRESSURE = 0.3
+local DEFAULT_PRESSURE = 0.0
 
 function Roll.new(ch_index)
 	local self = setmetatable({}, Roll)

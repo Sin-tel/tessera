@@ -1,7 +1,7 @@
 local tuning = require("tuning")
 
 -- TODO: duplicated in Roll
-local DEFAULT_PRESSURE = 0.3
+local DEFAULT_PRESSURE = 0.0
 
 -- TODO: duplicated in note_input
 -- TODO: re-use last edited velocity

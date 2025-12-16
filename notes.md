@@ -1,23 +1,13 @@
-
-
-meter frozen when muted
-smooth meters
-fix gain to be smoothed
-mute declicking
-
 project settings
  tuning presets
 
-release mode:
-fullscreen launch!
+allow clone notes to be triggered when ctrl is pressed after initial drag
 
 snapping settings:
  - shared between grab / pen / etc ?
  - seperate settings for time / pitch
  - could be entirely context-dependent, but maybe allow override
     i.e. have "auto" snap setting by default
-
-prompt for save as.. when first saving new project
 
 File
  - reset workspace
@@ -31,7 +21,6 @@ Right click view header
 stencil strokes: performance / quality?
 
 display midi activity indicator for each device
-enable MPE in settings for each device
 
 in principle, the stream and render instances could be seperated
   allows for rendering even when there's no stream
@@ -54,6 +43,7 @@ add some way to tune instruments properly
 
 render in HDR and add bloom?
 
+Linux: "null" ("Discard all samples ...") is used as default device. Should pick something else.
 
 should we use audio_thread_priority?
 

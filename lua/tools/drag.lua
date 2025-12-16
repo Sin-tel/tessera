@@ -63,13 +63,22 @@ function drag:mousedown(canvas)
 		x = (math.floor((ix + x) * 4 + 0.5) / 4) - ix
 	end
 
-	-- Get pitch location in local frame
-	local n = tuning.get_diatonic_index(self.note_origin.pitch)
+	local p_origin
+	local delta
+	if not modifier_keys.alt then
+		-- Get pitch location in local frame
+		local n = tuning.get_diatonic_index(self.note_origin.pitch)
 
-	-- Calculate base pitch offset
-	local steps = math.floor(y * (7 / 12) + 0.5)
-	local p_origin = tuning.from_diatonic(n)
-	local delta = tuning.from_diatonic(n + steps)
+		-- Calculate base pitch offset
+		local steps = math.floor(y * (7 / 12) + 0.5)
+		p_origin = tuning.from_diatonic(n)
+		delta = tuning.from_diatonic(n + steps)
+	else
+		local n = tuning.get_fine_index(self.note_origin.pitch)
+		local steps = math.floor(y * (31 / 12) + 0.5)
+		p_origin = tuning.from_fine(n)
+		delta = tuning.from_fine(n + steps)
+	end
 	delta = tuning.sub(delta, p_origin)
 
 	-- Update pitch and time
