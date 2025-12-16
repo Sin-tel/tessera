@@ -17,7 +17,7 @@ const N_VOICES: usize = 16;
 #[derive(Debug)]
 struct Voice {
 	accum: f32,
-	freq: SmoothExp,
+	freq: Smooth,
 	vel: AttackRelease,
 	note_on: bool,
 	active: bool,
@@ -29,7 +29,7 @@ impl Voice {
 		let mut vel = AttackRelease::new(3.0, 500., sample_rate);
 		vel.set_immediate(0.);
 		Self {
-			freq: SmoothExp::new(10.0, sample_rate),
+			freq: Smooth::new(1., 10.0, sample_rate),
 			vel,
 			accum: 0.,
 			note_on: false,

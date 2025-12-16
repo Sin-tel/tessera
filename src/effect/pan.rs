@@ -1,7 +1,6 @@
 use crate::dsp::delayline::DelayLine;
 use crate::dsp::simper::Filter;
-use crate::dsp::smooth::SmoothExpBuffer;
-use crate::dsp::smooth::SmoothLinear;
+use crate::dsp::smooth::SmoothBuffer;
 use crate::effect::*;
 
 // TODO: This device is used everywhere and
@@ -23,8 +22,9 @@ pub struct Pan {
 
 #[derive(Debug)]
 struct Track {
-	gain: SmoothExpBuffer,
-	delay: SmoothLinear,
+	gain: SmoothBuffer,
+	delay_f: Filter,
+	delay: f32,
 	filter: Filter,
 	delayline: DelayLine,
 }
@@ -33,11 +33,14 @@ impl Track {
 	pub fn new(sample_rate: f32) -> Self {
 		let mut filter = Filter::new(sample_rate);
 		filter.set_highshelf(HEAD_CUTOFF, HEAD_Q, 0.0);
-		let mut gain = SmoothExpBuffer::new(25.0, sample_rate);
-		gain.set_immediate(1.0);
+
+		let mut delay_f = Filter::new(sample_rate);
+		delay_f.set_lowpass(2.5, 0.5);
+
 		Track {
-			gain,
-			delay: SmoothLinear::new(30.0, sample_rate),
+			gain: SmoothBuffer::new(1.0, 25.0, sample_rate),
+			delay: 0.0,
+			delay_f,
 			filter,
 			delayline: DelayLine::new(sample_rate, ITD),
 		}
@@ -46,8 +49,8 @@ impl Track {
 
 impl Pan {
 	fn update_params(&mut self) {
-		self.tracks[0].delay.set((ITD * self.pan).max(0.0));
-		self.tracks[1].delay.set((-ITD * self.pan).max(0.0));
+		self.tracks[0].delay = (ITD * self.pan).max(0.0);
+		self.tracks[1].delay = (-ITD * self.pan).max(0.0);
 
 		let lshelf = -1.5 * self.pan * (self.pan + 3.0);
 		let rshelf = -1.5 * self.pan * (self.pan - 3.0);
@@ -67,19 +70,10 @@ impl Effect for Pan {
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
-		// if self.pan == 0. {
-		// 	for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-		// 		for sample in buf.iter_mut() {
-		// 			let gain = track.gain.process();
-		// 			*sample *= gain;
-		// 		}
-		// 	}
-		// } else {
-
 		for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
 			// delay
 			for sample in buf.iter_mut() {
-				let delay = track.delay.process();
+				let delay = track.delay_f.process(track.delay);
 				let input = *sample;
 				track.delayline.push(input);
 
@@ -89,13 +83,17 @@ impl Effect for Pan {
 			// head shadow filter
 			track.filter.process_block(buf);
 
-			// volume difference
+			// // volume difference
 			track.gain.process_block(buf.len());
 			track.gain.multiply_block(buf);
 		}
-		// }
 	}
-	fn flush(&mut self) {}
+	fn flush(&mut self) {
+		for track in &mut self.tracks {
+			track.delay_f.reset_state();
+			track.delayline.flush();
+		}
+	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {

@@ -1,20 +1,21 @@
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::onepole::OnePole;
 use crate::dsp::resample_fir::{Downsampler, Downsampler51, Upsampler, Upsampler19};
-use crate::dsp::smooth::SmoothExpBuffer;
+use crate::dsp::smooth::SmoothBuffer;
 use crate::dsp::*;
 use crate::effect::*;
 
 // TODO: store previous sample eval of antiderivative
 // TODO: Delay compensation in dry path
+// TODO: Oversampling does not actually seem to improve quality?
 
 #[derive(Debug)]
 pub struct Drive {
 	tracks: [Track; 2],
-	gain: SmoothExpBuffer,
-	post_gain: SmoothExpBuffer,
-	bias: SmoothExpBuffer,
-	balance: SmoothExpBuffer,
+	gain: SmoothBuffer,
+	post_gain: SmoothBuffer,
+	bias: SmoothBuffer,
+	balance: SmoothBuffer,
 	gain_comp: f32,
 	oversample: bool,
 	hard: bool,
@@ -49,10 +50,10 @@ impl Effect for Drive {
 	fn new(sample_rate: f32) -> Self {
 		Drive {
 			tracks: [Track::new(sample_rate), Track::new(sample_rate)],
-			gain: SmoothExpBuffer::new(25.0, sample_rate),
-			post_gain: SmoothExpBuffer::new(25.0, sample_rate),
-			bias: SmoothExpBuffer::new(25.0, sample_rate),
-			balance: SmoothExpBuffer::new(25.0, sample_rate),
+			gain: SmoothBuffer::new(0., 25.0, sample_rate),
+			post_gain: SmoothBuffer::new(0., 25.0, sample_rate),
+			bias: SmoothBuffer::new(0., 25.0, sample_rate),
+			balance: SmoothBuffer::new(1., 25.0, sample_rate),
 			gain_comp: 0.,
 			oversample: false,
 			hard: false,

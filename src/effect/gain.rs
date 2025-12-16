@@ -1,27 +1,33 @@
+use crate::dsp::smooth::Smooth;
 use crate::effect::*;
+use std::iter::zip;
 
 #[derive(Debug)]
 pub struct Gain {
-	gain: f32,
+	gain: Smooth,
 }
 
 impl Effect for Gain {
-	fn new(_sample_rate: f32) -> Self {
-		Gain { gain: 1.0 }
+	fn new(sample_rate: f32) -> Self {
+		Gain { gain: Smooth::new(1., 25., sample_rate) }
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
-		for b in buffer.iter_mut() {
-			for s in b.iter_mut() {
-				*s *= self.gain;
-			}
+		let [bl, br] = buffer;
+		let len = bl.len();
+		assert!(len <= MAX_BUF_SIZE);
+
+		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
+			let gain = self.gain.process();
+			*l = *l * gain;
+			*r = *r * gain;
 		}
 	}
 	fn flush(&mut self) {}
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		#[allow(clippy::single_match_else)]
 		match index {
-			0 => self.gain = value,
+			0 => self.gain.set(value),
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}

@@ -25,7 +25,7 @@ const MAX_F: f32 = 20_000.0;
 
 pub struct Wavetable {
 	accum: f32,
-	freq: SmoothExp,
+	freq: Smooth,
 	vel: AttackRelease,
 	pres: AttackRelease,
 	sample_rate: f32,
@@ -68,7 +68,7 @@ impl Instrument for Wavetable {
 		let mut new = Wavetable {
 			accum: 0.0,
 			interpolate: 1.0,
-			freq: SmoothExp::new(20.0, sample_rate),
+			freq: Smooth::new(1., 10.0, sample_rate),
 			vel: AttackRelease::new(20.0, 120.0, sample_rate),
 			pres: AttackRelease::new(50.0, 500.0, sample_rate),
 			sample_rate,

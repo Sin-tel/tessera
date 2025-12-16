@@ -1,7 +1,7 @@
 // Two pole nonlinear Sallen-key filter
 
 use crate::dsp::prewarp;
-use crate::dsp::smooth::SmoothLinear;
+use crate::dsp::smooth::Smooth;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub enum FilterMode {
@@ -14,7 +14,7 @@ pub enum FilterMode {
 #[derive(Debug)]
 pub struct Skf {
 	sample_rate: f32,
-	f: SmoothLinear,
+	f: Smooth,
 	r: f32,
 	s1: f32,
 	s2: f32,
@@ -22,7 +22,7 @@ pub struct Skf {
 
 impl Skf {
 	pub fn new(sample_rate: f32) -> Self {
-		Self { sample_rate, f: SmoothLinear::new_steps(64), r: 0.0, s1: 0.0, s2: 0.0 }
+		Self { sample_rate, f: Smooth::new(0.01, 25., sample_rate), r: 0.0, s1: 0.0, s2: 0.0 }
 	}
 
 	// returns lp, bp, hp

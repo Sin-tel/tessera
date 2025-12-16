@@ -29,8 +29,8 @@ struct Voice {
 	accum: f32,
 	accum2: f32,
 	prev: f32,
-	freq: SmoothExp,
-	freq2: SmoothExp,
+	freq: Smooth,
+	freq2: Smooth,
 	env: Adsr,
 	vel: f32,
 	pres: AttackRelease,
@@ -41,8 +41,8 @@ struct Voice {
 impl Voice {
 	fn new(sample_rate: f32) -> Self {
 		Self {
-			freq: SmoothExp::new(10.0, sample_rate),
-			freq2: SmoothExp::new(10.0, sample_rate),
+			freq: Smooth::new(0., 10.0, sample_rate),
+			freq2: Smooth::new(0., 10.0, sample_rate),
 			env: Adsr::new(sample_rate),
 			pres: AttackRelease::new(80.0, 300.0, sample_rate),
 			active: false,
@@ -146,6 +146,7 @@ impl Instrument for Fm {
 	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {
 		let voice = &mut self.voices[id];
 		let f = pitch_to_hz(pitch) / self.sample_rate;
+		voice.pres.set_immediate(0.);
 		voice.freq.set_immediate(f);
 		voice.set_modulator(self.ratio, self.ratio_fine, self.offset);
 		voice.freq2.immediate();

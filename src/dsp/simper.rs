@@ -7,9 +7,11 @@
 
 #![allow(dead_code)]
 
-use crate::dsp::smooth::SmoothLinear;
+use crate::dsp::smooth::Smooth;
 use crate::dsp::*;
 use num_complex::Complex;
+
+// TODO: factor out the smoothing 'done' checks (also in onepole)
 
 #[derive(Debug)]
 pub struct Filter {
@@ -19,26 +21,25 @@ pub struct Filter {
 	s1: f32,
 	s2: f32,
 
-	a1: SmoothLinear,
-	a2: SmoothLinear,
-	a3: SmoothLinear,
+	a1: Smooth,
+	a2: Smooth,
+	a3: Smooth,
 
-	m0: SmoothLinear,
-	m1: SmoothLinear,
-	m2: SmoothLinear,
+	m0: Smooth,
+	m1: Smooth,
+	m2: Smooth,
 }
 
 impl Filter {
 	pub fn new(sample_rate: f32) -> Self {
 		Self {
 			sample_rate,
-			a1: SmoothLinear::new_steps(64),
-			a2: SmoothLinear::new_steps(64),
-			a3: SmoothLinear::new_steps(64),
-			m0: SmoothLinear::new_steps(64),
-			m1: SmoothLinear::new_steps(64),
-			m2: SmoothLinear::new_steps(64),
-
+			a1: Smooth::new(0., 25., sample_rate),
+			a2: Smooth::new(0., 25., sample_rate),
+			a3: Smooth::new(0., 25., sample_rate),
+			m0: Smooth::new(0., 25., sample_rate),
+			m1: Smooth::new(0., 25., sample_rate),
+			m2: Smooth::new(0., 25., sample_rate),
 			s1: 0.,
 			s2: 0.,
 			k: 0.,
