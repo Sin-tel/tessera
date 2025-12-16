@@ -16,7 +16,7 @@
 [x] Keyboard note playing
 [-] Harmonic coordinate logic
 [X] Load/save file dialogs
-[-] handle MPE input
+[x] handle MPE input
 [ ] linnstrument custom handler
 [x] Settings menu
 [ ] Switch views with dropdown
@@ -33,8 +33,8 @@
   [x] move notes with keyboard
   [x] undo
 [x] fix grab end
-[ ] pen tool
-  [ ] line
+[-] pen tool
+  [x] line
   [ ] freehand
 [ ] Sculpt tools
   [ ] grab
@@ -44,7 +44,7 @@
   [ ] vibrato
 [ ] lasso
 [x] better hit detection
-[ ] global UI scale
+[-] global UI scale
 
 [ ] Project tempo
 [ ] Project grid / time division

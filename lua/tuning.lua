@@ -241,6 +241,10 @@ function tuning.get_chromatic_index(p)
 	return 1 + 12 * p[1] + 7 * p[2]
 end
 
+function tuning.get_fine_index(p)
+	return 1 + 31 * p[1] + 18 * p[2]
+end
+
 function tuning.add(a, b)
 	-- add two pitches a and b
 	local new = {}
