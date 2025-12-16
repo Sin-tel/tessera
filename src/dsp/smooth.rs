@@ -1,82 +1,31 @@
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::lerp;
-use crate::dsp::{time_constant, time_constant_linear};
+use crate::dsp::time_constant;
 
 #[derive(Debug)]
-pub struct SmoothExp {
+pub struct Smooth {
 	value: f32,
 	target: f32,
 	f: f32,
+	done: bool,
 }
 
-impl SmoothExp {
-	pub fn new(t: f32, sample_rate: f32) -> Self {
-		Self { target: 0.01, value: 0.01, f: time_constant(t, sample_rate) }
+impl Smooth {
+	pub fn new(value: f32, t: f32, sample_rate: f32) -> Self {
+		Self { target: value, value, f: time_constant(t, sample_rate), done: false }
 	}
-	pub fn new_direct(f: f32) -> Self {
-		Self { target: 0.01, value: 0.01, f }
+	pub fn new_direct(value: f32, f: f32) -> Self {
+		Self { target: value, value, f, done: false }
 	}
 
 	#[must_use]
 	pub fn process(&mut self) -> f32 {
-		self.value += self.f * (self.target - self.value);
-		self.value
-	}
+		if !self.done {
+			self.value += self.f * (self.target - self.value);
 
-	pub fn set(&mut self, v: f32) {
-		self.target = v;
-	}
-
-	pub fn set_immediate(&mut self, v: f32) {
-		self.target = v;
-		self.value = v;
-	}
-
-	pub fn immediate(&mut self) {
-		self.value = self.target;
-	}
-
-	#[must_use]
-	pub fn get(&self) -> f32 {
-		self.value
-	}
-
-	pub fn target(&self) -> f32 {
-		self.target
-	}
-}
-
-#[derive(Debug)]
-pub struct SmoothLinear {
-	value: f32,
-	target: f32,
-	step_size: f32,
-	steps: usize,
-	timer: usize,
-}
-
-impl SmoothLinear {
-	pub fn new(t: f32, sample_rate: f32) -> Self {
-		Self {
-			target: 0.,
-			value: 0.,
-			steps: (1. / time_constant_linear(t, sample_rate)) as usize,
-			step_size: 0.,
-			timer: 0,
-		}
-	}
-	pub fn new_steps(steps: usize) -> Self {
-		Self { target: 0., value: 0., step_size: 0., steps, timer: 0 }
-	}
-
-	#[must_use]
-	pub fn process(&mut self) -> f32 {
-		if self.timer > 0 {
-			self.timer -= 1;
-			self.value += self.step_size;
-
-			if self.timer == 0 {
+			if (self.value - self.target).abs() < 1e-4 {
 				self.value = self.target;
+				self.done = true
 			}
 		}
 		self.value
@@ -84,23 +33,18 @@ impl SmoothLinear {
 
 	pub fn set(&mut self, v: f32) {
 		self.target = v;
-		if (self.target - self.value).abs() < 1e-5 {
-			self.timer = 0;
-		} else {
-			self.timer = self.steps;
-			self.step_size = (self.target - self.value) / (self.steps as f32);
-		}
+		self.done = false;
 	}
 
 	pub fn set_immediate(&mut self, v: f32) {
-		self.timer = 0;
 		self.target = v;
 		self.value = v;
+		self.done = true;
 	}
 
 	pub fn immediate(&mut self) {
-		self.timer = 0;
 		self.value = self.target;
+		self.done = true;
 	}
 
 	#[must_use]
@@ -114,33 +58,26 @@ impl SmoothLinear {
 }
 
 #[derive(Debug)]
-pub struct SmoothBuffer {
+pub struct LinearBuffer {
 	value: f32,
 	target: f32,
 	buffer: [f32; MAX_BUF_SIZE],
 }
 
-impl SmoothBuffer {
-	pub fn new() -> Self {
-		let v = 0.01;
-		Self { target: v, value: v, buffer: [v; MAX_BUF_SIZE] }
+impl LinearBuffer {
+	pub fn new(value: f32) -> Self {
+		Self { target: value, value, buffer: [value; MAX_BUF_SIZE] }
 	}
 
 	pub fn process_block(&mut self, len: usize) {
-		if (self.value - self.target).abs() < 1e-5 {
-			for i in 0..len {
-				self.buffer[i] = self.value;
-			}
-		} else {
-			let f = 1. / (len as f32);
-			for i in 0..len {
-				let a = (i as f32) * f;
+		// Used for LFOs and such, so don't skip processing
+		const FREQ: f32 = 1. / (MAX_BUF_SIZE as f32);
+		for i in 0..len {
+			let a = (i as f32) * FREQ;
 
-				self.buffer[i] = lerp(self.value, self.target, a);
-			}
-
-			self.value = self.target;
+			self.buffer[i] = lerp(self.value, self.target, a);
 		}
+		self.value = lerp(self.value, self.target, (len as f32) * FREQ);
 	}
 
 	pub fn set(&mut self, v: f32) {
@@ -165,24 +102,22 @@ impl SmoothBuffer {
 	}
 }
 
-impl Default for SmoothBuffer {
-	fn default() -> Self {
-		Self::new()
-	}
-}
-
 #[derive(Debug)]
-pub struct SmoothExpBuffer {
+pub struct SmoothBuffer {
 	value: f32,
 	target: f32,
 	f: f32,
 	buffer: [f32; MAX_BUF_SIZE],
 }
 
-impl SmoothExpBuffer {
-	pub fn new(t: f32, sample_rate: f32) -> Self {
-		let v = 0.01;
-		Self { target: v, value: v, f: time_constant(t, sample_rate), buffer: [v; MAX_BUF_SIZE] }
+impl SmoothBuffer {
+	pub fn new(value: f32, t: f32, sample_rate: f32) -> Self {
+		Self {
+			target: value,
+			value,
+			f: time_constant(t, sample_rate),
+			buffer: [value; MAX_BUF_SIZE],
+		}
 	}
 	pub fn new_direct(f: f32) -> Self {
 		let v = 0.01;

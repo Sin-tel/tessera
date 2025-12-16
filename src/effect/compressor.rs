@@ -1,5 +1,5 @@
 use crate::dsp::simper::Filter;
-use crate::dsp::smooth::SmoothExp;
+use crate::dsp::smooth::Smooth;
 use crate::dsp::*;
 use crate::effect::*;
 
@@ -26,8 +26,8 @@ struct Track {
 	gain_b: f32,
 	gain_c: f32,
 
-	balance: SmoothExp,
-	make_up: SmoothExp,
+	balance: Smooth,
+	make_up: Smooth,
 	highpass: Filter,
 	shelf: Filter,
 }
@@ -44,8 +44,8 @@ impl Track {
 			gain_a: 0.,
 			gain_b: 0.,
 			gain_c: 0.,
-			make_up: SmoothExp::new(25.0, sample_rate),
-			balance: SmoothExp::new(25.0, sample_rate),
+			make_up: Smooth::new(0., 25.0, sample_rate),
+			balance: Smooth::new(1., 25.0, sample_rate),
 			highpass,
 			shelf,
 		}

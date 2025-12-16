@@ -1,6 +1,6 @@
 use crate::dsp::delayline::DelayLine;
 use crate::dsp::onepole::OnePole;
-use crate::dsp::smooth::{SmoothBuffer, SmoothExp};
+use crate::dsp::smooth::{LinearBuffer, Smooth};
 use crate::dsp::*;
 use crate::effect::*;
 use std::iter::zip;
@@ -32,16 +32,16 @@ pub struct Reverb {
 	pre_l: DelayLine,
 	pre_r: DelayLine,
 
-	lfo1: SmoothBuffer,
-	lfo2: SmoothBuffer,
+	lfo1: LinearBuffer,
+	lfo2: LinearBuffer,
 	accum1: f32,
 	accum2: f32,
 
-	balance: f32,
-	size: SmoothExp,
-	pre_delay: SmoothExp,
+	balance: Smooth,
+	size: Smooth,
+	pre_delay: Smooth,
 	decay: f32,
-	feedback: f32,
+	feedback: Smooth,
 	mod_amount: f32,
 }
 
@@ -65,15 +65,15 @@ impl Effect for Reverb {
 			pre_r: DelayLine::new(sample_rate, 0.100),
 			filter1,
 			filter2,
-			lfo1: SmoothBuffer::new(),
-			lfo2: SmoothBuffer::new(),
+			lfo1: LinearBuffer::new(0.),
+			lfo2: LinearBuffer::new(0.),
 			accum1: 0.,
 			accum2: 0.,
-			balance: 0.,
-			size: SmoothExp::new(100., sample_rate),
-			pre_delay: SmoothExp::new(100., sample_rate),
+			balance: Smooth::new(0., 25., sample_rate),
+			feedback: Smooth::new(0., 25., sample_rate),
+			size: Smooth::new(0., 200., sample_rate),
+			pre_delay: Smooth::new(0., 200., sample_rate),
 			decay: 0.1,
-			feedback: 0.,
 			mod_amount: 0.,
 		}
 	}
@@ -132,7 +132,7 @@ impl Effect for Reverb {
 			s[0] = self.filter1.process(s[0]);
 			s[1] = self.filter2.process(s[1]);
 
-			let gain = self.feedback * 0.5;
+			let gain = self.feedback.process() * 0.5;
 			for (i, v) in self.delaylines.iter_mut().enumerate() {
 				v.push(s[i] * gain);
 			}
@@ -140,8 +140,9 @@ impl Effect for Reverb {
 			let out_l = 0.5 * sl + d[0];
 			let out_r = 0.5 * sr + d[1];
 
-			*l = lerp(*l, out_l, self.balance);
-			*r = lerp(*r, out_r, self.balance);
+			let balance = self.balance.process();
+			*l = lerp(*l, out_l, balance);
+			*r = lerp(*r, out_r, balance);
 		}
 	}
 	fn flush(&mut self) {
@@ -156,11 +157,14 @@ impl Effect for Reverb {
 		}
 		self.pre_l.flush();
 		self.pre_r.flush();
+
+		self.filter1.reset_state();
+		self.filter2.reset_state();
 	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) {
 		match index {
-			0 => self.balance = value,
+			0 => self.balance.set(value),
 			1 => {
 				self.size.set(value);
 				self.update_feedback();
@@ -180,7 +184,7 @@ impl Reverb {
 	fn update_feedback(&mut self) {
 		if self.decay > 15. {
 			// freeze
-			self.feedback = 1.0;
+			self.feedback.set(1.0);
 
 			self.filter1.set_highshelf(CUTOFF, 0.);
 			self.filter2.set_highshelf(CUTOFF, 0.);
@@ -189,7 +193,7 @@ impl Reverb {
 			let avg_len = 0.5 * MAX_LEN;
 
 			let coef = (-60. * avg_len * self.size.target()) / self.decay;
-			self.feedback = from_db(coef);
+			self.feedback.set(from_db(coef));
 
 			self.filter1.set_highshelf(CUTOFF, 2. * coef);
 			self.filter2.set_highshelf(CUTOFF, 2. * coef);
