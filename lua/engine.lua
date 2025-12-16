@@ -265,6 +265,8 @@ function engine.update_meters()
 	local meters = tessera.audio.get_meters()
 	if not meters then
 		for _, ch in ipairs(ui_channels) do
+			ch.meter_l = 0
+			ch.meter_r = 0
 			ch.instrument.meter_l = 0
 			ch.instrument.meter_r = 0
 			for _, fx in ipairs(ch.effects) do
@@ -276,9 +278,13 @@ function engine.update_meters()
 	end
 
 	for _, ch in ipairs(ui_channels) do
-		local i = ch.instrument.meter_id
-		ch.instrument.meter_l = math.max(meters[i][1], ch.instrument.meter_l * M_DECAY)
-		ch.instrument.meter_r = math.max(meters[i][2], ch.instrument.meter_r * M_DECAY)
+		local i = ch.meter_id
+		ch.meter_l = math.max(meters[i][1], ch.meter_l * M_DECAY)
+		ch.meter_r = math.max(meters[i][2], ch.meter_r * M_DECAY)
+
+		local k = ch.instrument.meter_id
+		ch.instrument.meter_l = math.max(meters[k][1], ch.instrument.meter_l * M_DECAY)
+		ch.instrument.meter_r = math.max(meters[k][2], ch.instrument.meter_r * M_DECAY)
 		for _, fx in ipairs(ch.effects) do
 			i = fx.meter_id
 			fx.meter_l = math.max(meters[i][1], fx.meter_l * M_DECAY)
