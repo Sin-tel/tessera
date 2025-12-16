@@ -71,11 +71,11 @@ function build.channel(ch_index, channel_data)
 	local options = device_list.instruments[channel_data.instrument.name]
 
 	assert(options, 'Could not find options for "' .. channel_data.instrument.name .. '"')
-	local meter_id = tessera.audio.insert_channel(ch_index, channel_data.instrument.name)
+	local meter_id_channel, meter_id_instrument = tessera.audio.insert_channel(ch_index, channel_data.instrument.name)
 
-	local instrument = Device.new(channel_data.instrument, options, meter_id)
+	local instrument = Device.new(channel_data.instrument, options, meter_id_instrument)
 	local widget = widgets.Channel.new()
-	local channel = Channel.new(ch_index, channel_data, instrument, widget)
+	local channel = Channel.new(ch_index, channel_data, instrument, widget, meter_id_channel)
 	table.insert(ui_channels, ch_index, channel)
 
 	for i, v in ipairs(channel_data.effects) do

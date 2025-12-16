@@ -1,4 +1,7 @@
+use crate::audio::MAX_BUF_SIZE;
 use crate::dsp;
+use crate::dsp::MuteState;
+use crate::dsp::time_constant;
 use crate::instrument::Instrument;
 use crate::meters::MeterHandle;
 use std::collections::VecDeque;
@@ -32,20 +35,31 @@ pub struct VoiceManager {
 	voices: Vec<Voice>,
 	queue: VecDeque<Voice>,
 	sustain: bool,
-	mute: bool,
 	meter_handle: MeterHandle,
+	mute: bool,
+	state: MuteState,
+	value: f32,
+	smoothing_f: f32,
 }
 
 impl VoiceManager {
-	pub fn new(instrument: Box<dyn Instrument + Send>, meter_handle: MeterHandle) -> Self {
+	pub fn new(
+		sample_rate: f32,
+		instrument: Box<dyn Instrument + Send>,
+		meter_handle: MeterHandle,
+	) -> Self {
 		let voice_count = instrument.voice_count();
 		Self {
 			instrument,
 			voices: vec![Voice::default(); voice_count],
 			queue: VecDeque::with_capacity(8),
 			sustain: false,
-			mute: false,
 			meter_handle,
+
+			mute: false,
+			state: MuteState::Active,
+			value: 1.0,
+			smoothing_f: time_constant(15.0, sample_rate),
 		}
 	}
 
@@ -174,24 +188,59 @@ impl VoiceManager {
 	}
 
 	pub fn set_mute(&mut self, mute: bool) {
-		if mute {
-			self.all_notes_off();
-		}
 		self.mute = mute;
+		self.state = MuteState::Transition;
 	}
 
 	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
-		if self.mute {
-			self.meter_handle.set([0., 0.]);
-		} else {
-			self.instrument.process(buffer);
-			let peak = dsp::peak(buffer);
-			self.meter_handle.set(peak);
+		match self.state {
+			MuteState::Off => {},
+			MuteState::Active | MuteState::Transition => {
+				self.instrument.process(buffer);
+			},
+		}
+
+		match self.state {
+			MuteState::Off => {
+				self.meter_handle.set([0., 0.]);
+			},
+			MuteState::Active => {
+				let peak = dsp::peak(buffer);
+				self.meter_handle.set(peak);
+			},
+			MuteState::Transition => {
+				let target = if self.mute { 0.0 } else { 1.0 };
+				let samples = buffer[0].len();
+				assert!(samples <= MAX_BUF_SIZE);
+
+				for i in 0..samples {
+					self.value += self.smoothing_f * (target - self.value);
+
+					buffer[0][i] *= self.value;
+					buffer[1][i] *= self.value;
+				}
+
+				let peak = dsp::peak(buffer);
+				self.meter_handle.set(peak);
+
+				// Check state transition
+				if (self.value - target).abs() < 1e-4 {
+					self.value = target;
+					if self.mute {
+						self.flush();
+						self.state = MuteState::Off;
+					} else {
+						self.state = MuteState::Active;
+					}
+				}
+			},
 		}
 	}
 
 	pub fn flush(&mut self) {
+		self.all_notes_off();
 		self.instrument.flush();
+		self.meter_handle.set([0., 0.]);
 	}
 
 	pub fn set_parameter(&mut self, index: usize, val: f32) {

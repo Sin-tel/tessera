@@ -1,30 +1,14 @@
 use crate::audio::MAX_BUF_SIZE;
+use crate::channel::Channel;
 use crate::context::{AudioMessage, LuaMessage};
 use crate::dsp;
 use crate::dsp::env::AttackRelease;
 use crate::effect::*;
 use crate::instrument;
-use crate::instrument::*;
 use crate::meters::MeterHandle;
 use crate::voice_manager::VoiceManager;
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd};
-
-pub struct Channel {
-	pub instrument: VoiceManager,
-	pub effects: Vec<Bypass>,
-	pub mute: bool,
-}
-
-impl Channel {
-	pub fn new(intrument: Box<dyn Instrument + Send>, meter_handle: MeterHandle) -> Self {
-		Self {
-			instrument: VoiceManager::new(intrument, meter_handle),
-			effects: Vec::new(),
-			mute: false,
-		}
-	}
-}
 
 pub struct Render {
 	audio_rx: HeapCons<AudioMessage>,
@@ -65,10 +49,13 @@ impl Render {
 		&mut self,
 		channel_index: usize,
 		instrument_name: &str,
-		meter_handle: MeterHandle,
+		meter_handle_channel: MeterHandle,
+		meter_handle_instrument: MeterHandle,
 	) {
 		let instrument = instrument::new(self.sample_rate, instrument_name);
-		let channel = Channel::new(instrument, meter_handle);
+		let voice_manager =
+			VoiceManager::new(self.sample_rate, instrument, meter_handle_instrument);
+		let channel = Channel::new(self.sample_rate, voice_manager, meter_handle_channel);
 		self.channels.insert(channel_index, channel);
 	}
 
@@ -93,68 +80,39 @@ impl Render {
 		ch.effects.remove(effect_index);
 	}
 
-	pub fn process(&mut self, out_buffer: &mut [&mut [f32]; 2]) {
+	pub fn process(&mut self, buffer_out: &mut [&mut [f32]; 2]) {
+		let len = buffer_out[0].len();
+
 		let (l, r) = self.buffer.split_at_mut(1);
-		let len = out_buffer[0].len();
-		let buf_slice = &mut [&mut l[0][..len], &mut r[0][..len]];
+		let buffer_in = &mut [&mut l[0][..len], &mut r[0][..len]];
 
 		// Zero buffer
-		for sample in out_buffer.iter_mut().flat_map(|s| s.iter_mut()) {
+		for sample in buffer_out.iter_mut().flat_map(|s| s.iter_mut()) {
 			*sample = 0.0;
 		}
 
 		// Process all channels
 		for ch in &mut self.channels {
-			if !ch.mute {
-				// Zero buffer
-				for sample in buf_slice.iter_mut().flat_map(|s| s.iter_mut()) {
-					*sample = 0.0;
-				}
-
-				ch.instrument.process(buf_slice);
-				#[cfg(debug_assertions)]
-				check_fp(buf_slice);
-
-				for fx in &mut ch.effects {
-					fx.process(buf_slice);
-
-					#[cfg(debug_assertions)]
-					check_fp(buf_slice);
-				}
-
-				for (outsample, insample) in out_buffer
-					.iter_mut()
-					.flat_map(|s| s.iter_mut())
-					.zip(buf_slice.iter().flat_map(|s| s.iter()))
-				{
-					*outsample += insample;
-				}
-			}
+			ch.process(buffer_in, buffer_out);
 		}
 
-		// Calculate peak
-		let [peak_l, peak_r] = dsp::peak(out_buffer);
+		// Calculate master peak
+		let [peak_l, peak_r] = dsp::peak(buffer_out);
 		self.peak_l.set(peak_l);
 		self.peak_r.set(peak_r);
-
-		// let mut sum = [0.0; 2];
-		// for (i, track) in buffer.iter().enumerate() {
-		// 	sum[i] = track.iter().map(|x| x * x).sum::<f32>() / (len as f32);
-		// }
-		// self.peak_l.set(sum[0]);
-		// self.peak_r.set(sum[1]);
 
 		let peak_l = self.peak_l.process();
 		let peak_r = self.peak_r.process();
 		self.send(LuaMessage::Meter { l: peak_l, r: peak_r });
 
 		// Send everything to scope.
-		for s in out_buffer[0].iter() {
-			self.scope_tx.try_push(*s).ok(); // Don't really care if its full
+		for s in buffer_out[0].iter() {
+			// Don't really care if it's full
+			self.scope_tx.try_push(*s).ok();
 		}
 
 		// hardclip
-		for s in out_buffer.iter_mut().flat_map(|s| s.iter_mut()) {
+		for s in buffer_out.iter_mut().flat_map(|s| s.iter_mut()) {
 			*s = s.clamp(-1.0, 1.0);
 		}
 	}
@@ -165,52 +123,58 @@ impl Render {
 			match m {
 				AllNotesOff => {
 					for ch in &mut self.channels {
-						ch.instrument.all_notes_off();
+						if let Some(instrument) = &mut ch.instrument {
+							instrument.all_notes_off();
+						}
 					}
 				},
 				NoteOn(ch_index, token, pitch, vel) => {
 					let ch = &mut self.channels[ch_index];
-					if !ch.mute {
-						ch.instrument.note_on(token, pitch, vel);
+					if let Some(instrument) = &mut ch.instrument {
+						instrument.note_on(token, pitch, vel);
 					}
 				},
 				NoteOff(ch_index, token) => {
 					let ch = &mut self.channels[ch_index];
-					if !ch.mute {
-						ch.instrument.note_off(token);
+					if let Some(instrument) = &mut ch.instrument {
+						instrument.note_off(token);
 					}
 				},
 				Pitch(ch_index, token, pitch) => {
 					let ch = &mut self.channels[ch_index];
-					if !ch.mute {
-						ch.instrument.pitch(token, pitch);
+					if let Some(instrument) = &mut ch.instrument {
+						instrument.pitch(token, pitch);
 					}
 				},
 				Pressure(ch_index, token, pressure) => {
 					let ch = &mut self.channels[ch_index];
-					if !ch.mute {
-						ch.instrument.pressure(token, pressure);
+					if let Some(instrument) = &mut ch.instrument {
+						instrument.pressure(token, pressure);
 					}
 				},
 				Sustain(ch_index, sustain) => {
 					let ch = &mut self.channels[ch_index];
-					if !ch.mute {
-						ch.instrument.sustain(sustain);
+					if let Some(instrument) = &mut ch.instrument {
+						instrument.sustain(sustain);
 					}
 				},
 				Parameter(ch_index, device_index, index, val) => {
 					let ch = &mut self.channels[ch_index];
-					if device_index == 0 {
-						ch.instrument.set_parameter(index, val);
+					if device_index == 0
+						&& let Some(instrument) = &mut ch.instrument
+					{
+						instrument.set_parameter(index, val);
 					} else {
 						ch.effects[device_index - 1].effect.set_parameter(index, val);
 					}
 				},
-				MuteChannel(ch_index, mute) => self.channels[ch_index].mute = mute,
+				MuteChannel(ch_index, mute) => self.channels[ch_index].set_mute(mute),
 				MuteDevice(ch_index, device_index, mute) => {
 					let ch = &mut self.channels[ch_index];
-					if device_index == 0 {
-						ch.instrument.set_mute(mute);
+					if device_index == 0
+						&& let Some(instrument) = &mut ch.instrument
+					{
+						instrument.set_mute(mute);
 					} else {
 						ch.effects[device_index - 1].set_mute(mute);
 					}
@@ -227,23 +191,12 @@ impl Render {
 
 	pub fn flush(&mut self) {
 		for ch in &mut self.channels {
-			ch.instrument.flush();
+			if let Some(instrument) = &mut ch.instrument {
+				instrument.flush();
+			}
 			for fx in &mut ch.effects {
 				fx.effect.flush();
 			}
-		}
-	}
-}
-
-#[cfg(debug_assertions)]
-fn check_fp(buffer: &mut [&mut [f32]; 2]) {
-	use std::num::FpCategory::*;
-	for s in buffer.iter().flat_map(|s| s.iter()) {
-		match s.classify() {
-			Normal | Zero => (),
-			Nan => panic!("number was NaN"),
-			Infinite => panic!("number was Inf"),
-			Subnormal => unreachable!(),
 		}
 	}
 }
