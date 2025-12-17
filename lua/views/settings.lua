@@ -57,6 +57,9 @@ function Settings.new()
 
 	-- these don't need to be rebuilt
 	self.reset_button = widgets.Button.new("Audio offline. Click to reset.", { text_color = theme.highlight })
+
+	self.update_button = widgets.Button.new("Go to downloads")
+
 	self.control_panel_button = widgets.Button.new("Open control panel")
 
 	self.state.host_id = util.find(Settings.hosts, setup.host) or 1
@@ -156,15 +159,26 @@ function Settings:update()
 
 	local audio_ok = tessera.audio.ok()
 
+	local update_available = tessera.check_for_updates()
+	if update_available then
+		self.ui.layout:col(c1 + c2)
+		self.ui:label(string.format("Update available (%s)", update_available))
+		self.ui.layout:col(c3)
+		if self.update_button:update(self.ui) then
+			tessera.open_url("https://github.com/Sin-tel/tessera/releases/latest")
+		end
+		self.ui.layout:new_row()
+	end
+
 	if audio_ok then
 		self.ui.layout:col(lw)
 	else
-		self.ui.layout:col(c1)
-		self.ui.layout:col(c2)
+		self.ui.layout:col(c1 + c2)
 		if self.reset_button:update(self.ui) then
 			engine.rebuild_stream()
 		end
 	end
+
 	self.ui.layout:new_row()
 	self.ui.layout:col(lw)
 	self.ui:label("Audio settings")

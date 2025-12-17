@@ -63,6 +63,19 @@ pub fn create_lua(scale_factor: f64) -> LuaResult<Lua> {
 		})?,
 	)?;
 
+	// tessera.check_for_updates()
+	tessera.set(
+		"check_for_updates",
+		lua.create_function(|_, ()| {
+			if let Ok(lock) = crate::app::NEW_VERSION.try_read() {
+				if let Some(version) = &*lock {
+					return Ok(Some(version.clone()));
+				}
+			}
+			Ok(None)
+		})?,
+	)?;
+
 	// tessera.is_release()
 	tessera.set(
 		"is_release",
@@ -167,9 +180,9 @@ pub fn create_lua(scale_factor: f64) -> LuaResult<Lua> {
 	)?;
 
 	tessera.set(
-		"open_help",
-		lua.create_function(|_, ()| {
-			match open::that("https://github.com/Sin-tel/tessera/blob/master/manual.md") {
+		"open_url",
+		lua.create_function(|_, url_str: String| {
+			match open::that(url_str) {
 				Ok(()) => {},
 				Err(e) => log_error!("{e}"),
 			}

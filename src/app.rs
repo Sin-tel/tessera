@@ -1,7 +1,7 @@
 use crate::api::project::Project;
 use crate::audio::AUDIO_PANIC;
 use crate::context::AudioContext;
-use crate::log::log_warn;
+use crate::log::*;
 use crate::midi;
 use crate::opengl::Renderer;
 use crate::text::{Font, TextEngine};
@@ -9,9 +9,7 @@ use crate::voice_manager::Token;
 use femtovg::{Canvas, Color, ImageId, Path};
 use semver::Version;
 use std::path::PathBuf;
-use std::sync::OnceLock;
-use std::sync::atomic::Ordering;
-use std::sync::mpsc;
+use std::sync::{LazyLock, OnceLock, RwLock, atomic::Ordering, mpsc};
 use std::time::Instant;
 use winit::window::Window;
 
@@ -44,13 +42,6 @@ pub struct State {
 	pub midi_session: Option<midir::MidiInput>,
 	pub midi_connections: Vec<midi::Connection>,
 	token: Token,
-}
-
-static VERSION: OnceLock<Version> = OnceLock::new();
-pub fn get_version() -> &'static Version {
-	VERSION.get_or_init(|| {
-		Version::parse(env!("CARGO_PKG_VERSION")).expect("Failed to parse version string")
-	})
 }
 
 impl State {
@@ -93,4 +84,80 @@ impl State {
 		self.token = self.token.wrapping_add(1);
 		self.token
 	}
+}
+
+static VERSION: OnceLock<Version> = OnceLock::new();
+
+pub fn get_version() -> &'static Version {
+	VERSION.get_or_init(|| {
+		Version::parse(env!("CARGO_PKG_VERSION")).expect("Failed to parse version string")
+	})
+}
+
+pub static NEW_VERSION: LazyLock<RwLock<Option<String>>> = LazyLock::new(|| RwLock::new(None));
+const API_URL: &str = "https://api.github.com/repos/sin-tel/tessera/releases/latest";
+
+pub fn check_for_updates() -> Option<String> {
+	// Note: Unauthenticated calls are limited to 60 requests/hr per IP.
+	// Checking this once at startup is fine.
+
+	let mut resp = match ureq::get(API_URL)
+		.header("User-Agent", "tessera-update-checker")
+		.call()
+	{
+		Ok(r) => r,
+		Err(e) => {
+			log_error!("Request failed: {e}");
+			return None;
+		},
+	};
+
+	let json: serde_json::Value = match resp.body_mut().read_json() {
+		Ok(j) => j,
+		Err(e) => {
+			log_error!("Bad JSON: {e}");
+			return None;
+		},
+	};
+
+	// Extract tag_name (e.g., "v0.1.2")
+	let remote_tag = match json["tag_name"].as_str() {
+		Some(t) => t,
+		None => {
+			log_error!("No tag_name field found");
+			return None;
+		},
+	};
+
+	// Strip the 'v' prefix if present (v0.1.2 -> 0.1.2)
+	let clean_remote_version = remote_tag.trim_start_matches('v');
+
+	// Compare versions
+	let current = get_version();
+	let remote = match Version::parse(clean_remote_version) {
+		Ok(v) => v,
+		Err(e) => {
+			log_error!("Bad remote version format: {e}");
+			return None;
+		},
+	};
+
+	if remote > *current {
+		Some(remote_tag.to_string())
+	} else {
+		log_info!("Version up to date!");
+		None
+	}
+}
+
+pub fn spawn_update_check() {
+	// ureq is blocking so spawn a thread
+
+	std::thread::spawn(|| {
+		if let Some(tag) = check_for_updates() {
+			if let Ok(mut lock) = NEW_VERSION.write() {
+				*lock = Some(tag);
+			}
+		}
+	});
 }
