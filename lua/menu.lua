@@ -45,7 +45,9 @@ function Menu.file(x, y)
 		},
 		{
 			widget = widgets.Button.new("Open manual", options),
-			action = tessera.open_help,
+			action = function()
+				tessera.open_url("https://github.com/Sin-tel/tessera/blob/master/manual.md")
+			end,
 		},
 		{
 			widget = widgets.Button.new("Quit", options),
