@@ -1,3 +1,4 @@
+use anyhow::{Result, anyhow, bail};
 use assert_no_alloc::*;
 use cpal::{
 	BackendSpecificError, BufferSize, Device, HostId, SampleFormat, Stream, StreamConfig,
@@ -9,13 +10,10 @@ use parking_lot::Mutex;
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd, HeapRb};
 use std::cmp;
-use std::error::Error;
 use std::panic;
 use std::panic::AssertUnwindSafe;
 use std::str::FromStr;
-use std::sync::Arc;
-use std::sync::atomic;
-use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, atomic, atomic::AtomicBool};
 
 use crate::context::{ErrorMessage, LuaMessage};
 use crate::dsp::env::AttackRelease;
@@ -54,7 +52,7 @@ pub fn get_default_host() -> String {
 	cpal::default_host().id().to_string()
 }
 
-pub fn get_output_devices(host_str: &str) -> Result<Vec<String>, Box<dyn Error>> {
+pub fn get_output_devices(host_str: &str) -> Result<Vec<String>> {
 	let host_id = HostId::from_str(host_str)?;
 	let host = cpal::host_from_id(host_id)?;
 
@@ -73,14 +71,14 @@ pub fn get_output_devices(host_str: &str) -> Result<Vec<String>, Box<dyn Error>>
 	Ok(devices)
 }
 
-pub fn get_default_output_device(host_str: &str) -> Result<String, Box<dyn Error>> {
+pub fn get_default_output_device(host_str: &str) -> Result<String> {
 	let host_id = HostId::from_str(host_str)?;
 	let host = cpal::host_from_id(host_id)?;
 
 	// It's possible there are no devices at all
 	let default_device = match host.default_output_device() {
 		Some(device) => device.description()?.name().to_string(),
-		None => return Err("No default device found.".into()),
+		None => bail!("No default device found."),
 	};
 
 	Ok(default_device)
@@ -90,7 +88,7 @@ pub fn get_default_output_device(host_str: &str) -> Result<String, Box<dyn Error
 // TODO: use DeviceId instead to simplify
 // We can use device.id()?.to_string() to get a unique id, convert back using from_str
 // device_id.0 should contain HostId
-pub fn find_output_device(host_str: &str, device_name: &str) -> Result<Device, Box<dyn Error>> {
+pub fn find_output_device(host_str: &str, device_name: &str) -> Result<Device> {
 	let host_id = HostId::from_str(host_str)?;
 	let host = cpal::host_from_id(host_id)?;
 
@@ -107,7 +105,7 @@ pub fn find_output_device(host_str: &str, device_name: &str) -> Result<Device, B
 	}
 
 	let output_device =
-		output_device.ok_or_else(|| format!("Couldn't find device \"{device_name}\""))?;
+		output_device.ok_or_else(|| anyhow!("Couldn't find device \"{device_name}\""))?;
 
 	let description = output_device.description()?;
 	let name = description.name();
@@ -163,14 +161,14 @@ fn config_cmp(a: &SupportedStreamConfigRange, b: &SupportedStreamConfigRange) ->
 pub fn build_config(
 	device: &cpal::Device,
 	requested_buffer: Option<u32>,
-) -> Result<(StreamConfig, SampleFormat), Box<dyn Error>> {
+) -> Result<(StreamConfig, SampleFormat)> {
 	let supported_configs = device.supported_output_configs()?;
 
 	let best_config = supported_configs
 		.filter(|c| c.channels() == 2) // only stereo
 		// .inspect(|c| println!("{c:?}"))
 		.max_by(config_cmp)
-		.ok_or("No supported stereo configuration found on this device.")?;
+		.ok_or_else(|| anyhow!("No supported stereo configuration found on this device."))?;
 
 	let min_rate = best_config.min_sample_rate();
 	let max_rate = best_config.max_sample_rate();
@@ -206,13 +204,12 @@ pub fn build_config(
 	Ok((config, best_config.sample_format()))
 }
 
-#[allow(clippy::type_complexity)]
 pub fn build_stream(
 	device: &Device,
 	config: &StreamConfig,
 	format: SampleFormat,
 	render: Arc<Mutex<Render>>,
-) -> Result<(Stream, HeapProd<bool>, HeapCons<ErrorMessage>), Box<dyn Error>> {
+) -> Result<(Stream, HeapProd<bool>, HeapCons<ErrorMessage>)> {
 	let (stream_tx, stream_rx) = HeapRb::<bool>::new(8).split();
 	let (error_tx, error_rx) = HeapRb::<ErrorMessage>::new(8).split();
 
@@ -227,7 +224,7 @@ pub fn build_stream(
 		I16 => build_stream_inner::<i16>(device, config, render, stream_rx, error_tx),
 		U16 => build_stream_inner::<u16>(device, config, render, stream_rx, error_tx),
 		I24 => build_stream_inner::<cpal::I24>(device, config, render, stream_rx, error_tx),
-		f => Err(format!("Unsupported sample format '{f}'").into()),
+		f => Err(anyhow!("Unsupported sample format '{f}'")),
 	}?;
 
 	// immediately start the stream
@@ -262,7 +259,7 @@ pub fn build_stream_inner<T>(
 	render: Arc<Mutex<Render>>,
 	stream_rx: HeapCons<bool>,
 	error_tx: HeapProd<ErrorMessage>,
-) -> Result<Stream, Box<dyn Error>>
+) -> Result<Stream>
 where
 	T: 'static + cpal::SizedSample + cpal::FromSample<f32>,
 {
@@ -392,7 +389,7 @@ fn error_closure(mut error_tx: HeapProd<ErrorMessage>) -> impl FnMut(StreamError
 	}
 }
 
-pub fn write_wav(filename: &str, samples: &[f32], sample_rate: u32) -> Result<(), Box<dyn Error>> {
+pub fn write_wav(filename: &str, samples: &[f32], sample_rate: u32) -> Result<()> {
 	let spec = hound::WavSpec {
 		channels: 2,
 		sample_rate,

@@ -4,11 +4,11 @@ use crate::meters::Meters;
 use crate::render::Render;
 use crate::scope::Scope;
 use crate::voice_manager::Token;
+use anyhow::Result;
 use parking_lot::Mutex;
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd, HeapRb};
 use serde::Serialize;
-use std::error::Error;
 use std::sync::Arc;
 
 pub struct AudioContext {
@@ -31,7 +31,7 @@ impl AudioContext {
 		host_str: &str,
 		device_name: &str,
 		buffer_size: Option<u32>,
-	) -> Result<AudioContext, Box<dyn Error>> {
+	) -> Result<AudioContext> {
 		let device = find_output_device(host_str, device_name)?;
 		let (config, format) = build_config(&device, buffer_size)?;
 		let sample_rate = config.sample_rate;
@@ -68,7 +68,7 @@ impl AudioContext {
 		host_str: &str,
 		device_name: &str,
 		buffer_size: Option<u32>,
-	) -> Result<(), Box<dyn Error>> {
+	) -> Result<()> {
 		// drop old stream
 		self.stream = None;
 		self.device = None;
