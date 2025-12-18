@@ -1,5 +1,6 @@
 use crate::dsp::from_db;
 use crate::dsp::onepole::OnePole;
+use crate::dsp::smooth::Smooth;
 use crate::effect::*;
 
 // TODO: better gain matching
@@ -13,7 +14,6 @@ const FREQ_4: f32 = 7434.40;
 #[derive(Debug)]
 pub struct Tilt {
 	tracks: [Track; 2],
-	gain: f32,
 }
 
 #[derive(Debug)]
@@ -22,6 +22,7 @@ struct Track {
 	filter2: OnePole,
 	filter3: OnePole,
 	filter4: OnePole,
+	gain: Smooth,
 }
 
 impl Track {
@@ -31,13 +32,14 @@ impl Track {
 			filter2: OnePole::new(sample_rate),
 			filter3: OnePole::new(sample_rate),
 			filter4: OnePole::new(sample_rate),
+			gain: Smooth::new(1.0, 25.0, sample_rate),
 		}
 	}
 }
 
 impl Effect for Tilt {
 	fn new(sample_rate: f32) -> Self {
-		Tilt { tracks: [Track::new(sample_rate), Track::new(sample_rate)], gain: 1. }
+		Tilt { tracks: [Track::new(sample_rate), Track::new(sample_rate)] }
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
@@ -48,7 +50,7 @@ impl Effect for Tilt {
 				s = track.filter2.process(s);
 				s = track.filter3.process(s);
 				s = track.filter4.process(s);
-				*sample = s * self.gain;
+				*sample = s * track.gain.process();
 			}
 		}
 	}
@@ -65,8 +67,8 @@ impl Effect for Tilt {
 					track.filter2.set_tilt(FREQ_2, slope);
 					track.filter3.set_tilt(FREQ_3, slope);
 					track.filter4.set_tilt(FREQ_4, slope);
+					track.gain.set(from_db(-1.5 * value.abs()));
 				}
-				self.gain = from_db(-1.5 * value.abs());
 			},
 			_ => log_warn!("Parameter with index {index} not found"),
 		}

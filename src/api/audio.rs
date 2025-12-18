@@ -275,12 +275,18 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"insert_channel",
 		lua.create_function(|lua, (index, instrument_name): (usize, String)| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let (meter_handle, meter_id) = ctx.meters.register();
+				let (meter_handle_channel, meter_id_channel) = ctx.meters.register();
+				let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
 				let mut render = ctx.render.lock();
-				render.insert_channel(index - 1, &instrument_name, meter_handle);
-				Ok(Some(meter_id + 1))
+				render.insert_channel(
+					index - 1,
+					&instrument_name,
+					meter_handle_channel,
+					meter_handle_instrument,
+				);
+				Ok((Some(meter_id_channel + 1), Some(meter_id_instrument + 1)))
 			} else {
-				Ok(None)
+				Ok((None, None))
 			}
 		})?,
 	)?;

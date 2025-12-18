@@ -5,7 +5,7 @@ use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::env::*;
 use crate::dsp::resample_fir::{Downsampler, Downsampler31, Upsampler, Upsampler19};
 use crate::dsp::skf::{FilterMode, Skf};
-use crate::dsp::smooth::{SmoothExp, SmoothLinear};
+use crate::dsp::smooth::Smooth;
 use crate::dsp::*;
 use crate::instrument::*;
 
@@ -17,8 +17,8 @@ const MAX_F: f32 = 20_000.0;
 
 #[derive(Debug)]
 pub struct Analog {
-	freq: SmoothExp,
-	gate: SmoothExp,
+	freq: Smooth,
+	gate: Smooth,
 	pres: AttackRelease,
 	sample_rate: f32,
 	accum: f32,
@@ -33,7 +33,7 @@ pub struct Analog {
 	buf_up: [f32; MAX_BUF_SIZE * 2],
 
 	// parameters
-	pulse_width: SmoothLinear,
+	pulse_width: Smooth,
 	mix_pulse: f32,
 	mix_saw: f32,
 	mix_sub: f32,
@@ -49,11 +49,9 @@ pub struct Analog {
 
 impl Instrument for Analog {
 	fn new(sample_rate: f32) -> Self {
-		let mut gate = SmoothExp::new(2.0, sample_rate);
-		gate.set_immediate(0.);
 		Self {
-			freq: SmoothExp::new(8.0, sample_rate),
-			gate,
+			freq: Smooth::new(0.01, 8.0, sample_rate),
+			gate: Smooth::new(0., 2.0, sample_rate),
 			pres: AttackRelease::new(50.0, 120.0, sample_rate),
 			sample_rate,
 			envelope: Adsr::new(sample_rate),
@@ -67,7 +65,7 @@ impl Instrument for Analog {
 			rng: Rng::new(),
 			note_on: false,
 
-			pulse_width: SmoothLinear::new(20.0, sample_rate),
+			pulse_width: Smooth::new(0., 25.0, sample_rate),
 			mix_pulse: 0.,
 			mix_saw: 0.,
 			mix_sub: 0.,

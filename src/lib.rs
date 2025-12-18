@@ -24,6 +24,7 @@
 #![allow(clippy::too_many_arguments)]
 
 pub mod audio;
+mod channel;
 mod context;
 mod effect;
 pub mod embed;

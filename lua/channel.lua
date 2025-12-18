@@ -6,7 +6,7 @@ local Channel = {}
 
 Channel.__index = Channel
 
-function Channel.new(ch_index, data, instrument, widget)
+function Channel.new(ch_index, data, instrument, widget, meter_id)
 	local self = setmetatable({}, Channel)
 
 	self.ch_index = ch_index
@@ -18,6 +18,10 @@ function Channel.new(ch_index, data, instrument, widget)
 	self.widget = widget
 	self.instrument = instrument
 	self.effects = {}
+
+	self.meter_id = meter_id
+	self.meter_l = 0.0
+	self.meter_r = 0.0
 
 	self.roll = Roll.new(ch_index)
 

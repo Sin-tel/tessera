@@ -1,4 +1,4 @@
-use crate::dsp::smooth::SmoothLinear;
+use crate::dsp::smooth::Smooth;
 use crate::dsp::{from_db, prewarp};
 
 #[derive(Debug)]
@@ -6,18 +6,18 @@ pub struct OnePole {
 	sample_rate: f32,
 	s: f32,
 
-	g: SmoothLinear,
-	my: SmoothLinear,
-	mx: SmoothLinear,
+	g: Smooth,
+	my: Smooth,
+	mx: Smooth,
 }
 
 impl OnePole {
 	pub fn new(sample_rate: f32) -> Self {
 		Self {
 			sample_rate,
-			g: SmoothLinear::new_steps(64),
-			my: SmoothLinear::new_steps(64),
-			mx: SmoothLinear::new_steps(64),
+			g: Smooth::new(0., 25., sample_rate),
+			my: Smooth::new(0., 25., sample_rate),
+			mx: Smooth::new(0., 25., sample_rate),
 
 			s: 0.,
 		}

@@ -156,6 +156,13 @@ pub fn peak(buffer: &mut [&mut [f32]; 2]) -> [f32; 2] {
 	sum
 }
 
+#[derive(PartialEq, Copy, Clone)]
+pub enum MuteState {
+	Active,
+	Off,
+	Transition,
+}
+
 // This is a 'naive' implementation of a one-pole highpass at 10Hz
 // Since cutoff << sample rate it works fine
 #[derive(Debug)]

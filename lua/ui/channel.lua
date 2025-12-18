@@ -142,13 +142,8 @@ function Channel:draw(ui, ch_index, x, y, w, h)
 
 	-- meter
 	ch = ui_channels[ch_index]
-
-	local device = ch.instrument
-	if #ch.effects > 0 then
-		device = ch.effects[#ch.effects]
-	end
-	local ml = device.meter_l
-	local mr = device.meter_r
+	local ml = ch.meter_l
+	local mr = ch.meter_r
 
 	local cl = util.meter_color(ml)
 	local cr = util.meter_color(mr)

@@ -6,8 +6,6 @@ if not release then
 	require("lib/strict")
 end
 
-local load_last_save = true
-
 local profile = false
 -- local profile = require("lib.profile")
 -- local profile = require("lib.profile2")
@@ -15,30 +13,28 @@ local profile = false
 VERSION = {}
 
 util = require("util")
+workspace = require("workspace")
+mouse = require("mouse")
+command = require("command")
+theme = require("default/theme")
+selection = require("selection")
+clipboard = require("clipboard")
+setup = {}
+project = {}
+ui_channels = {}
 
 local build = require("build")
 local engine = require("engine")
 local file = require("file")
+local load_default_project = require("default.project")
 local midi = require("midi")
 local note_input = require("note_input")
 local save = require("save")
 local tuning = require("tuning")
 
-workspace = require("workspace")
-mouse = require("mouse")
-command = require("command")
-
 width, height = tessera.graphics.get_dimensions()
 
-theme = require("default/theme")
-selection = require("selection")
-clipboard = require("clipboard")
-setup = {}
-
 audio_status = "init"
-
-project = {}
-ui_channels = {}
 
 modifier_keys = {}
 modifier_keys.ctrl = false
@@ -46,7 +42,7 @@ modifier_keys.shift = false
 modifier_keys.alt = false
 modifier_keys.any = false
 
-local project_initialized = false
+local initial_setup = true
 local draw_time_s = 0
 
 -- patch up set_color to work with tables
@@ -71,22 +67,6 @@ local function init_setup()
 	end
 end
 
-local function build_startup_project()
-	local success = false
-	if load_last_save then
-		local f = save.get_last_save_location()
-		success = save.read(f)
-	end
-
-	if not success then
-		log.info("Loading default project")
-		command.NewChannel.new("epiano"):run()
-		project.channels[1].armed = true
-
-		save.set_save_location(save.default_save_location)
-	end
-end
-
 local function audio_setup()
 	if not tessera.audio.ok() then
 		engine.setup_stream()
@@ -102,9 +82,13 @@ local function audio_setup()
 		log.error("Audio setup failed")
 	end
 
-	if not project_initialized then
-		build_startup_project()
-		project_initialized = true
+	if initial_setup then
+		-- load project
+		local success = file.load_last()
+		if not success then
+			load_default_project()
+		end
+		initial_setup = false
 	else
 		-- restore audio state
 		build.restore_project()

@@ -78,9 +78,16 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"set_position",
 		lua.create_function(|lua, (x, y): (f32, f32)| {
 			let state = lua.app_data_ref::<State>().unwrap();
-			state.window.set_cursor_grab(CursorGrabMode::Locked).unwrap();
+
+			#[cfg(not(target_os = "linux"))]
 			state.window.set_cursor_position(PhysicalPosition::new(x, y)).unwrap();
-			state.window.set_cursor_grab(CursorGrabMode::None).unwrap();
+			#[cfg(target_os = "linux")]
+			{
+				// Wayland: Cursor must be in CursorGrabMode::Locked.
+				state.window.set_cursor_grab(CursorGrabMode::Locked).unwrap();
+				state.window.set_cursor_position(PhysicalPosition::new(x, y)).unwrap();
+				state.window.set_cursor_grab(CursorGrabMode::None).unwrap();
+			}
 			Ok(())
 		})?,
 	)?;

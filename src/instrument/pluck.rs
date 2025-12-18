@@ -31,7 +31,7 @@ const N_VOICES: usize = 8;
 
 #[derive(Debug)]
 struct Voice {
-	freq: SmoothExp,
+	freq: Smooth,
 	note_on: bool,
 	active: bool,
 
@@ -70,7 +70,7 @@ impl Voice {
 		lp_f.set_lowpass(8000.);
 
 		Self {
-			freq: SmoothExp::new(10., sample_rate),
+			freq: Smooth::new(1., 10., sample_rate),
 			note_on: false,
 			active: false,
 

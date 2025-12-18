@@ -9,8 +9,8 @@ use crate::instrument::*;
 pub struct Sine {
 	sample_rate: f32,
 	accum: f32,
-	freq: SmoothExp,
-	vel: SmoothExp,
+	freq: Smooth,
+	vel: Smooth,
 	rng: Rng,
 	fixed: bool,
 	fixed_freq: f32,
@@ -20,12 +20,10 @@ pub struct Sine {
 
 impl Instrument for Sine {
 	fn new(sample_rate: f32) -> Self {
-		let mut vel = SmoothExp::new(10.0, sample_rate);
-		vel.set_immediate(0.);
 		Sine {
 			sample_rate,
-			freq: SmoothExp::new(50.0, sample_rate),
-			vel,
+			freq: Smooth::new(0., 50.0, sample_rate),
+			vel: Smooth::new(0., 25., sample_rate),
 			rng: Rng::new(),
 			fixed: false,
 			accum: 0.,
@@ -105,7 +103,12 @@ impl Instrument for Sine {
 			},
 			1 => self.fixed_freq = value / self.sample_rate,
 			2 => self.fixed_gain = value,
-			3 => self.noise = value > 0.5,
+			3 => {
+				self.noise = value > 0.5;
+				if !self.noise && !self.fixed {
+					self.vel.set_immediate(0.)
+				}
+			},
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 	}

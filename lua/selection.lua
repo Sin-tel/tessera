@@ -12,7 +12,6 @@ function selection.subtract(mask)
 	for k in pairs(mask) do
 		selection.mask[k] = nil
 	end
-
 	selection.refresh()
 end
 
@@ -20,6 +19,7 @@ function selection.add(mask)
 	for k in pairs(mask) do
 		selection.mask[k] = true
 	end
+	selection.refresh()
 end
 
 function selection.set_from_notes(notes)
@@ -29,7 +29,6 @@ function selection.set_from_notes(notes)
 			selection.mask[note] = true
 		end
 	end
-
 	selection.refresh()
 end
 
