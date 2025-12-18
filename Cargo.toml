@@ -65,11 +65,12 @@ okhsl = "1.0.1"
 serde = { version = "1.0", features = ["derive"] }
 # rust-embed = { version = "8.9", features = ["debug-embed"] }
 rust-embed = "8.9"
-svgtypes = "0.16.0"
-semver = "1.0.27"
+svgtypes = "0.16"
+semver = "1.0"
 open = "5.3"
-ureq = {version = "3.1.4", features = ["json"]}
-serde_json = "1.0.145"
+ureq = {version = "3.1", features = ["json"]}
+serde_json = "1.0"
+anyhow = "1.0"
 
 [[bench]]
 name = "bench"
