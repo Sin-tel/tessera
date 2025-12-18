@@ -21,11 +21,11 @@ doctest = false
 
 
 [target.'cfg(target_os = "windows")'.dependencies]
-cpal = { version = "0.16", features = ["asio"], git = "https://github.com/sin-tel/cpal.git", rev = "3b125d256f8aab6146ff670b296f626a89e9862a" }
+cpal = { version = "0.16", features = ["asio"], git = "https://github.com/sin-tel/cpal.git", rev = "0171ea979fc5e9d7aaac4a93e4b70e8e5e898df3" }
 [target.'cfg(target_os = "macos")'.dependencies]
-cpal = { version = "0.16", git = "https://github.com/sin-tel/cpal.git", rev = "3b125d256f8aab6146ff670b296f626a89e9862a" }
+cpal = { version = "0.16", git = "https://github.com/sin-tel/cpal.git", rev = "0171ea979fc5e9d7aaac4a93e4b70e8e5e898df3" }
 [target.'cfg(target_os = "linux")'.dependencies]
-cpal = { version = "0.16", features = ["jack"], git = "https://github.com/sin-tel/cpal.git", rev = "3b125d256f8aab6146ff670b296f626a89e9862a" }
+cpal = { version = "0.16", features = ["jack"], git = "https://github.com/sin-tel/cpal.git", rev = "0171ea979fc5e9d7aaac4a93e4b70e8e5e898df3" }
 
 [dependencies]
 # cpal = { version = "0.16", features = ["asio"], path = "../cpal_proj/cpal" }
