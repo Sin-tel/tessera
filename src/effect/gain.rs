@@ -19,8 +19,8 @@ impl Effect for Gain {
 
 		for (l, r) in zip(bl.iter_mut(), br.iter_mut()) {
 			let gain = self.gain.process();
-			*l = *l * gain;
-			*r = *r * gain;
+			*l *= gain;
+			*r *= gain;
 		}
 	}
 	fn flush(&mut self) {}

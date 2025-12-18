@@ -67,10 +67,10 @@ pub fn create_lua(scale_factor: f64) -> LuaResult<Lua> {
 	tessera.set(
 		"check_for_updates",
 		lua.create_function(|_, ()| {
-			if let Ok(lock) = crate::app::NEW_VERSION.try_read() {
-				if let Some(version) = &*lock {
-					return Ok(Some(version.clone()));
-				}
+			if let Ok(lock) = crate::app::NEW_VERSION.try_read()
+				&& let Some(version) = &*lock
+			{
+				return Ok(Some(version.clone()));
 			}
 			Ok(None)
 		})?,

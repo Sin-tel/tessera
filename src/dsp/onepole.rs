@@ -32,6 +32,12 @@ impl OnePole {
 		self.s = 0.;
 	}
 
+	pub fn immediate(&mut self) {
+		self.g.immediate();
+		self.my.immediate();
+		self.mx.immediate();
+	}
+
 	pub fn set_lowpass(&mut self, cutoff: f32) {
 		let f = prewarp(cutoff / self.sample_rate);
 		self.set_coef(f);
