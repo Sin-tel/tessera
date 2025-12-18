@@ -237,17 +237,15 @@ pub fn build_stream(
 
 #[cfg(target_os = "windows")]
 pub fn open_control_panel(device: &Device) {
-	use cpal::platform::DeviceInner;
-	if let DeviceInner::Asio(asio_device) = device.as_inner() {
-		// Opening UI panel may block, so spawn a thread for it.
-		// ASIO device is just Arc internally, so clone is cheap.
-		let asio_device = asio_device.clone();
-		std::thread::spawn(move || {
-			if let Err(e) = asio_device.open_control_panel() {
-				log_error!("Could not open panel: {:?}", e);
-			}
-		});
-	}
+	use cpal::platform::asio::AsioDeviceExt;
+	// Opening UI panel may block, so spawn a thread for it.
+	// ASIO device is just Arc internally, so clone is cheap.
+	let device = device.clone();
+	std::thread::spawn(move || {
+		if let Err(e) = device.asio_open_control_panel() {
+			log_error!("Could not open panel: {:?}", e);
+		}
+	});
 }
 
 #[cfg(not(target_os = "windows"))]
