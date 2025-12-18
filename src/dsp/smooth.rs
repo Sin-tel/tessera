@@ -25,7 +25,7 @@ impl Smooth {
 
 			if (self.value - self.target).abs() < 1e-4 {
 				self.value = self.target;
-				self.done = true
+				self.done = true;
 			}
 		}
 		self.value

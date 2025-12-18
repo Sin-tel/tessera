@@ -62,15 +62,18 @@ impl Voice {
 
 		let mut mute_filter = Filter::new(sample_rate);
 		mute_filter.set_highshelf(1000., BUTTERWORTH_Q, -4.);
+		mute_filter.immediate();
 
 		let mut noise_filter = Filter::new(sample_rate);
 		noise_filter.set_lowpass(5000., 0.5);
+		noise_filter.immediate();
 
 		let mut lp_f = OnePole::new(sample_rate);
 		lp_f.set_lowpass(8000.);
+		lp_f.immediate();
 
 		Self {
-			freq: Smooth::new(1., 10., sample_rate),
+			freq: Smooth::new(0.01, 10., sample_rate),
 			note_on: false,
 			active: false,
 
@@ -105,6 +108,7 @@ impl Instrument for Pluck {
 
 		let mut shelf = Filter::new(sample_rate);
 		shelf.set_lowshelf(180., BUTTERWORTH_Q, -6.);
+		shelf.immediate();
 
 		Pluck {
 			voices,
@@ -215,11 +219,7 @@ impl Instrument for Pluck {
 		let voice = &mut self.voices[id];
 		let f = pitch_to_hz(pitch);
 		voice.freq.set(f);
-		if !voice.note_on {
-			voice.freq.immediate();
-		}
 
-		voice.note_on = true;
 		voice.active = true;
 		voice.off_time = 0.;
 		voice.mute_state = 0.0;
@@ -256,6 +256,13 @@ impl Instrument for Pluck {
 			mute_gain = 8. * self.release;
 		}
 		voice.mute_filter.set_highshelf(1000., BUTTERWORTH_Q, mute_gain);
+
+		if !voice.note_on {
+			voice.freq.immediate();
+			voice.lp.immediate();
+			voice.ap.immediate();
+		}
+		voice.note_on = true;
 	}
 
 	fn note_off(&mut self, id: usize) {

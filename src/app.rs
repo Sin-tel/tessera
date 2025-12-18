@@ -121,12 +121,9 @@ pub fn check_for_updates() -> Option<String> {
 	};
 
 	// Extract tag_name (e.g., "v0.1.2")
-	let remote_tag = match json["tag_name"].as_str() {
-		Some(t) => t,
-		None => {
-			log_error!("No tag_name field found");
-			return None;
-		},
+	let Some(remote_tag) = json["tag_name"].as_str() else {
+		log_error!("No tag_name field found");
+		return None;
 	};
 
 	// Strip the 'v' prefix if present (v0.1.2 -> 0.1.2)
@@ -154,10 +151,10 @@ pub fn spawn_update_check() {
 	// ureq is blocking so spawn a thread
 
 	std::thread::spawn(|| {
-		if let Some(tag) = check_for_updates() {
-			if let Ok(mut lock) = NEW_VERSION.write() {
-				*lock = Some(tag);
-			}
+		if let Some(tag) = check_for_updates()
+			&& let Ok(mut lock) = NEW_VERSION.write()
+		{
+			*lock = Some(tag);
 		}
 	});
 }

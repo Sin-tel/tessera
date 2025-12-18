@@ -106,7 +106,7 @@ impl Instrument for Sine {
 			3 => {
 				self.noise = value > 0.5;
 				if !self.noise && !self.fixed {
-					self.vel.set_immediate(0.)
+					self.vel.set_immediate(0.);
 				}
 			},
 			_ => log_warn!("Parameter with index {index} not found"),
