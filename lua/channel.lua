@@ -1,12 +1,65 @@
 local Roll = require("roll")
+local Ui = require("ui.ui")
 local log = require("log")
 local tuning = require("tuning")
+local widgets = require("ui.widgets")
+
+local function solo_mute(ch)
+	local all = true
+	for _, v in ipairs(project.channels) do
+		all = all and v.mute
+	end
+	if all then
+		for _, v in ipairs(project.channels) do
+			v.mute = false
+		end
+	else
+		for _, v in ipairs(project.channels) do
+			v.mute = true
+		end
+		ch.mute = false
+	end
+end
+
+local function solo_visible(ch)
+	local all = false
+	for _, v in ipairs(project.channels) do
+		all = all or v.visible
+	end
+
+	if all then
+		for _, v in ipairs(project.channels) do
+			v.visible = false
+		end
+		ch.visible = true
+	else
+		for _, v in ipairs(project.channels) do
+			v.visible = true
+		end
+	end
+end
+
+local function solo_lock(ch)
+	local all = true
+	for _, v in ipairs(project.channels) do
+		all = all and v.lock
+	end
+	if all then
+		for _, v in ipairs(project.channels) do
+			v.lock = false
+		end
+	else
+		for _, v in ipairs(project.channels) do
+			v.lock = true
+		end
+		ch.lock = false
+	end
+end
 
 local Channel = {}
-
 Channel.__index = Channel
 
-function Channel.new(ch_index, data, instrument, widget, meter_id)
+function Channel.new(ch_index, data, instrument, meter_id)
 	local self = setmetatable({}, Channel)
 
 	self.ch_index = ch_index
@@ -14,8 +67,8 @@ function Channel.new(ch_index, data, instrument, widget, meter_id)
 	-- reference to project data
 	self.data = data
 	self.mute_old = false
+	self.gain_old = nil
 
-	self.widget = widget
 	self.instrument = instrument
 	self.effects = {}
 
@@ -25,7 +78,105 @@ function Channel.new(ch_index, data, instrument, widget, meter_id)
 
 	self.roll = Roll.new(ch_index)
 
+	-- UI widgets
+	self.gain_slider = widgets.Slider.new(self.data, "gain", { default = 0, max = 12, t = "dB" })
+
+	self.meter = widgets.Meter.new(self)
+
+	self.button_mute = widgets.ToggleSmall.new({ label = "m", color_on = theme.mute })
+	self.button_armed = widgets.ToggleSmall.new({ img_on = tessera.icon.armed, color_on = theme.recording })
+	self.button_visible = widgets.ToggleSmall.new({ img_on = tessera.icon.visible, img_off = tessera.icon.invisible })
+
+	-- TODO: this is confusing, should swap logic to use "unlocked"
+	self.button_lock = widgets.ToggleSmall.new({
+		img_on = tessera.icon.lock,
+		img_off = tessera.icon.unlock,
+		color_on = theme.text_dim,
+		color_off = theme.ui_text,
+	})
+
 	return self
+end
+
+function Channel:update(ui, ch_index, bg_color, w)
+	ui:background(bg_color)
+
+	local start_x, start_y = ui.layout.start_x, ui.layout.y
+
+	local w1 = w * 0.5
+	local w2 = w - w1
+
+	local w_button = Ui.ROW_HEIGHT
+	local w_pad = w2 - w_button * 4 - Ui.PAD
+
+	ui.layout:col(w1)
+	local color
+	local ch = project.channels[ch_index]
+	if selection.ch_index == ch_index then
+		color = tessera.graphics.get_color_hsv(ch.hue / 360, 0.40, 0.95)
+	else
+		color = tessera.graphics.get_color_hsv(ch.hue / 360, 0.70, 0.90)
+	end
+	ui:label(self.data.name, tessera.graphics.ALIGN_LEFT, color)
+	if w_pad > 0 then
+		ui.layout:col(w_pad)
+	end
+
+	ui.layout:padding(Ui.scale(2))
+	ui.layout:col(w_button)
+	if self.button_armed:update(ui, ch.armed) then
+		if ch.armed then
+			ch.armed = false
+		else
+			for _, v in ipairs(project.channels) do
+				v.armed = false
+			end
+			ch.armed = true
+		end
+	end
+
+	ui.layout:col(w_button)
+	if self.button_mute:update(ui, ch.mute) then
+		if ui.double_click then
+			solo_mute(ch)
+		else
+			ch.mute = not ch.mute
+		end
+	end
+
+	ui.layout:col(w_button)
+	if self.button_visible:update(ui, ch.visible) then
+		if ui.double_click then
+			solo_visible(ch)
+		else
+			ch.visible = not ch.visible
+		end
+		selection.remove_inactive()
+	end
+
+	ui.layout:col(w_button)
+	if self.button_lock:update(ui, ch.lock) then
+		if ui.double_click then
+			solo_lock(ch)
+		else
+			ch.lock = not ch.lock
+		end
+		selection.remove_inactive()
+	end
+
+	ui.layout:padding()
+	ui.layout:new_row()
+	ui.layout:col(w1)
+	self.gain_slider:update(ui)
+	ui.layout:col(w2)
+	self.meter:update(ui)
+
+	ui.layout:new_row()
+
+	local end_y = ui.layout.y
+	ui:hitbox(self, start_x, start_y, w, end_y - start_y)
+
+	return ui.clicked == self
 end
 
 function Channel:event(event)
@@ -56,6 +207,7 @@ end
 
 function Channel:reset()
 	self.mute_old = false
+	self.gain_old = nil
 end
 
 return Channel

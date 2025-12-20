@@ -126,8 +126,9 @@ pub enum AudioMessage {
 	Pressure(usize, Token, f32),
 	Sustain(usize, bool),
 	Parameter(usize, usize, usize, f32),
-	MuteChannel(usize, bool),
-	MuteDevice(usize, usize, bool),
+	DeviceMute(usize, usize, bool),
+	ChannelMute(usize, bool),
+	ChannelGain(usize, f32),
 	ReorderEffect(usize, usize, usize),
 	// Swap(?),
 }

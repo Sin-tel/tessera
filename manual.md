@@ -94,12 +94,10 @@ Use `Up` and `Down` arrow keys to transpose selected notes.
 Click on a channel to select it.
 
 #### Properties
-* M: Mute.
-* S: Solo.
-* Armed: Route midi input to this channel.
-* Eye: Toggle channel visibility.
-* Lock: Locks or unlocks the channel for editing.
-
+* Arm: Route midi input to this channel.
+* M: Mute channel. Double click to solo.
+* Eye: Hide/unhide channel. Double click to hide all channels except this one.
+* Lock: Lock/unlock channel for editing. Double click to lock all channels except this one.
 
 | Action | Shortcut |
 | :--- | :--- |

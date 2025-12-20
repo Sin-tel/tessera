@@ -21,7 +21,6 @@ Ui.STATUS_HEIGHT = scale(20)
 Ui.ROW_HEIGHT = scale(28)
 Ui.PARAMETER_LABEL_WIDTH = scale(150) -- max width of parameter labels
 Ui.PARAMETER_PAD = scale(8) -- padding for parameters
-Ui.BUTTON_SMALL = scale(18)
 Ui.CORNER_RADIUS = scale(4)
 
 Ui.PAD = scale(5)
@@ -60,7 +59,12 @@ function Ui:start_frame(x, y)
 	self.bg_color = nil
 
 	self.hover = false
+
+	if self.clicked then
+		self.clicked_prev = self.clicked
+	end
 	self.clicked = false
+	self.double_click = false
 	if mouse.button_released then
 		self.was_active = self.active
 		self.active = false
@@ -83,7 +87,7 @@ end
 function Ui:next(h)
 	if not self.layout.ok then
 		-- TODO: do col("max") when in column mode
-		self.layout:row(self.view.w, (h or Ui.ROW_HEIGHT))
+		self.layout:row(self.view.w, h)
 	end
 
 	if self.bg_color then
@@ -114,11 +118,15 @@ function Ui:hitbox(widget, x, y, w, h)
 	then
 		if mouse.button_pressed == 1 and not self.active then
 			-- cancel press for any overlapping elements
-			mouse.button_pressed = nil
+			-- mouse.button_pressed = nil
 			self.active = widget
 		end
 		if (mouse.button_released == 1 and self.was_active == widget) and not self.clicked then
 			self.clicked = widget
+
+			if self.clicked_prev == self.clicked and mouse.double_click then
+				self.double_click = self.clicked
+			end
 		end
 		if (not self.active or self.active == widget) and not self.hover then
 			self.hover = widget

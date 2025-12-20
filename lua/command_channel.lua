@@ -69,8 +69,8 @@ local function new_channel_data(key, options)
         armed = false,
         visible = true,
         lock = false,
+        gain = 1.0,
         hue = find_hue(),
-        -- name = "Channel " .. #project.channels .. " (" .. options.name .. ")",
         name = options.name,
     }
 end

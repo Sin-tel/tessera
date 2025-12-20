@@ -1,5 +1,6 @@
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp;
+use crate::dsp::smooth::Smooth;
 use crate::dsp::{MuteState, time_constant};
 use crate::effect::*;
 use crate::meters::MeterHandle;
@@ -9,6 +10,7 @@ pub struct Channel {
 	pub instrument: Option<VoiceManager>,
 	pub effects: Vec<Bypass>,
 	meter_handle: MeterHandle,
+	gain: Smooth,
 
 	mute: bool,
 	state: MuteState,
@@ -22,6 +24,7 @@ impl Channel {
 			instrument: Some(instrument),
 			effects: Vec::new(),
 			meter_handle,
+			gain: Smooth::new(1., 25., sample_rate),
 			mute: false,
 			state: MuteState::Active,
 			value: 1.0,
@@ -47,8 +50,9 @@ impl Channel {
 				let samples = buffer_in[0].len();
 				assert!(samples <= MAX_BUF_SIZE);
 				for i in 0..samples {
-					buffer_out[0][i] += buffer_in[0][i];
-					buffer_out[1][i] += buffer_in[1][i];
+					let gain = self.gain.process();
+					buffer_out[0][i] += buffer_in[0][i] * gain;
+					buffer_out[1][i] += buffer_in[1][i] * gain;
 				}
 
 				let peak = dsp::peak(buffer_in);
@@ -62,8 +66,9 @@ impl Channel {
 
 				for i in 0..samples {
 					self.value += self.smoothing_f * (target - self.value);
-					buffer_out[0][i] += buffer_in[0][i] * self.value;
-					buffer_out[1][i] += buffer_in[1][i] * self.value;
+					let gain = self.value * self.gain.process();
+					buffer_out[0][i] += buffer_in[0][i] * gain;
+					buffer_out[1][i] += buffer_in[1][i] * gain;
 				}
 
 				let peak = dsp::peak(buffer_in);
@@ -85,5 +90,9 @@ impl Channel {
 	pub fn set_mute(&mut self, mute: bool) {
 		self.mute = mute;
 		self.state = MuteState::Transition;
+	}
+
+	pub fn set_gain(&mut self, gain: f32) {
+		self.gain.set(gain);
 	}
 }

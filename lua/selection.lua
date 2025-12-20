@@ -63,9 +63,13 @@ function selection.get_notes()
 	return notes
 end
 
-function selection.remove_channel(ch)
-	for _, v in ipairs(ch.notes) do
-		selection.mask[v] = nil
+function selection.remove_inactive()
+	for _, channel in ipairs(project.channels) do
+		if not channel.visible or channel.lock then
+			for _, v in ipairs(channel.notes) do
+				selection.mask[v] = nil
+			end
+		end
 	end
 	selection.refresh()
 end

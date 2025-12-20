@@ -38,8 +38,7 @@ local function is_compatible(a, b)
 end
 
 local function do_patches(p)
-	-- fix any issues with save files here when they come up
-	-- this is just a band-aid for now
+	-- patch any issues with save files here when they come up
 
 	-- fix projects with different rank
 	local tuning = require("tuning")
@@ -53,8 +52,11 @@ local function do_patches(p)
 		end
 	end
 
-	if not p.settings then
-		p.settings = { preview_notes = true }
+	-- 0.1.1 -> 0.1.2
+	for _, ch in ipairs(p.channels) do
+		if not ch.gain then
+			ch.gain = 1.0
+		end
 	end
 end
 

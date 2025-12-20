@@ -243,18 +243,24 @@ function engine.end_time()
 	return t_end
 end
 
-local function send_mute_channel(ch, ch_index)
+local function send_channel_parameters(ch, ch_index)
 	local mute = ch.data.mute
 	if ch.mute_old ~= mute then
-		tessera.audio.send_mute_channel(ch_index, mute)
+		tessera.audio.send_channel_mute(ch_index, mute)
 		ch.mute_old = mute
+	end
+
+	local gain = ch.data.gain
+	if ch.gain_old ~= gain then
+		tessera.audio.send_channel_gain(ch_index, gain)
+		ch.gain_old = gain
 	end
 end
 
-local function send_mute_device(device, ch_index, device_index)
+local function send_device_mute(device, ch_index, device_index)
 	local mute = device.data.mute
 	if device.mute_old ~= mute then
-		tessera.audio.send_mute_device(ch_index, device_index, mute)
+		tessera.audio.send_device_mute(ch_index, device_index, mute)
 		device.mute_old = mute
 	end
 end
@@ -303,9 +309,9 @@ end
 
 function engine.send_parameters()
 	for ch_index, ch in ipairs(ui_channels) do
-		send_mute_channel(ch, ch_index)
+		send_channel_parameters(ch, ch_index)
 
-		send_mute_device(ch.instrument, ch_index, 0)
+		send_device_mute(ch.instrument, ch_index, 0)
 
 		for l in ipairs(ch.instrument.parameters) do
 			local new_value = ch.instrument.state[l]
@@ -318,7 +324,7 @@ function engine.send_parameters()
 		end
 
 		for fx_index, fx in ipairs(ch.effects) do
-			send_mute_device(fx, ch_index, fx_index)
+			send_device_mute(fx, ch_index, fx_index)
 
 			for l in ipairs(fx.parameters) do
 				local new_value = fx.state[l]
