@@ -98,7 +98,7 @@ end
 function tessera.load(test_run)
 	VERSION = tessera.version()
 
-	log.info("Tessera v" .. util.version_str(VERSION))
+	log.info("Tessera " .. util.version_str(VERSION))
 	if release then
 		log.info("Running in release mode")
 	else
@@ -176,7 +176,7 @@ function tessera.draw()
 	tessera.graphics.set_font_size(12)
 	tessera.graphics.set_color(theme.text_tip)
 	tessera.graphics.text(draw_time_l, 4, height - 15)
-	tessera.graphics.text("v" .. util.version_str(VERSION), width - 48, height - 15)
+	tessera.graphics.text(util.version_str(VERSION), width - 48, height - 15)
 
 	-- if modifier_keys.alt then
 	-- 	tessera.graphics.draw_debug_atlas()
