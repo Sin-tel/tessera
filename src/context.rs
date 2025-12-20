@@ -32,7 +32,7 @@ impl AudioContext {
 		device_name: &str,
 		buffer_size: Option<u32>,
 		lua_tx: SyncSender<LuaMessage>,
-	) -> Result<AudioContext> {
+	) -> Result<(AudioContext, usize)> {
 		let device = find_output_device(host_str, device_name)?;
 		let (config, format) = build_config(&device, buffer_size)?;
 		let sample_rate = config.sample_rate;
@@ -41,25 +41,32 @@ impl AudioContext {
 		let (scope_tx, scope_rx) = HeapRb::<f32>::new(2048).split();
 		let scope = Scope::new(scope_rx);
 
-		let render = Render::new(sample_rate as f32, audio_rx, lua_tx, scope_tx);
+		let mut meters = Meters::new();
+
+		let (meter_handle, meter_id) = meters.register();
+
+		let render = Render::new(sample_rate as f32, audio_rx, lua_tx, scope_tx, meter_handle);
 		let render = Arc::new(Mutex::new(render));
 
 		let (stream, stream_tx, error_rx) =
 			build_stream(&device, &config, format, Arc::clone(&render))?;
 
-		Ok(AudioContext {
-			stream: Some(stream),
-			device: Some(device),
-			audio_tx,
-			stream_tx,
-			error_rx,
-			render,
-			scope,
-			is_rendering: false,
-			sample_rate,
-			render_buffer: Vec::new(),
-			meters: Meters::new(),
-		})
+		Ok((
+			AudioContext {
+				stream: Some(stream),
+				device: Some(device),
+				audio_tx,
+				stream_tx,
+				error_rx,
+				render,
+				scope,
+				is_rendering: false,
+				sample_rate,
+				render_buffer: Vec::new(),
+				meters,
+			},
+			meter_id,
+		))
 	}
 
 	pub fn rebuild_stream(
@@ -129,8 +136,6 @@ pub enum AudioMessage {
 #[derive(Debug, Serialize)]
 #[serde(tag = "tag")]
 pub enum LuaMessage {
-	Cpu { load: f32 },
-	Meter { l: f32, r: f32 },
 	StreamSettings { buffer_size: usize, sample_rate: f32 },
 	Log { level: String, message: String },
 }

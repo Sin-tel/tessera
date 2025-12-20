@@ -1,5 +1,6 @@
 use std::f32::consts::*;
 
+pub mod atomic_float;
 pub mod delayline;
 pub mod env;
 pub mod onepole;

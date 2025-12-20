@@ -11,6 +11,10 @@ engine.render_end = 8
 engine.time = 0
 engine.frame_time = 0
 
+engine.meter_id = nil
+engine.meter_l = 0
+engine.meter_r = 0
+
 function engine.start()
 	engine.seek(project.transport.start_time)
 	engine.playing = true
@@ -148,9 +152,10 @@ function engine.setup_stream()
 	local device = setup.configs[host].device
 	local buffer_size = setup.configs[host].buffer_size
 	if device then
-		tessera.audio.setup(host, device, buffer_size)
+		engine.meter_id = tessera.audio.setup(host, device, buffer_size)
 	else
-		log.error("No device.")
+		engine.meter_id = nil
+		log.error("No device configured")
 	end
 end
 
@@ -166,7 +171,7 @@ function engine.rebuild_stream()
 		if device then
 			tessera.audio.rebuild(host, device, buffer_size)
 		else
-			log.error("No device.")
+			log.error("No device configured")
 			tessera.audio.quit()
 		end
 	else
@@ -181,12 +186,7 @@ function engine.parse_messages()
 		if msg == nil then
 			return
 		end
-		if msg.tag == "Cpu" then
-			workspace.cpu_load = msg.load
-		elseif msg.tag == "Meter" then
-			workspace.meter.l = msg.l
-			workspace.meter.r = msg.r
-		elseif msg.tag == "StreamSettings" then
+		if msg.tag == "StreamSettings" then
 			engine.buffer_size = msg.buffer_size
 			engine.sample_rate = msg.sample_rate
 		elseif msg.tag == "Log" then
@@ -271,7 +271,11 @@ local M_DECAY = 0.7
 
 function engine.update_meters()
 	local meters = tessera.audio.get_meters()
+
 	if not meters then
+		engine.meter_l = 0
+		engine.meter_r = 0
+
 		for _, ch in ipairs(ui_channels) do
 			ch.meter_l = 0
 			ch.meter_r = 0
@@ -283,6 +287,11 @@ function engine.update_meters()
 			end
 		end
 		return
+	end
+
+	if engine.meter_id then
+		engine.meter_l = meters[engine.meter_id][1]
+		engine.meter_r = meters[engine.meter_id][2]
 	end
 
 	for _, ch in ipairs(ui_channels) do

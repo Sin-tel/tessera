@@ -51,23 +51,6 @@ tessera.graphics.set_color = function(t)
 	tessera.graphics.set_color_f(unpack(t))
 end
 
-local function init_setup()
-	-- if setup is not properly configured, populate it with defaults
-	local hosts = tessera.audio.get_hosts()
-	for _, host in ipairs(hosts) do
-		if not setup.configs[host] then
-			setup.configs[host] = {}
-		end
-		if not setup.configs[host].device then
-			setup.configs[host].device = tessera.audio.get_default_output_device(host)
-		end
-	end
-
-	if not setup.host then
-		setup.host = tessera.audio.get_default_host()
-	end
-end
-
 local function audio_setup()
 	if not tessera.audio.ok() then
 		engine.setup_stream()
@@ -109,7 +92,7 @@ function tessera.load(test_run)
 	math.randomseed(os.time())
 
 	setup = save.read_setup()
-	init_setup()
+	save.init_setup()
 
 	tuning.load()
 
