@@ -138,7 +138,7 @@ impl Instrument for Epiano {
 		br.copy_from_slice(bl);
 	}
 
-	fn pitch(&mut self, _pres: f32, _id: usize) {}
+	fn pitch(&mut self, _pitch: f32, _id: usize) {}
 	fn pressure(&mut self, _pressure: f32, _id: usize) {}
 
 	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {

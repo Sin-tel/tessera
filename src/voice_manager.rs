@@ -71,7 +71,7 @@ impl VoiceManager {
 		self.queue.iter().position(|v| v.token == token)
 	}
 
-	pub fn note_on(&mut self, token: Token, pitch: f32, vel: f32) {
+	pub fn note_on(&mut self, token: Token, pitch: f32, offset: f32, vel: f32) {
 		if self.mute {
 			return;
 		}
@@ -113,7 +113,7 @@ impl VoiceManager {
 		let voice = Voice::new(token, pitch, vel);
 		self.voices[target_i] = voice;
 
-		self.instrument.note_on(pitch, vel, target_i);
+		self.instrument.note_on(pitch + offset, vel, target_i);
 	}
 
 	pub fn note_off(&mut self, token: Token) {

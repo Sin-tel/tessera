@@ -120,7 +120,7 @@ impl Drop for AudioContext {
 pub enum AudioMessage {
 	Panic,
 	AllNotesOff,
-	NoteOn(usize, Token, f32, f32),
+	NoteOn(usize, Token, f32, f32, f32),
 	NoteOff(usize, Token),
 	Pitch(usize, Token, f32),
 	Pressure(usize, Token, f32),

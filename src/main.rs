@@ -18,7 +18,6 @@ use tessera::api::icon::load_icons;
 use tessera::api::image::load_images;
 use tessera::api::keycodes::keycode_to_str;
 use tessera::app::State;
-use tessera::app::spawn_update_check;
 use tessera::audio;
 use tessera::embed::Script;
 use tessera::log::*;
@@ -104,7 +103,8 @@ fn run() -> Result<(), Box<dyn Error>> {
 
 	lua.set_app_data(state);
 
-	spawn_update_check();
+	#[cfg(not(debug_assertions))]
+	tessera::app::spawn_update_check();
 
 	do_main(&lua)?;
 	load_images(&lua)?;
