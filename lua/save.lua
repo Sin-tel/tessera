@@ -114,4 +114,21 @@ function save.read_setup()
 	return new_setup
 end
 
+function save.init_setup()
+	-- if setup is not properly configured, populate it with defaults
+	local hosts = tessera.audio.get_hosts()
+	for _, host in ipairs(hosts) do
+		if not setup.configs[host] then
+			setup.configs[host] = {}
+		end
+		if not setup.configs[host].device then
+			setup.configs[host].device = tessera.audio.get_default_output_device(host)
+		end
+	end
+
+	if not setup.host then
+		setup.host = tessera.audio.get_default_host()
+	end
+end
+
 return save

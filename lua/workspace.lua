@@ -1,6 +1,7 @@
 local Box = require("box")
 local Menu = require("menu")
 local Ui = require("ui/ui")
+local engine = require("engine")
 local views = require("views")
 
 local workspace = {}
@@ -20,9 +21,6 @@ function workspace:load()
 	self.tab_current = 1
 	self.tab_hover = nil
 	self.menu_hover = nil
-
-	self.cpu_load = 0
-	self.meter = { l = 0, r = 0 }
 
 	self.tabs = {}
 
@@ -167,9 +165,10 @@ function workspace:draw()
 	end
 
 	-- CPU meter
-	local ll = util.clamp(self.cpu_load, 0.01, 1)
+	local cpu_load = tessera.audio.get_cpu_load()
+	local ll = util.clamp(cpu_load, 0.01, 1)
 	local hl_col = theme.cpu_meter
-	if self.cpu_load > 1.0 then
+	if cpu_load > 1.0 then
 		hl_col = theme.warning
 	end
 
@@ -188,7 +187,7 @@ function workspace:draw()
 	tessera.graphics.set_color(theme.ui_text)
 	local cpu_label = "offline"
 	if tessera.audio.ok() then
-		cpu_label = string.format("%d %%", 100 * self.cpu_load)
+		cpu_label = string.format("%d %%", 100 * cpu_load)
 	end
 	tessera.graphics.label(cpu_label, x1, 0, w1, Ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_CENTER)
 	tessera.graphics.label("CPU: ", x1 - w1, 0, w1, Ui.RIBBON_HEIGHT, tessera.graphics.ALIGN_RIGHT)
@@ -200,8 +199,8 @@ function workspace:draw()
 	y1 = 0.5 * (Ui.RIBBON_HEIGHT - h1)
 	x1 = self.w - Ui.scale(224) - y1
 
-	local ml = self.meter.l
-	local mr = self.meter.r
+	local ml = engine.meter_l
+	local mr = engine.meter_r
 
 	local wl = util.clamp((util.to_dB(ml) + 80) / 80, 0, 1)
 	local wr = util.clamp((util.to_dB(mr) + 80) / 80, 0, 1)

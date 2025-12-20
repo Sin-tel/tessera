@@ -1,18 +1,18 @@
+use crate::dsp::atomic_float::AtomicFloat;
 use crate::log_info;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU32, Ordering};
 
 // A simple bump allocator for shared atomic floats
 
 const PAGE_SIZE: usize = 64;
 
 struct Page {
-	data: [[AtomicU32; 2]; PAGE_SIZE],
+	data: [[AtomicFloat; 2]; PAGE_SIZE],
 }
 
 impl Page {
 	fn new() -> Self {
-		Self { data: std::array::from_fn(|_| [AtomicU32::new(0), AtomicU32::new(0)]) }
+		Self { data: std::array::from_fn(|_| [AtomicFloat::new(), AtomicFloat::new()]) }
 	}
 }
 
@@ -26,8 +26,8 @@ pub struct MeterHandle {
 impl MeterHandle {
 	pub fn set(&self, value: [f32; 2]) {
 		let [l, r] = &self.page.data[self.slot_index];
-		l.store(value[0].to_bits(), Ordering::Relaxed);
-		r.store(value[1].to_bits(), Ordering::Relaxed);
+		l.store(value[0]);
+		r.store(value[1]);
 	}
 }
 
@@ -70,17 +70,13 @@ impl Meters {
 
 		for page in pages {
 			for [l, r] in &page.data {
-				result.push([load(l), load(r)]);
+				result.push([l.load(), r.load()]);
 			}
 		}
 		// only send filled portion of last page
 		for [l, r] in &last_page.data[..self.slot_index] {
-			result.push([load(l), load(r)]);
+			result.push([l.load(), r.load()]);
 		}
 		result
 	}
-}
-
-fn load(x: &AtomicU32) -> f32 {
-	f32::from_bits(x.load(Ordering::Relaxed))
 }

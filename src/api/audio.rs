@@ -1,5 +1,6 @@
 use crate::app::State;
 use crate::audio;
+use crate::audio::CPU_LOAD;
 use crate::audio::{
 	check_architecture, get_default_host, get_default_output_device, get_hosts, get_output_devices,
 	open_control_panel,
@@ -48,18 +49,17 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				}
 
 				let state = &mut *lua.app_data_mut::<State>().unwrap();
-
 				let lua_tx = state.lua_tx.clone();
 
 				match AudioContext::new(&host_name, &device_name, buffer_size, lua_tx) {
-					Ok(ctx) => {
+					Ok((ctx, meter_id)) => {
 						state.audio = Some(ctx);
-						Ok(())
+						Ok(Some(meter_id + 1))
 					},
 					Err(e) => {
 						log_error!("{e}");
 						state.audio = None;
-						Ok(())
+						Ok(None)
 					},
 				}
 			},
@@ -357,6 +357,8 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 			}
 		})?,
 	)?;
+
+	audio.set("get_cpu_load", lua.create_function(|_, ()| Ok(CPU_LOAD.load()))?)?;
 
 	audio.set(
 		"render_block",

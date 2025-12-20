@@ -16,6 +16,7 @@ use std::str::FromStr;
 use std::sync::{Arc, atomic, atomic::AtomicBool};
 
 use crate::context::{ErrorMessage, LuaMessage};
+use crate::dsp::atomic_float::AtomicFloat;
 use crate::dsp::env::AttackRelease;
 use crate::log::*;
 use crate::render::Render;
@@ -25,6 +26,8 @@ use crate::render::Render;
 static A: AllocDisabler = AllocDisabler;
 
 pub static AUDIO_PANIC: AtomicBool = AtomicBool::new(false);
+
+pub static CPU_LOAD: AtomicFloat = AtomicFloat::new();
 
 pub const MAX_BUF_SIZE: usize = 64;
 pub const SPECTRUM_SIZE: usize = 4096;
@@ -326,7 +329,7 @@ where
 							t.as_secs_f64() / (buffer_size as f64 / f64::from(render.sample_rate));
 						cpu_load.set(p as f32);
 						let load = cpu_load.process();
-						render.send(LuaMessage::Cpu { load });
+						CPU_LOAD.store(load);
 					},
 					_ => {
 						// Output silence as a fallback when lock fails.

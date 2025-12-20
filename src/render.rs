@@ -21,6 +21,7 @@ pub struct Render {
 
 	peak_l: AttackRelease,
 	peak_r: AttackRelease,
+	meter_handle: MeterHandle,
 }
 
 impl Render {
@@ -29,6 +30,7 @@ impl Render {
 		audio_rx: HeapCons<AudioMessage>,
 		lua_tx: SyncSender<LuaMessage>,
 		scope_tx: HeapProd<f32>,
+		meter_handle: MeterHandle,
 	) -> Render {
 		Render {
 			audio_rx,
@@ -39,6 +41,7 @@ impl Render {
 			sample_rate,
 			peak_l: AttackRelease::new_direct(0.5, 0.05),
 			peak_r: AttackRelease::new_direct(0.5, 0.05),
+			meter_handle,
 		}
 	}
 
@@ -104,7 +107,7 @@ impl Render {
 
 		let peak_l = self.peak_l.process();
 		let peak_r = self.peak_r.process();
-		self.send(LuaMessage::Meter { l: peak_l, r: peak_r });
+		self.meter_handle.set([peak_l, peak_r]);
 
 		// Send everything to scope.
 		for s in buffer_out[0].iter() {
