@@ -1,6 +1,6 @@
 use crate::api::project::Project;
 use crate::audio::AUDIO_PANIC;
-use crate::context::AudioContext;
+use crate::context::{AudioContext, LuaMessage};
 use crate::log::*;
 use crate::midi;
 use crate::opengl::Renderer;
@@ -9,6 +9,7 @@ use crate::voice_manager::Token;
 use femtovg::{Canvas, Color, ImageId, Path};
 use semver::Version;
 use std::path::PathBuf;
+use std::sync::mpsc::{Receiver, SyncSender};
 use std::sync::{LazyLock, OnceLock, RwLock, atomic::Ordering, mpsc};
 use std::time::Instant;
 use winit::window::Window;
@@ -41,11 +42,19 @@ pub struct State {
 	pub dialog_rx: Option<mpsc::Receiver<Option<PathBuf>>>,
 	pub midi_session: Option<midir::MidiInput>,
 	pub midi_connections: Vec<midi::Connection>,
+	pub lua_tx: SyncSender<LuaMessage>,
+	pub lua_rx: Receiver<LuaMessage>,
 	token: Token,
 }
 
 impl State {
-	pub fn new(canvas: Canvas<Renderer>, window: Window, scale_factor: f32) -> Self {
+	pub fn new(
+		canvas: Canvas<Renderer>,
+		window: Window,
+		lua_tx: SyncSender<LuaMessage>,
+		lua_rx: Receiver<LuaMessage>,
+		scale_factor: f32,
+	) -> Self {
 		State {
 			current_color: Color::white(),
 			mouse_position: (0., 0.),
@@ -69,12 +78,14 @@ impl State {
 			dialog_rx: None,
 			midi_session: None,
 			midi_connections: Vec::new(),
+			lua_tx,
+			lua_rx,
 		}
 	}
 
 	pub fn check_audio_status(&mut self) {
 		if self.audio.is_some() && AUDIO_PANIC.load(Ordering::Relaxed) {
-			log_warn!("Killing backend!");
+			log_warn!("Audio shut down");
 			AUDIO_PANIC.store(false, Ordering::Relaxed);
 			self.audio = None;
 		}

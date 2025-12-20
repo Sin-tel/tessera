@@ -9,10 +9,11 @@ use crate::meters::MeterHandle;
 use crate::voice_manager::VoiceManager;
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd};
+use std::sync::mpsc::SyncSender;
 
 pub struct Render {
 	audio_rx: HeapCons<AudioMessage>,
-	lua_tx: HeapProd<LuaMessage>,
+	lua_tx: SyncSender<LuaMessage>,
 	scope_tx: HeapProd<f32>,
 	channels: Vec<Channel>,
 	buffer: [[f32; MAX_BUF_SIZE]; 2],
@@ -26,7 +27,7 @@ impl Render {
 	pub fn new(
 		sample_rate: f32,
 		audio_rx: HeapCons<AudioMessage>,
-		lua_tx: HeapProd<LuaMessage>,
+		lua_tx: SyncSender<LuaMessage>,
 		scope_tx: HeapProd<f32>,
 	) -> Render {
 		Render {
@@ -42,7 +43,7 @@ impl Render {
 	}
 
 	pub fn send(&mut self, m: LuaMessage) {
-		self.lua_tx.try_push(m).ok();
+		let _ = self.lua_tx.try_send(m).is_err();
 	}
 
 	pub fn insert_channel(
@@ -108,7 +109,7 @@ impl Render {
 		// Send everything to scope.
 		for s in buffer_out[0].iter() {
 			// Don't really care if it's full
-			self.scope_tx.try_push(*s).ok();
+			let _ = self.scope_tx.try_push(*s);
 		}
 
 		// hardclip

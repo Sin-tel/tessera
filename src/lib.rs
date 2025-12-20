@@ -25,7 +25,7 @@
 
 pub mod audio;
 mod channel;
-mod context;
+pub mod context;
 mod effect;
 pub mod embed;
 mod instrument;

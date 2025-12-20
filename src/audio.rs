@@ -230,8 +230,6 @@ pub fn build_stream(
 	// immediately start the stream
 	stream.play()?;
 
-	log_info!("Stream set up succesfully!");
-
 	Ok((stream, stream_tx, error_rx))
 }
 

@@ -4,6 +4,7 @@ use femtovg::Color;
 use mlua::prelude::*;
 use std::error::Error;
 use std::fs;
+use std::sync::mpsc;
 use std::time::{Duration, Instant};
 use winit::application::ApplicationHandler;
 use winit::event::DeviceId;
@@ -19,6 +20,7 @@ use tessera::api::image::load_images;
 use tessera::api::keycodes::keycode_to_str;
 use tessera::app::State;
 use tessera::audio;
+use tessera::context::LuaMessage;
 use tessera::embed::Script;
 use tessera::log::*;
 use tessera::midi;
@@ -41,7 +43,6 @@ fn wrap_call<T: IntoLuaMulti>(status: &mut Status, lua_fn: &LuaFunction, args: T
 fn main() -> Result<(), Box<dyn Error>> {
 	// Make sure output folder exists before we do anything
 	fs::create_dir_all("./out")?;
-	init_logging();
 
 	if std::env::args().any(|arg| arg == "--test-run") {
 		test_run()?;
@@ -63,6 +64,9 @@ fn do_main(lua: &Lua) -> Result<(), Box<dyn Error>> {
 
 fn test_run() -> Result<(), Box<dyn Error>> {
 	// Basic checks for CI without initializing any graphics or audio
+
+	let (lua_tx, _lua_rx) = mpsc::sync_channel::<LuaMessage>(256);
+	init_logging(lua_tx.clone());
 
 	let lua = create_lua(1.0)?;
 
@@ -93,13 +97,16 @@ fn test_run() -> Result<(), Box<dyn Error>> {
 }
 
 fn run() -> Result<(), Box<dyn Error>> {
+	let (lua_tx, lua_rx) = mpsc::sync_channel::<LuaMessage>(256);
+	init_logging(lua_tx.clone());
+
 	let (canvas, event_loop, surface, window) = setup_window();
 
 	// We check scale factor before loading lua, and assume it doesn't change for simplicity
 	let scale_factor = window.scale_factor();
 
 	let lua = create_lua(scale_factor)?;
-	let state = State::new(canvas, window, scale_factor as f32);
+	let state = State::new(canvas, window, lua_tx, lua_rx, scale_factor as f32);
 
 	lua.set_app_data(state);
 

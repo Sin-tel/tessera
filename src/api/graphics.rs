@@ -300,6 +300,27 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 	)?;
 
 	graphics.set(
+		"text_wrapped",
+		lua.create_function(|lua, (text, x, y, w, h): (String, f32, f32, f32, f32)| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			let paint = Paint::color(state.current_color);
+			let rect = Rect(x, y, w, h);
+
+			state.text_engine.draw_text_wrapped(
+				&mut state.canvas,
+				&text,
+				rect,
+				&paint,
+				state.font,
+				state.font_size,
+			);
+
+			Ok(())
+		})?,
+	)?;
+
+	graphics.set(
 		"measure_width",
 		lua.create_function(|lua, text: String| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
