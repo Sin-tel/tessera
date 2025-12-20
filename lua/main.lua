@@ -23,6 +23,7 @@ setup = {}
 project = {}
 ui_channels = {}
 
+local Ui = require("ui.ui")
 local build = require("build")
 local engine = require("engine")
 local file = require("file")
@@ -132,6 +133,7 @@ function tessera.update(dt)
 	elseif audio_status == "running" then
 		midi.update(dt)
 		engine.update(dt)
+		log.update(dt)
 	end
 end
 
@@ -170,13 +172,23 @@ function tessera.draw()
 	workspace:draw()
 
 	-- status bar
-	local draw_time = (tessera.get_time() - t_start) * 1000
-	draw_time_s = draw_time_s + 0.1 * (draw_time - draw_time_s)
-	local draw_time_l = string.format("%04.1f", draw_time_s)
-	tessera.graphics.set_font_size(12)
+
+	tessera.graphics.set_font_size()
+	local fh = Ui.scale(16)
+	if log.last_message then
+		tessera.graphics.set_color(theme.warning)
+		tessera.graphics.text(log.last_message, 8, height - fh)
+	elseif not release then
+		local draw_time = (tessera.get_time() - t_start) * 1000
+		draw_time_s = draw_time_s + 0.1 * (draw_time - draw_time_s)
+		local draw_time_l = string.format("%04.1f", draw_time_s)
+
+		tessera.graphics.set_color(theme.text_tip)
+		tessera.graphics.text(draw_time_l, 8, height - fh)
+	end
+
 	tessera.graphics.set_color(theme.text_tip)
-	tessera.graphics.text(draw_time_l, 4, height - 15)
-	tessera.graphics.text(util.version_str(VERSION), width - 48, height - 15)
+	tessera.graphics.text(util.version_str(VERSION), width - 48, height - fh)
 
 	-- if modifier_keys.alt then
 	-- 	tessera.graphics.draw_debug_atlas()
@@ -360,12 +372,7 @@ function tessera.draw_error(msg)
 	tessera.graphics.set_font_main()
 
 	local x, y = 80, 80
-	for line in msg:gmatch("([^\n]*)\n?") do
-		y = y + 24
-		tessera.graphics.text(line, x, y)
-	end
+	local w, h = width - 160, height - 160
 
-	y = y + 10
-	tessera.graphics.set_font_size(16)
-	tessera.graphics.text("Press escape to exit.", x, y)
+	tessera.graphics.text_wrapped(msg .. "\n\nPress escape to exit.", x, y, w, h)
 end

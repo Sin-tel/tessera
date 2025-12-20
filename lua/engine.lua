@@ -190,7 +190,7 @@ function engine.parse_messages()
 			engine.buffer_size = msg.buffer_size
 			engine.sample_rate = msg.sample_rate
 		elseif msg.tag == "Log" then
-			log.append(log.format(msg.level, msg.message))
+			log.append(msg.level, msg.message)
 		else
 			log.warn("unhandled message:")
 			log.warn(util.dump(msg))

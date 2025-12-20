@@ -85,7 +85,7 @@ impl State {
 
 	pub fn check_audio_status(&mut self) {
 		if self.audio.is_some() && AUDIO_PANIC.load(Ordering::Relaxed) {
-			log_warn!("Audio shut down");
+			log_info!("Audio shut down");
 			AUDIO_PANIC.store(false, Ordering::Relaxed);
 			self.audio = None;
 		}
