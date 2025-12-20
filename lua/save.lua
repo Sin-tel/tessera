@@ -28,15 +28,6 @@ function save.write(filename)
 	save.set_save_location(filename)
 end
 
-local function is_compatible(a, b)
-	-- note: unlike semver, we don't have a special case for 0.x.y
-	if a.MAJOR == b.MAJOR and a.MINOR == b.MINOR then
-		return true
-	end
-
-	return false
-end
-
 local function do_patches(p)
 	-- patch any issues with save files here when they come up
 
@@ -66,12 +57,11 @@ end
 
 function save.read(filename)
 	if not util.file_exists(filename) then
-		log.warn('could not find "' .. filename .. '"')
-
+		log.warn('Could not find "' .. filename .. '"')
 		return false
 	end
 
-	log.info('loading project "' .. filename .. '"')
+	log.info('Loading project "' .. filename .. '"')
 
 	local content = util.readfile(filename)
 	local new_project = setfenv(loadstring(content), {})()
@@ -79,13 +69,8 @@ function save.read(filename)
 	-- we will check versions, but only emit a warning
 	local current_v = util.version_str(VERSION)
 	local project_v = util.version_str(new_project.VERSION)
-	if not is_compatible(VERSION, new_project.VERSION) then
-		log.error(
-			"Save file was created with version "
-				.. project_v
-				.. " which is incompatible with current version "
-				.. current_v
-		)
+	if not util.version_compatible(VERSION, new_project.VERSION) then
+		log.error("Save file was created with " .. project_v .. " which is incompatible with " .. current_v)
 		return
 	end
 
@@ -111,7 +96,7 @@ function save.read_setup()
 		local new_setup = setfenv(loadstring(content), {})()
 
 		local new_v = util.version_str(new_setup.VERSION)
-		if is_compatible(VERSION, new_setup.VERSION) then
+		if util.version_compatible(VERSION, new_setup.VERSION) then
 			log.info("Loaded setup.lua")
 			return new_setup
 		else
