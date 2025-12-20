@@ -107,12 +107,6 @@ impl AudioContext {
 	}
 }
 
-impl Drop for AudioContext {
-	fn drop(&mut self) {
-		log_info!("Audio thread finished");
-	}
-}
-
 // Message struct to pass to audio thread
 // Should not contain any boxed values
 #[derive(Debug)]

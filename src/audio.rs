@@ -92,8 +92,6 @@ pub fn find_output_device(host_str: &str, device_name: &str) -> Result<Device> {
 	let host_id = HostId::from_str(host_str)?;
 	let host = cpal::host_from_id(host_id)?;
 
-	log_info!("Using host: {}", host.id().name());
-
 	let mut output_device = None;
 
 	for device in host.output_devices()? {
@@ -109,7 +107,7 @@ pub fn find_output_device(host_str: &str, device_name: &str) -> Result<Device> {
 
 	let description = output_device.description()?;
 	let name = description.name();
-	log_info!("Using output device: \"{name}\"");
+	log_info!("Host: \"{}\", output device: \"{}\"", host.id().name(), name);
 
 	Ok(output_device)
 }
