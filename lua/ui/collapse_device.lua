@@ -69,7 +69,7 @@ function CollapseDevice:draw(x, y, w, h)
 	tessera.graphics.set_font_size()
 
 	-- draw meter
-	local r = 0.2 * Ui.ROW_HEIGHT
+	local r = 0.25 * Ui.ROW_HEIGHT
 
 	local ml = self.device.meter_l
 	local mr = self.device.meter_r

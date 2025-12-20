@@ -29,22 +29,33 @@ end
 function Channels:update()
 	self.ui:start_frame()
 	self.ui.layout:padding()
-	self.ui.layout:col(self.w * 0.33)
-
+	self.ui.layout:col(Ui.scale(120))
 	if self.dropdown:update(self.ui) then
 		workspace:set_overlay(self:menu())
 	end
 
-	self.ui.layout:padding(0)
 	if self.add_instrument_index then
 		local key = self.intrument_list[self.add_instrument_index][2]
 		command.run_and_register(command.NewChannel.new(key))
 		self.add_instrument_index = nil
 	end
+	self.ui.layout:new_row()
 
-	for i, v in ipairs(ui_channels) do
-		v.widget:update(self.ui, i)
+	for i, ch in ipairs(ui_channels) do
+		-- background has a frame delay since we have to layout first
+		local bg_color = theme.background
+		if self.hover == ch then
+			bg_color = theme.bg_highlight
+		end
+		if selection.ch_index == i then
+			bg_color = theme.bg_focus
+		end
+		if ch:update(self.ui, i, bg_color, self.w) then
+			selection.ch_index = i
+		end
 	end
+	-- remember for next frame
+	self.hover = self.ui.hover
 
 	self.ui:end_frame()
 end

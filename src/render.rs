@@ -168,8 +168,9 @@ impl Render {
 						ch.effects[device_index - 1].effect.set_parameter(index, val);
 					}
 				},
-				MuteChannel(ch_index, mute) => self.channels[ch_index].set_mute(mute),
-				MuteDevice(ch_index, device_index, mute) => {
+				ChannelMute(ch_index, mute) => self.channels[ch_index].set_mute(mute),
+				ChannelGain(ch_index, gain) => self.channels[ch_index].set_gain(gain),
+				DeviceMute(ch_index, device_index, mute) => {
 					let ch = &mut self.channels[ch_index];
 					if device_index == 0
 						&& let Some(instrument) = &mut ch.instrument

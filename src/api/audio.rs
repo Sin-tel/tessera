@@ -198,20 +198,30 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	audio.set(
-		"send_mute_channel",
+		"send_channel_mute",
 		lua.create_function(|lua, (channel_index, mute): (usize, bool)| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				ctx.send_message(AudioMessage::MuteChannel(channel_index - 1, mute));
+				ctx.send_message(AudioMessage::ChannelMute(channel_index - 1, mute));
 			}
 			Ok(())
 		})?,
 	)?;
 
 	audio.set(
-		"send_mute_device",
+		"send_channel_gain",
+		lua.create_function(|lua, (channel_index, gain): (usize, f32)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_message(AudioMessage::ChannelGain(channel_index - 1, gain));
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"send_device_mute",
 		lua.create_function(|lua, (channel_index, device_index, mute): (usize, usize, bool)| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				ctx.send_message(AudioMessage::MuteDevice(channel_index - 1, device_index, mute));
+				ctx.send_message(AudioMessage::DeviceMute(channel_index - 1, device_index, mute));
 			}
 			Ok(())
 		})?,

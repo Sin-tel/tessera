@@ -1,4 +1,6 @@
-local widgets = require("ui/widgets")
+local Ui = require("ui.ui")
+local widgets = require("ui.widgets")
+
 local Device = {}
 Device.__index = Device
 
@@ -51,8 +53,9 @@ function Device.new(data, options, meter_id)
 	return self
 end
 
-function Device:update(ui, index, w, w_label)
-	local start_x, start_y = ui.layout.x, ui.layout.y
+function Device:update(ui, index, w)
+	local start_x, start_y = ui.layout.start_x, ui.layout.y
+	local w_label = util.clamp(w * 0.4 - 64, 0, Ui.PARAMETER_LABEL_WIDTH)
 
 	ui:background()
 	if selection.device_index == index then
@@ -65,11 +68,10 @@ function Device:update(ui, index, w, w_label)
 			if v.label then
 				ui:label(v.label, tessera.graphics.ALIGN_RIGHT)
 			end
-			ui.layout:col(w - w_label) -- max
+			ui.layout:col(w - w_label)
 			v.widget:update(ui)
 			ui.layout:new_row()
 		end
-		ui:background()
 	end
 
 	-- detect hit anywhere inside of the device

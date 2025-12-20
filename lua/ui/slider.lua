@@ -27,7 +27,7 @@ function Slider:update(ui)
 	local value
 	local commit = false
 
-	if mouse.button_pressed == 3 and hit then
+	if (mouse.button_pressed == 3 or ui.double_click) and hit then
 		if self.target[self.key] ~= self.value.default then
 			if self.no_undo then
 				self.target[self.key] = self.value.default

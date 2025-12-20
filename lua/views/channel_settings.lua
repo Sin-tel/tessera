@@ -28,23 +28,20 @@ end
 
 function ChannelSettings:update()
 	self.ui:start_frame()
-	self.ui.layout:col(self.w * 0.33)
+	self.ui.layout:col(Ui.scale(120))
 
 	if self.dropdown:update(self.ui) then
 		workspace:set_overlay(self:menu())
 	end
 
-	-- TODO: should calculate this in device instead
-	local w_label = util.clamp(self.w * 0.4 - 64, 0, Ui.PARAMETER_LABEL_WIDTH)
-
 	if selection.ch_index then
 		local ch = ui_channels[selection.ch_index]
-		if ch.instrument:update(self.ui, 0, self.w, w_label) then
+		if ch.instrument:update(self.ui, 0, self.w) then
 			selection.device_index = 0
 		end
 
 		for i, v in ipairs(ch.effects) do
-			if v:update(self.ui, i, self.w, w_label) then
+			if v:update(self.ui, i, self.w) then
 				selection.device_index = i
 			end
 		end

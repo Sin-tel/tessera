@@ -55,8 +55,8 @@ function Layout:new_row()
 end
 
 function Layout:row(w, h)
-	self.w = w or self.w
-	self.h = h or self.h
+	w = w or self.w
+	h = h or self.h
 
 	-- if we just did columns we need to start a new row
 	if self.column_mode then
@@ -69,11 +69,11 @@ function Layout:row(w, h)
 
 	self.next_x = x + self.pad
 	self.next_y = y + self.pad
-	self.next_w = self.w - 2 * self.pad
-	self.next_h = self.h - 2 * self.pad
+	self.next_w = w - 2 * self.pad
+	self.next_h = h - 2 * self.pad
 
 	self.row_y = y
-	self.row_h = self.h
+	self.row_h = h
 
 	self.column_mode = false
 	self.ok = true

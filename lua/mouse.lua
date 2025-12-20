@@ -11,7 +11,7 @@ function mouse:load()
 
 	self.timer = 10000
 
-	self.double = false
+	self.double_click = false
 	self.drag = false
 	self.relative = false
 
@@ -57,10 +57,10 @@ function mouse:released(x, y, button)
 		self.is_down = false
 
 		-- double click detect
-		self.double = false
+		self.double_click = false
 		local new_timer = tessera.get_time()
 		if new_timer - self.timer < DOUBLE_CLICK_TIME and self.pbutton == button then
-			self.double = true
+			self.double_click = true
 		end
 		self.pbutton = button
 		self.timer = new_timer

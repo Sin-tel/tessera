@@ -74,8 +74,7 @@ function build.channel(ch_index, channel_data)
 	local meter_id_channel, meter_id_instrument = tessera.audio.insert_channel(ch_index, channel_data.instrument.name)
 
 	local instrument = Device.new(channel_data.instrument, options, meter_id_instrument)
-	local widget = widgets.Channel.new()
-	local channel = Channel.new(ch_index, channel_data, instrument, widget, meter_id_channel)
+	local channel = Channel.new(ch_index, channel_data, instrument, meter_id_channel)
 	table.insert(ui_channels, ch_index, channel)
 
 	for i, v in ipairs(channel_data.effects) do
