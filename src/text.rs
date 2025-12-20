@@ -288,36 +288,29 @@ impl TextEngine {
 	) {
 		let Rect(x, y, w, h) = rect;
 		let line_height = font_size;
-
-		let metrics = Metrics::new(font_size, line_height);
-		self.scratch_buffer.set_metrics(&mut self.font_system, metrics);
-		self.scratch_buffer.set_size(&mut self.font_system, Some(w), Some(h));
-
 		let attrs = Attrs::new().family(Family::Name(font.as_str()));
+		let metrics = Metrics::new(font_size, line_height);
 
-		self.scratch_buffer
-			.set_text(&mut self.font_system, text, &attrs, SHAPING, align);
-		self.scratch_buffer.set_wrap(&mut self.font_system, Wrap::None);
+		let mut buffer = self.scratch_buffer.borrow_with(&mut self.font_system);
 
-		self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
+		buffer.set_metrics(metrics);
+		buffer.set_size(Some(w), Some(h));
+		buffer.set_text(text, &attrs, SHAPING, align);
+		buffer.set_wrap(Wrap::None);
+
+		buffer.shape_until_scroll(false);
 
 		// center within box height
 		let y_offset = 0.5 * (h - font_size);
 
 		// Since we don't wrap, there's only a single run.
-		let line_w = self.scratch_buffer.layout_runs().next().unwrap().line_w;
+		let line_w = buffer.layout_runs().next().unwrap().line_w;
 
 		if line_w > w {
 			// Measure the width of "..."
-			// self.scratch_buffer.set_text(
-			// 	&mut self.font_system,
-			// 	"...",
-			// 	&attrs,
-			// 	SHAPING,
-			// 	align,
-			// );
-			// self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
-			// let dots_width = self.scratch_buffer.layout_runs().next().unwrap().line_w;
+			// buffer.set_text("...", &attrs, SHAPING, align);
+			// buffer.shape_until_scroll(false);
+			// let dots_width = buffer.layout_runs().next().unwrap().line_w;
 
 			const DOTS_WIDTH: f32 = 11.3;
 
@@ -328,16 +321,10 @@ impl TextEngine {
 				return;
 			}
 
-			// self.scratch_buffer.set_text(
-			// 	&mut self.font_system,
-			// 	text,
-			// 	&attrs,
-			// 	SHAPING,
-			// 	align,
-			// );
-			// self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
+			// buffer.set_text(text, &attrs, SHAPING, align);
+			// buffer.shape_until_scroll(false);
 
-			let run = self.scratch_buffer.layout_runs().next().unwrap();
+			let run = buffer.layout_runs().next().unwrap();
 			let mut index = 0;
 			let mut end_x = 0.;
 
@@ -354,9 +341,8 @@ impl TextEngine {
 			let mut truncated = text[0..index].to_string();
 			truncated.push_str("...");
 
-			self.scratch_buffer
-				.set_text(&mut self.font_system, &truncated, &attrs, SHAPING, align);
-			self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
+			buffer.set_text(&truncated, &attrs, SHAPING, align);
+			buffer.shape_until_scroll(false);
 		}
 
 		// Draw
@@ -391,17 +377,17 @@ impl TextEngine {
 		font_size: f32,
 	) {
 		let line_height = font_size;
-
 		let metrics = Metrics::new(font_size, line_height);
-		self.scratch_buffer.set_metrics(&mut self.font_system, metrics);
-
 		let attrs = Attrs::new().family(Family::Name(font.as_str()));
 
-		self.scratch_buffer
-			.set_text(&mut self.font_system, text, &attrs, SHAPING, None);
-		self.scratch_buffer.set_wrap(&mut self.font_system, Wrap::None);
+		let mut buffer = self.scratch_buffer.borrow_with(&mut self.font_system);
 
-		self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
+		buffer.set_metrics(metrics);
+		buffer.set_size(None, None);
+		buffer.set_text(text, &attrs, SHAPING, None);
+		buffer.set_wrap(Wrap::None);
+
+		buffer.shape_until_scroll(false);
 
 		// Draw
 		let cmds = self.glyph_cache.fill_to_cmds(
@@ -425,38 +411,25 @@ impl TextEngine {
 	) {
 		let Rect(x, y, w, h) = rect;
 		let line_height = font_size * 1.5;
-
 		let metrics = Metrics::new(font_size, line_height);
-		self.scratch_buffer.set_metrics(&mut self.font_system, metrics);
-
 		let attrs = Attrs::new().family(Family::Name(font.as_str()));
 
-		self.scratch_buffer.set_text(
-			&mut self.font_system,
-			text,
-			&attrs,
-			SHAPING,
-			Some(Align::Left),
-		);
+		let mut buffer = self.scratch_buffer.borrow_with(&mut self.font_system);
 
-		self.scratch_buffer.set_size(&mut self.font_system, Some(w), Some(h));
-		self.scratch_buffer.set_wrap(&mut self.font_system, Wrap::Word);
-
-		// self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
+		buffer.set_metrics(metrics);
+		buffer.set_size(Some(w), Some(h));
+		buffer.set_wrap(Wrap::Word);
+		buffer.set_text(text, &attrs, SHAPING, Some(Align::Left));
 
 		// Go to end
 		let mut cursor = Cursor::new(0, 0);
-		if let Some((new_cursor, _)) = self.scratch_buffer.cursor_motion(
-			&mut self.font_system,
-			Cursor::new(0, 0),
-			None,
-			Motion::BufferEnd,
-		) {
+		if let Some((new_cursor, _)) =
+			buffer.cursor_motion(Cursor::new(0, 0), None, Motion::BufferEnd)
+		{
 			cursor = new_cursor;
 		}
 
-		self.scratch_buffer
-			.shape_until_cursor(&mut self.font_system, cursor, false);
+		buffer.shape_until_cursor(cursor, false);
 
 		// Draw
 		let cmds = self.glyph_cache.fill_to_cmds(
@@ -471,18 +444,15 @@ impl TextEngine {
 
 	pub fn measure_width(&mut self, text: &str, font: Font, font_size: f32) -> f32 {
 		let line_height = font_size;
-
 		let metrics = Metrics::new(font_size, line_height);
-		self.scratch_buffer.set_metrics(&mut self.font_system, metrics);
-
 		let attrs = Attrs::new().family(Family::Name(font.as_str()));
 
-		self.scratch_buffer
-			.set_text(&mut self.font_system, text, &attrs, SHAPING, None);
+		let mut buffer = self.scratch_buffer.borrow_with(&mut self.font_system);
 
-		self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
-
-		self.scratch_buffer.layout_runs().next().unwrap().line_w
+		buffer.set_metrics(metrics);
+		buffer.set_text(text, &attrs, SHAPING, None);
+		buffer.shape_until_scroll(false);
+		buffer.layout_runs().next().unwrap().line_w
 	}
 
 	pub fn draw_debug_atlas(&self, canvas: &mut Canvas<Renderer>) {
