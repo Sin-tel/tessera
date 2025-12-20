@@ -15,13 +15,13 @@ function note_input:keypressed(key)
 	if ch_index then
 		for i, v in ipairs(self.diatonic_row) do
 			if v == key then
-				local p = tuning.from_diatonic(i, octave)
+				local interval = tuning.from_diatonic(i, octave)
 				local token = tessera.audio.get_token()
 				key_down[i] = token
 				ui_channels[ch_index]:event({
 					name = "note_on",
 					token = token,
-					pitch = p,
+					interval = interval,
 					vel = DEFAULT_VELOCITY,
 					offset = 0,
 				})

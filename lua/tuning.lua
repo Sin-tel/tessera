@@ -114,7 +114,7 @@ function tuning.load()
 	-- tuning.fine_table = tuning.generate_scale(19, 7)
 end
 
-function tuning.new_note()
+function tuning.new_interval()
 	local new = {}
 	for i = 1, tuning.rank do
 		new[i] = 0
@@ -130,7 +130,7 @@ function tuning.from_diatonic(n, add_octave)
 	n = n - oct * s
 	local dia = tuning.diatonic_table[n]
 
-	local new = tuning.new_note()
+	local new = tuning.new_interval()
 	new[1] = dia[1] + oct + add_octave
 	new[2] = dia[2]
 
@@ -144,7 +144,7 @@ function tuning.from_midi(n)
 	n = n - oct * s
 	local dia = tuning.chromatic_table[n + 1]
 
-	local new = tuning.new_note()
+	local new = tuning.new_interval()
 	new[1] = dia[1] + oct - 5
 	new[2] = dia[2]
 
@@ -158,7 +158,7 @@ function tuning.from_fine(n, add_octave)
 	n = n - oct * s
 	local f = tuning.fine_table[n]
 
-	local new = tuning.new_note()
+	local new = tuning.new_interval()
 	new[1] = f[1] + oct + add_octave
 	new[2] = f[2]
 
@@ -171,6 +171,7 @@ function tuning.get_pitch(p)
 end
 
 function tuning.get_relative_pitch(p)
+	assert(p)
 	local f = 0
 	for i, v in ipairs(p) do
 		f = f + v * (tuning.generators[i] or 0)

@@ -200,10 +200,10 @@ function MidiDevice:event(sink, event)
 		local token = tessera.audio.get_token()
 		self.notes[n_index] = token
 
-		local pitch = tuning.from_midi(event.note)
+		local interval = tuning.from_midi(event.note)
 		local offset = self.offsets[event.channel]
 
-		sink:event({ name = "note_on", token = token, pitch = pitch, vel = event.vel, offset = offset })
+		sink:event({ name = "note_on", token = token, interval = interval, vel = event.vel, offset = offset })
 	elseif event.name == "note_off" then
 		local n_index = event_note_index(event)
 		local token = self.notes[n_index]

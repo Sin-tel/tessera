@@ -39,7 +39,7 @@ function select_rect:mousereleased(canvas)
 
 				if x_end >= bx1 and x_start <= bx2 then
 					-- narrow phase, do a line-box intersection for each segment
-					local base_pitch = tuning.get_pitch(note.pitch)
+					local base_pitch = tuning.get_pitch(note.interval)
 
 					local x1 = canvas.transform:time(t_start)
 					local y1 = canvas.transform:pitch(base_pitch + note.verts[1][2])

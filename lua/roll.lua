@@ -102,7 +102,7 @@ function Roll:playback(channel)
 		channel:send_event({
 			name = "note_on",
 			token = token,
-			pitch = note.pitch,
+			interval = note.interval,
 			vel = note.vel,
 			offset = note.verts[1][2],
 		})
@@ -144,7 +144,7 @@ function Roll:event(event)
 
 		if event.name == "note_on" then
 			local note = {
-				pitch = event.pitch,
+				interval = event.interval,
 				time = time,
 				vel = event.vel,
 				-- TODO: initial pressure?
