@@ -75,13 +75,13 @@ function TestPadView:mousepressed()
 	if (mouse.button == 1 or mouse.button == 2) and ch_index then
 		self.token = tessera.audio.get_token()
 		local vel = self.v
-		local note = tuning.from_midi(self.chromatic)
-		self.pitch = tuning.get_pitch(note)
+		local interval = tuning.from_midi(self.chromatic)
+		self.pitch = tuning.get_pitch(interval)
 
 		ui_channels[ch_index]:event({
 			name = "note_on",
 			token = self.token,
-			pitch = note,
+			interval = interval,
 			vel = vel,
 			offset = self.f - self.pitch,
 		})

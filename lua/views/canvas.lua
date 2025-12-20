@@ -103,7 +103,7 @@ function Canvas:draw_channel(ch, w_scale)
 
 	for _, note in ipairs(ch.notes) do
 		local t_start = note.time
-		local p_start = tuning.get_pitch(note.pitch)
+		local p_start = tuning.get_pitch(note.interval)
 		local x0 = self.transform:time(t_start)
 		local y0 = self.transform:pitch(p_start)
 
@@ -176,7 +176,7 @@ function Canvas:draw_channel(ch, w_scale)
 			-- note names
 			if self.transform.sy < -20 then
 				tessera.graphics.set_color(c)
-				local note_name = tuning.get_name(note.pitch)
+				local note_name = tuning.get_name(note.interval)
 				tessera.graphics.text(note_name, x0 + 5, y0t - 20)
 			end
 		end
@@ -394,7 +394,7 @@ function Canvas:keypressed(key)
 	if move_up then
 		local prev_state = util.clone(selection.list)
 
-		local delta = tuning.new_note()
+		local delta = tuning.new_interval()
 
 		if modifier_keys.shift then
 			delta = tuning.mul(tuning.octave, move_up)
@@ -407,23 +407,23 @@ function Canvas:keypressed(key)
 			-- TODO: once there's a more sophisticated key system, query that
 			local d_min = math.huge
 			local base = nil
-			for _, v in ipairs(selection.list) do
-				local n = tuning.get_diatonic_index(v.pitch)
+			for _, note in ipairs(selection.list) do
+				local n = tuning.get_diatonic_index(note.interval)
 				if n < d_min then
 					d_min = n
-					base = v
+					base = note
 				end
 			end
 
 			if base then
-				local n = tuning.get_diatonic_index(base.pitch)
+				local n = tuning.get_diatonic_index(base.interval)
 				local p_origin = tuning.from_diatonic(n)
 				delta = tuning.from_diatonic(n + move_up)
 				delta = tuning.sub(delta, p_origin)
 			end
 		end
 		for _, v in ipairs(selection.list) do
-			v.pitch = tuning.add(v.pitch, delta)
+			v.interval = tuning.add(v.interval, delta)
 		end
 
 		command.register(command.NoteUpdate.new(prev_state, selection.list))
@@ -452,7 +452,7 @@ end
 function Canvas:dist_sq_note(note, mx, my)
 	local d_max = math.huge
 
-	local base_pitch = tuning.get_pitch(note.pitch)
+	local base_pitch = tuning.get_pitch(note.interval)
 	local t_start = note.time
 
 	-- Calculate first point
@@ -528,16 +528,16 @@ function Canvas:find_closest_end(mx, my, max_distance)
 	local dmax = max_distance or math.huge
 	for ch_index, channel in ipairs(project.channels) do
 		if channel.visible and not channel.lock then
-			for _, v in ipairs(channel.notes) do
-				local t_end = v.time + v.verts[#v.verts][1]
-				local p_end = tuning.get_pitch(v.pitch) + v.verts[#v.verts][2]
+			for _, note in ipairs(channel.notes) do
+				local t_end = note.time + note.verts[#note.verts][1]
+				local p_end = tuning.get_pitch(note.interval) + note.verts[#note.verts][2]
 				local x0 = self.transform:time(t_end)
 				local y0 = self.transform:pitch(p_end)
 
 				local d = util.dist(x0, y0, mx, my)
 				if d < dmax then
 					dmax = d
-					closest = v
+					closest = note
 					closest_ch = ch_index
 				end
 			end

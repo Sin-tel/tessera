@@ -40,22 +40,26 @@ end
 local function do_patches(p)
 	-- patch any issues with save files here when they come up
 
+	-- 0.1.1 -> 0.1.2
+	for _, ch in ipairs(p.channels) do
+		if not ch.gain then
+			ch.gain = 1.0
+		end
+		for _, note in ipairs(ch.notes) do
+			note.interval = note.pitch
+			note.pitch = nil
+		end
+	end
+
 	-- fix projects with different rank
 	local tuning = require("tuning")
 	for _, ch in ipairs(p.channels) do
 		for _, note in ipairs(ch.notes) do
 			for i = 1, tuning.rank do
-				if not note.pitch[i] then
-					note.pitch[i] = 0
+				if not note.interval[i] then
+					note.interval[i] = 0
 				end
 			end
-		end
-	end
-
-	-- 0.1.1 -> 0.1.2
-	for _, ch in ipairs(p.channels) do
-		if not ch.gain then
-			ch.gain = 1.0
 		end
 	end
 end

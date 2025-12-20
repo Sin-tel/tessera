@@ -66,25 +66,24 @@ function drag:mousedown(canvas)
 	local p_origin
 	local delta
 	if not modifier_keys.alt then
-		-- Get pitch location in local frame
-		local n = tuning.get_diatonic_index(self.note_origin.pitch)
+		-- Get interval location in local frame
+		local n = tuning.get_diatonic_index(self.note_origin.interval)
 
-		-- Calculate base pitch offset
+		-- Calculate base interval offset
 		local steps = math.floor(y * (7 / 12) + 0.5)
 		p_origin = tuning.from_diatonic(n)
 		delta = tuning.from_diatonic(n + steps)
 	else
-		local n = tuning.get_fine_index(self.note_origin.pitch)
+		local n = tuning.get_fine_index(self.note_origin.interval)
 		local steps = math.floor(y * (31 / 12) + 0.5)
 		p_origin = tuning.from_fine(n)
 		delta = tuning.from_fine(n + steps)
 	end
 	delta = tuning.sub(delta, p_origin)
 
-	-- Update pitch and time
+	-- Update interval and time
 	for i, v in ipairs(selection.list) do
-		v.pitch = tuning.add(self.prev_state[i].pitch, delta)
-
+		v.interval = tuning.add(self.prev_state[i].interval, delta)
 		v.time = self.prev_state[i].time + x
 	end
 end

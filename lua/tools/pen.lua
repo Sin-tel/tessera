@@ -15,11 +15,11 @@ local pen = {}
 pen.ox = 0
 pen.oy = 0
 
-pen.pitch = tuning.new_note()
+pen.interval = tuning.new_interval()
 
 -- TODO: better rounding logic
 -- TODO: query current local grid
-local function get_pitch(canvas, my)
+local function get_interval(canvas, my)
 	local f = canvas.transform:pitch_inv(my)
 	local chromatic = math.floor(f + 0.5)
 	return tuning.from_midi(chromatic)
@@ -45,7 +45,7 @@ function pen:mousepressed(canvas)
 		self.t1 = canvas.transform:time_inv(self.ox)
 		self.t2 = self.t1 + initial_length
 
-		self.pitch = get_pitch(canvas, my)
+		self.interval = get_interval(canvas, my)
 
 		self.active = true
 
@@ -55,7 +55,7 @@ function pen:mousepressed(canvas)
 			ui_channels[selection.ch_index]:send_event({
 				name = "note_on",
 				token = self.token,
-				pitch = self.pitch,
+				interval = self.interval,
 				vel = DEFAULT_VELOCITY,
 				offset = 0,
 			})
@@ -71,13 +71,13 @@ function pen:mousedown(canvas)
 	if mouse.drag then
 		local mx, my = canvas:get_mouse()
 		self.t2 = canvas.transform:time_inv(mx)
-		local new_pitch = get_pitch(canvas, my)
+		local new_interval = get_interval(canvas, my)
 
 		if project.settings.preview_notes then
-			-- trigger a new note if pitch dragged
-			if not tuning.eq(new_pitch, self.pitch) then
+			-- trigger a new note if dragged
+			if not tuning.eq(new_interval, self.interval) then
 				if project.settings.preview_notes then
-					self.pitch = new_pitch
+					self.interval = new_interval
 					assert(self.token)
 					ui_channels[selection.ch_index]:send_event({
 						name = "note_off",
@@ -88,21 +88,21 @@ function pen:mousedown(canvas)
 					ui_channels[selection.ch_index]:send_event({
 						name = "note_on",
 						token = self.token,
-						pitch = self.pitch,
+						interval = self.interval,
 						vel = DEFAULT_VELOCITY,
 						offset = 0,
 					})
 				end
 			end
 		else
-			self.pitch = new_pitch
+			self.interval = new_interval
 		end
 	end
 end
 
 function pen:update(canvas)
 	local _, my = canvas:get_mouse()
-	self.pitch = get_pitch(canvas, my)
+	self.interval = get_interval(canvas, my)
 end
 
 function pen:mousereleased(canvas)
@@ -121,7 +121,7 @@ function pen:mousereleased(canvas)
 	local t2 = math.max(self.t1, self.t2)
 
 	local note = {
-		pitch = self.pitch,
+		interval = self.interval,
 		time = t1,
 		vel = vel,
 		verts = { { 0.0, offset, pressure }, { t2 - t1, offset, pressure } },
@@ -146,7 +146,7 @@ end
 function pen:draw(canvas)
 	local mx, my = canvas:get_mouse()
 
-	local p = tuning.get_pitch(self.pitch)
+	local p = tuning.get_pitch(self.interval)
 	local y = canvas.transform:pitch(p)
 
 	local lx, ly = mx, my
@@ -157,7 +157,7 @@ function pen:draw(canvas)
 
 	-- draw note label
 	tessera.graphics.set_color(theme.text_tip)
-	local note_name = tuning.get_name(self.pitch)
+	local note_name = tuning.get_name(self.interval)
 	tessera.graphics.text(note_name, lx + 5, ly - 20)
 
 	-- draw note preview
