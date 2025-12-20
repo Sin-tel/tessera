@@ -53,7 +53,9 @@ function workspace:load()
 
 	--- settings
 	local settings = Tab.new("Settings")
-	settings.box:set_view(views.Settings.new())
+	local s_left, s_right = settings.box:split(0.8, false)
+	s_left:set_view(views.Settings.new())
+	s_right:set_view(views.Log.new())
 
 	table.insert(self.tabs, settings)
 

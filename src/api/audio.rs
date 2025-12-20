@@ -48,7 +48,10 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				}
 
 				let state = &mut *lua.app_data_mut::<State>().unwrap();
-				match AudioContext::new(&host_name, &device_name, buffer_size) {
+
+				let lua_tx = state.lua_tx.clone();
+
+				match AudioContext::new(&host_name, &device_name, buffer_size, lua_tx) {
 					Ok(ctx) => {
 						state.audio = Some(ctx);
 						Ok(())
@@ -433,20 +436,6 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				ctx.scope.update();
 			}
 			Ok(())
-		})?,
-	)?;
-
-	audio.set(
-		"pop",
-		lua.create_function(|lua, ()| {
-			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				match ctx.lua_rx.try_pop() {
-					Some(p) => Ok(Some(lua.to_value(&p)?)),
-					None => Ok(None),
-				}
-			} else {
-				Ok(None)
-			}
 		})?,
 	)?;
 

@@ -3,8 +3,8 @@ use crate::log_info;
 use crate::opengl::Renderer;
 use cosmic_text::fontdb;
 use cosmic_text::{
-	Align, Attrs, Buffer, CacheKey, Fallback, Family, FontSystem, Metrics, Shaping, SubpixelBin,
-	SwashCache, Wrap,
+	Align, Attrs, Buffer, CacheKey, Cursor, Fallback, Family, FontSystem, Metrics, Motion, Shaping,
+	SubpixelBin, SwashCache, Wrap,
 };
 use femtovg::imgref::{Img, ImgRef};
 use femtovg::rgb::RGBA8;
@@ -138,7 +138,9 @@ impl RenderCache {
 								)
 								.unwrap();
 							let texture_index = self.glyph_textures.len();
-							log_info!("Allocating font atlas {}", texture_index);
+							if texture_index > 0 {
+								log_info!("Allocating font atlas {}", texture_index);
+							}
 							let (x, y) = atlas.add_rect(content_w, content_h).unwrap();
 							self.glyph_textures.push(FontTexture { atlas, image_id });
 							(texture_index, x, y)
@@ -295,6 +297,7 @@ impl TextEngine {
 
 		self.scratch_buffer
 			.set_text(&mut self.font_system, text, &attrs, SHAPING, align);
+		self.scratch_buffer.set_wrap(&mut self.font_system, Wrap::None);
 
 		self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
 
@@ -396,8 +399,64 @@ impl TextEngine {
 
 		self.scratch_buffer
 			.set_text(&mut self.font_system, text, &attrs, SHAPING, None);
+		self.scratch_buffer.set_wrap(&mut self.font_system, Wrap::None);
 
 		self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
+
+		// Draw
+		let cmds = self.glyph_cache.fill_to_cmds(
+			&mut self.font_system,
+			canvas,
+			&self.scratch_buffer,
+			(x, y),
+			GlyphStyle::Normal,
+		);
+		canvas.draw_glyph_commands(cmds, paint);
+	}
+
+	pub fn draw_text_wrapped(
+		&mut self,
+		canvas: &mut Canvas<Renderer>,
+		text: &str,
+		rect: Rect,
+		paint: &Paint,
+		font: Font,
+		font_size: f32,
+	) {
+		let Rect(x, y, w, h) = rect;
+		let line_height = font_size * 1.5;
+
+		let metrics = Metrics::new(font_size, line_height);
+		self.scratch_buffer.set_metrics(&mut self.font_system, metrics);
+
+		let attrs = Attrs::new().family(Family::Name(font.as_str()));
+
+		self.scratch_buffer.set_text(
+			&mut self.font_system,
+			text,
+			&attrs,
+			SHAPING,
+			Some(Align::Left),
+		);
+
+		self.scratch_buffer.set_size(&mut self.font_system, Some(w), Some(h));
+		self.scratch_buffer.set_wrap(&mut self.font_system, Wrap::Word);
+
+		// self.scratch_buffer.shape_until_scroll(&mut self.font_system, false);
+
+		// Go to end
+		let mut cursor = Cursor::new(0, 0);
+		if let Some((new_cursor, _)) = self.scratch_buffer.cursor_motion(
+			&mut self.font_system,
+			Cursor::new(0, 0),
+			None,
+			Motion::BufferEnd,
+		) {
+			cursor = new_cursor;
+		}
+
+		self.scratch_buffer
+			.shape_until_cursor(&mut self.font_system, cursor, false);
 
 		// Draw
 		let cmds = self.glyph_cache.fill_to_cmds(

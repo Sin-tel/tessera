@@ -71,7 +71,7 @@ pub fn connect(port_name: &str) -> Option<Connection> {
 
 				match connect_result {
 					Ok(connection) => {
-						log_info!("Succesfully opened midi port \"{name}\".");
+						log_info!("Opened midi port \"{name}\".");
 						return Some(Connection { connection, midi_rx, name });
 					},
 					Err(err) => {

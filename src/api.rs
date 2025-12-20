@@ -98,6 +98,18 @@ pub fn create_lua(scale_factor: f64) -> LuaResult<Lua> {
 		})?,
 	)?;
 
+	//tessera.pop_message()
+	tessera.set(
+		"pop_message",
+		lua.create_function(|lua, ()| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			match state.lua_rx.try_recv() {
+				Ok(p) => Ok(Some(lua.to_value(&p)?)),
+				Err(_) => Ok(None),
+			}
+		})?,
+	)?;
+
 	// tessera.sleep(time)
 	tessera.set(
 		"sleep",

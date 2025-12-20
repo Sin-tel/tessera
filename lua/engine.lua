@@ -177,7 +177,7 @@ end
 -- update UI with messages from tessera.audio
 function engine.parse_messages()
 	while true do
-		local msg = tessera.audio.pop()
+		local msg = tessera.pop_message()
 		if msg == nil then
 			return
 		end
@@ -189,6 +189,8 @@ function engine.parse_messages()
 		elseif msg.tag == "StreamSettings" then
 			engine.buffer_size = msg.buffer_size
 			engine.sample_rate = msg.sample_rate
+		elseif msg.tag == "Log" then
+			log.append(log.format(msg.level, msg.message))
 		else
 			log.warn("unhandled message:")
 			log.warn(util.dump(msg))
@@ -216,7 +218,7 @@ end
 function engine.flush_messages()
 	-- TODO: probably better to do this on the backend just before we rebuild stream
 	while true do
-		local msg = tessera.audio.pop()
+		local msg = tessera.pop_message()
 		if msg == nil then
 			break
 		end

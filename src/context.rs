@@ -10,6 +10,7 @@ use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd, HeapRb};
 use serde::Serialize;
 use std::sync::Arc;
+use std::sync::mpsc::SyncSender;
 
 pub struct AudioContext {
 	pub stream: Option<cpal::Stream>,
@@ -17,7 +18,6 @@ pub struct AudioContext {
 	pub audio_tx: HeapProd<AudioMessage>,
 	pub stream_tx: HeapProd<bool>,
 	pub error_rx: HeapCons<ErrorMessage>,
-	pub lua_rx: HeapCons<LuaMessage>,
 	pub render: Arc<Mutex<Render>>,
 	pub scope: Scope,
 	pub is_rendering: bool,
@@ -31,13 +31,13 @@ impl AudioContext {
 		host_str: &str,
 		device_name: &str,
 		buffer_size: Option<u32>,
+		lua_tx: SyncSender<LuaMessage>,
 	) -> Result<AudioContext> {
 		let device = find_output_device(host_str, device_name)?;
 		let (config, format) = build_config(&device, buffer_size)?;
 		let sample_rate = config.sample_rate;
 
 		let (audio_tx, audio_rx) = HeapRb::<AudioMessage>::new(1024).split();
-		let (lua_tx, lua_rx) = HeapRb::<LuaMessage>::new(256).split();
 		let (scope_tx, scope_rx) = HeapRb::<f32>::new(2048).split();
 		let scope = Scope::new(scope_rx);
 
@@ -53,7 +53,6 @@ impl AudioContext {
 			audio_tx,
 			stream_tx,
 			error_rx,
-			lua_rx,
 			render,
 			scope,
 			is_rendering: false,
@@ -110,7 +109,7 @@ impl AudioContext {
 
 impl Drop for AudioContext {
 	fn drop(&mut self) {
-		log_info!("Stream dropped");
+		log_info!("Audio thread finished");
 	}
 }
 
@@ -139,6 +138,7 @@ pub enum LuaMessage {
 	Cpu { load: f32 },
 	Meter { l: f32, r: f32 },
 	StreamSettings { buffer_size: usize, sample_rate: f32 },
+	Log { level: String, message: String },
 }
 
 #[derive(Debug, Serialize)]
