@@ -51,8 +51,10 @@ impl Channel {
 				assert!(samples <= MAX_BUF_SIZE);
 				for i in 0..samples {
 					let gain = self.gain.process();
-					buffer_out[0][i] += buffer_in[0][i] * gain;
-					buffer_out[1][i] += buffer_in[1][i] * gain;
+					buffer_in[0][i] *= gain;
+					buffer_in[1][i] *= gain;
+					buffer_out[0][i] += buffer_in[0][i];
+					buffer_out[1][i] += buffer_in[1][i];
 				}
 
 				let peak = dsp::peak(buffer_in);
@@ -67,8 +69,10 @@ impl Channel {
 				for i in 0..samples {
 					self.value += self.smoothing_f * (target - self.value);
 					let gain = self.value * self.gain.process();
-					buffer_out[0][i] += buffer_in[0][i] * gain;
-					buffer_out[1][i] += buffer_in[1][i] * gain;
+					buffer_in[0][i] *= gain;
+					buffer_in[1][i] *= gain;
+					buffer_out[0][i] += buffer_in[0][i];
+					buffer_out[1][i] += buffer_in[1][i];
 				}
 
 				let peak = dsp::peak(buffer_in);

@@ -73,7 +73,7 @@ sudo apt install libjack-dev
 
 ## note datastructure:
 pitch: {
-    pitch: table,
+    interval: array of harmonic coordinates
     time: float, // start_time
     velocity: float,
     verts: list of vert

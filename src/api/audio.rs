@@ -148,9 +148,15 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	audio.set(
 		"note_on",
 		lua.create_function(
-			|lua, (channel_index, pitch, vel, token): (usize, f32, f32, Token)| {
+			|lua, (channel_index, pitch, offset, vel, token): (usize, f32, f32, f32, Token)| {
 				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-					ctx.send_message(AudioMessage::NoteOn(channel_index - 1, token, pitch, vel));
+					ctx.send_message(AudioMessage::NoteOn(
+						channel_index - 1,
+						token,
+						pitch,
+						offset,
+						vel,
+					));
 				}
 				Ok(())
 			},

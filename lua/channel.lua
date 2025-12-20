@@ -190,8 +190,7 @@ function Channel:send_event(event)
 	if event.name == "note_on" then
 		local pitch = tuning.get_pitch(event.interval)
 		local v_curve = util.velocity_curve(event.vel)
-		tessera.audio.note_on(self.ch_index, pitch, v_curve, token)
-		tessera.audio.pitch(self.ch_index, event.offset, token)
+		tessera.audio.note_on(self.ch_index, pitch, event.offset, v_curve, token)
 	elseif event.name == "note_off" then
 		tessera.audio.note_off(self.ch_index, token)
 	elseif event.name == "pitch" then
