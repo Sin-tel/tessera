@@ -7,7 +7,6 @@ use crate::effect::*;
 
 // TODO: store previous sample eval of antiderivative
 // TODO: Delay compensation in dry path
-// TODO: Oversampling does not actually seem to improve quality?
 
 #[derive(Debug)]
 pub struct Drive {
