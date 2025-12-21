@@ -114,7 +114,8 @@ end
 -- set dB at halfway point
 -- 12 or 18 is good
 local curve_param = -18 / math.log(0.5)
-
+-- TODO: simplify: this is just a power law!
+-- halfway 18dB ~ x^3
 function util.curve_dB(x, max)
 	return util.from_dB(curve_param * math.log(x) + (max or 0))
 end
@@ -150,8 +151,10 @@ function util.meter_color(x, darken)
 		assert(x >= 0)
 		local v = 0.7
 		if darken then
-			local x_log = math.max((util.to_dB(x) + 60) / 60, 0)
+			-- local x_log = math.max((util.to_dB(x) + 60) / 60, 0)
+			local x_log = x ^ 0.25
 			v = 0.9 * x_log
+			v = util.clamp(v, 0, 1)
 		end
 		return tessera.graphics.get_color_hsv((140 - 110 * x * x) / 360, 0.7, v)
 	end
