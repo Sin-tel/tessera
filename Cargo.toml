@@ -12,23 +12,14 @@ fpu_traps = []
 doctest = false
 
 # Pull in the right cpal features depending on platform
-# [target.'cfg(target_os = "windows")'.dependencies]
-# cpal = { version = "0.16", features = ["asio"], git = "https://github.com/RustAudio/cpal.git", rev = "54e0b76677ed8c9c7f1f1dfc9de05f104278444c" }
-# [target.'cfg(target_os = "macos")'.dependencies]
-# cpal = { version = "0.16", git = "https://github.com/RustAudio/cpal.git", rev = "54e0b76677ed8c9c7f1f1dfc9de05f104278444c" }
-# [target.'cfg(target_os = "linux")'.dependencies]
-# cpal = { version = "0.16", features = ["jack"], git = "https://github.com/RustAudio/cpal.git", rev = "54e0b76677ed8c9c7f1f1dfc9de05f104278444c" }
-
-
 [target.'cfg(target_os = "windows")'.dependencies]
-cpal = { version = "0.16", features = ["asio"], git = "https://github.com/sin-tel/cpal.git", rev = "0171ea979fc5e9d7aaac4a93e4b70e8e5e898df3" }
+cpal = { version = "0.17", features = ["asio"], git = "https://github.com/sin-tel/cpal.git", rev = "e0a61fd3f732f9aa2c9296b6bb831f50e6abac9e" }
 [target.'cfg(target_os = "macos")'.dependencies]
-cpal = { version = "0.16", git = "https://github.com/sin-tel/cpal.git", rev = "0171ea979fc5e9d7aaac4a93e4b70e8e5e898df3" }
+cpal = { version = "0.17", git = "https://github.com/sin-tel/cpal.git", rev = "e0a61fd3f732f9aa2c9296b6bb831f50e6abac9e" }
 [target.'cfg(target_os = "linux")'.dependencies]
-cpal = { version = "0.16", features = ["jack"], git = "https://github.com/sin-tel/cpal.git", rev = "0171ea979fc5e9d7aaac4a93e4b70e8e5e898df3" }
+cpal = { version = "0.17", features = ["jack"], git = "https://github.com/sin-tel/cpal.git", rev = "e0a61fd3f732f9aa2c9296b6bb831f50e6abac9e" }
 
 [dependencies]
-# cpal = { version = "0.16", features = ["asio"], path = "../cpal_proj/cpal" }
 assert_no_alloc = {version = "1.1", features = ["warn_debug"]}
 no_denormals = "0.3"
 ringbuf = "0.4"
