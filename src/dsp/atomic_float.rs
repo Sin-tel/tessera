@@ -4,7 +4,7 @@ pub struct AtomicFloat(AtomicU32);
 
 impl AtomicFloat {
 	pub const fn new() -> Self {
-		return Self(AtomicU32::new(0));
+		Self(AtomicU32::new(0))
 	}
 	pub fn load(&self) -> f32 {
 		f32::from_bits(self.0.load(Ordering::Relaxed))

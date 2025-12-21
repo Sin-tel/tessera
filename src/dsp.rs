@@ -185,11 +185,11 @@ pub struct PeakMeter {
 
 impl PeakMeter {
 	pub fn new(sample_rate: f32) -> Self {
-		return Self {
+		Self {
 			// Since we update once per block, effective sample rate is sample_rate / block_size
 			l: AttackRelease::new(1., 400.0, sample_rate / (MAX_BUF_SIZE as f32)),
 			r: AttackRelease::new(1., 400.0, sample_rate / (MAX_BUF_SIZE as f32)),
-		};
+		}
 	}
 
 	pub fn process_block(&mut self, buffer: &[&mut [f32]; 2]) -> [f32; 2] {

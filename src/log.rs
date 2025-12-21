@@ -45,7 +45,7 @@ pub struct GuiLogger {
 
 impl GuiLogger {
 	pub fn new(level_filter: LevelFilter, sender: SyncSender<LuaMessage>) -> Box<Self> {
-		Box::new(Self { level_filter, sender })
+		Box::new(Self { sender, level_filter })
 	}
 }
 
