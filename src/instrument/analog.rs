@@ -1,9 +1,10 @@
 use fastrand::Rng;
+use halfband::iir::design::compute_coefs_tbw;
+use halfband::iir::{Downsampler, Upsampler};
 use std::f32::consts::PI;
 
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::env::*;
-use crate::dsp::resample_fir::{Downsampler, Downsampler31, Upsampler, Upsampler19};
 use crate::dsp::skf::{FilterMode, Skf};
 use crate::dsp::smooth::Smooth;
 use crate::dsp::*;
@@ -25,8 +26,8 @@ pub struct Analog {
 	z: f32,
 	rng: Rng,
 	filter: Skf,
-	upsampler: Upsampler19,
-	downsampler: Downsampler31,
+	upsampler: Upsampler<4>,
+	downsampler: Downsampler<4>,
 	dc_killer: DcKiller,
 	envelope: Adsr,
 	note_on: bool,
@@ -49,6 +50,10 @@ pub struct Analog {
 
 impl Instrument for Analog {
 	fn new(sample_rate: f32) -> Self {
+		let coefs = compute_coefs_tbw(8, 0.0343747);
+		let upsampler = Upsampler::new(&coefs);
+		let downsampler = Downsampler::new(&coefs);
+
 		Self {
 			freq: Smooth::new(0.01, 8.0, sample_rate),
 			gate: Smooth::new(0., 2.0, sample_rate),
@@ -58,8 +63,8 @@ impl Instrument for Analog {
 			filter: Skf::new(2.0 * sample_rate),
 			dc_killer: DcKiller::new(sample_rate),
 			accum: 0.,
-			upsampler: Upsampler::default(),
-			downsampler: Downsampler::default(),
+			upsampler,
+			downsampler,
 			buf_up: [0.0; MAX_BUF_SIZE * 2],
 			z: 0.,
 			rng: Rng::new(),
