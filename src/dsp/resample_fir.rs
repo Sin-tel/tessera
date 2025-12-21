@@ -84,7 +84,7 @@ impl<const N: usize> Downsampler<N> {
 			})
 			.sum::<f32>();
 
-		let s2 = self.buf1[self.pos + 1 - (N as isize)];
+		let s2 = self.buf2[self.pos - (N as isize)];
 		0.5 * (s1 + s2)
 	}
 
