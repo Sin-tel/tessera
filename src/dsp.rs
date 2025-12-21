@@ -6,7 +6,6 @@ pub mod atomic_float;
 pub mod delayline;
 pub mod env;
 pub mod onepole;
-pub mod resample_fir;
 pub mod simper;
 pub mod skf;
 pub mod smooth;

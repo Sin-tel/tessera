@@ -1,9 +1,10 @@
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::onepole::OnePole;
-use crate::dsp::resample_fir::{Downsampler, Downsampler51, Upsampler, Upsampler19};
 use crate::dsp::smooth::SmoothBuffer;
 use crate::dsp::*;
 use crate::effect::*;
+use halfband::iir::design::compute_coefs_tbw;
+use halfband::iir::{Downsampler, Upsampler};
 
 // TODO: store previous sample eval of antiderivative
 // TODO: Delay compensation in dry path
@@ -23,8 +24,8 @@ pub struct Drive {
 #[derive(Debug)]
 struct Track {
 	prev: f32,
-	upsampler: Upsampler19,
-	downsampler: Downsampler51,
+	upsampler: Upsampler<4>,
+	downsampler: Downsampler<4>,
 	dc_killer: DcKiller,
 	pre_filter: OnePole,
 	post_filter: OnePole,
@@ -33,10 +34,14 @@ struct Track {
 
 impl Track {
 	fn new(sample_rate: f32) -> Self {
+		let coefs = compute_coefs_tbw(8, 0.0343747);
+		let upsampler = Upsampler::new(&coefs);
+		let downsampler = Downsampler::new(&coefs);
+
 		Self {
 			prev: 0.,
-			upsampler: Upsampler::default(),
-			downsampler: Downsampler::default(),
+			upsampler,
+			downsampler,
 			dc_killer: DcKiller::new(sample_rate),
 			pre_filter: OnePole::new(sample_rate),
 			post_filter: OnePole::new(sample_rate),
@@ -82,25 +87,25 @@ impl Effect for Drive {
 			if self.hard {
 				for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
 					for sample in buf.iter_mut() {
-						let (u1, u2) = track.upsampler.process(*sample);
+						let [u1, u2] = track.upsampler.process_sample(*sample);
 
 						let res1 = adaa_hard(u1, track.prev);
 						let res2 = adaa_hard(u2, u1);
 						track.prev = u2;
 
-						*sample = track.downsampler.process(res1, res2);
+						*sample = track.downsampler.process_sample(res1, res2);
 					}
 				}
 			} else {
 				for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
 					for sample in buf.iter_mut() {
-						let (u1, u2) = track.upsampler.process(*sample);
+						let [u1, u2] = track.upsampler.process_sample(*sample);
 
 						let res1 = adaa_soft(u1, track.prev);
 						let res2 = adaa_soft(u2, u1);
 						track.prev = u2;
 
-						*sample = track.downsampler.process(res1, res2);
+						*sample = track.downsampler.process_sample(res1, res2);
 					}
 				}
 			}

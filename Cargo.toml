@@ -41,6 +41,7 @@ fft-convolver = "0.3"
 hound = "3.5"
 midir = "0.10"
 num-complex = "0.4"
+halfband = "0.1"
 
 standard_log = { package = "log", version = "0.4" }
 simplelog = "0.12"
