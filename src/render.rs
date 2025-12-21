@@ -1,8 +1,7 @@
 use crate::audio::MAX_BUF_SIZE;
 use crate::channel::Channel;
 use crate::context::{AudioMessage, LuaMessage};
-use crate::dsp;
-use crate::dsp::env::AttackRelease;
+use crate::dsp::PeakMeter;
 use crate::effect::*;
 use crate::instrument;
 use crate::meters::MeterHandle;
@@ -19,8 +18,7 @@ pub struct Render {
 	buffer: [[f32; MAX_BUF_SIZE]; 2],
 	pub sample_rate: f32,
 
-	peak_l: AttackRelease,
-	peak_r: AttackRelease,
+	peak: PeakMeter,
 	meter_handle: MeterHandle,
 }
 
@@ -39,8 +37,7 @@ impl Render {
 			channels: Vec::new(),
 			buffer: [[0.0f32; MAX_BUF_SIZE]; 2],
 			sample_rate,
-			peak_l: AttackRelease::new_direct(0.5, 0.05),
-			peak_r: AttackRelease::new_direct(0.5, 0.05),
+			peak: PeakMeter::new(sample_rate),
 			meter_handle,
 		}
 	}
@@ -101,13 +98,8 @@ impl Render {
 		}
 
 		// Calculate master peak
-		let [peak_l, peak_r] = dsp::peak(buffer_out);
-		self.peak_l.set(peak_l);
-		self.peak_r.set(peak_r);
-
-		let peak_l = self.peak_l.process();
-		let peak_r = self.peak_r.process();
-		self.meter_handle.set([peak_l, peak_r]);
+		let peak = self.peak.process_block(buffer_out);
+		self.meter_handle.set(peak);
 
 		// Send everything to scope.
 		for s in buffer_out[0].iter() {

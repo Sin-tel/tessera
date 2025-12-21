@@ -37,8 +37,10 @@ local function do_patches(p)
 			ch.gain = 1.0
 		end
 		for _, note in ipairs(ch.notes) do
-			note.interval = note.pitch
-			note.pitch = nil
+			if not note.interval then
+				note.interval = note.pitch
+				note.pitch = nil
+			end
 		end
 	end
 

@@ -1,7 +1,5 @@
 use crate::audio::MAX_BUF_SIZE;
-use crate::dsp;
-use crate::dsp::MuteState;
-use crate::dsp::time_constant;
+use crate::dsp::{MuteState, PeakMeter, time_constant};
 use crate::instrument::Instrument;
 use crate::meters::MeterHandle;
 use std::collections::VecDeque;
@@ -35,10 +33,13 @@ pub struct VoiceManager {
 	voices: Vec<Voice>,
 	queue: VecDeque<Voice>,
 	sustain: bool,
+
+	peak: PeakMeter,
 	meter_handle: MeterHandle,
+
 	mute: bool,
 	state: MuteState,
-	value: f32,
+	gain: f32,
 	smoothing_f: f32,
 }
 
@@ -54,11 +55,13 @@ impl VoiceManager {
 			voices: vec![Voice::default(); voice_count],
 			queue: VecDeque::with_capacity(8),
 			sustain: false,
+
+			peak: PeakMeter::new(sample_rate),
 			meter_handle,
 
 			mute: false,
 			state: MuteState::Active,
-			value: 1.0,
+			gain: 1.0,
 			smoothing_f: time_constant(15.0, sample_rate),
 		}
 	}
@@ -205,7 +208,7 @@ impl VoiceManager {
 				self.meter_handle.set([0., 0.]);
 			},
 			MuteState::Active => {
-				let peak = dsp::peak(buffer);
+				let peak = self.peak.process_block(buffer);
 				self.meter_handle.set(peak);
 			},
 			MuteState::Transition => {
@@ -214,18 +217,18 @@ impl VoiceManager {
 				assert!(samples <= MAX_BUF_SIZE);
 
 				for i in 0..samples {
-					self.value += self.smoothing_f * (target - self.value);
+					self.gain += self.smoothing_f * (target - self.gain);
 
-					buffer[0][i] *= self.value;
-					buffer[1][i] *= self.value;
+					buffer[0][i] *= self.gain;
+					buffer[1][i] *= self.gain;
 				}
 
-				let peak = dsp::peak(buffer);
+				let peak = self.peak.process_block(buffer);
 				self.meter_handle.set(peak);
 
 				// Check state transition
-				if (self.value - target).abs() < 1e-4 {
-					self.value = target;
+				if (self.gain - target).abs() < 1e-4 {
+					self.gain = target;
 					if self.mute {
 						self.flush();
 						self.state = MuteState::Off;

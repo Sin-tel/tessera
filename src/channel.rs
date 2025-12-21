@@ -1,5 +1,6 @@
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp;
+use crate::dsp::PeakMeter;
 use crate::dsp::smooth::Smooth;
 use crate::dsp::{MuteState, time_constant};
 use crate::effect::*;
@@ -9,6 +10,7 @@ use crate::voice_manager::VoiceManager;
 pub struct Channel {
 	pub instrument: Option<VoiceManager>,
 	pub effects: Vec<Bypass>,
+	peak: PeakMeter,
 	meter_handle: MeterHandle,
 	gain: Smooth,
 
@@ -23,6 +25,7 @@ impl Channel {
 		Self {
 			instrument: Some(instrument),
 			effects: Vec::new(),
+			peak: PeakMeter::new(sample_rate),
 			meter_handle,
 			gain: Smooth::new(1., 25., sample_rate),
 			mute: false,
@@ -57,7 +60,7 @@ impl Channel {
 					buffer_out[1][i] += buffer_in[1][i];
 				}
 
-				let peak = dsp::peak(buffer_in);
+				let peak = self.peak.process_block(buffer_in);
 				self.meter_handle.set(peak);
 			},
 			MuteState::Transition => {

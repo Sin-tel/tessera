@@ -267,8 +267,6 @@ local function send_device_mute(device, ch_index, device_index)
 	end
 end
 
-local M_DECAY = 0.7
-
 function engine.update_meters()
 	local meters = tessera.audio.get_meters()
 
@@ -296,16 +294,16 @@ function engine.update_meters()
 
 	for _, ch in ipairs(ui_channels) do
 		local i = ch.meter_id
-		ch.meter_l = math.max(meters[i][1], ch.meter_l * M_DECAY)
-		ch.meter_r = math.max(meters[i][2], ch.meter_r * M_DECAY)
+		ch.meter_l = meters[i][1]
+		ch.meter_r = meters[i][2]
 
 		local k = ch.instrument.meter_id
-		ch.instrument.meter_l = math.max(meters[k][1], ch.instrument.meter_l * M_DECAY)
-		ch.instrument.meter_r = math.max(meters[k][2], ch.instrument.meter_r * M_DECAY)
+		ch.instrument.meter_l = meters[k][1]
+		ch.instrument.meter_r = meters[k][2]
 		for _, fx in ipairs(ch.effects) do
 			i = fx.meter_id
-			fx.meter_l = math.max(meters[i][1], fx.meter_l * M_DECAY)
-			fx.meter_r = math.max(meters[i][2], fx.meter_r * M_DECAY)
+			fx.meter_l = meters[i][1]
+			fx.meter_r = meters[i][2]
 		end
 	end
 end

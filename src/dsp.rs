@@ -1,3 +1,5 @@
+use crate::audio::MAX_BUF_SIZE;
+use crate::dsp::env::AttackRelease;
 use std::f32::consts::*;
 
 pub mod atomic_float;
@@ -149,7 +151,14 @@ pub fn time_constant_linear(t: f32, sample_rate: f32) -> f32 {
 	1000. / (sample_rate * t)
 }
 
-pub fn peak(buffer: &mut [&mut [f32]; 2]) -> [f32; 2] {
+#[derive(PartialEq, Copy, Clone)]
+pub enum MuteState {
+	Active,
+	Off,
+	Transition,
+}
+
+pub fn peak(buffer: &[&mut [f32]; 2]) -> [f32; 2] {
 	let mut sum = [0.0; 2];
 	for (i, track) in buffer.iter().enumerate() {
 		sum[i] = track.iter().map(|x| x.abs()).fold(0., f32::max);
@@ -157,11 +166,40 @@ pub fn peak(buffer: &mut [&mut [f32]; 2]) -> [f32; 2] {
 	sum
 }
 
-#[derive(PartialEq, Copy, Clone)]
-pub enum MuteState {
-	Active,
-	Off,
-	Transition,
+pub fn rms(buffer: &[&mut [f32]; 2]) -> [f32; 2] {
+	let mut sum = [0.0; 2];
+	let n = buffer[0].len() as f32;
+	for (i, track) in buffer.iter().enumerate() {
+		let x: f32 = track.iter().map(|x| x * x).sum();
+
+		sum[i] = (x / n).sqrt();
+	}
+	sum
+}
+
+#[derive(Debug)]
+pub struct PeakMeter {
+	l: AttackRelease,
+	r: AttackRelease,
+}
+
+impl PeakMeter {
+	pub fn new(sample_rate: f32) -> Self {
+		return Self {
+			// Since we update once per block, effective sample rate is sample_rate / block_size
+			l: AttackRelease::new(1., 400.0, sample_rate / (MAX_BUF_SIZE as f32)),
+			r: AttackRelease::new(1., 400.0, sample_rate / (MAX_BUF_SIZE as f32)),
+		};
+	}
+
+	pub fn process_block(&mut self, buffer: &[&mut [f32]; 2]) -> [f32; 2] {
+		let [l, r] = peak(buffer);
+		self.l.set(l);
+		self.r.set(r);
+		let l = self.l.process();
+		let r = self.r.process();
+		[l, r]
+	}
 }
 
 // This is a 'naive' implementation of a one-pole highpass at 10Hz

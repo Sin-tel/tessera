@@ -14,9 +14,6 @@ impl Smooth {
 	pub fn new(value: f32, t: f32, sample_rate: f32) -> Self {
 		Self { target: value, value, f: time_constant(t, sample_rate), done: false }
 	}
-	pub fn new_direct(value: f32, f: f32) -> Self {
-		Self { target: value, value, f, done: false }
-	}
 
 	#[must_use]
 	pub fn process(&mut self) -> f32 {
@@ -118,10 +115,6 @@ impl SmoothBuffer {
 			f: time_constant(t, sample_rate),
 			buffer: [value; MAX_BUF_SIZE],
 		}
-	}
-	pub fn new_direct(f: f32) -> Self {
-		let v = 0.01;
-		Self { target: v, value: v, f, buffer: [v; MAX_BUF_SIZE] }
 	}
 
 	pub fn process_block(&mut self, len: usize) {
