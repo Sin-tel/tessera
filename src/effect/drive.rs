@@ -1,4 +1,5 @@
 use crate::audio::MAX_BUF_SIZE;
+use crate::dsp::delayline::DelayLine;
 use crate::dsp::onepole::OnePole;
 use crate::dsp::smooth::SmoothBuffer;
 use crate::dsp::*;
@@ -7,7 +8,6 @@ use halfband::iir::design::compute_coefs_tbw;
 use halfband::iir::{Downsampler, Upsampler};
 
 // TODO: store previous sample eval of antiderivative
-// TODO: Delay compensation in dry path
 
 #[derive(Debug)]
 pub struct Drive {
@@ -29,7 +29,8 @@ struct Track {
 	dc_killer: DcKiller,
 	pre_filter: OnePole,
 	post_filter: OnePole,
-	buffer: [f32; MAX_BUF_SIZE],
+	dry_buffer: [f32; MAX_BUF_SIZE],
+	delayline: DelayLine,
 }
 
 impl Track {
@@ -45,7 +46,8 @@ impl Track {
 			dc_killer: DcKiller::new(sample_rate),
 			pre_filter: OnePole::new(sample_rate),
 			post_filter: OnePole::new(sample_rate),
-			buffer: [0.; MAX_BUF_SIZE],
+			dry_buffer: [0.; MAX_BUF_SIZE],
+			delayline: DelayLine::new_samples(sample_rate, 8),
 		}
 	}
 }
@@ -72,11 +74,15 @@ impl Effect for Drive {
 		self.bias.process_block(n);
 
 		for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-			// track.buffer.clone_from_slice(buf);
-			buf.iter()
-				.zip(track.buffer.iter_mut())
-				.for_each(|(src, dst)| *dst = *src);
-
+			if self.oversample {
+				for (input, output) in buf.iter().zip(track.dry_buffer.iter_mut()) {
+					// The actual delay is 3.25 samples due to ADAA
+					*output = track.delayline.go_back_int_s(3);
+					track.delayline.push(*input);
+				}
+			} else {
+				track.dry_buffer[..n].clone_from_slice(buf);
+			}
 			track.pre_filter.process_block(buf);
 			self.gain.multiply_block(buf);
 			self.bias.add_block(buf);
@@ -150,7 +156,7 @@ impl Effect for Drive {
 			self.bias.subtract_block(buf);
 			track.post_filter.process_block(buf);
 			self.post_gain.multiply_block(buf);
-			self.balance.lerp_block(&track.buffer, buf);
+			self.balance.lerp_block(&track.dry_buffer, buf);
 			track.dc_killer.process_block(buf);
 		}
 	}
