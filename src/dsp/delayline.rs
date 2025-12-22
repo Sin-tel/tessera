@@ -25,6 +25,16 @@ impl DelayLine {
 		}
 	}
 
+	pub fn new_samples(sample_rate: f32, len: usize) -> Self {
+		Self {
+			buf: BitMaskRB::<f32>::new(len, 0.0),
+			sample_rate,
+			pos: 0,
+			h: [0.0, 1.0, 0.0, 0.0],
+			time_prev: 0.,
+		}
+	}
+
 	pub fn push(&mut self, s: f32) {
 		self.pos += 1;
 		*self.buf.get_mut(self.pos) = s;
@@ -36,7 +46,12 @@ impl DelayLine {
 		assert!(delay < self.buf.len().get() as f32);
 		let d_int = delay.floor() as isize;
 
-		self.buf[self.pos - d_int]
+		self.buf[self.pos - d_int + 1]
+	}
+
+	#[must_use]
+	pub fn go_back_int_s(&mut self, samples: isize) -> f32 {
+		self.buf[self.pos - samples + 1]
 	}
 
 	#[must_use]
@@ -46,10 +61,6 @@ impl DelayLine {
 		self.push(v);
 		k_ap * v + d
 	}
-
-	// pub fn go_back_int_s(&mut self, samples: isize) -> f32 {
-	// 	self.buf[self.pos - samples]
-	// }
 
 	#[must_use]
 	pub fn go_back_linear(&self, time: f32) -> f32 {
