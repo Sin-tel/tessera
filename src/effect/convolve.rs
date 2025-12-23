@@ -10,8 +10,11 @@ use std::iter::zip;
 #[rustfmt::skip]
 const IR_PATHS: &[&str] = &[
 	"samples/noise_ir3.wav",
-	"samples/noise_ir.wav",
-	"samples/noise_ir2.wav",
+	"samples/360 Violin 1_whiten_minphase_cut.wav",
+	"samples/noise_ir8l.wav",
+	// "samples/noise_ir.wav",
+	// "samples/noise_ir2.wav",
+
 ];
 
 pub struct Convolve {
