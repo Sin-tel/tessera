@@ -2,6 +2,7 @@ use crate::dsp::delayline::DelayLine;
 use crate::dsp::simper::Filter;
 use crate::dsp::smooth::SmoothBuffer;
 use crate::effect::*;
+use crate::worker::RequestData;
 
 // TODO: This device is used everywhere and
 //       most of the time, parameters don't change,
@@ -95,7 +96,7 @@ impl Effect for Pan {
 		}
 	}
 
-	fn set_parameter(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
 			0 => {
 				self.gain = value;
@@ -107,5 +108,6 @@ impl Effect for Pan {
 			},
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
+		None
 	}
 }

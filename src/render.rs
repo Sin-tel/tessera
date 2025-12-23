@@ -4,15 +4,19 @@ use crate::context::{AudioMessage, LuaMessage};
 use crate::dsp::PeakMeter;
 use crate::effect::*;
 use crate::instrument;
+use crate::log::log_error;
 use crate::meters::MeterHandle;
 use crate::voice_manager::VoiceManager;
+use crate::worker::{Request, Response};
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd};
-use std::sync::mpsc::SyncSender;
+use std::sync::mpsc::{Receiver, SyncSender};
 
 pub struct Render {
 	audio_rx: HeapCons<AudioMessage>,
 	lua_tx: SyncSender<LuaMessage>,
+	worker_tx: SyncSender<Request>,
+	worker_rx: Receiver<Response>,
 	scope_tx: HeapProd<f32>,
 	channels: Vec<Channel>,
 	buffer: [[f32; MAX_BUF_SIZE]; 2],
@@ -27,12 +31,16 @@ impl Render {
 		sample_rate: f32,
 		audio_rx: HeapCons<AudioMessage>,
 		lua_tx: SyncSender<LuaMessage>,
+		worker_tx: SyncSender<Request>,
+		worker_rx: Receiver<Response>,
 		scope_tx: HeapProd<f32>,
 		meter_handle: MeterHandle,
 	) -> Render {
 		Render {
 			audio_rx,
 			lua_tx,
+			worker_tx,
+			worker_rx,
 			scope_tx,
 			channels: Vec::new(),
 			buffer: [[0.0f32; MAX_BUF_SIZE]; 2],
@@ -154,14 +162,20 @@ impl Render {
 						instrument.sustain(sustain);
 					}
 				},
-				Parameter(ch_index, device_index, index, val) => {
-					let ch = &mut self.channels[ch_index];
+				Parameter(channel_index, device_index, index, val) => {
+					let ch = &mut self.channels[channel_index];
 					if device_index == 0
 						&& let Some(instrument) = &mut ch.instrument
 					{
 						instrument.set_parameter(index, val);
-					} else {
-						ch.effects[device_index - 1].effect.set_parameter(index, val);
+					} else if let Some(data) =
+						ch.effects[device_index - 1].effect.set_parameter(index, val)
+					{
+						let request = Request::LoadRequest { channel_index, device_index, data };
+						// Handle request
+						if let Err(e) = self.worker_tx.try_send(request) {
+							log_error!("{e}");
+						}
 					}
 				},
 				ChannelMute(ch_index, mute) => self.channels[ch_index].set_mute(mute),
@@ -182,6 +196,24 @@ impl Render {
 					ch.effects.insert(new_index, e);
 				},
 				AudioMessage::Panic => panic!("oof"),
+			}
+		}
+
+		while let Ok(response) = self.worker_rx.try_recv() {
+			let device_index = response.device_index;
+			let channel = &mut self.channels[response.channel_index];
+
+			if device_index == 0
+				&& let Some(_instrument) = &mut channel.instrument
+			{
+				todo!();
+			} else if let Some(garbage) =
+				channel.effects[device_index - 1].effect.receive_data(response.data)
+			{
+				let request = Request::Garbage(garbage);
+				if let Err(e) = self.worker_tx.try_send(request) {
+					log_error!("{e}");
+				}
 			}
 		}
 	}

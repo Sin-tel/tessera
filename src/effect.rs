@@ -19,6 +19,7 @@ use crate::effect::{
 };
 use crate::log::log_warn;
 use crate::meters::MeterHandle;
+use crate::worker::{RequestData, ResponseData};
 
 // list of effects
 pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
@@ -46,8 +47,14 @@ pub trait Effect {
 	where
 		Self: Sized;
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]);
-	fn set_parameter(&mut self, index: usize, val: f32);
-	fn flush(&mut self);
+	#[must_use]
+	fn set_parameter(&mut self, index: usize, val: f32) -> Option<RequestData>;
+	fn flush(&mut self) {}
+	#[must_use]
+	fn receive_data(&mut self, _data: ResponseData) -> Option<Box<dyn std::any::Any + Send>> {
+		log_warn!("Effect received data with no handler");
+		None
+	}
 }
 
 pub struct Bypass {

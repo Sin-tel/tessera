@@ -3,6 +3,7 @@ use crate::dsp::onepole::OnePole;
 use crate::dsp::smooth::{LinearBuffer, Smooth};
 use crate::dsp::*;
 use crate::effect::*;
+use crate::worker::RequestData;
 use std::iter::zip;
 
 // max length in seconds
@@ -162,7 +163,7 @@ impl Effect for Reverb {
 		self.filter2.reset_state();
 	}
 
-	fn set_parameter(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
 			0 => self.balance.set(value),
 			1 => {
@@ -177,6 +178,7 @@ impl Effect for Reverb {
 			4 => self.pre_delay.set(value),
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
+		None
 	}
 }
 

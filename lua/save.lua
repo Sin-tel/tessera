@@ -42,6 +42,13 @@ local function do_patches(p)
 				note.pitch = nil
 			end
 		end
+
+		for _, fx in ipairs(ch.effects) do
+			if fx.name == "convolve" and not fx.state[2] then
+				fx.state[2] = 20.0
+				fx.state[3] = 1
+			end
+		end
 	end
 
 	-- fix projects with different rank

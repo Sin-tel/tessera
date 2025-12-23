@@ -1,6 +1,7 @@
 use crate::dsp::onepole::OnePole;
 use crate::dsp::simper::Filter;
 use crate::effect::*;
+use crate::worker::RequestData;
 
 #[derive(Debug)]
 pub struct TestFilter {
@@ -59,7 +60,7 @@ impl Effect for TestFilter {
 	}
 	fn flush(&mut self) {}
 
-	fn set_parameter(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
 			0 => self.cutoff = value,
 			1 => self.q = value,
@@ -67,5 +68,6 @@ impl Effect for TestFilter {
 			3 => self.onepole = value > 0.5,
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
+		None
 	}
 }

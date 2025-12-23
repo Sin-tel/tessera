@@ -2,6 +2,7 @@ use crate::dsp::from_db;
 use crate::dsp::onepole::OnePole;
 use crate::dsp::smooth::Smooth;
 use crate::effect::*;
+use crate::worker::RequestData;
 
 // TODO: better gain matching
 
@@ -56,7 +57,7 @@ impl Effect for Tilt {
 	}
 	fn flush(&mut self) {}
 
-	fn set_parameter(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		#[allow(clippy::single_match_else)]
 		match index {
 			0 => {
@@ -72,5 +73,6 @@ impl Effect for Tilt {
 			},
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
+		None
 	}
 }

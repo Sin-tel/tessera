@@ -2,6 +2,7 @@ use crate::dsp::delayline::DelayLine;
 use crate::dsp::simper::Filter;
 use crate::dsp::smooth::Smooth;
 use crate::effect::*;
+use crate::worker::RequestData;
 use std::iter::zip;
 
 // 3.2 ms
@@ -51,11 +52,12 @@ impl Effect for Wide {
 		}
 	}
 	fn flush(&mut self) {}
-	fn set_parameter(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		#[allow(clippy::single_match_else)]
 		match index {
 			0 => self.amount.set(value),
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
+		None
 	}
 }

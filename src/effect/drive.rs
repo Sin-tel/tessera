@@ -4,6 +4,7 @@ use crate::dsp::onepole::OnePole;
 use crate::dsp::smooth::SmoothBuffer;
 use crate::dsp::*;
 use crate::effect::*;
+use crate::worker::RequestData;
 use halfband::iir::design::compute_coefs_tbw;
 use halfband::iir::{Downsampler, Upsampler};
 
@@ -162,7 +163,7 @@ impl Effect for Drive {
 	}
 	fn flush(&mut self) {}
 
-	fn set_parameter(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
 			0 => self.balance.set(value),
 			1 => self.hard = value > 1.5,
@@ -183,6 +184,7 @@ impl Effect for Drive {
 			6 => self.oversample = value > 0.5,
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
+		None
 	}
 }
 

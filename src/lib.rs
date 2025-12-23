@@ -34,6 +34,7 @@ pub mod midi;
 mod render;
 mod scope;
 mod voice_manager;
+mod worker;
 
 #[allow(dead_code)]
 pub mod dsp;

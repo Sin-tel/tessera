@@ -1,5 +1,24 @@
-project settings
- tuning presets
+move 'flush_messages' to backend
+
+master channel
+limiter
+- save layout
+- project settings / tuning presets
+
+add lock all/none button on top?
+
+mute icon speaker
+
+pitch system
+  add 'edo mode' where gens are integers, and the finest grid is the edo
+  make it more generic
+
+transport buttons
+
+autosave / crash recovery
+
+
+implement delayline with interpolating reader
 
 allow clone notes to be triggered when ctrl is pressed after initial drag
 
@@ -25,11 +44,6 @@ display midi activity indicator for each device
 in principle, the stream and render instances could be seperated
   allows for rendering even when there's no stream
 
-make channels and buttons bigger
-
-add master meter to atomics
-add cpu to atomics
-
 spacers / collapse sections in device settings
 
 allow only one instance of each view?
@@ -47,18 +61,6 @@ Linux: "null" ("Discard all samples ...") is used as default device. Should pick
 
 should we use audio_thread_priority?
 
-macos universal binary:
-```yml
-    - name: Build Release
-      run: |
-        rustup target add x86_64-apple-darwin
-        cargo build --release --target x86_64-apple-darwin
-        cargo build --release --target aarch64-apple-darwin
-        lipo -create -output target/release/tessera \
-          target/x86_64-apple-darwin/release/tessera \
-          target/aarch64-apple-darwin/release/tessera
-```
-
 ## building
 
 on WSL:
@@ -71,6 +73,17 @@ sudo apt install libasound2-plugins pulseaudio
 # jack
 sudo apt install libjack-dev
 
+macos universal binary:
+```yml
+    - name: Build Release
+      run: |
+        rustup target add x86_64-apple-darwin
+        cargo build --release --target x86_64-apple-darwin
+        cargo build --release --target aarch64-apple-darwin
+        lipo -create -output target/release/tessera \
+          target/x86_64-apple-darwin/release/tessera \
+          target/aarch64-apple-darwin/release/tessera
+```
 ## note datastructure:
 pitch: {
     interval: array of harmonic coordinates
