@@ -20,7 +20,7 @@ impl Smooth {
 		if !self.done {
 			self.value += self.f * (self.target - self.value);
 
-			if (self.value - self.target).abs() < 1e-4 {
+			if (self.value - self.target).abs() < 1e-6 {
 				self.value = self.target;
 				self.done = true;
 			}

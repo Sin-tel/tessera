@@ -78,6 +78,10 @@ impl Scope {
 				x_trigger = (i as f32) * scale_x;
 				break;
 			}
+
+			if i > 200 {
+				break;
+			}
 		}
 
 		// draw waveform
