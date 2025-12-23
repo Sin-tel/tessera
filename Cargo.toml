@@ -2,11 +2,16 @@
 name = "tessera"
 version = "0.1.1"
 edition = "2024"
-
+authors = ["sintel"]
+license = "MIT"
+repository = "https://github.com/Sin-tel/tessera"
+homepage = "https://github.com/Sin-tel/tessera"
+readme = "readme.md"
+description = "Experimental DAW."
+categories = ["multimedia::audio"]
 
 [features]
 fpu_traps = []
-
 
 [lib]
 doctest = false
@@ -56,6 +61,7 @@ rfd = "0.16"
 okhsl = "1.0.1"
 serde = { version = "1.0", features = ["derive"] }
 # rust-embed = { version = "8.9", features = ["debug-embed"] }
+# rust-embed = { version = "8.9", features = ["compression"] }
 rust-embed = "8.9"
 svgtypes = "0.16"
 semver = "1.0"

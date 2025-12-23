@@ -62,6 +62,9 @@ local function do_patches(p)
 			end
 		end
 	end
+
+	-- after patches are done, file should be on new version
+	p.VERSION = VERSION
 end
 
 function save.read(filename)
