@@ -192,7 +192,7 @@ impl Instrument for Pluck {
 
 				let out = left + right;
 
-				*sample += out * 0.5;
+				*sample += out * 0.2;
 			}
 
 			if !voice.note_on {
