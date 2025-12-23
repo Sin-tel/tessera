@@ -292,7 +292,7 @@ impl ApplicationHandler for App {
 	}
 
 	fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-		let mut accum = 0.0;
+		let start = Instant::now();
 		loop {
 			self.lua.app_data_mut::<State>().unwrap().check_audio_status();
 
@@ -302,7 +302,7 @@ impl ApplicationHandler for App {
 
 			wrap_call(&mut self.status, &self.hooks.update, dt);
 
-			accum += dt;
+			let accum = (Instant::now() - start).as_secs_f64() + 0.004;
 			if accum >= 1.0 / 60.0 {
 				break;
 			}
