@@ -203,6 +203,8 @@ device_list.effects.convolve = {
 	name = "Body",
 	parameters = {
 		{ "dry wet", "slider", { default = 1.0 } },
+		{ "predelay", "slider", { default = 0.0, min = 0.0, max = 20.0, fmt = "ms" } },
+		{ "mode", "selector", { list = { "A", "B", "C" } } },
 	},
 }
 

@@ -3,9 +3,12 @@ use crate::dsp::simper::Filter;
 use crate::dsp::smooth::{LinearBuffer, SmoothBuffer};
 use crate::dsp::*;
 use crate::effect::*;
+use crate::worker::RequestData;
 
 // max length in seconds
 const MAX_LEN: f32 = 1.0;
+
+// TODO: using simper messes up initial state. Make a 2x smoother instead.
 
 #[derive(Debug)]
 pub struct Delay {
@@ -34,8 +37,9 @@ impl Track {
 	pub fn new(sample_rate: f32, left: bool) -> Self {
 		let mut delay_f = Filter::new(sample_rate);
 		delay_f.set_lowpass(2.0, 0.5);
+		delay_f.immediate();
 		Track {
-			delay: 0.,
+			delay: 0.4,
 			delay_f,
 			delayline: DelayLine::new(sample_rate, MAX_LEN),
 			lfo_accum: 0.,
@@ -52,7 +56,7 @@ impl Effect for Delay {
 			tracks: [Track::new(sample_rate, true), Track::new(sample_rate, false)],
 			sample_rate,
 			balance: SmoothBuffer::new(0., 25.0, sample_rate),
-			time: 0.,
+			time: 0.4,
 			offset: 0.,
 			feedback: SmoothBuffer::new(0., 25.0, sample_rate),
 			lfo_freq: 0.5,
@@ -101,7 +105,7 @@ impl Effect for Delay {
 		self.tracks[1].delayline.flush();
 	}
 
-	fn set_parameter(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
 			0 => self.balance.set(value),
 			1 => {
@@ -118,6 +122,7 @@ impl Effect for Delay {
 
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
+		None
 	}
 }
 

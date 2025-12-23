@@ -4,6 +4,7 @@ use crate::meters::Meters;
 use crate::render::Render;
 use crate::scope::Scope;
 use crate::voice_manager::Token;
+use crate::worker::spawn_worker;
 use anyhow::Result;
 use parking_lot::Mutex;
 use ringbuf::traits::*;
@@ -37,6 +38,8 @@ impl AudioContext {
 		let (config, format) = build_config(&device, buffer_size)?;
 		let sample_rate = config.sample_rate;
 
+		// TODO: can we merge worker_rx and audio_rx?
+		let (worker_tx, worker_rx) = spawn_worker();
 		let (audio_tx, audio_rx) = HeapRb::<AudioMessage>::new(1024).split();
 		let (scope_tx, scope_rx) = HeapRb::<f32>::new(2048).split();
 		let scope = Scope::new(scope_rx);
@@ -45,7 +48,15 @@ impl AudioContext {
 
 		let (meter_handle, meter_id) = meters.register();
 
-		let render = Render::new(sample_rate as f32, audio_rx, lua_tx, scope_tx, meter_handle);
+		let render = Render::new(
+			sample_rate as f32,
+			audio_rx,
+			lua_tx,
+			worker_tx,
+			worker_rx,
+			scope_tx,
+			meter_handle,
+		);
 		let render = Arc::new(Mutex::new(render));
 
 		let (stream, stream_tx, error_rx) =

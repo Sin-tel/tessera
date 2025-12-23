@@ -2,6 +2,7 @@ use crate::dsp::simper::Filter;
 use crate::dsp::smooth::Smooth;
 use crate::dsp::*;
 use crate::effect::*;
+use crate::worker::RequestData;
 
 // TODO: switch out low-cut / bandpass on sidechain
 // TODO: stereo/mono split gain calculation
@@ -112,7 +113,7 @@ impl Effect for Compressor {
 	}
 	fn flush(&mut self) {}
 
-	fn set_parameter(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
 			0 => {
 				self.tracks[0].balance.set(value);
@@ -131,5 +132,6 @@ impl Effect for Compressor {
 			},
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
+		None
 	}
 }
