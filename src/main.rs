@@ -22,6 +22,7 @@ use tessera::app::State;
 use tessera::audio;
 use tessera::context::LuaMessage;
 use tessera::embed::Script;
+use tessera::engine::Processor;
 use tessera::log::*;
 use tessera::midi;
 use tessera::opengl::Surface;
@@ -106,6 +107,8 @@ fn run() -> Result<(), Box<dyn Error>> {
 	let scale_factor = window.scale_factor();
 
 	let lua = create_lua(scale_factor)?;
+
+	let engine = Processor::new();
 	let state = State::new(canvas, window, lua_tx, lua_rx, scale_factor as f32);
 
 	lua.set_app_data(state);

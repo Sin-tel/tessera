@@ -28,6 +28,7 @@ mod channel;
 pub mod context;
 mod effect;
 pub mod embed;
+pub mod engine;
 mod instrument;
 mod meters;
 pub mod midi;
