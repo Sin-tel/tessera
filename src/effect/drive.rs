@@ -5,8 +5,7 @@ use crate::dsp::smooth::SmoothBuffer;
 use crate::dsp::*;
 use crate::effect::*;
 use crate::worker::RequestData;
-use halfband::iir::design::compute_coefs_tbw;
-use halfband::iir::{Downsampler, Upsampler};
+use halfband::iir;
 
 // TODO: store previous sample eval of antiderivative
 
@@ -25,8 +24,8 @@ pub struct Drive {
 #[derive(Debug)]
 struct Track {
 	prev: f32,
-	upsampler: Upsampler<4>,
-	downsampler: Downsampler<4>,
+	upsampler: iir::Upsampler8,
+	downsampler: iir::Downsampler8,
 	dc_killer: DcKiller,
 	pre_filter: OnePole,
 	post_filter: OnePole,
@@ -36,9 +35,8 @@ struct Track {
 
 impl Track {
 	fn new(sample_rate: f32) -> Self {
-		let coefs = compute_coefs_tbw(8, 0.0343747);
-		let upsampler = Upsampler::new(&coefs);
-		let downsampler = Downsampler::new(&coefs);
+		let upsampler = iir::Upsampler8::default();
+		let downsampler = iir::Downsampler8::default();
 
 		Self {
 			prev: 0.,
@@ -94,25 +92,25 @@ impl Effect for Drive {
 			if self.hard {
 				for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
 					for sample in buf.iter_mut() {
-						let [u1, u2] = track.upsampler.process_sample(*sample);
+						let [u1, u2] = track.upsampler.process(*sample);
 
 						let res1 = adaa_hard(u1, track.prev);
 						let res2 = adaa_hard(u2, u1);
 						track.prev = u2;
 
-						*sample = track.downsampler.process_sample(res1, res2);
+						*sample = track.downsampler.process(res1, res2);
 					}
 				}
 			} else {
 				for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
 					for sample in buf.iter_mut() {
-						let [u1, u2] = track.upsampler.process_sample(*sample);
+						let [u1, u2] = track.upsampler.process(*sample);
 
 						let res1 = adaa_soft(u1, track.prev);
 						let res2 = adaa_soft(u2, u1);
 						track.prev = u2;
 
-						*sample = track.downsampler.process_sample(res1, res2);
+						*sample = track.downsampler.process(res1, res2);
 					}
 				}
 			}
