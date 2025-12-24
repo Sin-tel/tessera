@@ -1,6 +1,5 @@
 use fastrand::Rng;
-use halfband::iir::design::compute_coefs_tbw;
-use halfband::iir::{Downsampler, Upsampler};
+use halfband::iir;
 use std::f32::consts::PI;
 
 use crate::audio::MAX_BUF_SIZE;
@@ -26,8 +25,8 @@ pub struct Analog {
 	z: f32,
 	rng: Rng,
 	filter: Skf,
-	upsampler: Upsampler<4>,
-	downsampler: Downsampler<4>,
+	upsampler: iir::Upsampler8,
+	downsampler: iir::Downsampler8,
 	dc_killer: DcKiller,
 	envelope: Adsr,
 	note_on: bool,
@@ -50,9 +49,8 @@ pub struct Analog {
 
 impl Instrument for Analog {
 	fn new(sample_rate: f32) -> Self {
-		let coefs = compute_coefs_tbw(8, 0.0343747);
-		let upsampler = Upsampler::new(&coefs);
-		let downsampler = Downsampler::new(&coefs);
+		let upsampler = iir::Upsampler8::default();
+		let downsampler = iir::Downsampler8::default();
 
 		Self {
 			freq: Smooth::new(0.01, 8.0, sample_rate),

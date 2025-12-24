@@ -117,7 +117,7 @@ function engine.render()
 		local success = tessera.audio.render_block()
 		if not success then
 			log.error("Failed to render block.")
-			engine.renderCancel()
+			engine.render_finish()
 			return
 		end
 
