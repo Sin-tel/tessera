@@ -143,6 +143,25 @@ device_list.effects.drive = {
 	},
 }
 
+device_list.effects.chorus = {
+	name = "Chorus",
+	parameters = {
+		{ "dry wet", "slider", { default = 1.0 } },
+		{ "rate", "slider", { default = 0.35, min = 0.05, max = 8.0, t = "log" } },
+		{ "depth", "slider", { default = 0.50 } },
+		{ "vibrato", "toggle" },
+	},
+}
+
+device_list.effects.tremolo = {
+	name = "Tremolo",
+	parameters = {
+		{ "amount", "slider", { default = 0.4 } },
+		{ "rate", "slider", { default = 1.5, min = 0.50, max = 15.0, t = "log" } },
+		{ "stereo", "slider", { default = 0.25, min = -0.5, max = 0.5, centered = true } },
+	},
+}
+
 device_list.effects.delay = {
 	name = "Delay",
 	parameters = {

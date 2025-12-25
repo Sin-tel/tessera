@@ -1,3 +1,4 @@
+mod chorus;
 mod compressor;
 mod convolve;
 mod delay;
@@ -8,14 +9,16 @@ mod pan;
 mod reverb;
 mod testfilter;
 mod tilt;
+mod tremolo;
 mod wide;
 
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::{MuteState, PeakMeter, time_constant};
 use crate::effect;
 use crate::effect::{
-	compressor::Compressor, convolve::Convolve, delay::Delay, drive::Drive, equalizer::Equalizer,
-	gain::Gain, pan::Pan, reverb::Reverb, testfilter::TestFilter, tilt::Tilt, wide::Wide,
+	chorus::Chorus, compressor::Compressor, convolve::Convolve, delay::Delay, drive::Drive,
+	equalizer::Equalizer, gain::Gain, pan::Pan, reverb::Reverb, testfilter::TestFilter, tilt::Tilt,
+	tremolo::Tremolo, wide::Wide,
 };
 use crate::log::log_warn;
 use crate::meters::MeterHandle;
@@ -24,6 +27,7 @@ use crate::worker::{RequestData, ResponseData};
 // list of effects
 pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
 	match name {
+		"chorus" => Box::new(Chorus::new(sample_rate)),
 		"compressor" => Box::new(Compressor::new(sample_rate)),
 		"convolve" => Box::new(Convolve::new(sample_rate)),
 		"delay" => Box::new(Delay::new(sample_rate)),
@@ -34,6 +38,7 @@ pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
 		"reverb" => Box::new(Reverb::new(sample_rate)),
 		"testfilter" => Box::new(TestFilter::new(sample_rate)),
 		"tilt" => Box::new(Tilt::new(sample_rate)),
+		"tremolo" => Box::new(Tremolo::new(sample_rate)),
 		"wide" => Box::new(Wide::new(sample_rate)),
 		_ => {
 			log_warn!("Effect with name \"{name}\" not found. Returning default.");
