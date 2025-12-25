@@ -31,6 +31,14 @@ end
 local function do_patches(p)
 	-- patch any issues with save files here when they come up
 
+	-- 0.1.0 -> 0.1.1
+	if not p.settings then
+		p.settings = {}
+		p.settings.preview_notes = true
+		p.settings.chase = false
+		p.settings.follow = false
+	end
+
 	-- 0.1.1 -> 0.1.2
 	for _, ch in ipairs(p.channels) do
 		if not ch.gain then
