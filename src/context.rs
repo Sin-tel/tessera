@@ -39,7 +39,7 @@ impl AudioContext {
 		let sample_rate = config.sample_rate;
 
 		// TODO: can we merge worker_rx and audio_rx?
-		let (worker_tx, worker_rx) = spawn_worker();
+		let (worker_tx, worker_rx) = spawn_worker(sample_rate);
 		let (audio_tx, audio_rx) = HeapRb::<AudioMessage>::new(1024).split();
 		let (scope_tx, scope_rx) = HeapRb::<f32>::new(2048).split();
 		let scope = Scope::new(scope_rx);

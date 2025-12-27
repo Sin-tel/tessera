@@ -1,4 +1,5 @@
 use crate::audio::MAX_BUF_SIZE;
+use crate::dsp::resample::Resampler;
 use crate::embed::Asset;
 use crate::log::log_error;
 use anyhow::{Result, bail};
@@ -10,7 +11,7 @@ use std::sync::mpsc;
 // TODO: resample to get sample rate independence
 
 // Worker thread for loading samples and impulse responses
-pub fn spawn_worker() -> (mpsc::SyncSender<Request>, mpsc::Receiver<Response>) {
+pub fn spawn_worker(sample_rate: u32) -> (mpsc::SyncSender<Request>, mpsc::Receiver<Response>) {
 	let (request_tx, request_rx) = mpsc::sync_channel::<Request>(256);
 	let (response_tx, response_rx) = mpsc::sync_channel::<Response>(256);
 
@@ -22,7 +23,7 @@ pub fn spawn_worker() -> (mpsc::SyncSender<Request>, mpsc::Receiver<Response>) {
 				match req {
 					Request::Garbage(_) => {}, // drop
 					Request::LoadRequest { channel_index, device_index, data } => match data {
-						RequestData::IR(s) => match load_ir(s) {
+						RequestData::IR(s) => match load_ir(s, sample_rate) {
 							Ok(convolver) => {
 								let response = Response {
 									channel_index,
@@ -46,13 +47,12 @@ pub fn spawn_worker() -> (mpsc::SyncSender<Request>, mpsc::Receiver<Response>) {
 	(request_tx, response_rx)
 }
 
-pub fn load_sample(file_data: &[u8]) -> Result<[Vec<f32>; 2]> {
+pub fn load_sample(file_data: &[u8], sample_rate: u32) -> Result<[Vec<f32>; 2]> {
 	let reader = hound::WavReader::new(file_data).unwrap();
 	let spec = reader.spec();
 
-	if spec.sample_rate != 44100 {
-		bail!("Unsupported sample rate: {}", spec.sample_rate);
-	}
+	let source_rate = spec.sample_rate as f32;
+	let target_rate = sample_rate as f32;
 
 	// Accept only mono or stereo
 	if spec.channels > 2 {
@@ -113,13 +113,22 @@ pub fn load_sample(file_data: &[u8]) -> Result<[Vec<f32>; 2]> {
 		},
 	}
 
+	if (source_rate - target_rate).abs() < 1.0 {
+		return Ok([left, right]);
+	}
+
+	let resampler = Resampler::new(source_rate, target_rate);
+
+	let left = resampler.process(&left);
+	let right = resampler.process(&right);
+
 	Ok([left, right])
 }
 
-pub fn load_ir(path: &str) -> Result<FFTConvolver<f32>> {
+pub fn load_ir(path: &str, sample_rate: u32) -> Result<FFTConvolver<f32>> {
 	let file_data: &[u8] = &Asset::get(path).unwrap().data;
 
-	let mut sample = load_sample(file_data)?;
+	let mut sample = load_sample(file_data, sample_rate)?;
 
 	// take left channel
 	// TODO: support stereo
