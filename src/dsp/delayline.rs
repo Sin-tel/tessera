@@ -9,8 +9,6 @@ pub struct DelayLine {
 	buf: BitMaskRB<f32>,
 	sample_rate: f32,
 	pos: isize,
-	h: [f32; 4],
-	time_prev: f32,
 }
 
 impl DelayLine {
@@ -20,24 +18,16 @@ impl DelayLine {
 			buf: BitMaskRB::<f32>::new((len * sample_rate) as usize + 4, 0.0),
 			sample_rate,
 			pos: 0,
-			h: [0.0, 1.0, 0.0, 0.0],
-			time_prev: 0.,
 		}
 	}
 
 	pub fn new_samples(sample_rate: f32, len: usize) -> Self {
-		Self {
-			buf: BitMaskRB::<f32>::new(len, 0.0),
-			sample_rate,
-			pos: 0,
-			h: [0.0, 1.0, 0.0, 0.0],
-			time_prev: 0.,
-		}
+		Self { buf: BitMaskRB::<f32>::new(len, 0.0), sample_rate, pos: 0 }
 	}
 
 	pub fn push(&mut self, s: f32) {
-		self.pos += 1;
 		*self.buf.get_mut(self.pos) = s;
+		self.pos = self.buf.constrain(self.pos - 1);
 	}
 
 	#[must_use]
@@ -46,12 +36,12 @@ impl DelayLine {
 		assert!(delay < self.buf.len().get() as f32);
 		let d_int = delay.floor() as isize;
 
-		self.buf[self.pos - d_int + 1]
+		self.buf[self.pos + d_int]
 	}
 
 	#[must_use]
 	pub fn go_back_int_s(&mut self, samples: isize) -> f32 {
-		self.buf[self.pos - samples + 1]
+		self.buf[self.pos + samples]
 	}
 
 	#[must_use]
@@ -68,40 +58,28 @@ impl DelayLine {
 		assert!(delay < self.buf.len().get() as f32);
 
 		let (d_int, frac) = make_isize_frac(delay);
-		lerp(self.buf[self.pos - d_int + 1], self.buf[self.pos - d_int], frac)
-	}
+		let read = self.pos + d_int;
 
-	// lagrange polynomial
-	fn calc_coeff(&mut self, dm1: f32) {
-		let d = dm1 + 1.;
-		let dm2 = dm1 - 1.;
-		let dm3 = dm1 - 2.;
-		self.h[0] = (-1. / 6.) * dm1 * dm2 * dm3;
-		self.h[1] = 0.5 * d * dm2 * dm3;
-		self.h[2] = -0.5 * d * dm1 * dm3;
-		self.h[3] = (1. / 6.) * d * dm1 * dm2;
+		lerp(self.buf[read], self.buf[read + 1], frac)
 	}
 
 	#[must_use]
 	pub fn go_back_cubic(&mut self, time: f32) -> f32 {
-		let delay = (time * self.sample_rate).max(1.);
+		let delay = (time * self.sample_rate).max(2.);
 		assert!(delay < self.buf.len().get() as f32);
 
-		let (d_int, dm1) = make_isize_frac(delay);
+		let (d_int, frac) = make_isize_frac(delay);
+		let read = self.pos + d_int;
 
-		self.calc_coeff(dm1);
-		self.time_prev = dm1;
+		let y0 = self.buf[read - 1];
+		let y1 = self.buf[read];
+		let y2 = self.buf[read + 1];
+		let y3 = self.buf[read + 2];
 
-		let mut sum = 0.0f32;
-		for (i, h) in self.h.iter().enumerate() {
-			sum += self.buf[self.pos - d_int - (i as isize) + 2] * h;
-		}
-
-		sum
+		lagrange4(y0, y1, y2, y3, frac)
 	}
 
 	pub fn flush(&mut self) {
-		self.h = [0.; 4];
 		for k in self.buf.raw_data_mut() {
 			*k = 0.0;
 		}
