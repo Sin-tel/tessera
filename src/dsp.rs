@@ -65,10 +65,36 @@ pub fn hz_to_pitch(f: f32) -> f32 {
 	12.0 * log2_cheap(f / C5_HZ) + 72.0
 }
 
-#[allow(clippy::inline_always)]
-#[inline(always)]
-pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
-	a + (b - a) * t
+#[inline]
+pub fn lerp(y0: f32, y1: f32, a: f32) -> f32 {
+	y0 + (y1 - y0) * a
+}
+
+#[inline]
+pub fn lagrange4(y0: f32, y1: f32, y2: f32, y3: f32, a: f32) -> f32 {
+	let d = a + 1.;
+	let dm2 = a - 1.;
+	let dm3 = a - 2.;
+
+	let c0 = (-1. / 6.) * a * dm2 * dm3;
+	let c1 = 0.5 * d * dm2 * dm3;
+	let c2 = -0.5 * d * a * dm3;
+	let c3 = (1. / 6.) * d * a * dm2;
+
+	c0 * y0 + c1 * y1 + c2 * y2 + c3 * y3
+}
+
+#[inline]
+pub fn hermite4(y0: f32, y1: f32, y2: f32, y3: f32, a: f32) -> f32 {
+	let a2 = a * a;
+	let a3 = a2 * a;
+
+	let c0 = -0.5 * a3 + a2 - 0.5 * a;
+	let c1 = 1.5 * a3 - 2.5 * a2 + 1.0;
+	let c2 = -1.5 * a3 + 2.0 * a2 + 0.5 * a;
+	let c3 = 0.5 * a3 - 0.5 * a2;
+
+	c0 * y0 + c1 * y1 + c2 * y2 + c3 * y3
 }
 
 // -Inf evaluates to 0.0
