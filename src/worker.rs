@@ -2,13 +2,11 @@ use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::resample::Resampler;
 use crate::embed::Asset;
 use crate::log::log_error;
-use anyhow::{Result, bail};
+use anyhow::{Result, anyhow, bail};
 use fft_convolver::FFTConvolver;
 use hound::SampleFormat;
 use std::sync::Arc;
 use std::sync::mpsc;
-
-// TODO: resample to get sample rate independence
 
 // Worker thread for loading samples and impulse responses
 pub fn spawn_worker(sample_rate: u32) -> (mpsc::SyncSender<Request>, mpsc::Receiver<Response>) {
@@ -42,13 +40,13 @@ pub fn spawn_worker(sample_rate: u32) -> (mpsc::SyncSender<Request>, mpsc::Recei
 				}
 			}
 		})
-		.unwrap();
+		.expect("Failed to spawn worker thread.");
 
 	(request_tx, response_rx)
 }
 
 pub fn load_sample(file_data: &[u8], sample_rate: u32) -> Result<[Vec<f32>; 2]> {
-	let reader = hound::WavReader::new(file_data).unwrap();
+	let reader = hound::WavReader::new(file_data)?;
 	let spec = reader.spec();
 
 	let source_rate = spec.sample_rate as f32;
@@ -125,37 +123,38 @@ pub fn load_sample(file_data: &[u8], sample_rate: u32) -> Result<[Vec<f32>; 2]> 
 	Ok([left, right])
 }
 
-pub fn load_ir(path: &str, sample_rate: u32) -> Result<FFTConvolver<f32>> {
-	let file_data: &[u8] = &Asset::get(path).unwrap().data;
+fn normalize(sample: &mut [Vec<f32>; 2]) {
+	// Normalize by total energy
+
+	let sqr_sum = sample.iter().flatten().fold(0.0, |sqr_sum, s| sqr_sum + s * s);
+	let gain = 1.0 / sqr_sum.sqrt();
+
+	for s in sample.iter_mut().flat_map(|s| s.iter_mut()) {
+		*s *= gain;
+	}
+}
+
+pub fn load_ir(path: &str, sample_rate: u32) -> Result<[FFTConvolver<f32>; 2]> {
+	let file_data: &[u8] = &Asset::get(path)
+		.ok_or_else(|| anyhow!("Could not find {:?}", path))?
+		.data;
 
 	let mut sample = load_sample(file_data, sample_rate)?;
 
-	// take left channel
-	// TODO: support stereo
-	let impulse_response = &mut sample[0];
-
 	// for now we only allow short convolution samples
-	assert!(
-		impulse_response.len() < 8192,
-		"Impulse response {} too long: {}",
-		path,
-		impulse_response.len()
-	);
-
-	// Normalize by total energy
-	let sqr_sum = impulse_response.iter().fold(0.0, |sqr_sum, s| sqr_sum + s * s);
-	let gain = 0.5 / sqr_sum.sqrt();
-
-	for s in &mut *impulse_response {
-		*s *= gain;
+	let n = sample[0].len();
+	if n >= 8192 {
+		bail!("Impulse response {} too long: {}", path, n);
 	}
 
-	let mut convolver = FFTConvolver::default();
-	let init_result = convolver.init(MAX_BUF_SIZE, impulse_response);
-	assert!(init_result.is_ok());
+	normalize(&mut sample);
 
-	// println!("Loaded convolver: {}", &path);
-	Ok(convolver)
+	let mut conv = [FFTConvolver::default(), FFTConvolver::default()];
+
+	conv[0].init(MAX_BUF_SIZE, &sample[0])?;
+	conv[1].init(MAX_BUF_SIZE, &sample[1])?;
+
+	Ok(conv)
 }
 
 #[derive(Debug)]
@@ -178,5 +177,5 @@ pub struct Response {
 
 pub enum ResponseData {
 	Sample(Arc<[Vec<f32>; 2]>),
-	IR(Box<FFTConvolver<f32>>),
+	IR(Box<[FFTConvolver<f32>; 2]>),
 }
