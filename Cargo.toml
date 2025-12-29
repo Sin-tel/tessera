@@ -32,7 +32,7 @@ fastrand = "2.0"
 bit_mask_ring_buf = "0.6"
 rustfft = "6.4"
 realfft = "3.5"
-fft-convolver = "0.3"
+fft_convolution = {version = "0.1", git = "https://github.com/Sin-tel/fft-convolution.git", rev = "7daedeaa5282d2a27b177b0b7c17766f8cfb4679" }
 hound = "3.5"
 midir = "0.10"
 num-complex = "0.4"

@@ -3,7 +3,8 @@ use crate::dsp::resample::Resampler;
 use crate::embed::Asset;
 use crate::log::log_error;
 use anyhow::{Result, anyhow, bail};
-use fft_convolver::FFTConvolver;
+use fft_convolution::Convolution;
+use fft_convolution::fft_convolver::TwoStageFFTConvolver;
 use hound::{SampleFormat, WavReader};
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
@@ -93,18 +94,18 @@ impl Worker {
 				sample
 			},
 		};
-		// for now we only allow short convolution samples
+		// Set a reasonable limit for IR length
 		let n = sample[0].len();
-		if n >= 8192 {
+		if n >= 300_000 {
 			bail!("Impulse response {} too long: {}", path, n);
 		}
 
-		let mut convolver = [FFTConvolver::default(), FFTConvolver::default()];
+		let convolvers = [
+			TwoStageFFTConvolver::init(&sample[0], MAX_BUF_SIZE, sample[0].len()),
+			TwoStageFFTConvolver::init(&sample[1], MAX_BUF_SIZE, sample[1].len()),
+		];
 
-		convolver[0].init(MAX_BUF_SIZE, &sample[0])?;
-		convolver[1].init(MAX_BUF_SIZE, &sample[1])?;
-
-		self.send(ch, dev, ResponseData::IR(Box::new(convolver)))?;
+		self.send(ch, dev, ResponseData::IR(Box::new(convolvers)))?;
 		Ok(())
 	}
 
@@ -236,5 +237,5 @@ pub struct Response {
 pub enum ResponseData {
 	Sample(Arc<[Vec<f32>; 2]>),
 	Wavetable(Arc<Vec<f32>>),
-	IR(Box<[FFTConvolver<f32>; 2]>),
+	IR(Box<[TwoStageFFTConvolver; 2]>),
 }
