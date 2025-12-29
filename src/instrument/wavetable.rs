@@ -21,6 +21,7 @@ const WT_MASK: usize = WT_SIZE - 1;
 const WT_NUM: usize = 32;
 const WT_TOTAL: usize = WT_NUM * WT_SIZE;
 const MAX_F: f32 = 20_000.0;
+const VOICE_COUNT: usize = 16;
 
 #[rustfmt::skip]
 const PATHS: &[&str] = &[
@@ -29,174 +30,64 @@ const PATHS: &[&str] = &[
 	"wavetable/noise.wav",
 ];
 
-pub struct Wavetable {
+struct Voice {
+	active: bool,
+	note_on: bool,
 	accum: f32,
 	freq: Smooth,
 	vel: AttackRelease,
 	pres: AttackRelease,
-	sample_rate: f32,
 	interpolate: f32,
+
+	// parameters
+	position: f32,
+
+	// buffers
 	buffer_a: Vec<f32>,
 	buffer_b: Vec<f32>,
 	spectrum: Vec<Complex<f32>>,
-	r2c_scratch: Vec<Complex<f32>>,
-	r2c: Arc<dyn RealToComplex<f32>>,
-	c2r_scratch: Vec<Complex<f32>>,
-	c2r: Arc<dyn ComplexToReal<f32>>,
-	table: Option<Arc<Vec<f32>>>,
-
-	// depth_vel: f32,
-	// depth_pres: f32,
-	position: f32,
 }
 
-impl Instrument for Wavetable {
-	fn new(sample_rate: f32) -> Self {
-		assert!(WT_SIZE.is_power_of_two());
-
-		let mut real_planner = RealFftPlanner::<f32>::new();
-		let r2c = real_planner.plan_fft_forward(WT_SIZE);
-		let c2r = real_planner.plan_fft_inverse(WT_SIZE);
-
-		let spectrum = r2c.make_output_vec();
-		let r2c_scratch = r2c.make_scratch_vec();
-		let c2r_scratch = c2r.make_scratch_vec();
-		let buffer_a = c2r.make_output_vec();
-		let buffer_b = c2r.make_output_vec();
-
-		let table = None;
-
-		let mut new = Wavetable {
+impl Voice {
+	fn new(
+		sample_rate: f32,
+		r2c: &Arc<dyn RealToComplex<f32>>,
+		c2r: &Arc<dyn ComplexToReal<f32>>,
+	) -> Self {
+		Self {
+			active: false,
+			note_on: false,
 			accum: 0.0,
 			interpolate: 1.0,
 			freq: Smooth::new(1., 10.0, sample_rate),
-			vel: AttackRelease::new(20.0, 120.0, sample_rate),
+			vel: AttackRelease::new(5.0, 120.0, sample_rate),
 			pres: AttackRelease::new(50.0, 500.0, sample_rate),
-			sample_rate,
-			buffer_a,
-			buffer_b,
-			spectrum,
-			r2c_scratch,
-			c2r_scratch,
-			r2c,
-			c2r,
-			table,
 
 			position: 0.0,
-			// depth_vel: 0.0,
-			// depth_pres: 0.0,
-		};
-		new.update_fft();
-		new
-	}
 
-	fn voice_count(&self) -> usize {
-		1
-	}
-
-	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
-		if self.interpolate >= 1.0 {
-			self.interpolate = 0.0;
-			self.update_fft();
+			buffer_a: c2r.make_output_vec(),
+			buffer_b: c2r.make_output_vec(),
+			spectrum: r2c.make_output_vec(),
 		}
-
-		let [bl, br] = buffer;
-
-		for sample in bl.iter_mut() {
-			self.interpolate += 1.0 / (0.05 * self.sample_rate); // update every 50ms
-
-			let _pres = self.pres.process();
-			let vel = self.vel.process();
-			let freq = self.freq.process();
-
-			self.accum += freq;
-			if self.accum >= 1.0 {
-				self.accum -= 1.0;
-			}
-
-			let idx = self.accum * (WT_SIZE as f32);
-			let (idx_int, idx_frac) = make_usize_frac(idx);
-
-			// bilinear interpolation between samples and buffers
-			let w1a = self.buffer_a[idx_int];
-			let w2a = self.buffer_a[(idx_int + 1) & WT_MASK];
-			let wa = lerp(w1a, w2a, idx_frac);
-
-			let w1b = self.buffer_b[idx_int];
-			let w2b = self.buffer_b[(idx_int + 1) & WT_MASK];
-			let wb = lerp(w1b, w2b, idx_frac);
-
-			let mut out = lerp(wa, wb, self.interpolate.clamp(0.0, 1.0));
-
-			out *= vel;
-
-			*sample = out;
-		}
-		br.copy_from_slice(bl);
 	}
 
-	fn pitch(&mut self, pitch: f32, _id: usize) {
-		let p = pitch_to_hz(pitch) / self.sample_rate;
-		self.freq.set(p);
+	fn trigger(&mut self, pitch_hz: f32, velocity: f32) {
+		self.active = true;
+		self.note_on = true;
+		self.freq.set_immediate(pitch_hz);
+		self.vel.set(velocity);
+		self.interpolate = 1.0; // force immediate update
 	}
 
-	fn pressure(&mut self, pressure: f32, _id: usize) {
-		self.pres.set(pressure);
-	}
-
-	fn note_on(&mut self, pitch: f32, vel: f32, _id: usize) {
-		let p = pitch_to_hz(pitch) / self.sample_rate;
-		self.freq.set_immediate(p);
-
-		// if self.vel.get() < 0.01 {
-		// self.vel.set_immediate(vel);
-		// self.accum = 0.0;
-		self.interpolate = 1.0;
-		// } else {
-		self.vel.set(vel);
-		// }
-	}
-
-	fn note_off(&mut self, _id: usize) {
+	fn release(&mut self) {
+		self.note_on = false;
 		self.vel.set(0.0);
 	}
-	fn flush(&mut self) {}
 
-	fn receive_data(&mut self, data: ResponseData) -> Option<Box<dyn Any + Send>> {
-		if let ResponseData::Wavetable(new_table) = data {
-			// TODO: read wavetable metadata to get length and number of frames
-			assert!(new_table.len() == WT_TOTAL);
-
-			self.table = Some(new_table);
-		} else {
-			unreachable!()
-		}
-		None
-	}
-
-	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
-		match index {
-			0 => self.position = value,
-			1 => {
-				let index = (value as usize).max(1) - 1;
-				let path = PATHS[index];
-				return Some(RequestData::Wavetable(path));
-			},
-			_ => log_warn!("Parameter with index {index} not found"),
-		}
-		None
-	}
-}
-
-impl Wavetable {
-	fn update_fft(&mut self) {
-		if let Some(table) = &self.table {
+	fn update_voice_fft(&mut self, sample_rate: f32, data: &mut Data) {
+		if let Some(table) = &data.table {
 			// linear interpolation between frames
-			// let wdepth = self.depth_vel * self.vel.get() + self.depth_pres * self.pres.get();
-
-			let w_pos = self.position;
-			let wt_idx = (w_pos * (WT_NUM as f32)).clamp(0.0, (WT_NUM as f32) - 1.001);
-
+			let wt_idx = (self.position * (WT_NUM as f32)).clamp(0.0, (WT_NUM as f32) - 1.001);
 			let (wt_idx_int, wt_idx_frac) = make_usize_frac(wt_idx);
 
 			for (i, v) in self.buffer_a.iter_mut().enumerate() {
@@ -206,12 +97,12 @@ impl Wavetable {
 			}
 
 			// forward fft
-			self.r2c
-				.process_with_scratch(&mut self.buffer_a, &mut self.spectrum, &mut self.r2c_scratch)
-				.unwrap(); // only panics when passed incorrect buffer sizes
+			data.r2c
+				.process_with_scratch(&mut self.buffer_a, &mut self.spectrum, &mut data.r2c_scratch)
+				.unwrap();
 
 			// calculate maximum allowed partial
-			let p_max = (MAX_F / (self.sample_rate * self.freq.get())) as usize;
+			let p_max = (MAX_F / (sample_rate * self.freq.get())) as usize;
 
 			// zero out everything above p_max
 			for (i, x) in self.spectrum.iter_mut().enumerate() {
@@ -221,13 +112,14 @@ impl Wavetable {
 			}
 
 			// inverse fft
-			self.c2r
-				.process_with_scratch(&mut self.spectrum, &mut self.buffer_a, &mut self.c2r_scratch)
-				.unwrap(); // only panics when passed incorrect buffer sizes
+			data.c2r
+				.process_with_scratch(&mut self.spectrum, &mut self.buffer_a, &mut data.c2r_scratch)
+				.unwrap();
 
 			// normalize
+			let gain = 1. / WT_SIZE as f32;
 			for v in &mut self.buffer_a {
-				*v /= WT_SIZE as f32;
+				*v *= gain;
 			}
 
 			std::mem::swap(&mut self.buffer_a, &mut self.buffer_b);
@@ -235,5 +127,152 @@ impl Wavetable {
 			self.buffer_a.fill(0.);
 			self.buffer_b.fill(0.);
 		}
+	}
+}
+
+// FFT data shared between voices
+struct Data {
+	r2c: Arc<dyn RealToComplex<f32>>,
+	c2r: Arc<dyn ComplexToReal<f32>>,
+	r2c_scratch: Vec<Complex<f32>>,
+	c2r_scratch: Vec<Complex<f32>>,
+	table: Option<Arc<Vec<f32>>>,
+}
+
+pub struct Wavetable {
+	sample_rate: f32,
+	voices: [Voice; VOICE_COUNT],
+	data: Data,
+}
+
+impl Instrument for Wavetable {
+	fn new(sample_rate: f32) -> Self {
+		assert!(WT_SIZE.is_power_of_two());
+
+		let mut real_planner = RealFftPlanner::<f32>::new();
+		let r2c = real_planner.plan_fft_forward(WT_SIZE);
+		let c2r = real_planner.plan_fft_inverse(WT_SIZE);
+		let r2c_scratch = r2c.make_scratch_vec();
+		let c2r_scratch = c2r.make_scratch_vec();
+
+		let voices = std::array::from_fn(|_| Voice::new(sample_rate, &r2c, &c2r));
+
+		let data = Data { r2c, c2r, r2c_scratch, c2r_scratch, table: None };
+
+		Wavetable { voices, sample_rate, data }
+	}
+
+	fn voice_count(&self) -> usize {
+		VOICE_COUNT
+	}
+
+	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
+		let [bl, br] = buffer;
+
+		// update every 50ms
+		let update_speed = 1.0 / (0.05 * self.sample_rate);
+
+		for voice in self.voices.iter_mut().filter(|v| v.active) {
+			if !voice.active && voice.vel.get() < 0.0001 {
+				voice.active = false;
+				continue;
+			}
+			// TODO: maybe some strategy here to stagger updates
+			if voice.interpolate >= 1.0 {
+				voice.interpolate = 0.0;
+				voice.update_voice_fft(self.sample_rate, &mut self.data);
+			}
+
+			for sample in bl.iter_mut() {
+				voice.interpolate += update_speed;
+
+				let _pres = voice.pres.process();
+				let vel = voice.vel.process();
+				let freq = voice.freq.process();
+
+				voice.accum += freq;
+				if voice.accum >= 1.0 {
+					voice.accum -= 1.0;
+				}
+
+				// table lookup and interpolation
+				let idx = voice.accum * (WT_SIZE as f32);
+				let (idx_int, idx_frac) = make_usize_frac(idx);
+
+				let w1a = voice.buffer_a[idx_int];
+				let w2a = voice.buffer_a[(idx_int + 1) & WT_MASK];
+				let wa = lerp(w1a, w2a, idx_frac);
+
+				let w1b = voice.buffer_b[idx_int];
+				let w2b = voice.buffer_b[(idx_int + 1) & WT_MASK];
+				let wb = lerp(w1b, w2b, idx_frac);
+
+				let mut out = lerp(wa, wb, voice.interpolate.clamp(0.0, 1.0));
+				out *= vel;
+
+				*sample += out * 0.4;
+			}
+
+			if !voice.note_on && voice.vel.get() < 1e-4 {
+				voice.active = false;
+			}
+		}
+
+		br.copy_from_slice(bl);
+	}
+
+	fn pitch(&mut self, pitch: f32, id: usize) {
+		let p = pitch_to_hz(pitch) / self.sample_rate;
+		let voice = &mut self.voices[id];
+		voice.freq.set(p);
+	}
+
+	fn pressure(&mut self, pressure: f32, id: usize) {
+		let voice = &mut self.voices[id];
+		voice.pres.set(pressure);
+	}
+
+	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {
+		let p = pitch_to_hz(pitch) / self.sample_rate;
+		let voice = &mut self.voices[id];
+		voice.trigger(p, vel);
+
+		// force update for the new note
+		voice.update_voice_fft(self.sample_rate, &mut self.data);
+	}
+
+	fn note_off(&mut self, id: usize) {
+		let voice = &mut self.voices[id];
+		voice.release();
+	}
+
+	fn flush(&mut self) {
+		for v in &mut self.voices {
+			v.vel.set_immediate(0.0);
+			v.active = false;
+		}
+	}
+
+	fn receive_data(&mut self, data: ResponseData) -> Option<Box<dyn Any + Send>> {
+		if let ResponseData::Wavetable(new_table) = data {
+			assert!(new_table.len() == WT_TOTAL);
+			self.data.table = Some(new_table);
+		} else {
+			unreachable!()
+		}
+		None
+	}
+
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
+		match index {
+			0 => self.voices.iter_mut().for_each(|v| v.position = value),
+			1 => {
+				let index = (value as usize).max(1) - 1;
+				let path = PATHS[index];
+				return Some(RequestData::Wavetable(path));
+			},
+			_ => log_warn!("Parameter with index {index} not found"),
+		}
+		None
 	}
 }
