@@ -11,6 +11,8 @@ use crate::instrument::{
 	wavetable::Wavetable,
 };
 use crate::log::log_warn;
+use crate::worker::RequestData;
+use crate::worker::ResponseData;
 
 // list of instruments
 pub fn new(sample_rate: f32, name: &str) -> Box<dyn Instrument + Send> {
@@ -38,7 +40,12 @@ pub trait Instrument {
 	fn note_off(&mut self, id: usize);
 	fn pitch(&mut self, pitch: f32, id: usize);
 	fn pressure(&mut self, pressure: f32, id: usize);
-	fn set_parameter(&mut self, index: usize, val: f32);
+	fn set_parameter(&mut self, index: usize, val: f32) -> Option<RequestData>;
 	fn flush(&mut self);
 	fn voice_count(&self) -> usize;
+	#[must_use]
+	fn receive_data(&mut self, _data: ResponseData) -> Option<Box<dyn std::any::Any + Send>> {
+		log_warn!("Effect received data with no handler");
+		None
+	}
 }

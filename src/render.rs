@@ -164,13 +164,16 @@ impl Render {
 				},
 				Parameter(channel_index, device_index, index, val) => {
 					let ch = &mut self.channels[channel_index];
-					if device_index == 0
+
+					let request_data = if device_index == 0
 						&& let Some(instrument) = &mut ch.instrument
 					{
-						instrument.set_parameter(index, val);
-					} else if let Some(data) =
+						instrument.instrument.set_parameter(index, val)
+					} else {
 						ch.effects[device_index - 1].effect.set_parameter(index, val)
-					{
+					};
+
+					if let Some(data) = request_data {
 						let request = Request::LoadRequest { channel_index, device_index, data };
 						// Handle request
 						if let Err(e) = self.worker_tx.try_send(request) {
@@ -203,13 +206,15 @@ impl Render {
 			let device_index = response.device_index;
 			let channel = &mut self.channels[response.channel_index];
 
-			if device_index == 0
-				&& let Some(_instrument) = &mut channel.instrument
+			let garbage = if device_index == 0
+				&& let Some(instrument) = &mut channel.instrument
 			{
-				todo!();
-			} else if let Some(garbage) =
+				instrument.instrument.receive_data(response.data)
+			} else {
 				channel.effects[device_index - 1].effect.receive_data(response.data)
-			{
+			};
+
+			if let Some(garbage) = garbage {
 				let request = Request::Garbage(garbage);
 				if let Err(e) = self.worker_tx.try_send(request) {
 					log_error!("{e}");

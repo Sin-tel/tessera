@@ -25,8 +25,8 @@ device_list.instruments.sine = {
 device_list.instruments.wavetable = {
 	name = "Wavetable",
 	parameters = {
-		{ "vel mod", "slider", { default = 0.0 } },
-		{ "pres mod", "slider", { default = 0.25 } },
+		{ "position", "slider", { default = 0.0 } },
+		{ "wave", "selector", { list = { "A", "B", "C" } } },
 	},
 }
 
