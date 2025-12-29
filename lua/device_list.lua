@@ -219,7 +219,7 @@ device_list.effects.tilt = {
 }
 
 device_list.effects.convolve = {
-	name = "Body",
+	name = "Convolution",
 	parameters = {
 		{ "dry wet", "slider", { default = 1.0 } },
 		{ "predelay", "slider", { default = 0.0, min = 0.0, max = 20.0, fmt = "ms" } },
