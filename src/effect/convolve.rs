@@ -9,8 +9,9 @@ use std::any::Any;
 #[rustfmt::skip]
 const IR_PATHS: &[&str] = &[
 	"ir/noise_ir3.wav",
-	"ir/violin1_whiten_minphase_cut.wav",
+	"ir/noise_burst_2.wav",
 	"ir/noise_ir8.wav",
+	// "ir/violin1_whiten_minphase_cut.wav",
 	// "ir/noise_ir.wav",
 	// "ir/noise_ir2.wav",
 
