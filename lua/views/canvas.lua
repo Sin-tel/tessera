@@ -153,7 +153,7 @@ function Canvas:draw_channel(ch, w_scale)
 
 				table.insert(lx, x)
 				table.insert(ly, y)
-				table.insert(lw, w)
+				table.insert(lw, w + 0.01)
 			end
 
 			if w_scale > 5 then
