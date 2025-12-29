@@ -4,7 +4,7 @@ use crate::embed::Asset;
 use crate::log::log_error;
 use anyhow::{Result, anyhow, bail};
 use fft_convolver::FFTConvolver;
-use hound::SampleFormat;
+use hound::{SampleFormat, WavReader};
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::sync::Arc;
@@ -115,69 +115,28 @@ impl Worker {
 	}
 }
 
-// TODO: less copy-paste load_wavetable / load_sample
-
 pub fn load_wavetable(path: &str) -> Result<Vec<f32>> {
 	let file_data: &[u8] = &Asset::get(path)
 		.ok_or_else(|| anyhow!("Could not find {:?}", path))?
 		.data;
-
 	let reader = hound::WavReader::new(file_data)?;
 	let spec = reader.spec();
 
-	// Accept only mono
 	if spec.channels != 1 {
 		bail!("Wavetable must be mono.");
 	}
 
-	let capacity = reader.len() as usize;
-	let mut table = Vec::with_capacity(capacity);
-
-	match spec.sample_format {
-		SampleFormat::Float => {
-			if spec.bits_per_sample != 32 {
-				bail!("Only f32 supported.");
-			}
-			let samples = reader.into_samples::<f32>();
-			if spec.channels == 1 {
-				for s in samples {
-					let s = s.unwrap();
-					table.push(s);
-				}
-			}
-		},
-		SampleFormat::Int => {
-			let samples = reader.into_samples::<i32>();
-
-			let norm = match spec.bits_per_sample {
-				16 => f32::from(i16::MAX),
-				24 => 8388607.0, // 2^23 - 1
-				32 => i32::MAX as f32,
-				b => bail!("Unsupported bit depth: {b}"),
-			};
-
-			for s in samples {
-				let s = s.unwrap();
-				table.push(s as f32 / norm);
-			}
-		},
-	}
-
-	return Ok(table);
+	let table = read_samples(reader, spec)?;
+	Ok(table)
 }
 
 pub fn load_sample(path: &str, sample_rate: u32) -> Result<[Vec<f32>; 2]> {
 	let file_data: &[u8] = &Asset::get(path)
 		.ok_or_else(|| anyhow!("Could not find {:?}", path))?
 		.data;
-
 	let reader = hound::WavReader::new(file_data)?;
 	let spec = reader.spec();
 
-	let source_rate = spec.sample_rate as f32;
-	let target_rate = sample_rate as f32;
-
-	// Accept only mono or stereo
 	if spec.channels > 2 {
 		bail!("Unsupported channel count: {}", spec.channels);
 	}
@@ -186,71 +145,67 @@ pub fn load_sample(path: &str, sample_rate: u32) -> Result<[Vec<f32>; 2]> {
 	let mut left = Vec::with_capacity(capacity);
 	let mut right = Vec::with_capacity(capacity);
 
+	let samples = read_samples(reader, spec)?;
+
+	if spec.channels == 1 {
+		for s in &samples {
+			left.push(*s);
+			right.push(*s);
+		}
+	} else {
+		// de-interleave
+		let (chunks, remainder) = samples.as_chunks::<2>();
+		assert!(remainder.is_empty());
+		for [l, r] in chunks {
+			right.push(*l);
+			left.push(*r);
+		}
+	}
+
+	let source_rate = spec.sample_rate as f32;
+	let target_rate = sample_rate as f32;
+
+	if (source_rate - target_rate).abs() < 1.0 {
+		return Ok([left, right]);
+	}
+	let resampler = Resampler::new(source_rate, target_rate);
+	Ok([resampler.process(&left), resampler.process(&right)])
+}
+
+fn read_samples(reader: WavReader<&[u8]>, spec: hound::WavSpec) -> Result<Vec<f32>> {
+	let capacity = reader.len() as usize;
+	let mut samples = Vec::with_capacity(capacity);
+
 	match spec.sample_format {
 		SampleFormat::Float => {
 			if spec.bits_per_sample != 32 {
 				bail!("Only f32 supported.");
 			}
-			let samples = reader.into_samples::<f32>();
-			if spec.channels == 1 {
-				for s in samples {
-					let s = s.unwrap();
-					left.push(s);
-					right.push(s);
-				}
-			} else {
-				let samples: Vec<_> = samples.map(|s| s.unwrap()).collect();
-				let (chunks, remainder) = samples.as_chunks::<2>();
-				assert!(remainder.is_empty());
-				for [l, r] in chunks {
-					left.push(*l);
-					right.push(*r);
-				}
+			for sample in reader.into_samples::<f32>() {
+				samples.push(sample?);
 			}
 		},
 		SampleFormat::Int => {
-			let samples = reader.into_samples::<i32>();
-
-			let norm = match spec.bits_per_sample {
-				16 => f32::from(i16::MAX),
-				24 => 8388607.0, // 2^23 - 1
-				32 => i32::MAX as f32,
-				b => bail!("Unsupported bit depth: {b}"),
-			};
-
-			if spec.channels == 1 {
-				for s in samples {
-					let s = s.unwrap();
-					left.push(s as f32 / norm);
-					right.push(s as f32 / norm);
-				}
-			} else {
-				let samples: Vec<_> = samples.map(|s| s.unwrap()).collect();
-				let (chunks, remainder) = samples.as_chunks::<2>();
-				assert!(remainder.is_empty());
-				for [l, r] in chunks {
-					left.push(*l as f32 / norm);
-					right.push(*r as f32 / norm);
-				}
+			let norm = bit_normalization(spec.bits_per_sample)?;
+			for sample in reader.into_samples::<i32>() {
+				samples.push(sample? as f32 / norm);
 			}
 		},
 	}
+	Ok(samples)
+}
 
-	if (source_rate - target_rate).abs() < 1.0 {
-		return Ok([left, right]);
+fn bit_normalization(bits_per_sample: u16) -> Result<f32> {
+	match bits_per_sample {
+		16 => Ok(f32::from(i16::MAX)),
+		24 => Ok(8388607.0), // 2^23 - 1
+		32 => Ok(i32::MAX as f32),
+		b => bail!("Unsupported bit depth: {b}"),
 	}
-
-	let resampler = Resampler::new(source_rate, target_rate);
-
-	let left = resampler.process(&left);
-	let right = resampler.process(&right);
-
-	Ok([left, right])
 }
 
 fn normalize_power(sample: &mut [Vec<f32>; 2]) {
 	// Normalize by total energy
-
 	let sqr_sum = sample.iter().flatten().fold(0.0, |sqr_sum, s| sqr_sum + s * s);
 	let gain = 1.0 / sqr_sum.sqrt();
 
