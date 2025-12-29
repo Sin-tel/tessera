@@ -5,10 +5,11 @@ use crate::log::log_error;
 use anyhow::{Result, anyhow, bail};
 use fft_convolver::FFTConvolver;
 use hound::SampleFormat;
+use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::sync::Arc;
 use std::sync::mpsc;
 
-// Worker thread for loading samples and impulse responses
 pub fn spawn_worker(sample_rate: u32) -> (mpsc::SyncSender<Request>, mpsc::Receiver<Response>) {
 	let (request_tx, request_rx) = mpsc::sync_channel::<Request>(256);
 	let (response_tx, response_rx) = mpsc::sync_channel::<Response>(256);
@@ -16,36 +17,160 @@ pub fn spawn_worker(sample_rate: u32) -> (mpsc::SyncSender<Request>, mpsc::Recei
 	std::thread::Builder::new()
 		.name("worker".to_string())
 		.spawn(move || {
-			// sleeps until there is some work to do
+			let mut worker = Worker::new(sample_rate, response_tx);
+			// sleep until there is something to do
 			while let Ok(req) = request_rx.recv() {
-				match req {
-					Request::Garbage(_) => {}, // drop
-					Request::LoadRequest { channel_index, device_index, data } => match data {
-						RequestData::IR(s) => match load_ir(s, sample_rate) {
-							Ok(convolver) => {
-								let response = Response {
-									channel_index,
-									device_index,
-									data: ResponseData::IR(Box::new(convolver)),
-								};
-
-								if let Err(e) = response_tx.send(response) {
-									log_error!("{e}");
-								}
-							},
-							Err(e) => log_error!("{e}"),
-						},
-						RequestData::Sample(_) => todo!(),
-					},
-				}
+				worker.handle_request(req);
 			}
 		})
-		.expect("Failed to spawn worker thread.");
+		.expect("Failed to spawn worker");
 
 	(request_tx, response_rx)
 }
 
-pub fn load_sample(file_data: &[u8], sample_rate: u32) -> Result<[Vec<f32>; 2]> {
+struct Worker {
+	sample_rate: u32,
+	tx: mpsc::SyncSender<Response>,
+
+	wavetables: HashMap<String, Arc<Vec<f32>>>,
+	samples: HashMap<String, Arc<[Vec<f32>; 2]>>,
+}
+
+impl Worker {
+	fn new(sample_rate: u32, tx: mpsc::SyncSender<Response>) -> Self {
+		Self { sample_rate, tx, wavetables: HashMap::new(), samples: HashMap::new() }
+	}
+
+	fn handle_request(&mut self, req: Request) {
+		match req {
+			Request::Garbage(_) => {}, // drop
+			Request::LoadRequest { channel_index, device_index, data } => {
+				if let Err(e) = match data {
+					RequestData::Wavetable(path) => {
+						self.handle_wavetable(channel_index, device_index, path)
+					},
+					RequestData::Sample(path) => {
+						self.handle_sample(channel_index, device_index, path)
+					},
+					RequestData::IR(path) => self.handle_ir(channel_index, device_index, path),
+				} {
+					log_error!("Worker Error: {e}");
+				}
+			},
+		}
+	}
+
+	fn handle_wavetable(&mut self, ch: usize, dev: usize, path: &'static str) -> Result<()> {
+		let data = match self.wavetables.entry(path.to_string()) {
+			Entry::Occupied(e) => e.get().clone(),
+			Entry::Vacant(e) => {
+				let table = load_wavetable(path)?;
+				e.insert(Arc::new(table)).clone()
+			},
+		};
+		self.send(ch, dev, ResponseData::Wavetable(data))
+	}
+
+	fn handle_sample(&mut self, ch: usize, dev: usize, path: &'static str) -> Result<()> {
+		let data = match self.samples.entry(path.to_string()) {
+			Entry::Occupied(e) => e.get().clone(),
+			Entry::Vacant(e) => {
+				let sample = load_sample(path, self.sample_rate)?;
+				// TODO: normalize?
+				e.insert(Arc::new(sample)).clone()
+			},
+		};
+		self.send(ch, dev, ResponseData::Sample(data))
+	}
+
+	fn handle_ir(&mut self, ch: usize, dev: usize, path: &'static str) -> Result<()> {
+		let sample = match self.samples.entry(path.to_string()) {
+			Entry::Occupied(e) => e.get().clone(),
+			Entry::Vacant(e) => {
+				let mut sample = load_sample(path, self.sample_rate)?;
+				normalize_power(&mut sample);
+				let sample = e.insert(Arc::new(sample)).clone();
+				sample
+			},
+		};
+		// for now we only allow short convolution samples
+		let n = sample[0].len();
+		if n >= 8192 {
+			bail!("Impulse response {} too long: {}", path, n);
+		}
+
+		let mut convolver = [FFTConvolver::default(), FFTConvolver::default()];
+
+		convolver[0].init(MAX_BUF_SIZE, &sample[0])?;
+		convolver[1].init(MAX_BUF_SIZE, &sample[1])?;
+
+		self.send(ch, dev, ResponseData::IR(Box::new(convolver)))?;
+		Ok(())
+	}
+
+	fn send(&self, ch: usize, dev: usize, data: ResponseData) -> anyhow::Result<()> {
+		self.tx
+			.send(Response { channel_index: ch, device_index: dev, data })
+			.map_err(|_| anyhow!("Failed to send response"))
+	}
+}
+
+// TODO: less copy-paste load_wavetable / load_sample
+
+pub fn load_wavetable(path: &str) -> Result<Vec<f32>> {
+	let file_data: &[u8] = &Asset::get(path)
+		.ok_or_else(|| anyhow!("Could not find {:?}", path))?
+		.data;
+
+	let reader = hound::WavReader::new(file_data)?;
+	let spec = reader.spec();
+
+	// Accept only mono
+	if spec.channels != 1 {
+		bail!("Wavetable must be mono.");
+	}
+
+	let capacity = reader.len() as usize;
+	let mut table = Vec::with_capacity(capacity);
+
+	match spec.sample_format {
+		SampleFormat::Float => {
+			if spec.bits_per_sample != 32 {
+				bail!("Only f32 supported.");
+			}
+			let samples = reader.into_samples::<f32>();
+			if spec.channels == 1 {
+				for s in samples {
+					let s = s.unwrap();
+					table.push(s);
+				}
+			}
+		},
+		SampleFormat::Int => {
+			let samples = reader.into_samples::<i32>();
+
+			let norm = match spec.bits_per_sample {
+				16 => f32::from(i16::MAX),
+				24 => 8388607.0, // 2^23 - 1
+				32 => i32::MAX as f32,
+				b => bail!("Unsupported bit depth: {b}"),
+			};
+
+			for s in samples {
+				let s = s.unwrap();
+				table.push(s as f32 / norm);
+			}
+		},
+	}
+
+	return Ok(table);
+}
+
+pub fn load_sample(path: &str, sample_rate: u32) -> Result<[Vec<f32>; 2]> {
+	let file_data: &[u8] = &Asset::get(path)
+		.ok_or_else(|| anyhow!("Could not find {:?}", path))?
+		.data;
+
 	let reader = hound::WavReader::new(file_data)?;
 	let spec = reader.spec();
 
@@ -123,7 +248,7 @@ pub fn load_sample(file_data: &[u8], sample_rate: u32) -> Result<[Vec<f32>; 2]> 
 	Ok([left, right])
 }
 
-fn normalize(sample: &mut [Vec<f32>; 2]) {
+fn normalize_power(sample: &mut [Vec<f32>; 2]) {
 	// Normalize by total energy
 
 	let sqr_sum = sample.iter().flatten().fold(0.0, |sqr_sum, s| sqr_sum + s * s);
@@ -132,29 +257,6 @@ fn normalize(sample: &mut [Vec<f32>; 2]) {
 	for s in sample.iter_mut().flat_map(|s| s.iter_mut()) {
 		*s *= gain;
 	}
-}
-
-pub fn load_ir(path: &str, sample_rate: u32) -> Result<[FFTConvolver<f32>; 2]> {
-	let file_data: &[u8] = &Asset::get(path)
-		.ok_or_else(|| anyhow!("Could not find {:?}", path))?
-		.data;
-
-	let mut sample = load_sample(file_data, sample_rate)?;
-
-	// for now we only allow short convolution samples
-	let n = sample[0].len();
-	if n >= 8192 {
-		bail!("Impulse response {} too long: {}", path, n);
-	}
-
-	normalize(&mut sample);
-
-	let mut conv = [FFTConvolver::default(), FFTConvolver::default()];
-
-	conv[0].init(MAX_BUF_SIZE, &sample[0])?;
-	conv[1].init(MAX_BUF_SIZE, &sample[1])?;
-
-	Ok(conv)
 }
 
 #[derive(Debug)]
@@ -166,6 +268,7 @@ pub enum Request {
 #[derive(Debug)]
 pub enum RequestData {
 	Sample(&'static str),
+	Wavetable(&'static str),
 	IR(&'static str),
 }
 
@@ -177,5 +280,6 @@ pub struct Response {
 
 pub enum ResponseData {
 	Sample(Arc<[Vec<f32>; 2]>),
+	Wavetable(Arc<Vec<f32>>),
 	IR(Box<[FFTConvolver<f32>; 2]>),
 }

@@ -1,7 +1,3 @@
-const WT_SIZE: usize = 1024;
-const WT_MASK: usize = 1023;
-const WT_NUM: usize = 16;
-
 // TODO: we should probably just support the wavetable format used by Surge
 // see: https://github.com/surge-synthesizer/surge/blob/main/resources/data/wavetables/WT%20fileformat.txt
 
@@ -9,19 +5,29 @@ const WT_NUM: usize = 16;
 
 // TODO: probably faster to store all of the wavetables in frequency domain and then mix those (only requires fwd fft)
 
-use crate::embed::Asset;
-use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
-use rustfft::num_complex::Complex;
-use rustfft::num_traits::Zero;
-use std::io::{BufReader, Read};
-use std::sync::Arc;
-
 use crate::dsp::env::*;
 use crate::dsp::smooth::*;
 use crate::dsp::*;
 use crate::instrument::*;
+use crate::worker::RequestData;
+use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
+use rustfft::num_complex::Complex;
+use rustfft::num_traits::Zero;
+use std::any::Any;
+use std::sync::Arc;
 
+const WT_SIZE: usize = 1024;
+const WT_MASK: usize = WT_SIZE - 1;
+const WT_NUM: usize = 32;
+const WT_TOTAL: usize = WT_NUM * WT_SIZE;
 const MAX_F: f32 = 20_000.0;
+
+#[rustfmt::skip]
+const PATHS: &[&str] = &[
+	"wavetable/fold.wav",
+	"wavetable/glass.wav",
+	"wavetable/noise.wav",
+];
 
 pub struct Wavetable {
 	accum: f32,
@@ -37,14 +43,17 @@ pub struct Wavetable {
 	r2c: Arc<dyn RealToComplex<f32>>,
 	c2r_scratch: Vec<Complex<f32>>,
 	c2r: Arc<dyn ComplexToReal<f32>>,
-	table: Vec<f32>,
+	table: Option<Arc<Vec<f32>>>,
 
-	depth_vel: f32,
-	depth_pres: f32,
+	// depth_vel: f32,
+	// depth_pres: f32,
+	position: f32,
 }
 
 impl Instrument for Wavetable {
 	fn new(sample_rate: f32) -> Self {
+		assert!(WT_SIZE.is_power_of_two());
+
 		let mut real_planner = RealFftPlanner::<f32>::new();
 		let r2c = real_planner.plan_fft_forward(WT_SIZE);
 		let c2r = real_planner.plan_fft_inverse(WT_SIZE);
@@ -55,15 +64,7 @@ impl Instrument for Wavetable {
 		let buffer_a = c2r.make_output_vec();
 		let buffer_b = c2r.make_output_vec();
 
-		// read binary file
-		let file: &[u8] = &Asset::get("wavetable.bin").unwrap().data;
-		let mut reader = BufReader::new(file);
-		let mut table = vec![0.0f32; WT_SIZE * WT_NUM];
-		let mut buffer = [0u8; 4];
-		for v in &mut table {
-			reader.read_exact(&mut buffer).unwrap();
-			*v = f32::from_le_bytes(buffer);
-		}
+		let table = None;
 
 		let mut new = Wavetable {
 			accum: 0.0,
@@ -81,8 +82,9 @@ impl Instrument for Wavetable {
 			c2r,
 			table,
 
-			depth_vel: 0.0,
-			depth_pres: 0.0,
+			position: 0.0,
+			// depth_vel: 0.0,
+			// depth_pres: 0.0,
 		};
 		new.update_fft();
 		new
@@ -160,54 +162,78 @@ impl Instrument for Wavetable {
 	}
 	fn flush(&mut self) {}
 
-	fn set_parameter(&mut self, index: usize, value: f32) {
+	fn receive_data(&mut self, data: ResponseData) -> Option<Box<dyn Any + Send>> {
+		if let ResponseData::Wavetable(new_table) = data {
+			// TODO: read wavetable metadata to get length and number of frames
+			assert!(new_table.len() == WT_TOTAL);
+
+			self.table = Some(new_table);
+		} else {
+			unreachable!()
+		}
+		None
+	}
+
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
-			0 => self.depth_vel = value,
-			1 => self.depth_pres = value,
+			0 => self.position = value,
+			1 => {
+				let index = (value as usize).max(1) - 1;
+				let path = PATHS[index];
+				return Some(RequestData::Wavetable(path));
+			},
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
+		None
 	}
 }
 
 impl Wavetable {
 	fn update_fft(&mut self) {
-		// linear interpolation between frames
-		let wdepth = self.depth_vel * self.vel.get() + self.depth_pres * self.pres.get();
-		let wt_idx = (wdepth * (WT_NUM as f32)).clamp(0.0, (WT_NUM as f32) - 1.001);
+		if let Some(table) = &self.table {
+			// linear interpolation between frames
+			// let wdepth = self.depth_vel * self.vel.get() + self.depth_pres * self.pres.get();
 
-		let (wt_idx_int, wt_idx_frac) = make_usize_frac(wt_idx);
+			let w_pos = self.position;
+			let wt_idx = (w_pos * (WT_NUM as f32)).clamp(0.0, (WT_NUM as f32) - 1.001);
 
-		for (i, v) in self.buffer_a.iter_mut().enumerate() {
-			let w1 = self.table[wt_idx_int * WT_SIZE + i];
-			let w2 = self.table[(wt_idx_int + 1) * WT_SIZE + i];
-			*v = lerp(w1, w2, wt_idx_frac);
-		}
+			let (wt_idx_int, wt_idx_frac) = make_usize_frac(wt_idx);
 
-		// forward fft
-		self.r2c
-			.process_with_scratch(&mut self.buffer_a, &mut self.spectrum, &mut self.r2c_scratch)
-			.unwrap(); // only panics when passed incorrect buffer sizes
-
-		// calculate maximum allowed partial
-		let p_max = (MAX_F / (self.sample_rate * self.freq.get())) as usize;
-
-		// zero out everything above p_max
-		for (i, x) in self.spectrum.iter_mut().enumerate() {
-			if i > p_max {
-				*x = Zero::zero();
+			for (i, v) in self.buffer_a.iter_mut().enumerate() {
+				let w1 = table[wt_idx_int * WT_SIZE + i];
+				let w2 = table[(wt_idx_int + 1) * WT_SIZE + i];
+				*v = lerp(w1, w2, wt_idx_frac);
 			}
+
+			// forward fft
+			self.r2c
+				.process_with_scratch(&mut self.buffer_a, &mut self.spectrum, &mut self.r2c_scratch)
+				.unwrap(); // only panics when passed incorrect buffer sizes
+
+			// calculate maximum allowed partial
+			let p_max = (MAX_F / (self.sample_rate * self.freq.get())) as usize;
+
+			// zero out everything above p_max
+			for (i, x) in self.spectrum.iter_mut().enumerate() {
+				if i > p_max {
+					*x = Zero::zero();
+				}
+			}
+
+			// inverse fft
+			self.c2r
+				.process_with_scratch(&mut self.spectrum, &mut self.buffer_a, &mut self.c2r_scratch)
+				.unwrap(); // only panics when passed incorrect buffer sizes
+
+			// normalize
+			for v in &mut self.buffer_a {
+				*v /= WT_SIZE as f32;
+			}
+
+			std::mem::swap(&mut self.buffer_a, &mut self.buffer_b);
+		} else {
+			self.buffer_a.fill(0.);
+			self.buffer_b.fill(0.);
 		}
-
-		// inverse fft
-		self.c2r
-			.process_with_scratch(&mut self.spectrum, &mut self.buffer_a, &mut self.c2r_scratch)
-			.unwrap(); // only panics when passed incorrect buffer sizes
-
-		// normalize
-		for v in &mut self.buffer_a {
-			*v /= WT_SIZE as f32;
-		}
-
-		std::mem::swap(&mut self.buffer_a, &mut self.buffer_b);
 	}
 }

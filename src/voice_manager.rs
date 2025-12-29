@@ -29,7 +29,7 @@ impl Voice {
 }
 
 pub struct VoiceManager {
-	instrument: Box<dyn Instrument + Send>,
+	pub instrument: Box<dyn Instrument + Send>,
 	voices: Vec<Voice>,
 	queue: VecDeque<Voice>,
 	sustain: bool,
@@ -244,12 +244,5 @@ impl VoiceManager {
 		self.all_notes_off();
 		self.instrument.flush();
 		self.meter_handle.set([0., 0.]);
-	}
-
-	pub fn set_parameter(&mut self, index: usize, val: f32) {
-		if self.mute {
-			return;
-		}
-		self.instrument.set_parameter(index, val);
 	}
 }

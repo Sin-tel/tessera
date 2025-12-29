@@ -283,7 +283,7 @@ impl Instrument for Pluck {
 		}
 	}
 
-	fn set_parameter(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
 			0 => self.decay = value,
 			1 => self.release = value,
@@ -294,5 +294,6 @@ impl Instrument for Pluck {
 			6 => self.bloom = 0.1 * value * value,
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
+		None
 	}
 }

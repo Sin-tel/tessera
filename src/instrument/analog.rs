@@ -1,13 +1,12 @@
-use fastrand::Rng;
-use halfband::iir;
-use std::f32::consts::PI;
-
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::env::*;
 use crate::dsp::skf::{FilterMode, Skf};
 use crate::dsp::smooth::Smooth;
 use crate::dsp::*;
 use crate::instrument::*;
+use fastrand::Rng;
+use halfband::iir;
+use std::f32::consts::PI;
 
 // TODO: at high frequencies, the switching between different BLITs causes discontinuities
 // TODO: LFO (tri, s&h, noise, saw) -> PWM, pitch
@@ -191,7 +190,7 @@ impl Instrument for Analog {
 		self.note_on = false;
 	}
 
-	fn set_parameter(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
 			0 => self.pulse_width.set(value),
 			1 => self.mix_pulse = value,
@@ -230,6 +229,7 @@ impl Instrument for Analog {
 			15 => self.legato = value > 0.5,
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
+		None
 	}
 }
 

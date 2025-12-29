@@ -93,7 +93,7 @@ impl Instrument for Sine {
 	}
 	fn flush(&mut self) {}
 
-	fn set_parameter(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
 			0 => {
 				self.fixed = value > 0.5;
@@ -111,5 +111,6 @@ impl Instrument for Sine {
 			},
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
+		None
 	}
 }

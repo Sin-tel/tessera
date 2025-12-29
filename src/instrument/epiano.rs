@@ -196,12 +196,13 @@ impl Instrument for Epiano {
 		}
 	}
 
-	fn set_parameter(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
 			0 => self.gain = from_db(value),
 			1 => self.wobble = value,
 			2 => self.bell = value * value,
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
+		None
 	}
 }

@@ -118,12 +118,13 @@ impl Instrument for Polysine {
 		}
 	}
 
-	fn set_parameter(&mut self, index: usize, value: f32) {
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
 			0 => self.feedback = value,
 			1 => self.voices.iter_mut().for_each(|v| v.vel.set_attack(value)),
 			2 => self.voices.iter_mut().for_each(|v| v.vel.set_release(value)),
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
+		None
 	}
 }
