@@ -129,7 +129,7 @@ function Dropdown:menu()
 
 	local options = {
 		style = "menu",
-		align = tessera.graphics.ALIGN_CENTER,
+		align = tessera.graphics.ALIGN_LEFT,
 	}
 
 	local items = {}

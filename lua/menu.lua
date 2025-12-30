@@ -95,6 +95,7 @@ function Menu.new(items, x, y)
 	self.items = items
 
 	self.x, self.y = x, y
+
 	self.w = Ui.scale(260)
 	self.h = 0 -- gets updated automatically
 
@@ -147,6 +148,9 @@ function Menu:update()
 	self.ui:end_frame(self.x, self.y)
 
 	self.h = self.ui.layout:total_height()
+
+	-- make sure it doesn't go off screen
+	self.y = math.min(self.y, height - self.h)
 end
 
 function Menu:get_mouse()

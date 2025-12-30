@@ -183,7 +183,7 @@ device_list.effects.tremolo = {
 	parameters = {
 		{ "Amount", "slider", { default = 0.4 } },
 		{ "Rate", "slider", { default = 1.5, min = 0.50, max = 15.0, t = "log" } },
-		{ "Stereo", "slider", { default = 0.25, min = -0.5, max = 0.5, centered = true } },
+		{ "Stereo", "slider", { default = 0.5 } },
 	},
 }
 
@@ -208,7 +208,7 @@ device_list.effects.reverb = {
 		{ "Size", "slider", { default = 0.8, min = 0.3, max = 1.0 } },
 		{ "Decay", "slider", { default = 1.3, min = 0.5, max = 20.0, t = "log", fmt = "s" } },
 		{ "Modulation", "slider", { default = 0.5 } },
-		{ "Pre-delay", "slider", { default = 0.02, min = 0.0, max = 0.05, fmt = "s" } },
+		{ "Pre-delay", "slider", { default = 0.02, min = 0.0, max = 0.20, fmt = "s" } },
 	},
 }
 
@@ -254,8 +254,28 @@ device_list.effects.convolve = {
 	name = "Convolution",
 	parameters = {
 		{ "Dry/Wet", "slider", { default = 1.0 } },
-		{ "Impulse", "dropdown", { list = { "Body small", "Body medium", "Soundboard (stereo)" }, arrows = true } },
-		{ "Pre-delay", "slider", { default = 0.0, min = 0.0, max = 20.0, fmt = "ms" } },
+		{
+			"Impulse",
+			"dropdown",
+			{
+				list = {
+					"Body small",
+					"Body medium",
+					"Soundboard",
+					"Bright Tiles",
+					"Small Room",
+					"Yard",
+					"Large Yard",
+					"Living Room",
+					"Parking Garage",
+					"Nonlinear Space",
+				},
+				default = 5,
+				arrows = true,
+			},
+		},
+		{ "Stereo Width", "slider", { default = 1.0 } },
+		{ "Pre-delay", "slider", { default = 0.0, min = 0.0, max = 200.0, fmt = "ms" } },
 	},
 }
 

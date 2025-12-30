@@ -201,12 +201,14 @@ fn bit_normalization(bits_per_sample: u16) -> Result<f32> {
 }
 
 fn normalize_power(sample: &mut [Vec<f32>; 2]) {
-	// Normalize by total energy
-	let sqr_sum = sample.iter().flatten().fold(0.0, |sqr_sum, s| sqr_sum + s * s);
-	let gain = 1.0 / sqr_sum.sqrt();
+	// Normalize channels by total energy
+	for channel in sample.iter_mut() {
+		let sqr_sum = channel.iter().fold(0.0, |sqr_sum, s| sqr_sum + s * s);
+		let gain = 0.25 / sqr_sum.sqrt();
 
-	for s in sample.iter_mut().flat_map(|s| s.iter_mut()) {
-		*s *= gain;
+		for s in channel.iter_mut() {
+			*s *= gain;
+		}
 	}
 }
 
