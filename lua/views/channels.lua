@@ -15,7 +15,9 @@ function Channels.new()
 	-- make list of instrument (name, key) and sort them
 	self.intrument_list = {}
 	for key, v in pairs(device_list.instruments) do
-		table.insert(self.intrument_list, { v.name, key })
+		if not v.hide or not release then
+			table.insert(self.intrument_list, { v.name, key })
+		end
 	end
 	table.sort(self.intrument_list, function(a, b)
 		return a[1] < b[1]
@@ -67,7 +69,7 @@ end
 function Channels:menu()
 	local options = {
 		style = "menu",
-		align = tessera.graphics.ALIGN_CENTER,
+		align = tessera.graphics.ALIGN_LEFT,
 	}
 	local items = {}
 	for i, v in ipairs(self.intrument_list) do

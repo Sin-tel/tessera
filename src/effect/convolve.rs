@@ -78,12 +78,16 @@ impl Effect for Convolve {
 		#[allow(clippy::single_match_else)]
 		match index {
 			0 => self.balance.set(value),
-			1 => self.pre_delay_len.set(value / 1000.0), // value is in ms
-			2 => {
-				let index = value as usize - 1;
-				let path = IR_PATHS[index];
-				return Some(RequestData::IR(path));
+			1 => {
+				let index = (value as usize).max(1) - 1;
+				match IR_PATHS.get(index) {
+					Some(path) => {
+						return Some(RequestData::IR(path));
+					},
+					None => log_warn!("Impulse index out of bounds: {index}"),
+				}
 			},
+			2 => self.pre_delay_len.set(value / 1000.0), // value is in ms
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 		None
