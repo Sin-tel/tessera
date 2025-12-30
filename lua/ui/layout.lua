@@ -65,7 +65,7 @@ function Layout:row(w, h)
 
 	local x, y = self.start_x, self.y
 
-	self.y = self.y + self.h
+	self.y = self.y + h
 
 	self.next_x = x + self.pad
 	self.next_y = y + self.pad

@@ -20,7 +20,13 @@ function Dropdown.new(target, key, options)
 
 	self.list = options.list
 
+	self.arrows = options.arrows
+
 	return self
+end
+
+function Dropdown:constrain_index(index)
+	return (index - 1) % #self.list + 1
 end
 
 function Dropdown:update(ui)
@@ -48,7 +54,14 @@ function Dropdown:update(ui)
 	ui:push_draw(self.draw, { self, ui, label, x, y, w, h })
 
 	if ui.clicked == self then
-		workspace:set_overlay(self:menu())
+		local x2 = ui.mx - x
+		if self.arrows and x2 < w * 0.2 then
+			self.new_index = self:constrain_index(self.target[self.key] - 1)
+		elseif self.arrows and x2 > w * 0.8 then
+			self.new_index = self:constrain_index(self.target[self.key] + 1)
+		else
+			workspace:set_overlay(self:menu())
+		end
 	end
 
 	return hit
@@ -85,6 +98,29 @@ function Dropdown:draw(ui, label, x, y, w, h)
 		tessera.graphics.set_color(theme.ui_text)
 	end
 	tessera.graphics.label(label, x, y, w, h, tessera.graphics.ALIGN_CENTER)
+
+	if self.arrows then
+		local tw = h * 0.15
+		local cx, cy = x + h * 0.7, y + h * 0.5
+		local x1, y1 = tw, -tw
+		local x2, y2 = tw, tw
+		local x3, y3 = -tw, 0
+
+		tessera.graphics.push()
+		tessera.graphics.translate(cx, cy)
+		tessera.graphics.polygon("fill", x1, y1, x2, y2, x3, y3)
+		tessera.graphics.pop()
+
+		cx, cy = x + w - h * 0.7, y + h * 0.5
+		x1, y1 = -tw, tw
+		x2, y2 = -tw, -tw
+		x3, y3 = tw, 0
+
+		tessera.graphics.push()
+		tessera.graphics.translate(cx, cy)
+		tessera.graphics.polygon("fill", x1, y1, x2, y2, x3, y3)
+		tessera.graphics.pop()
+	end
 end
 
 function Dropdown:menu()

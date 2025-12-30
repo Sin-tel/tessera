@@ -11,7 +11,7 @@ function Button.new(text, options)
 	options = options or {}
 	self.align = options.align or tessera.graphics.ALIGN_CENTER
 	self.style = options.style or "normal"
-	self.indent = options.indent or 0
+	self.indent = options.indent or Ui.PAD
 	self.text_color = options.text_color or theme.ui_text
 
 	return self

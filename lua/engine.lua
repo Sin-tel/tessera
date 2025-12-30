@@ -322,7 +322,7 @@ function engine.send_parameters()
 
 		send_device_mute(ch.instrument, ch_index, 0)
 
-		for l in ipairs(ch.instrument.parameters) do
+		for l = 1, ch.instrument.n_parameters do
 			local new_value = ch.instrument.state[l]
 			local old_value = ch.instrument.state_old[l]
 			if old_value ~= new_value then
@@ -335,7 +335,7 @@ function engine.send_parameters()
 		for fx_index, fx in ipairs(ch.effects) do
 			send_device_mute(fx, ch_index, fx_index)
 
-			for l in ipairs(fx.parameters) do
+			for l = 1, fx.n_parameters do
 				local new_value = fx.state[l]
 				local old_value = fx.state_old[l]
 				if old_value ~= new_value then

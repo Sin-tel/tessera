@@ -33,26 +33,30 @@ end
 local function new_device_data(key, options)
     local state = {}
 
-    for i, v in ipairs(options.parameters) do
-        local widget_type = v[2]
-        local widget_options = v[3] or {}
+    local index = 1
 
-        if widget_type == "slider" then
-            local sv = SliderValue.new(widget_options)
-            state[i] = sv.default
-        elseif widget_type == "selector" then
-            state[i] = widget_options.default or 1
-        elseif widget_type == "toggle" then
-            if widget_options.default == nil then
-                state[i] = false
+    for _, v in ipairs(options.parameters) do
+        local w_name = v[1]
+        local w_type = v[2] or w_name
+        local w_options = v[3] or {}
+
+        if w_type ~= "label" and w_type ~= "separator" then
+            if w_type == "slider" then
+                local sv = SliderValue.new(w_options)
+                state[index] = sv.default
+            elseif w_type == "selector" then
+                state[index] = w_options.default or 1
+            elseif w_type == "dropdown" then
+                state[index] = w_options.default or 1
+            elseif w_type == "toggle" then
+                state[index] = w_options.default or false
             else
-                state[i] = widget_options.default
+                error(w_type .. " not supported!")
             end
-        else
-            error(widget_type .. " not supported!")
-        end
 
-        assert(state[i] ~= nil)
+            assert(state[index] ~= nil)
+            index = index + 1
+        end
     end
 
     return { name = key, display_name = options.name, state = state, mute = false }

@@ -19,7 +19,7 @@ Ui.RIBBON_HEIGHT = scale(32)
 Ui.STATUS_HEIGHT = scale(20)
 
 Ui.ROW_HEIGHT = scale(28)
-Ui.PARAMETER_LABEL_WIDTH = scale(150) -- max width of parameter labels
+Ui.PARAMETER_LABEL_WIDTH = scale(200) -- max width of parameter labels
 Ui.PARAMETER_PAD = scale(8) -- padding for parameters
 Ui.CORNER_RADIUS = scale(4)
 
@@ -97,6 +97,8 @@ function Ui:next(h)
 	return self.layout:get()
 end
 
+local function nothing() end
+
 local function draw_label(text, align, color, x, y, w, h)
 	tessera.graphics.set_color(color)
 	tessera.graphics.label(text, x, y, w, h, align)
@@ -106,6 +108,11 @@ function Ui:label(text, align, color)
 	local x, y, w, h = self:next()
 	color = color or theme.ui_text
 	self:push_draw(draw_label, { text, align, color, x, y, w, h })
+end
+
+function Ui:separator(text, align, color)
+	self:next(self.layout.h * 0.5)
+	self:push_draw(nothing, {})
 end
 
 function Ui:hitbox(widget, x, y, w, h)
