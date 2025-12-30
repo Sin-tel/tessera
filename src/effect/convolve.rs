@@ -67,7 +67,7 @@ impl Effect for Convolve {
 
 	fn receive_data(&mut self, data: ResponseData) -> Option<Box<dyn Any + Send>> {
 		if let ResponseData::IR(new_convolver) = data {
-			let old_convolver = std::mem::replace(&mut self.convolver, Some(new_convolver));
+			let old_convolver = self.convolver.replace(new_convolver);
 			old_convolver.map(|b| b as Box<dyn Any + Send>)
 		} else {
 			unreachable!();
