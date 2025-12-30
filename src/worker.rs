@@ -96,8 +96,8 @@ impl Worker {
 		};
 		// Set a reasonable limit for IR length
 		let n = sample[0].len();
-		if n >= 300_000 {
-			bail!("Impulse response {} too long: {}", path, n);
+		if n >= 600_000 {
+			bail!("Impulse response \"{}\" too long: {}", path, n);
 		}
 
 		let convolvers = [
