@@ -90,14 +90,13 @@ impl Worker {
 			Entry::Vacant(e) => {
 				let mut sample = load_sample(path, self.sample_rate)?;
 				normalize_power(&mut sample);
-				let sample = e.insert(Arc::new(sample)).clone();
-				sample
+				e.insert(Arc::new(sample)).clone()
 			},
 		};
 		// Set a reasonable limit for IR length
 		let n = sample[0].len();
 		if n >= 600_000 {
-			bail!("Impulse response \"{}\" too long: {}", path, n);
+			bail!("Impulse response \"{path}\" too long: {n}");
 		}
 
 		let convolvers = [
@@ -117,9 +116,7 @@ impl Worker {
 }
 
 pub fn load_wavetable(path: &str) -> Result<Vec<f32>> {
-	let file_data: &[u8] = &Asset::get(path)
-		.ok_or_else(|| anyhow!("Could not find {:?}", path))?
-		.data;
+	let file_data: &[u8] = &Asset::get(path).ok_or_else(|| anyhow!("Could not find {path}"))?.data;
 	let reader = hound::WavReader::new(file_data)?;
 	let spec = reader.spec();
 
@@ -132,9 +129,7 @@ pub fn load_wavetable(path: &str) -> Result<Vec<f32>> {
 }
 
 pub fn load_sample(path: &str, sample_rate: u32) -> Result<[Vec<f32>; 2]> {
-	let file_data: &[u8] = &Asset::get(path)
-		.ok_or_else(|| anyhow!("Could not find {:?}", path))?
-		.data;
+	let file_data: &[u8] = &Asset::get(path).ok_or_else(|| anyhow!("Could not find {path}"))?.data;
 	let reader = hound::WavReader::new(file_data)?;
 	let spec = reader.spec();
 

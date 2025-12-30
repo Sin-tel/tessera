@@ -159,7 +159,7 @@ impl Instrument for Wavetable {
 
 		let data = Data { r2c, c2r, r2c_scratch, c2r_scratch, table: None };
 
-		Wavetable { voices, sample_rate, data }
+		Wavetable { sample_rate, voices, data }
 	}
 
 	fn voice_count(&self) -> usize {
@@ -210,7 +210,7 @@ impl Instrument for Wavetable {
 				let mut out = lerp(wa, wb, voice.interpolate.clamp(0.0, 1.0));
 				out *= vel;
 
-				*sample += out * 0.4;
+				*sample += out * 0.25;
 			}
 
 			if !voice.note_on && voice.vel.get() < 1e-4 {
@@ -268,8 +268,12 @@ impl Instrument for Wavetable {
 			0 => self.voices.iter_mut().for_each(|v| v.position = value),
 			1 => {
 				let index = (value as usize).max(1) - 1;
-				let path = PATHS[index];
-				return Some(RequestData::Wavetable(path));
+				match PATHS.get(index) {
+					Some(path) => {
+						return Some(RequestData::Wavetable(path));
+					},
+					None => log_warn!("Wavetable index out of bounds: {index}"),
+				}
 			},
 			_ => log_warn!("Parameter with index {index} not found"),
 		}

@@ -38,7 +38,7 @@ impl Resampler {
 		let window_size = 16;
 		let window_type = WindowFunction::Kaiser { beta: 6.0 };
 
-		let ratio = source_rate as f64 / target_rate as f64;
+		let ratio = f64::from(source_rate) / f64::from(target_rate);
 
 		let mut resampler = Resampler {
 			ratio,
@@ -94,7 +94,7 @@ impl Resampler {
 
 			// offset into polyphase
 			let phase = pos_frac * self.oversample_factor as f32;
-			let (phase_int, phase_frac) = make_usize_frac(phase as f64);
+			let (phase_int, phase_frac) = make_usize_frac(f64::from(phase));
 
 			// get two polyphase branches
 			let coeffs_a = &self.table[phase_int];
