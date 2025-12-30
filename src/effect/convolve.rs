@@ -7,18 +7,29 @@ use fft_convolution::Convolution;
 use fft_convolution::fft_convolver::TwoStageFFTConvolver;
 use std::any::Any;
 
+// These are ordered roughly from small to large
 #[rustfmt::skip]
-const IR_PATHS: &[&str] = &[
-	"ir/noise_ir3.wav",
+const PATHS: &[&str] = &[
+	"ir/body_g.wav",
 	"ir/noise_burst_2.wav",
 	"ir/noise_ir8.wav",
+	"ir/bright_tiles.wav",
+	"ir/small_room.wav",
+	"ir/yard.wav",
+	"ir/yard_large.wav",
+	"ir/living_room.wav",
+	"ir/parking_garage.wav",
+	"ir/nonlinear_space.wav",
 ];
+
+const MAX_TIME: f32 = 0.400;
 
 pub struct Convolve {
 	balance: Smooth,
 	convolver: Option<Box<[TwoStageFFTConvolver; 2]>>,
 	pre_delay: [DelayLine; 2],
 	pre_delay_len: Smooth,
+	width: Smooth,
 	buffer: [[f32; MAX_BUF_SIZE]; 2],
 }
 
@@ -27,8 +38,12 @@ impl Effect for Convolve {
 		Convolve {
 			balance: Smooth::new(1.0, 25.0, sample_rate),
 			convolver: None,
-			pre_delay: [DelayLine::new(sample_rate, 0.100), DelayLine::new(sample_rate, 0.100)],
+			pre_delay: [
+				DelayLine::new(sample_rate, MAX_TIME),
+				DelayLine::new(sample_rate, MAX_TIME),
+			],
 			pre_delay_len: Smooth::new(0., 200., sample_rate),
+			width: Smooth::new(1., 25., sample_rate),
 			buffer: [[0.; MAX_BUF_SIZE]; 2],
 		}
 	}
@@ -43,15 +58,23 @@ impl Effect for Convolve {
 			conv_r.process(buffer[1], &mut self.buffer[1][..n]);
 
 			for i in 0..n {
+				let width = self.width.process();
 				let balance = self.balance.process();
 				let pre_delay_len = self.pre_delay_len.process();
 
+				// stereo width
+				let mono = 0.5 * (self.buffer[0][i] + self.buffer[1][i]);
+				self.buffer[0][i] = lerp(mono, self.buffer[0][i], width);
+				self.buffer[1][i] = lerp(mono, self.buffer[1][i], width);
+
+				// predelay and mix
 				for ch in 0..2 {
 					let delayed = if pre_delay_len > 0.0 {
 						self.pre_delay[ch].go_back_cubic(pre_delay_len)
 					} else {
 						self.buffer[ch][i]
 					};
+
 					self.pre_delay[ch].push(self.buffer[ch][i]);
 					buffer[ch][i] = lerp(buffer[ch][i], delayed, balance);
 				}
@@ -80,14 +103,15 @@ impl Effect for Convolve {
 			0 => self.balance.set(value),
 			1 => {
 				let index = (value as usize).max(1) - 1;
-				match IR_PATHS.get(index) {
+				match PATHS.get(index) {
 					Some(path) => {
 						return Some(RequestData::IR(path));
 					},
 					None => log_warn!("Impulse index out of bounds: {index}"),
 				}
 			},
-			2 => self.pre_delay_len.set(value / 1000.0), // value is in ms
+			2 => self.width.set(value),
+			3 => self.pre_delay_len.set(value / 1000.0), // value is in ms
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 		None

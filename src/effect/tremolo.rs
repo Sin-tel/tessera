@@ -47,7 +47,7 @@ impl Effect for Tremolo {
 		match index {
 			0 => self.amount.set(value),
 			1 => self.lfo_rate.set(value),
-			2 => self.phase.set(value),
+			2 => self.phase.set(value * 0.5),
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 		None
