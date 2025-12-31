@@ -20,7 +20,7 @@ pub const C5_HZ: f32 = 523.2511;
 // -Inf evaluates to 0.0
 pub fn pow2_cheap(x: f32) -> f32 {
 	const A: f32 = (1 << 23) as f32;
-	let w = x.floor();
+	let w = fast_floor(x);
 	let z = x - w;
 
 	// rational pow2(x)-1 approximation in [0, 1], order (2,1)
@@ -63,6 +63,20 @@ pub fn pitch_to_hz(p: f32) -> f32 {
 pub fn hz_to_pitch(f: f32) -> f32 {
 	// 12.0 * (f / C5_HZ).log2() + 72.0
 	12.0 * log2_cheap(f / C5_HZ) + 72.0
+}
+
+#[inline]
+pub fn smoothstep(x: f32) -> f32 {
+	3. * x.powi(2) - 2. * x.powi(3)
+}
+
+// Avoid calling libc floorf on the default target
+// TODO: this should just call .floor() when compiling with SSE etc.
+#[inline]
+pub fn fast_floor(x: f32) -> f32 {
+	let xi = x as i32;
+	let xf = xi as f32;
+	if x < xf { xf - 1.0 } else { xf }
 }
 
 #[inline]
@@ -122,21 +136,21 @@ pub fn softclip_cubic(x: f32) -> f32 {
 // branchless approximation of sin(2*pi*x)
 pub fn sin_cheap(x: f32) -> f32 {
 	// (TWO_PI * x).sin()
-	let x = x - x.floor();
+	let x = x - fast_floor(x);
 	let a = f32::from(x > 0.5);
 	let b = 2.0 * x - 1.0 - 2.0 * a;
 	(2.0 * a - 1.0) * (x * b + a) / (0.25 * x * b + 0.15625 + 0.25 * a)
 }
 
 pub fn make_usize_frac(x: f32) -> (usize, f32) {
-	let x_int = x.floor();
+	let x_int = fast_floor(x);
 	let x_frac = x - x_int;
 
 	(x_int as usize, x_frac)
 }
 
 pub fn make_isize_frac(x: f32) -> (isize, f32) {
-	let x_int = x.floor();
+	let x_int = fast_floor(x);
 	let x_frac = x - x_int;
 
 	(x_int as isize, x_frac)

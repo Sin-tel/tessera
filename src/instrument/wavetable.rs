@@ -25,22 +25,112 @@ const VOICE_COUNT: usize = 16;
 
 #[rustfmt::skip]
 const PATHS: &[&str] = &[
+	"wavetable/bell.wav",
+	"wavetable/brass.wav",
+	"wavetable/crushed_sine.wav",
+	"wavetable/digital.wav",
+	"wavetable/drive.wav",
 	"wavetable/fold.wav",
 	"wavetable/glass.wav",
-	"wavetable/noise.wav",
+	"wavetable/liquid.wav",
+	"wavetable/organ.wav",
+	"wavetable/reese.wav",
+	"wavetable/shimmer.wav",
+	"wavetable/simple.wav",
+	"wavetable/skew.wav",
+	"wavetable/squash.wav",
 ];
+
+struct Lfo {
+	phase: f32,
+	v_prev: f32,
+	v: f32,
+	f: f32,
+	shape: f32,
+	random: f32,
+	switch: bool,
+	sample_rate: f32,
+}
+
+impl Lfo {
+	fn new(sample_rate: f32) -> Self {
+		Self {
+			phase: 0.,
+			v_prev: 0.,
+			v: 1.,
+			f: 0.,
+			shape: 0.,
+			random: 0.,
+			switch: false,
+			sample_rate,
+		}
+	}
+
+	fn step_value(&mut self) {
+		self.switch = !self.switch;
+
+		let mut v_new = if self.switch { -1.0 } else { 1.0 };
+		v_new = lerp(v_new, fastrand::f32() * 2.0 - 1.0, self.random);
+
+		self.v_prev = self.v;
+		self.v = v_new;
+	}
+
+	fn reset(&mut self) {
+		self.phase = 0.;
+		self.switch = false;
+		// fill v_prev and v
+		self.step_value();
+		self.step_value();
+	}
+
+	fn tick(&mut self) {
+		self.phase += self.f;
+		if self.phase > 1.0 {
+			self.phase -= 1.0;
+			self.step_value();
+		}
+	}
+
+	fn get(&self) -> f32 {
+		let mut alpha = self.phase;
+		if self.shape > 0.99 {
+			alpha = 0.;
+		} else {
+			alpha = ((alpha - self.shape) / (1. - self.shape)).max(0.);
+		}
+		alpha = smoothstep(alpha);
+		lerp(self.v_prev, self.v, alpha)
+	}
+
+	fn set_rate(&mut self, rate: f32) {
+		self.f = 2. * rate / self.sample_rate;
+	}
+}
 
 struct Voice {
 	active: bool,
 	note_on: bool,
 	accum: f32,
+	accum2: f32,
+	accum3: f32,
 	freq: Smooth,
-	vel: AttackRelease,
 	pres: AttackRelease,
 	interpolate: f32,
+	animate: f32,
+	lfo: Lfo,
+	env: Adsr,
+	pos_start: f32,
 
 	// parameters
-	position: f32,
+	pos: f32,
+	unison: bool,
+	unison_set: bool,
+	unison_l: f32,
+	unison_r: f32,
+	animate_range: f32,
+	animate_step: f32,
+	lfo_depth: f32,
 
 	// buffers
 	buffer_a: Vec<f32>,
@@ -58,12 +148,24 @@ impl Voice {
 			active: false,
 			note_on: false,
 			accum: 0.0,
+			accum2: 0.33,
+			accum3: 0.66,
 			interpolate: 1.0,
+			animate: 0.0,
+			lfo: Lfo::new(sample_rate),
 			freq: Smooth::new(1., 10.0, sample_rate),
-			vel: AttackRelease::new(5.0, 120.0, sample_rate),
+			env: Adsr::new(sample_rate),
 			pres: AttackRelease::new(50.0, 500.0, sample_rate),
 
-			position: 0.0,
+			pos: 0.0,
+			pos_start: 0.0,
+			unison: false,
+			unison_set: false,
+			unison_l: 1.,
+			unison_r: 1.,
+			animate_range: 0.0,
+			animate_step: 0.0,
+			lfo_depth: 0.0,
 
 			buffer_a: c2r.make_output_vec(),
 			buffer_b: c2r.make_output_vec(),
@@ -71,23 +173,59 @@ impl Voice {
 		}
 	}
 
-	fn trigger(&mut self, pitch_hz: f32, velocity: f32) {
+	fn note_on(&mut self, pitch_hz: f32, velocity: f32) {
 		self.active = true;
 		self.note_on = true;
 		self.freq.set_immediate(pitch_hz);
-		self.vel.set(velocity);
-		self.interpolate = 1.0; // force immediate update
+		self.env.note_on(velocity);
+		self.animate = 0.;
+		self.unison = self.unison_set;
+
+		// LFO always resets
+		self.lfo.reset();
+
+		if self.animate_range < 0.0 {
+			self.pos_start = self.pos * (1.0 + self.animate_range);
+		} else {
+			self.pos_start = self.pos * (1.0 - self.animate_range) + self.animate_range;
+		}
+		self.interpolate = 0.0;
 	}
 
-	fn release(&mut self) {
+	fn note_off(&mut self) {
+		self.env.note_off();
 		self.note_on = false;
-		self.vel.set(0.0);
+	}
+
+	// table lookup and interpolation
+	fn lookup(&self, a: f32) -> f32 {
+		let idx = a * (WT_SIZE as f32);
+		let (idx_int, idx_frac) = make_usize_frac(idx);
+
+		let w1a = self.buffer_a[idx_int];
+		let w2a = self.buffer_a[(idx_int + 1) & WT_MASK];
+		let wa = lerp(w1a, w2a, idx_frac);
+
+		let w1b = self.buffer_b[idx_int];
+		let w2b = self.buffer_b[(idx_int + 1) & WT_MASK];
+		let wb = lerp(w1b, w2b, idx_frac);
+
+		lerp(wa, wb, self.interpolate.clamp(0.0, 1.0))
+	}
+
+	fn current_position(&self) -> f32 {
+		let mut pos = lerp(self.pos_start, self.pos, self.animate);
+		let lfo = self.lfo.get();
+		pos += self.lfo_depth * lfo;
+
+		pos
 	}
 
 	fn update_voice_fft(&mut self, sample_rate: f32, data: &mut Data) {
 		if let Some(table) = &data.table {
 			// linear interpolation between frames
-			let wt_idx = (self.position * (WT_NUM as f32)).clamp(0.0, (WT_NUM as f32) - 1.001);
+			let pos = self.current_position();
+			let wt_idx = (pos * (WT_NUM as f32)).clamp(0.0, (WT_NUM as f32) - 1.001);
 			let (wt_idx_int, wt_idx_frac) = make_usize_frac(wt_idx);
 
 			for (i, v) in self.buffer_a.iter_mut().enumerate() {
@@ -156,7 +294,6 @@ impl Instrument for Wavetable {
 		let c2r_scratch = c2r.make_scratch_vec();
 
 		let voices = std::array::from_fn(|_| Voice::new(sample_rate, &r2c, &c2r));
-
 		let data = Data { r2c, c2r, r2c_scratch, c2r_scratch, table: None };
 
 		Wavetable { sample_rate, voices, data }
@@ -169,56 +306,63 @@ impl Instrument for Wavetable {
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
 
-		// update every 50ms
-		let update_speed = 1.0 / (0.05 * self.sample_rate);
+		// update every 10ms
+		let update_speed = 1.0 / (0.01 * self.sample_rate);
 
-		for voice in self.voices.iter_mut().filter(|v| v.active) {
-			if !voice.active && voice.vel.get() < 0.0001 {
-				voice.active = false;
-				continue;
-			}
-			// TODO: maybe some strategy here to stagger updates
+		// find voice with higest priority
+		let voice = self
+			.voices
+			.iter_mut()
+			.filter(|v| v.active)
+			.max_by(|a, b| a.interpolate.total_cmp(&b.interpolate));
+		if let Some(voice) = voice {
 			if voice.interpolate >= 1.0 {
 				voice.interpolate = 0.0;
 				voice.update_voice_fft(self.sample_rate, &mut self.data);
 			}
+		}
 
-			for sample in bl.iter_mut() {
+		for voice in self.voices.iter_mut().filter(|v| v.active) {
+			for (l, r) in bl.iter_mut().zip(br.iter_mut()) {
+				let env = voice.env.process();
+				let _pres = voice.pres.process();
+				let f = voice.freq.process();
+				voice.lfo.tick();
+
+				// position mod
+				voice.animate = (voice.animate + voice.animate_step).min(1.);
 				voice.interpolate += update_speed;
 
-				let _pres = voice.pres.process();
-				let vel = voice.vel.process();
-				let freq = voice.freq.process();
+				// oscillators
+				voice.accum += f;
+				voice.accum -= fast_floor(voice.accum);
 
-				voice.accum += freq;
-				if voice.accum >= 1.0 {
-					voice.accum -= 1.0;
+				let mut out_l = voice.lookup(voice.accum);
+				let mut out_r = out_l;
+
+				if voice.unison {
+					voice.accum2 += f * voice.unison_l;
+					voice.accum2 -= fast_floor(voice.accum2);
+					voice.accum3 += f * voice.unison_r;
+					voice.accum3 -= fast_floor(voice.accum3);
+					out_l += voice.lookup(voice.accum2);
+					out_r += voice.lookup(voice.accum3);
+
+					out_l *= 0.707;
+					out_r *= 0.707;
 				}
 
-				// table lookup and interpolation
-				let idx = voice.accum * (WT_SIZE as f32);
-				let (idx_int, idx_frac) = make_usize_frac(idx);
+				out_l *= env;
+				out_r *= env;
 
-				let w1a = voice.buffer_a[idx_int];
-				let w2a = voice.buffer_a[(idx_int + 1) & WT_MASK];
-				let wa = lerp(w1a, w2a, idx_frac);
-
-				let w1b = voice.buffer_b[idx_int];
-				let w2b = voice.buffer_b[(idx_int + 1) & WT_MASK];
-				let wb = lerp(w1b, w2b, idx_frac);
-
-				let mut out = lerp(wa, wb, voice.interpolate.clamp(0.0, 1.0));
-				out *= vel;
-
-				*sample += out * 0.25;
+				*l += out_l * 0.25;
+				*r += out_r * 0.25;
 			}
 
-			if !voice.note_on && voice.vel.get() < 1e-4 {
+			if voice.env.done() {
 				voice.active = false;
 			}
 		}
-
-		br.copy_from_slice(bl);
 	}
 
 	fn pitch(&mut self, pitch: f32, id: usize) {
@@ -235,20 +379,23 @@ impl Instrument for Wavetable {
 	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {
 		let p = pitch_to_hz(pitch) / self.sample_rate;
 		let voice = &mut self.voices[id];
-		voice.trigger(p, vel);
+		voice.note_on(p, vel);
 
 		// force update for the new note
 		voice.update_voice_fft(self.sample_rate, &mut self.data);
+
+		// Initial buffers are the same
+		voice.buffer_a.copy_from_slice(&voice.buffer_b);
 	}
 
 	fn note_off(&mut self, id: usize) {
 		let voice = &mut self.voices[id];
-		voice.release();
+		voice.note_off();
 	}
 
 	fn flush(&mut self) {
 		for v in &mut self.voices {
-			v.vel.set_immediate(0.0);
+			v.env.reset();
 			v.active = false;
 		}
 	}
@@ -265,16 +412,37 @@ impl Instrument for Wavetable {
 
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
-			0 => self.voices.iter_mut().for_each(|v| v.position = value),
+			0 => self.voices.iter_mut().for_each(|v| v.pos = value),
 			1 => {
 				let index = (value as usize).max(1) - 1;
-				match PATHS.get(index) {
-					Some(path) => {
-						return Some(RequestData::Wavetable(path));
-					},
-					None => log_warn!("Wavetable index out of bounds: {index}"),
+				if let Some(path) = PATHS.get(index) {
+					return Some(RequestData::Wavetable(path));
 				}
+				log_warn!("Wavetable index out of bounds: {index}");
 			},
+			2 => {
+				let unison = 0.05 * value * value;
+				let unison_l = pow2_cheap(unison);
+				let unison_r = pow2_cheap(-unison);
+				self.voices.iter_mut().for_each(|v| v.unison_set = value > 0.01);
+				self.voices.iter_mut().for_each(|v| v.unison_l = unison_l);
+				self.voices.iter_mut().for_each(|v| v.unison_r = unison_r);
+			},
+			3 => self.voices.iter_mut().for_each(|v| v.animate_range = value),
+			4 => {
+				let t = time_constant_linear(value, self.sample_rate);
+				self.voices.iter_mut().for_each(|v| v.animate_step = t);
+			},
+			5 => self.voices.iter_mut().for_each(|v| v.env.set_attack(value)),
+			6 => self.voices.iter_mut().for_each(|v| v.env.set_decay(value)),
+			7 => self.voices.iter_mut().for_each(|v| v.env.set_sustain(value)),
+			8 => self.voices.iter_mut().for_each(|v| v.env.set_release(value)),
+
+			9 => self.voices.iter_mut().for_each(|v| v.lfo.set_rate(value)),
+			10 => self.voices.iter_mut().for_each(|v| v.lfo.shape = value),
+			11 => self.voices.iter_mut().for_each(|v| v.lfo.random = value),
+			12 => self.voices.iter_mut().for_each(|v| v.lfo_depth = 0.5 * value),
+
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 		None
