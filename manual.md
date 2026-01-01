@@ -33,7 +33,7 @@ Tessera uses a flexible tiling UI. Panes can be resized by dragging the borders.
 ## 2. The Canvas (Piano Roll)
 Clicking anywhere in the top ribbon will set the transport start time.
 
-**Middle mouse:** Pan view.
+**Middle mouse:** Pan view. Can also be activated using `M`.
 
 **Scroll:** Zoom.
 
