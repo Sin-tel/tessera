@@ -53,6 +53,7 @@ function View:mousepressed() end
 function View:mousereleased() end
 function View:mousereleased() end
 function View:keypressed(key) end
+function View:keyreleased(key) end
 function View:update() end
 
 function View:get_mouse()
