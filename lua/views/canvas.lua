@@ -28,6 +28,7 @@ function Canvas.new()
 	self.selected_tool = edit
 	self.current_tool = self.selected_tool
 	self.tool_active = false
+	self.pan_mode = false
 
 	self.transform = Transform.new()
 
@@ -68,6 +69,9 @@ function Canvas:update()
 				end
 			end
 			if self.tool_active then
+				if self.current_tool.update then
+					self.current_tool:update(self)
+				end
 				self.current_tool:mousedown(self)
 				return
 			end
@@ -384,6 +388,9 @@ function Canvas:keypressed(key)
 			self.tool_active = true
 			return true
 		end
+	elseif key == "m" and not modifier_keys.any then
+		self.pan_mode = true
+		self.current_tool = pan
 	elseif key == "kp." or key == "." then
 		self:auto_zoom()
 	end
@@ -451,6 +458,13 @@ function Canvas:keypressed(key)
 	end
 end
 
+function Canvas:keyreleased(key)
+	if key == "m" then
+		self.pan_mode = false
+		self.current_tool = self.selected_tool
+	end
+end
+
 function Canvas:auto_zoom()
 	local all_notes = selection.is_empty()
 
@@ -495,7 +509,7 @@ function Canvas:auto_zoom()
 
 	-- if there's only a single note, center
 	if p_max == p_min then
-		self.transform.sy_ = -12
+		self.transform.sy_ = -48
 		self.transform.oy_ = -p_max * self.transform.sy_ + 0.5 * self.h
 	end
 end
@@ -611,17 +625,17 @@ function Canvas:mousepressed()
 
 	local _, my = self:get_mouse()
 	if my > 0 then
-		self.current_tool = self.selected_tool
+		-- self.current_tool = self.selected_tool
 
-		if mouse.button == 1 then
+		if mouse.button == 3 then
+			self.current_tool = pan
+		elseif mouse.button == 1 then
 			if my < RIBBON_H then
 				-- clicked on top ribbon
 				self.current_tool = set_transport_time
 			end
 		elseif mouse.button == 2 then
 			return
-		elseif mouse.button == 3 then
-			self.current_tool = pan
 		end
 
 		self.current_tool:mousepressed(self)
