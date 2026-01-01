@@ -331,6 +331,10 @@ function tessera.keyreleased(key, key_str)
 	if note_input:keyreleased(key) then
 		return
 	end
+
+	if workspace:keyreleased(key) then
+		return
+	end
 end
 
 function tessera.resize(w, h)
