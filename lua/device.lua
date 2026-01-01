@@ -4,6 +4,16 @@ local widgets = require("ui.widgets")
 local Device = {}
 Device.__index = Device
 
+local function valid_index(x, default)
+	if type(x) ~= "number" then
+		return default
+	end
+	if x < 1 then
+		return 1
+	end
+	return math.floor(x)
+end
+
 -- options is a reference to an entry in device_list
 function Device.new(data, options, meter_id)
 	local self = setmetatable({}, Device)
@@ -41,35 +51,32 @@ function Device.new(data, options, meter_id)
 		elseif w_type == "separator" then
 			element.widget = "separator"
 		else
+			-- fix any bad save state and build widget
 			if w_type == "slider" then
 				local slider = widgets.Slider.new(self.state, index, w_options)
-				if self.state[index] == nil then
+				if type(self.state[index]) ~= "number" then
 					self.state[index] = slider.value.default
 				end
 				element.widget = slider
 			elseif w_type == "selector" then
 				local default = w_options.default or 1
+				self.state[index] = valid_index(self.state[index], default)
 
 				element.widget = widgets.Selector.new(self.state, index, w_options)
-				if self.state[index] == nil then
-					self.state[index] = default
-				end
 			elseif w_type == "dropdown" then
 				local default = w_options.default or 1
+				self.state[index] = valid_index(self.state[index], default)
 
 				element.widget = widgets.Dropdown.new(self.state, index, w_options)
-				if self.state[index] == nil then
-					self.state[index] = default
-				end
 			elseif w_type == "toggle" then
 				local default = w_options.default or false
+				if type(self.state[index]) ~= "boolean" then
+					self.state[index] = default
+				end
+
 				element.widget =
 					widgets.Toggle.new(self.state, index, { label = w_name, style = "checkbox", default = default })
 				element.label = nil
-
-				if self.state[index] == nil then
-					self.state[index] = default
-				end
 			else
 				error(w_type .. " not supported!")
 			end
