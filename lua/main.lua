@@ -43,6 +43,10 @@ modifier_keys.shift = false
 modifier_keys.alt = false
 modifier_keys.any = false
 
+-- on macos, use "command", otherwise use "ctrl"
+local L_MOD = (tessera.os_name == "macos") and "lgui" or "lctrl"
+local R_MOD = (tessera.os_name == "macos") and "rgui" or "rctrl"
+
 local initial_setup = true
 local draw_time_s = 0
 
@@ -224,7 +228,7 @@ end
 function tessera.keypressed(key, key_str, isrepeat)
 	if key == "lshift" or key == "rshift" then
 		modifier_keys.shift = true
-	elseif key == "lctrl" or key == "rctrl" then
+	elseif key == L_MOD or key == R_MOD then
 		modifier_keys.ctrl = true
 	elseif key == "lalt" or key == "ralt" then
 		modifier_keys.alt = true
@@ -299,7 +303,7 @@ function tessera.keypressed(key, key_str, isrepeat)
 			local new_index = selection.device_index - 1
 			command.run_and_register(command.ReorderEffect.new(selection.ch_index, selection.device_index, new_index))
 		end
-	elseif key == "delete" then
+	elseif key == "delete" or key == "backspace" then
 		-- TODO: move these to respective views
 		if selection.ch_index then
 			if selection.device_index and selection.device_index > 0 then
@@ -314,7 +318,7 @@ end
 function tessera.keyreleased(key, key_str)
 	if key == "lshift" or key == "rshift" then
 		modifier_keys.shift = false
-	elseif key == "lctrl" or key == "rctrl" then
+	elseif key == L_MOD or key == R_MOD then
 		modifier_keys.ctrl = false
 	elseif key == "lalt" or key == "ralt" then
 		modifier_keys.alt = false

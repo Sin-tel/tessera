@@ -363,7 +363,7 @@ function Canvas:keypressed(key)
 			self.tool_active = true
 			return true
 		end
-	elseif key == "delete" then
+	elseif key == "delete" or key == "backspace" then
 		if not selection.is_empty() then
 			local notes = selection.get_notes()
 			local c = command.NoteDelete.new(notes)

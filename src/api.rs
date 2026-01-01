@@ -40,6 +40,10 @@ pub fn create_lua(scale_factor: f64) -> LuaResult<Lua> {
 	// tessera.project
 	tessera.set("project", project::create(&lua)?)?;
 
+	// tessera.os_name ("windows", "macos", "linux")
+	let os_name = std::env::consts::OS;
+	tessera.set("os_name", os_name)?;
+
 	// tessera.exit()
 	tessera.set(
 		"exit",
