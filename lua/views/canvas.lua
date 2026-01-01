@@ -384,6 +384,8 @@ function Canvas:keypressed(key)
 			self.tool_active = true
 			return true
 		end
+	elseif key == "kp." or key == "." then
+		self:auto_zoom()
 	end
 
 	if zoom_factor then
@@ -446,6 +448,55 @@ function Canvas:keypressed(key)
 
 		command.register(command.NoteUpdate.new(prev_state, selection.list))
 		return true
+	end
+end
+
+function Canvas:auto_zoom()
+	local all_notes = selection.is_empty()
+
+	local t_min = math.huge
+	local t_max = -math.huge
+	local p_min = math.huge
+	local p_max = -math.huge
+	for _, channel in ipairs(project.channels) do
+		if channel.visible then
+			for _, note in ipairs(channel.notes) do
+				if all_notes or selection.mask[note] then
+					local t_start = note.time
+					local t_end = note.time + note.verts[#note.verts][1]
+
+					local p = tuning.get_pitch(note.interval)
+
+					if t_start < t_min then
+						t_min = t_start
+					end
+					if t_end > t_max then
+						t_max = t_end
+					end
+					if p < p_min then
+						p_min = p
+					end
+					if p > p_max then
+						p_max = p
+					end
+				end
+			end
+		end
+	end
+	if t_min < t_max then
+		self.transform.sx_ = 0.7 * self.w / (t_max - t_min)
+		self.transform.ox_ = -t_min * self.transform.sx_ + 0.15 * self.w
+	end
+
+	if p_min < p_max then
+		self.transform.sy_ = -0.7 * self.h / (p_max - p_min)
+		self.transform.oy_ = -p_max * self.transform.sy_ + 0.15 * self.h
+	end
+
+	-- if there's only a single note, center
+	if p_max == p_min then
+		self.transform.sy_ = -12
+		self.transform.oy_ = -p_max * self.transform.sy_ + 0.5 * self.h
 	end
 end
 

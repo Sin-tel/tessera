@@ -54,6 +54,7 @@ Clicking anywhere in the top ribbon will set the transport start time.
 | Action | Shortcut |
 | :--- | :--- |
 | **Toggle tool** (pen/edit) | `Tab` |
+| **Zoom to fit** | `.` |
 | **Select all notes** | `Ctrl + A` |
 | **Delete notes** | `Delete` or `Backspace` |
 | **Copy** | `Ctrl + C` |
