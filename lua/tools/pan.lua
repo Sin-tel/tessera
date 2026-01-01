@@ -11,6 +11,10 @@ function pan:mousedown(canvas)
 	canvas.transform:pan(px, py)
 end
 
+function pan:update()
+	mouse:set_cursor("grab")
+end
+
 function pan:mousereleased(canvas) end
 
 function pan:draw(canvas) end

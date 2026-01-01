@@ -304,6 +304,12 @@ function workspace:keypressed(key)
 	end
 end
 
+function workspace:keyreleased(key)
+	if self.focus then
+		return self.focus:keyreleased(key)
+	end
+end
+
 function workspace:set_overlay(o)
 	if overlay then
 		overlay.dead = true
