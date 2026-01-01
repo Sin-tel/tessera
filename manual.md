@@ -30,7 +30,6 @@ Tessera uses a flexible tiling UI. Panes can be resized by dragging the borders.
 | **Previous Tab** | `Ctrl + Shift + Tab` |
 
 
-
 ## 2. The Canvas (Piano Roll)
 Clicking anywhere in the top ribbon will set the transport start time.
 
@@ -56,7 +55,7 @@ Clicking anywhere in the top ribbon will set the transport start time.
 | :--- | :--- |
 | **Toggle tool** (pen/edit) | `Tab` |
 | **Select all notes** | `Ctrl + A` |
-| **Delete notes** | `Delete` |
+| **Delete notes** | `Delete` or `Backspace` |
 | **Copy** | `Ctrl + C` |
 | **Cut** | `Ctrl + X` |
 | **Paste** | `Ctrl + V` |
@@ -101,7 +100,7 @@ Click on a channel to select it.
 
 | Action | Shortcut |
 | :--- | :--- |
-| **Delete channel** | `Delete` |
+| **Delete channel** | `Delete` or `Backspace` |
 
 ### Channel settings
 Click anywhere in a device to select it. Clicking on the header will fold it up.
@@ -111,7 +110,7 @@ When an effect is selected in the 'Channel settings' panel:
 
 | Action | Shortcut |
 | :--- | :--- |
-| **Remove effect** | `Delete` |
+| **Remove effect** | `Delete` or `Backspace` |
 | **Move effect up** | `Shift + up` |
 | **Move effect down** | `Shift + down` |
 
