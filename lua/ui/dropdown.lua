@@ -55,9 +55,9 @@ function Dropdown:update(ui)
 
 	if ui.clicked == self then
 		local x2 = ui.mx - x
-		if self.arrows and x2 < w * 0.2 then
+		if self.arrows and x2 < w * 0.15 then
 			self.new_index = self:constrain_index(self.target[self.key] - 1)
-		elseif self.arrows and x2 > w * 0.8 then
+		elseif self.arrows and x2 > w * 0.85 then
 			self.new_index = self:constrain_index(self.target[self.key] + 1)
 		else
 			workspace:set_overlay(self:menu())

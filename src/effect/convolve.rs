@@ -103,12 +103,10 @@ impl Effect for Convolve {
 			0 => self.balance.set(value),
 			1 => {
 				let index = (value as usize).max(1) - 1;
-				match PATHS.get(index) {
-					Some(path) => {
-						return Some(RequestData::IR(path));
-					},
-					None => log_warn!("Impulse index out of bounds: {index}"),
+				if let Some(path) = PATHS.get(index) {
+					return Some(RequestData::IR(path));
 				}
+				log_warn!("Impulse index out of bounds: {index}");
 			},
 			2 => self.width.set(value),
 			3 => self.pre_delay_len.set(value / 1000.0), // value is in ms
