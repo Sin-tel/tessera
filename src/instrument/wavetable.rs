@@ -315,11 +315,11 @@ impl Instrument for Wavetable {
 			.iter_mut()
 			.filter(|v| v.active)
 			.max_by(|a, b| a.interpolate.total_cmp(&b.interpolate));
-		if let Some(voice) = voice {
-			if voice.interpolate >= 1.0 {
-				voice.interpolate = 0.0;
-				voice.update_voice_fft(self.sample_rate, &mut self.data);
-			}
+		if let Some(voice) = voice
+			&& voice.interpolate >= 1.0
+		{
+			voice.interpolate = 0.0;
+			voice.update_voice_fft(self.sample_rate, &mut self.data);
 		}
 
 		for voice in self.voices.iter_mut().filter(|v| v.active) {

@@ -32,7 +32,6 @@ struct Voice {
 	freq: Smooth,
 	freq2: Smooth,
 	env: Adsr,
-	vel: f32,
 	pres: AttackRelease,
 	pitch_env: f32,
 	bright: f32,
@@ -49,7 +48,6 @@ impl Voice {
 			accum: 0.,
 			accum2: 0.,
 			prev: 0.,
-			vel: 0.,
 			pitch_env: 0.,
 			bright: 0.,
 		}
@@ -151,7 +149,6 @@ impl Instrument for Fm {
 		voice.set_modulator(self.ratio, self.ratio_fine, self.offset);
 		voice.freq2.immediate();
 		voice.env.note_on(vel);
-		voice.vel = vel;
 		voice.bright = 1.0 - ((pitch - 60.) * 0.03 * self.keytrack).clamp(-1., 0.95);
 
 		// phase reset
