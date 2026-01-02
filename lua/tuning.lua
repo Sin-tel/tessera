@@ -28,7 +28,23 @@ local tuning = {}
 -- 	ratio(81 / 80),
 -- }
 
--- -- meantone TE optimal
+-- Argent / Pele / Hemifamity
+-- tuning.rank = 3
+-- tuning.generators = {
+-- 	11.9972,
+-- 	7.02664,
+-- 	0.24493,
+-- }
+
+-- 41edo rank3
+-- tuning.rank = 3
+-- tuning.generators = {
+-- 	12,
+-- 	12 * 24 / 41,
+-- 	12 * 1 / 41,
+-- }
+
+-- meantone TE optimal
 tuning.rank = 2
 tuning.generators = {
 	12.01397,

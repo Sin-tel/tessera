@@ -218,11 +218,11 @@ function tessera.mousemoved(x, y, dx, dy)
 	mouse:mousemoved(x, y, dx, dy)
 end
 
-function tessera.wheelmoved(_, y)
+function tessera.wheelmoved(x, y)
 	if audio_status == "render" then
 		return
 	end
-	mouse:wheelmoved(y)
+	mouse:wheelmoved(x, y)
 end
 
 function tessera.keypressed(key, key_str, isrepeat)
