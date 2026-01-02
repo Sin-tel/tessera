@@ -12,7 +12,7 @@ function pan:mousedown(canvas)
 end
 
 function pan:update()
-	mouse:set_cursor("grab")
+	-- mouse:set_cursor("grab")
 end
 
 function pan:mousereleased(canvas) end
