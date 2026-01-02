@@ -151,18 +151,15 @@ function midi.update_device(device_index, device)
 	end
 
 	-- TODO: be smarter about the routing here
-	local sink
+	local sink = {}
 	for i, ch in ipairs(ui_channels) do
 		if project.channels[i].armed then
-			sink = ch
-			break
+			table.insert(sink, ch)
 		end
 	end
 
-	if sink then
-		for _, event in ipairs(events) do
-			device:event(sink, event)
-		end
+	for _, event in ipairs(events) do
+		device:event(sink, event)
 	end
 end
 
@@ -193,6 +190,12 @@ function MidiDevice:set_config(config)
 	end
 end
 
+local function send_event(sink, event)
+	for _, v in ipairs(sink) do
+		v:event(event)
+	end
+end
+
 function MidiDevice:event(sink, event)
 	if event.name == "note_on" then
 		local n_index = event_note_index(event)
@@ -203,13 +206,13 @@ function MidiDevice:event(sink, event)
 		local interval = tuning.from_midi(event.note)
 		local offset = self.offsets[event.channel]
 
-		sink:event({ name = "note_on", token = token, interval = interval, vel = event.vel, offset = offset })
+		send_event(sink, { name = "note_on", token = token, interval = interval, vel = event.vel, offset = offset })
 	elseif event.name == "note_off" then
 		local n_index = event_note_index(event)
 		local token = self.notes[n_index]
 
 		if token then
-			sink:event({ name = "note_off", token = token })
+			send_event(sink, { name = "note_off", token = token })
 		else
 			log.warn("Unhandled note off event.")
 			return
@@ -223,12 +226,12 @@ function MidiDevice:event(sink, event)
 			for k, token in pairs(self.notes) do
 				local midi_ch = math.floor(k / 256)
 				if midi_ch == event.channel then
-					sink:event({ name = "pitch", token = token, offset = offset })
+					send_event(sink, { name = "pitch", token = token, offset = offset })
 				end
 			end
 		else
 			for _, token in pairs(self.notes) do
-				sink:event({ name = "pitch", token = token, offset = offset })
+				send_event(sink, { name = "pitch", token = token, offset = offset })
 			end
 		end
 	elseif event.name == "pressure" then
@@ -236,29 +239,29 @@ function MidiDevice:event(sink, event)
 			for k, token in pairs(self.notes) do
 				local midi_ch = math.floor(k / 256)
 				if midi_ch == event.channel then
-					sink:event({ name = "pressure", token = token, pressure = event.pressure })
+					send_event(sink, { name = "pressure", token = token, pressure = event.pressure })
 				end
 			end
 		else
 			-- TODO: untested
 			for _, token in pairs(self.notes) do
-				sink:event({ name = "pressure", token = token, pressure = event.pressure })
+				send_event(sink, { name = "pressure", token = token, pressure = event.pressure })
 			end
 		end
 	elseif event.name == "controller" then
 		if event.controller == 64 then
 			-- sustain pedal
 			if event.value > 0 then
-				sink:event({ name = "sustain", sustain = true })
+				send_event(sink, { name = "sustain", sustain = true })
 			else
-				sink:event({ name = "sustain", sustain = false })
+				send_event(sink, { name = "sustain", sustain = false })
 			end
 		else
 			-- send pressure on modwheel (1) or foot pedal (2)
 			if event.controller == 1 or event.controller == 2 then
 				local p = event.value
 				for _, token in pairs(self.notes) do
-					sink:event({ name = "pressure", token = token, pressure = p })
+					send_event(sink, { name = "pressure", token = token, pressure = p })
 				end
 			end
 		end
