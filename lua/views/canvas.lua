@@ -28,7 +28,6 @@ function Canvas.new()
 	self.selected_tool = edit
 	self.current_tool = self.selected_tool
 	self.tool_active = false
-	self.pan_mode = false
 
 	self.transform = Transform.new()
 
@@ -396,11 +395,6 @@ function Canvas:keypressed(key)
 			self.tool_active = true
 			return true
 		end
-	elseif key == "m" and not modifier_keys.any then
-		if not self.tool_active then
-			self.pan_mode = true
-			self.current_tool = pan
-		end
 	elseif key == "kp." or key == "." then
 		self:auto_zoom()
 	end
@@ -469,10 +463,7 @@ function Canvas:keypressed(key)
 end
 
 function Canvas:keyreleased(key)
-	if key == "m" then
-		self.pan_mode = false
-		self.current_tool = self.selected_tool
-	end
+	--
 end
 
 function Canvas:auto_zoom()
@@ -635,9 +626,9 @@ function Canvas:mousepressed()
 
 	local _, my = self:get_mouse()
 	if my > 0 then
-		-- self.current_tool = self.selected_tool
+		self.current_tool = self.selected_tool
 
-		if mouse.button == 3 then
+		if mouse.button == 3 or (mouse.button == 1 and modifier_keys.alt and modifier_keys.ctrl) then
 			self.current_tool = pan
 		elseif mouse.button == 1 then
 			if my < RIBBON_H then

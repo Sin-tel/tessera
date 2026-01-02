@@ -69,7 +69,7 @@ function edit:update(canvas)
 	local closest, _ = canvas:find_closest_note(mx, my, NOTE_EDIT_DIST)
 	local closest_end, _ = canvas:find_closest_end(mx, my, DRAG_END_DIST)
 
-	if modifier_keys.alt then
+	if modifier_keys.alt and not modifier_keys.ctrl then
 		mouse:set_cursor("h")
 	elseif closest_end or self.tool == drag_end then
 		mouse:set_cursor("v")
