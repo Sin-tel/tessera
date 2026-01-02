@@ -1,7 +1,7 @@
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::resample::Resampler;
 use crate::embed::Asset;
-use crate::log::log_error;
+use crate::log::*;
 use anyhow::{Result, anyhow, bail};
 use fft_convolution::Convolution;
 use fft_convolution::fft_convolver::TwoStageFFTConvolver;
@@ -76,7 +76,11 @@ impl Worker {
 		let data = match self.samples.entry(path.to_string()) {
 			Entry::Occupied(e) => e.get().clone(),
 			Entry::Vacant(e) => {
-				let sample = load_sample(path, self.sample_rate)?;
+				let (sample, sr) = load_sample(path)?;
+
+				if sr != 44100 {
+					log_warn!("Sample {} has sample_rate {}", path, sr);
+				}
 				// TODO: normalize?
 				e.insert(Arc::new(sample)).clone()
 			},
@@ -88,7 +92,20 @@ impl Worker {
 		let sample = match self.samples.entry(path.to_string()) {
 			Entry::Occupied(e) => e.get().clone(),
 			Entry::Vacant(e) => {
-				let mut sample = load_sample(path, self.sample_rate)?;
+				let (mut sample, source_rate) = load_sample(path)?;
+
+				let source_rate = source_rate as f32;
+				let target_rate = self.sample_rate as f32;
+
+				if (source_rate - target_rate).abs() > 1.0 {
+					let t = std::time::Instant::now();
+
+					let resampler = Resampler::new(source_rate, target_rate);
+					sample = [resampler.process(&sample[0]), resampler.process(&sample[0])];
+
+					log_info!("Resampling took {:.1} ms", 1000.0 * t.elapsed().as_secs_f64());
+				}
+
 				normalize_power(&mut sample);
 				e.insert(Arc::new(sample)).clone()
 			},
@@ -128,7 +145,9 @@ pub fn load_wavetable(path: &str) -> Result<Vec<f32>> {
 	Ok(table)
 }
 
-pub fn load_sample(path: &str, sample_rate: u32) -> Result<[Vec<f32>; 2]> {
+pub fn load_sample(path: &str) -> Result<([Vec<f32>; 2], u32)> {
+	let t = std::time::Instant::now();
+
 	let file_data: &[u8] = &Asset::get(path).ok_or_else(|| anyhow!("Could not find {path}"))?.data;
 	let reader = hound::WavReader::new(file_data)?;
 	let spec = reader.spec();
@@ -157,15 +176,8 @@ pub fn load_sample(path: &str, sample_rate: u32) -> Result<[Vec<f32>; 2]> {
 			left.push(*r);
 		}
 	}
-
-	let source_rate = spec.sample_rate as f32;
-	let target_rate = sample_rate as f32;
-
-	if (source_rate - target_rate).abs() < 1.0 {
-		return Ok([left, right]);
-	}
-	let resampler = Resampler::new(source_rate, target_rate);
-	Ok([resampler.process(&left), resampler.process(&right)])
+	log_info!("Loading sample {} took {:.1} ms", path, 1000.0 * t.elapsed().as_secs_f64());
+	return Ok(([left, right], spec.sample_rate));
 }
 
 fn read_samples(reader: WavReader<&[u8]>, spec: hound::WavSpec) -> Result<Vec<f32>> {
