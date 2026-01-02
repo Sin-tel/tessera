@@ -128,8 +128,10 @@ function Channel:update(ui, ch_index, bg_color, w)
 		if ch.armed then
 			ch.armed = false
 		else
-			for _, v in ipairs(project.channels) do
-				v.armed = false
+			if not modifier_keys.shift then
+				for _, v in ipairs(project.channels) do
+					v.armed = false
+				end
 			end
 			ch.armed = true
 		end
