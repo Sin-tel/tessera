@@ -44,15 +44,20 @@ end
 function Canvas:update()
 	self.transform:update()
 
+	-- follow playhead
 	if project.settings.follow and engine.playing then
 		local px = self.transform.ox_ + engine.time * self.transform.sx
 
-		if px < self.w * 0.1 then
-			self.transform.ox_ = -engine.time * self.transform.sx + self.w * 0.1
-		elseif px > self.w * 0.9 then
-			self.transform.ox_ = -engine.time * self.transform.sx + self.w * 0.9
-		else
-			self.transform.ox_ = self.transform.ox_ - engine.frame_time * self.transform.sx
+		-- if px < self.w * 0.1 then
+		-- 	self.transform.ox_ = -engine.time * self.transform.sx + self.w * 0.1
+		-- elseif px > self.w * 0.9 then
+		-- 	self.transform.ox_ = -engine.time * self.transform.sx + self.w * 0.9
+		-- else
+		-- 	self.transform.ox_ = self.transform.ox_ - engine.frame_time * self.transform.sx
+		-- end
+
+		if px < self.w * 0.15 or px > self.w * 0.85 then
+			self.transform.ox_ = -engine.time * self.transform.sx + self.w * 0.15
 		end
 	end
 	if self:focus() then
@@ -67,6 +72,9 @@ function Canvas:update()
 				if not modifier_keys.shift then
 					self.transform:zoom_y(my, zoom_factor)
 				end
+			end
+			if mouse.scroll_x then
+				self.transform.ox_ = self.transform.ox_ + mouse.scroll_x * self.w * 0.2
 			end
 			if self.tool_active then
 				if self.current_tool.update then
@@ -389,8 +397,10 @@ function Canvas:keypressed(key)
 			return true
 		end
 	elseif key == "m" and not modifier_keys.any then
-		self.pan_mode = true
-		self.current_tool = pan
+		if not self.tool_active then
+			self.pan_mode = true
+			self.current_tool = pan
+		end
 	elseif key == "kp." or key == "." then
 		self:auto_zoom()
 	end

@@ -28,6 +28,7 @@ function mouse:load()
 	self.pbutton = false
 
 	self.scroll = false
+	self.scroll_x = false
 
 	self.cursor = "default"
 	self.pcursor = self.cursor
@@ -86,6 +87,7 @@ function mouse:end_frame()
 	self.button_pressed = false
 	self.button_released = false
 	self.scroll = false
+	self.scroll_x = false
 
 	-- swap cursor only if changed
 	if self.pcursor ~= self.cursor then
@@ -127,7 +129,8 @@ function mouse:mousemoved(_, _, dx, dy)
 	self.drag_dist = self.drag_dist + util.length(self.dx, self.dy)
 end
 
-function mouse:wheelmoved(y)
+function mouse:wheelmoved(x, y)
+	self.scroll_x = x
 	self.scroll = y
 end
 

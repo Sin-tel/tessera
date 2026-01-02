@@ -69,7 +69,7 @@ impl Instrument for Polysine {
 
 				voice.prev = lerp(voice.prev, out, 0.5);
 
-				*sample += out * 0.5;
+				*sample += out * 0.1;
 			}
 			if !voice.note_on && voice.vel.get() < 1e-4 {
 				voice.active = false;

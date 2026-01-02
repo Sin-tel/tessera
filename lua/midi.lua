@@ -253,6 +253,14 @@ function MidiDevice:event(sink, event)
 			else
 				sink:event({ name = "sustain", sustain = false })
 			end
+		else
+			-- send pressure on modwheel (1) or foot pedal (2)
+			if event.controller == 1 or event.controller == 2 then
+				local p = event.value
+				for _, token in pairs(self.notes) do
+					sink:event({ name = "pressure", token = token, pressure = p })
+				end
+			end
 		end
 	end
 end
