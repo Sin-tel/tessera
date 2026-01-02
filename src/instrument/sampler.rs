@@ -1,24 +1,37 @@
+use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::env::AttackRelease;
 use crate::dsp::smooth::Smooth;
 use crate::dsp::*;
 use crate::instrument::Instrument;
 use crate::log::log_warn;
 use crate::worker::{RequestData, ResponseData};
+use halfband::iir;
 use std::any::Any;
 use std::sync::Arc;
+
+// Note: because of interpolation scheme we need one sample of padding at the start
 
 #[rustfmt::skip]
 const PATHS: &[&str] = &[
 	"samples/bassdrum_c1.wav",
+	"samples/bell_c6.wav",
+	"samples/flute_e5.wav",
 	"samples/glass_c7.wav",
+	"samples/glockenspiel_c6.wav",
 	"samples/gong_1_a2.wav",
 	"samples/gong_2_e4.wav",
+	"samples/harp_c5.wav",
 	"samples/kalimba_1_g4.wav",
 	"samples/kalimba_2_c5.wav",
 	"samples/kalimba_3_a3.wav",
+	"samples/marimba_g3.wav",
 	"samples/perc_1_a2.wav",
 	"samples/perc_2_c3.wav",
 	"samples/scrape_c5.wav",
+	"samples/timpani_e4.wav",
+	"samples/trombone_f3.wav",
+	"samples/tuba_f2.wav",
+	"samples/tubular_bell_f4.wav",
 	"samples/vox_f4.wav",
 	"samples/xylophone_g4.wav",
 ];
@@ -28,7 +41,8 @@ const VOICE_COUNT: usize = 16;
 impl Sampler {
 	fn calculate_f(&self, pitch: f32) -> f32 {
 		// Assuming samples are stored in 44100 hz, root note translates to C5
-		pitch_to_hz(pitch - self.root_note) * 44100.0 / (C5_HZ * self.sample_rate)
+		// Factor 0.5 for downsampling
+		pitch_to_hz(pitch - self.root_note) * 0.5 * 44100.0 / (C5_HZ * self.sample_rate)
 	}
 }
 
@@ -81,8 +95,6 @@ struct Voice {
 	active: bool,
 	note_on: bool,
 	position: f32,
-
-	// Playback rate, 1.0 = original speed
 	f: f32,
 
 	amp_env: AttackRelease,
@@ -108,10 +120,7 @@ impl Voice {
 		self.note_on = true;
 		self.position = 0.0;
 		self.vel = velocity;
-
 		self.f = f;
-
-		// Reset envelope
 		self.amp_env.set(1.0);
 	}
 
@@ -123,6 +132,9 @@ impl Voice {
 
 pub struct Sampler {
 	voices: [Voice; VOICE_COUNT],
+	downsampler: [iir::Downsampler8; 2],
+	buffer_l: [f32; 2 * MAX_BUF_SIZE],
+	buffer_r: [f32; 2 * MAX_BUF_SIZE],
 	sample: Option<Arc<[Vec<f32>; 2]>>,
 	loading: bool,
 	sample_rate: f32,
@@ -132,7 +144,16 @@ pub struct Sampler {
 impl Instrument for Sampler {
 	fn new(sample_rate: f32) -> Self {
 		let voices = std::array::from_fn(|_| Voice::new(sample_rate));
-		Self { voices, sample: None, sample_rate, root_note: 0.0, loading: true }
+		Self {
+			voices,
+			sample: None,
+			sample_rate,
+			root_note: 0.0,
+			loading: true,
+			downsampler: [iir::Downsampler8::default(), iir::Downsampler8::default()],
+			buffer_l: [0.; 2 * MAX_BUF_SIZE],
+			buffer_r: [0.; 2 * MAX_BUF_SIZE],
+		}
 	}
 
 	fn voice_count(&self) -> usize {
@@ -140,14 +161,18 @@ impl Instrument for Sampler {
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
-		let [bl, br] = buffer;
+		let n = 2 * buffer[0].len();
+		let bl = &mut self.buffer_l[..n];
+		let br = &mut self.buffer_r[..n];
+		bl.fill(0.0);
+		br.fill(0.0);
 
 		if let Some(sample_data) = &self.sample {
 			for voice in self.voices.iter_mut().filter(|v| v.active) {
 				let len = sample_data[0].len();
 
 				for (l, r) in bl.iter_mut().zip(br.iter_mut()) {
-					if voice.position as usize >= len - 1 {
+					if voice.position as usize >= len - 3 {
 						// sample finished
 						voice.active = false;
 						break;
@@ -155,20 +180,21 @@ impl Instrument for Sampler {
 					let env = voice.amp_env.process();
 					let gain = voice.gain.process();
 
-					// linear interpolation
+					// interpolation
 					let (i, frac) = make_usize_frac(voice.position);
 
-					let y0 = sample_data[0][i];
-					let y1 = sample_data[0][i + 1];
-					let out_l = lerp(y0, y1, frac);
-
-					let y0 = sample_data[1][i];
-					let y1 = sample_data[1][i + 1];
-					let out_r = lerp(y0, y1, frac);
+					let mut out = [0., 0.];
+					for ch in 0..2 {
+						let y0 = sample_data[ch][i];
+						let y1 = sample_data[ch][i + 1];
+						let y2 = sample_data[ch][i + 2];
+						let y3 = sample_data[ch][i + 3];
+						out[ch] = hermite4(y0, y1, y2, y3, frac);
+					}
 
 					let out_gain = env * voice.vel * gain;
-					*l += out_l * out_gain;
-					*r += out_r * out_gain;
+					*l += out[0] * out_gain;
+					*r += out[1] * out_gain;
 
 					voice.position += voice.f;
 				}
@@ -180,6 +206,9 @@ impl Instrument for Sampler {
 				}
 			}
 		}
+
+		self.downsampler[0].process_block(bl, buffer[0]);
+		self.downsampler[1].process_block(br, buffer[1]);
 	}
 
 	fn pitch(&mut self, pitch: f32, id: usize) {
