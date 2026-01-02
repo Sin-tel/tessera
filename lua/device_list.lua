@@ -1,11 +1,5 @@
 local device_list = {}
 
--- should this just define a UI instead of a parameter list?
--- parameters need to have a correct number though
--- TODO: allow for custom UI layouts
--- Add toggle groups
--- Add add headings / separators
-
 local C5_HZ = 523.2511
 local INF = math.huge
 local DEFAULT_Q = 1 / math.sqrt(2)
@@ -68,6 +62,39 @@ device_list.instruments.wavetable = {
 		{ "Shape", "slider", { default = 0.0 } },
 		{ "Random", "slider", { default = 0.0 } },
 		{ "Depth", "slider", { default = 0.0 } },
+	},
+}
+
+device_list.instruments.sampler = {
+	name = "Sampler",
+	parameters = {
+		{
+			"Sample",
+			"dropdown",
+			{
+				list = {
+					"Bassdrum",
+					"Glass",
+					"Gong 1",
+					"Gong 2",
+					"Kalimba 1",
+					"Kalimba 2",
+					"Kalimba 3",
+					"Perc 1",
+					"Perc",
+					"Scrape",
+					"Vox",
+					"Xylophone",
+				},
+				default = 5,
+				arrows = true,
+			},
+		},
+		{ "Gain", "slider", { default = -12.0, min = -24.0, max = 0.0, fmt = "%0.1f dB" } },
+
+		{ "separator" },
+		{ "Attack", "slider", { default = 2.0, min = 1.0, max = 2000.0, t = "log", fmt = "ms" } },
+		{ "Release", "slider", { default = 200.0, min = 10.0, max = 5000.0, t = "log", fmt = "ms" } },
 	},
 }
 
