@@ -28,12 +28,36 @@ local tuning = {}
 -- 	ratio(81 / 80),
 -- }
 
--- Argent / Pele / Hemifamity
+-- Argent / Pele / Hemifamity (7-limit)
+-- 5/4 = E-
+-- 7/4 = Bb-
 -- tuning.rank = 3
 -- tuning.generators = {
 -- 	11.9972,
 -- 	7.02664,
 -- 	0.24493,
+-- }
+
+-- Pele (11-limit)
+-- 5/4 = E-
+-- 7/4 = Bb-
+-- 11/8 = Gb-
+-- tuning.rank = 3
+-- tuning.generators = {
+-- 	11.99542,
+-- 	7.03011,
+-- 	0.25316,
+-- }
+
+-- Akea (11-limit)
+-- 5/4 = E-
+-- 7/4 = Bb-
+-- 11/8 = F++
+-- tuning.rank = 3
+-- tuning.generators = {
+-- 	12.0014,
+-- 	7.02924,
+-- 	0.26236,
 -- }
 
 -- 41edo rank3
@@ -44,14 +68,25 @@ local tuning = {}
 -- 	12 * 1 / 41,
 -- }
 
--- meantone TE optimal
+-- septimal meantone WE
+-- 7/4 = A#
+-- 11/8 = Ex or Gbb
 tuning.rank = 2
 tuning.generators = {
-	12.01397,
-	6.97049,
+	12.01236,
+	6.97212,
 }
 
+-- 31edo rank 2
+-- tuning.rank = 2
+-- tuning.generators = {
+-- 	12.0,
+-- 	12.0 * 18.0 / 31.0,
+-- }
+
 -- flattone
+-- 7/4 = Bbb
+-- 11/8 = F#
 -- tuning.rank = 2
 -- tuning.generators = {
 -- 	12.02062,
@@ -70,24 +105,6 @@ tuning.generators = {
 -- tuning.generators = {
 -- 	12.0,
 -- 	7.03448,
--- }
-
--- septimal meantone WE
--- tuning.generators = {
--- 	12.01236,
--- 	6.97212,
--- }
-
--- -- meantone target tuning (5/4, 2)
--- tuning.generators = {
--- 	12.0,
--- 	6.96578,
--- }
-
--- -- meantone target tuning (5/4, 6/5)
--- tuning.generators = {
--- 	12.10753,
--- 	7.01955,
 -- }
 
 tuning.circle_of_fifths = { "F", "C", "G", "D", "A", "E", "B" }
@@ -239,9 +256,11 @@ function tuning.get_name(p)
 		local plus = p[3]
 		if plus > 0 then
 			acc = acc .. string.rep("l", plus)
+			-- acc = acc .. string.rep("j", plus)
 		elseif plus < 0 then
 			local minus = -plus
 			acc = acc .. string.rep("m", minus)
+			-- acc = acc .. string.rep("k", minus)
 		end
 	end
 

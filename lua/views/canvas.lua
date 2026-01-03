@@ -359,6 +359,27 @@ function Canvas:keypressed(key)
 		if not clipboard.is_empty() then
 			-- get notes and paste them
 			local notes = util.clone(clipboard.notes)
+
+			-- check if all notes belong to a single channel
+			-- TODO: this behaviour might be a bit confusing, but it's useful
+			local single_channel = false
+			for ch_index in pairs(notes) do
+				if #notes[ch_index] > 0 then
+					if single_channel then
+						single_channel = false
+						break
+					else
+						single_channel = ch_index
+					end
+				end
+			end
+			-- move to selected channel
+			if single_channel and selection.ch_index then
+				local new_notes = {}
+				new_notes[selection.ch_index] = util.clone(notes[single_channel])
+				notes = new_notes
+			end
+
 			local c = command.NoteAdd.new(notes)
 			-- drag tool is responsible for registering the actual command
 			c:run()

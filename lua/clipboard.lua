@@ -1,6 +1,6 @@
 local clipboard = {}
 
-clipboard.list = {}
+clipboard.notes = {}
 
 function clipboard.set(notes)
 	clipboard.notes = util.clone(notes)

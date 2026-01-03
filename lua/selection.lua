@@ -24,7 +24,7 @@ end
 
 function selection.set_from_notes(notes)
 	selection.mask = {}
-	for _, v in ipairs(notes) do
+	for _, v in pairs(notes) do
 		for _, note in ipairs(v) do
 			selection.mask[note] = true
 		end
