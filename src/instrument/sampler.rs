@@ -50,7 +50,7 @@ fn pitch_from_filename(path: &str) -> Option<f32> {
 	let name = std::path::Path::new(path).file_stem()?.to_str()?;
 
 	// Split by common separators and try to parse each part starting from the last
-	for part in name.split(|c| c == '_' || c == '-' || c == ' ').rev() {
+	for part in name.split(['_', '-', ' ']).rev() {
 		if let Some(p) = parse_pitch(part) {
 			return Some(p);
 		}
@@ -261,7 +261,7 @@ impl Instrument for Sampler {
 			},
 			1 => {
 				let gain = from_db(value);
-				self.voices.iter_mut().for_each(|v| v.gain.set(gain))
+				self.voices.iter_mut().for_each(|v| v.gain.set(gain));
 			},
 			2 => self.voices.iter_mut().for_each(|v| v.amp_env.set_attack(value)),
 			3 => self.voices.iter_mut().for_each(|v| v.amp_env.set_release(value)),

@@ -35,5 +35,5 @@ sudo dnf install alsa-lib-devel jack-audio-connection-kit-devel
 ```
 
 ### MacOS
-No sepcial requirements. it should Just Work.
+No special requirements. it should Just Work.
 

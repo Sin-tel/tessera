@@ -66,9 +66,9 @@
 
 ## Devices
 - [ ] Improve UX for equalizer
-- [ ] Limiter
+- [x] Limiter
 - [ ] Tube
-- [ ] Phaser
+- [x] Phaser
 - [x] Chorus/vibrato
 - [x] Tremolo
 - [ ] Tape saturation
