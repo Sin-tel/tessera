@@ -126,4 +126,8 @@ function Slider:draw(v, display, color_fill, color_line, x, y, w, h)
 	tessera.graphics.label(display, x, y + 0.4, w, h, tessera.graphics.ALIGN_CENTER)
 end
 
+function Slider:constrain()
+	self.target[self.key] = self.value:constrain(self.target[self.key])
+end
+
 return Slider

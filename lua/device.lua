@@ -57,6 +57,7 @@ function Device.new(data, options, meter_id)
 				if type(self.state[index]) ~= "number" then
 					self.state[index] = slider.value.default
 				end
+				slider:constrain()
 				element.widget = slider
 			elseif w_type == "selector" then
 				local default = w_options.default or 1
