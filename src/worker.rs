@@ -177,7 +177,7 @@ pub fn load_sample(path: &str) -> Result<([Vec<f32>; 2], u32)> {
 		}
 	}
 	log_info!("Loading sample {} took {:.1} ms", path, 1000.0 * t.elapsed().as_secs_f64());
-	return Ok(([left, right], spec.sample_rate));
+	Ok(([left, right], spec.sample_rate))
 }
 
 fn read_samples(reader: WavReader<&[u8]>, spec: hound::WavSpec) -> Result<Vec<f32>> {

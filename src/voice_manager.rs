@@ -182,7 +182,7 @@ impl VoiceManager {
 
 	pub fn all_notes_off(&mut self) {
 		for (i, v) in self.voices.iter_mut().enumerate() {
-			if v.key_down {
+			if v.active {
 				self.instrument.note_off(i);
 			}
 			*v = Voice::default();
