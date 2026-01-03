@@ -9,8 +9,8 @@ use halfband::iir::{Downsampler8, Upsampler8}; // Assuming these structs exist
 // 4-pole butterworth Q
 //  1 / 2 * cos(  pi/8)
 //  1 / 2 * cos(3*pi/8)
-const Q1: f32 = 0.541196100146;
-const Q2: f32 = 1.30656296488;
+const Q1: f32 = 0.5411961;
+const Q2: f32 = 1.306563;
 
 #[derive(Debug)]
 struct Track {
@@ -18,9 +18,6 @@ struct Track {
 	downsampler: Downsampler8,
 	pre_filters: [Filter; 2],
 	post_filters: [Filter; 2],
-	s3: f32,
-	s2: f32,
-	s1: f32,
 
 	accum: f32,
 	y: f32,
@@ -39,9 +36,6 @@ impl Track {
 			downsampler: Downsampler8::default(),
 			pre_filters: [Filter::new(sample_rate), Filter::new(sample_rate)],
 			post_filters: [Filter::new(sample_rate), Filter::new(sample_rate)],
-			s3: 0.0,
-			s2: 0.0,
-			s1: 0.0,
 			accum: 0.0,
 			y: 0.0,
 			prev_x: 0.0,
