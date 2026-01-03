@@ -95,7 +95,7 @@ device_list.instruments.sampler = {
 					"Vox",
 					"Xylophone",
 				},
-				default = 5,
+				default = 4,
 				arrows = true,
 			},
 		},
@@ -252,15 +252,26 @@ device_list.effects.phaser = {
 		{ "Dry/Wet", "slider", { default = 1.0, min = 0.0, max = 1.0 } },
 		{ "Frequency", "slider", { default = 1000.0, min = 300.0, max = 8000.0, t = "log", fmt = "Hz" } },
 		{ "Feedback", "slider", { default = 0.3, min = 0.0, max = 1.0 } },
-		{ "Rate", "slider", { default = 0.5, min = 0.05, max = 10.0, fmt = "Hz" } },
+		{ "Rate", "slider", { default = 0.5, min = 0.05, max = 10.0, fmt = "Hz", t = "log" } },
 		{ "Depth", "slider", { default = 0.6, min = 0.0, max = 1.0 } },
+	},
+}
+
+device_list.effects.decimate = {
+	name = "Decimate",
+	parameters = {
+		{ "Frequency", "slider", { default = 6000.0, min = 300.0, max = 40000.0, t = "log", fmt = "Hz" } },
+		{ "Jitter", "slider", { default = 0.3 } },
+		{ "separator" },
+		{ "Post Filter", "slider", { default = 1.0 } },
+		{ "Pre Filter", "toggle", { default = true } },
 	},
 }
 
 device_list.effects.delay = {
 	name = "Delay",
 	parameters = {
-		{ "Dry/Wet", "slider", { default = 0.33 } },
+		{ "Dry/Wet", "slider", { default = 0.25 } },
 		{ "Time", "slider", { default = 0.4, min = 0.1, max = 1.0, t = "log" } },
 		{ "Offset", "slider", { default = 0.15, min = -1.0, max = 1.0 } },
 		{ "Feedback", "slider", { default = 0.66 } },

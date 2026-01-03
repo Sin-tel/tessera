@@ -42,6 +42,10 @@ function SliderValue.new(options)
 	return self
 end
 
+function SliderValue:constrain(value)
+	return self:from_normal(self:to_normal(value))
+end
+
 function SliderValue:from_normal(value)
 	local x = util.clamp(value, 0, 1)
 	if self.t == "dB" then

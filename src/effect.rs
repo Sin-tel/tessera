@@ -1,6 +1,7 @@
 mod chorus;
 mod compressor;
 mod convolve;
+mod decimate;
 mod delay;
 mod drive;
 mod equalizer;
@@ -18,9 +19,9 @@ use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::{MuteState, PeakMeter, time_constant};
 use crate::effect;
 use crate::effect::{
-	chorus::Chorus, compressor::Compressor, convolve::Convolve, delay::Delay, drive::Drive,
-	equalizer::Equalizer, gain::Gain, limiter::Limiter, pan::Pan, phaser::Phaser, reverb::Reverb,
-	testfilter::TestFilter, tilt::Tilt, tremolo::Tremolo, wide::Wide,
+	chorus::Chorus, compressor::Compressor, convolve::Convolve, decimate::Decimate, delay::Delay,
+	drive::Drive, equalizer::Equalizer, gain::Gain, limiter::Limiter, pan::Pan, phaser::Phaser,
+	reverb::Reverb, testfilter::TestFilter, tilt::Tilt, tremolo::Tremolo, wide::Wide,
 };
 use crate::log::log_warn;
 use crate::meters::MeterHandle;
@@ -32,6 +33,7 @@ pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
 		"chorus" => Box::new(Chorus::new(sample_rate)),
 		"compressor" => Box::new(Compressor::new(sample_rate)),
 		"convolve" => Box::new(Convolve::new(sample_rate)),
+		"decimate" => Box::new(Decimate::new(sample_rate)),
 		"delay" => Box::new(Delay::new(sample_rate)),
 		"drive" => Box::new(Drive::new(sample_rate)),
 		"equalizer" => Box::new(Equalizer::new(sample_rate)),
