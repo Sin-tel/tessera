@@ -6,6 +6,7 @@ mod drive;
 mod equalizer;
 mod gain;
 mod pan;
+mod phaser;
 mod reverb;
 mod testfilter;
 mod tilt;
@@ -17,8 +18,8 @@ use crate::dsp::{MuteState, PeakMeter, time_constant};
 use crate::effect;
 use crate::effect::{
 	chorus::Chorus, compressor::Compressor, convolve::Convolve, delay::Delay, drive::Drive,
-	equalizer::Equalizer, gain::Gain, pan::Pan, reverb::Reverb, testfilter::TestFilter, tilt::Tilt,
-	tremolo::Tremolo, wide::Wide,
+	equalizer::Equalizer, gain::Gain, pan::Pan, phaser::Phaser, reverb::Reverb,
+	testfilter::TestFilter, tilt::Tilt, tremolo::Tremolo, wide::Wide,
 };
 use crate::log::log_warn;
 use crate::meters::MeterHandle;
@@ -35,6 +36,7 @@ pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
 		"equalizer" => Box::new(Equalizer::new(sample_rate)),
 		"gain" => Box::new(Gain::new(sample_rate)),
 		"pan" => Box::new(Pan::new(sample_rate)),
+		"phaser" => Box::new(Phaser::new(sample_rate)),
 		"reverb" => Box::new(Reverb::new(sample_rate)),
 		"testfilter" => Box::new(TestFilter::new(sample_rate)),
 		"tilt" => Box::new(Tilt::new(sample_rate)),

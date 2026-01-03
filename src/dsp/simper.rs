@@ -183,6 +183,27 @@ impl Filter {
 		m0 * v0 + m1 * v1 + m2 * v2
 	}
 
+	#[must_use]
+	pub fn predict(&mut self) -> (f32, f32) {
+		// Note: not ideal, should probably first process all the params and then update.
+		let a1 = self.a1.get();
+		let a2 = self.a2.get();
+		let a3 = self.a3.get();
+		let m0 = self.m0.get();
+		let m1 = self.m1.get();
+		let m2 = self.m2.get();
+
+		let g = m0 + m1 * a2 + m2 * a3;
+
+		let v3 = -self.s2;
+		let v1 = a1 * self.s1 + a2 * v3;
+		let v2 = self.s2 + a2 * self.s1 + a3 * v3;
+
+		let s = m1 * v1 + m2 * v2;
+
+		(g, s)
+	}
+
 	// Process block in-place
 	pub fn process_block(&mut self, buf: &mut [f32]) {
 		for s in buf {

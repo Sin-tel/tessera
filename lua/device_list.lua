@@ -12,7 +12,7 @@ device_list.instruments.sine = {
 	parameters = {
 		{ "Fixed", "toggle" },
 		{ "Freq", "slider", { default = C5_HZ, min = 20, max = 20000, fmt = "Hz", t = "log" } },
-		{ "Gain", "slider", { default = -12, t = "dB" } },
+		{ "Gain", "slider", { default = -24, t = "dB" } },
 		{ "Noise", "toggle" },
 	},
 }
@@ -243,6 +243,17 @@ device_list.effects.tremolo = {
 		{ "Amount", "slider", { default = 0.4 } },
 		{ "Rate", "slider", { default = 1.5, min = 0.50, max = 15.0, t = "log" } },
 		{ "Stereo", "slider", { default = 0.5 } },
+	},
+}
+
+device_list.effects.phaser = {
+	name = "Phaser",
+	parameters = {
+		{ "Dry/Wet", "slider", { default = 1.0, min = 0.0, max = 1.0 } },
+		{ "Frequency", "slider", { default = 1000.0, min = 300.0, max = 8000.0, t = "log", fmt = "Hz" } },
+		{ "Feedback", "slider", { default = 0.3, min = 0.0, max = 1.0 } },
+		{ "Rate", "slider", { default = 0.5, min = 0.05, max = 10.0, fmt = "Hz" } },
+		{ "Depth", "slider", { default = 0.6, min = 0.0, max = 1.0 } },
 	},
 }
 
