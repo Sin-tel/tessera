@@ -361,4 +361,14 @@ device_list.effects.compressor = {
 	},
 }
 
+device_list.effects.limiter = {
+	name = "Limiter",
+	parameters = {
+		{ "Release", "slider", { default = 200.0, min = 10.0, max = 2000.0, t = "log", fmt = "ms" } },
+		{ "Gain", "slider", { default = 0.0, min = -24.0, max = 24.0, fmt = "%0.1f dB", centered = true } },
+		{ "Ceiling", "slider", { default = -0.3, min = -12.0, max = 0.0, fmt = "%0.1f dB" } },
+		{ "Stereo Link", "toggle", { default = true } },
+	},
+}
+
 return device_list
