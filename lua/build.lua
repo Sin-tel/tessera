@@ -1,8 +1,8 @@
 local Channel = require("channel")
 local Device = require("device")
 local device_list = require("device_list")
+local empty_project = require("default.empty_project")
 local engine = require("engine")
-local widgets = require("ui/widgets")
 
 local build = {}
 
@@ -24,20 +24,7 @@ function build.new_project()
 	selection.device_index = nil
 
 	-- init empty project
-	project = {}
-	project.channels = {}
-	project.VERSION = util.clone(VERSION)
-	project.name = "Untitled project"
-	project.transport = {}
-	project.transport.start_time = 0
-	project.transport.recording = true
-
-	project.settings = {}
-	project.settings.preview_notes = true
-	project.settings.chase = false
-	project.settings.follow = false
-	project.settings.snap_time = 3
-	project.settings.snap_pitch = 1
+	project = util.clone(empty_project)
 end
 
 -- build the given "project" is set but nothing else is
