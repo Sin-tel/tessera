@@ -292,6 +292,14 @@ function Canvas:draw()
 		tessera.graphics.line(px, 0, px, self.h)
 	end
 
+	-- time divs
+	tessera.graphics.set_line_width(1.5)
+	tessera.graphics.set_color(theme.grid_main)
+	for _, v in ipairs(project.time) do
+		local x = self.transform:time(v[1])
+		tessera.graphics.line(x, 0, x, self.h)
+	end
+
 	-- draw notes
 	local w_scale = 0.3 * math.sqrt(-self.transform.sy * self.transform.sx)
 	w_scale = math.min(20, w_scale)
@@ -319,12 +327,12 @@ function Canvas:draw()
 	tessera.graphics.set_color(theme.background)
 	tessera.graphics.rectangle("line", 0, 0, self.w, RIBBON_H)
 
-	-- time divs
+	-- time divs (only top)
 	tessera.graphics.set_line_width(1.5)
 	tessera.graphics.set_color(theme.grid_main)
 	for _, v in ipairs(project.time) do
 		local x = self.transform:time(v[1])
-		tessera.graphics.line(x, 0, x, self.h)
+		tessera.graphics.line(x, 0, x, RIBBON_H + 1)
 	end
 
 	-- playhead

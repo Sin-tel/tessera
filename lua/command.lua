@@ -218,6 +218,32 @@ end
 
 command.NoteAdd = NoteAdd
 
+--
+local TimeUpdate = {}
+TimeUpdate.__index = TimeUpdate
+
+function TimeUpdate.new(prev_state, new_state)
+    local self = setmetatable({}, TimeUpdate)
+
+    assert(prev_state)
+    assert(new_state)
+
+    self.prev_state = util.clone(prev_state)
+    self.new_state = util.clone(new_state)
+
+    return self
+end
+
+function TimeUpdate:run()
+    project.time = self.new_state
+end
+
+function TimeUpdate:reverse()
+    project.time = self.prev_state
+end
+
+command.TimeUpdate = TimeUpdate
+
 command.NewChannel, command.RemoveChannel, command.NewEffect, command.RemoveEffect, command.ReorderEffect =
     unpack(require("command_channel"))
 

@@ -58,6 +58,12 @@ Clicking anywhere in the top ribbon will set the transport start time.
 ### Pen Tool
 **Left click:** Draw notes.
 
+### Tempo Tool
+**Drag left/right:** Change location of tempo marker (first downbeat).
+
+**Drag up/down:** Change tempo. This currently only affects the grid, not the playback speed.
+
+
 ### Tools & Selection
 | Action                     | Shortcut                  |
 | :---                       | :---                      |
