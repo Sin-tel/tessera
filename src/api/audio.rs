@@ -254,6 +254,16 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	audio.set(
+		"metronome",
+		lua.create_function(|lua, accent: bool| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+				ctx.send_message(AudioMessage::Metronome(accent));
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
 		"reorder_effect",
 		lua.create_function(
 			|lua, (channel_index, old_index, new_index): (usize, usize, usize)| {

@@ -84,6 +84,14 @@ function Menu.options(x, y)
 				{ label = "Follow", style = "menu", pad = indent_s, size = 0.66, no_undo = true }
 			),
 		},
+
+		{
+			widget = widgets.Toggle.new(
+				project.settings,
+				"metronome",
+				{ label = "Metronome", style = "menu", pad = indent_s, size = 0.66, no_undo = true }
+			),
+		},
 	}
 	return Menu.new(items, x, y)
 end

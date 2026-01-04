@@ -14,5 +14,6 @@ return {
 		follow = false,
 		snap_time = 3,
 		snap_pitch = 1,
+		metronome = false,
 	},
 }

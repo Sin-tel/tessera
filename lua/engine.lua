@@ -55,9 +55,16 @@ end
 
 function engine.update(dt)
 	if engine.playing then
+		local time_prev = engine.time
 		engine.time = engine.time + dt
 		engine.frame_time = engine.frame_time + dt
 		if tessera.audio.ok() then
+			local beat = math.ceil(engine.time)
+			local beat_prev = math.ceil(time_prev)
+			if project.settings.metronome and beat ~= beat_prev then
+				tessera.audio.metronome(beat % 4 == 1)
+			end
+
 			for _, v in ipairs(ui_channels) do
 				v.roll:playback(v)
 			end
