@@ -71,6 +71,11 @@ local function do_patches(p)
 		end
 	end
 
+	--- TODO: make default project struct and just populate it automatically if anything is missing
+
+	p.settings.snap_time = p.settings.snap_time or 3
+	p.settings.snap_pitch = p.settings.snap_pitch or 1
+
 	-- after patches are done, file should be on new version
 	p.VERSION = VERSION
 end

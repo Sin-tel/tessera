@@ -52,6 +52,8 @@ function Ui.new(view)
 end
 
 function Ui:start_frame(x, y)
+	assert(not self.start)
+	self.start = true
 	x = x or 0
 	y = y or 0
 	self.mx, self.my = self.view:get_mouse()
@@ -81,6 +83,7 @@ function Ui:start_frame(x, y)
 end
 
 function Ui:end_frame()
+	self.start = false
 	self.max_scroll = math.max(0, self.layout:total_height() - self.view.h)
 end
 
@@ -167,6 +170,11 @@ function Ui:draw()
 		f(unpack(args))
 	end
 
+	self.bg_list = {}
+	self.draw_queue = {}
+end
+
+function Ui:cancel_draw()
 	self.bg_list = {}
 	self.draw_queue = {}
 end

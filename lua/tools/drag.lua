@@ -1,5 +1,5 @@
+local time = require("time")
 local tuning = require("tuning")
-local util = require("util")
 
 local drag = {}
 
@@ -57,28 +57,13 @@ function drag:mousedown(canvas)
 		end
 	end
 
-	if modifier_keys.shift then
-		-- Snap time to grid
-		local ix = self.note_origin.time
-		x = (math.floor((ix + x) * 4 + 0.5) / 4) - ix
-	end
+	local ix = self.note_origin.time
+	x = time.snap(ix + x) - ix
 
-	local p_origin
-	local delta
-	if not modifier_keys.alt then
-		-- Get interval location in local frame
-		local n = tuning.get_diatonic_index(self.note_origin.interval)
-
-		-- Calculate base interval offset
-		local steps = math.floor(y * (7 / 12) + 0.5)
-		p_origin = tuning.from_diatonic(n)
-		delta = tuning.from_diatonic(n + steps)
-	else
-		local n = tuning.get_fine_index(self.note_origin.interval)
-		local steps = math.floor(y * (31 / 12) + 0.5)
-		p_origin = tuning.from_fine(n)
-		delta = tuning.from_fine(n + steps)
-	end
+	-- calculate relative offset
+	local p = tuning.get_pitch(self.note_origin.interval)
+	local p_origin = tuning.snap(p)
+	local delta = tuning.snap(p + y)
 	delta = tuning.sub(delta, p_origin)
 
 	-- Update interval and time

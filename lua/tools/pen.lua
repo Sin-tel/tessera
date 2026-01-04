@@ -1,3 +1,4 @@
+local time = require("time")
 local tuning = require("tuning")
 
 -- TODO: duplicated in Roll
@@ -7,8 +8,7 @@ local DEFAULT_PRESSURE = 0.0
 -- TODO: re-use last edited velocity
 local DEFAULT_VELOCITY = 0.5
 
--- used for click without dragging
-local initial_length = (1 / 4)
+-- TODO: re-use last length
 
 local pen = {}
 
@@ -17,12 +17,9 @@ pen.oy = 0
 
 pen.interval = tuning.new_interval()
 
--- TODO: better rounding logic
--- TODO: query current local grid
 local function get_interval(canvas, my)
-	local f = canvas.transform:pitch_inv(my)
-	local chromatic = math.floor(f + 0.5)
-	return tuning.from_midi(chromatic)
+	local f = canvas.transform:pitch_inv(my) - 60
+	return tuning.snap(f)
 end
 
 function pen:mousepressed(canvas)
@@ -42,8 +39,10 @@ function pen:mousepressed(canvas)
 		self.ox = mx
 		self.oy = my
 
-		self.t1 = canvas.transform:time_inv(self.ox)
-		self.t2 = self.t1 + initial_length
+		self.min_length = math.max(time.snap_length(), 1 / 64)
+
+		self.t1 = time.snap(canvas.transform:time_inv(self.ox))
+		self.t2 = self.t1 + math.max(time.snap_length(), 1 / 16)
 
 		self.interval = get_interval(canvas, my)
 
@@ -70,7 +69,12 @@ function pen:mousedown(canvas)
 
 	if mouse.drag then
 		local mx, my = canvas:get_mouse()
-		self.t2 = canvas.transform:time_inv(mx)
+
+		self.t2 = time.snap(canvas.transform:time_inv(mx))
+		if math.abs(self.t1 - self.t2) < 0.01 then
+			self.t2 = self.t1 + self.min_length
+		end
+
 		local new_interval = get_interval(canvas, my)
 
 		if project.settings.preview_notes then
@@ -102,7 +106,10 @@ end
 
 function pen:update(canvas)
 	local _, my = canvas:get_mouse()
-	self.interval = get_interval(canvas, my)
+	if not self.active then
+		-- update for preview label
+		self.interval = get_interval(canvas, my)
+	end
 end
 
 function pen:mousereleased(canvas)
@@ -133,6 +140,8 @@ function pen:mousereleased(canvas)
 	local c = command.NoteAdd.new(notes)
 	command.run_and_register(c)
 
+	selection.add({ [note] = true })
+
 	if project.settings.preview_notes then
 		assert(self.token)
 		ui_channels[selection.ch_index]:send_event({
@@ -149,16 +158,16 @@ function pen:draw(canvas)
 	local p = tuning.get_pitch(self.interval)
 	local y = canvas.transform:pitch(p)
 
-	local lx, ly = mx, my
+	local x1, y1 = mx, my
 	if self.active then
-		ly = y
-		lx = math.min(self.ox, mx)
+		y1 = y
+		x1 = canvas.transform:time(math.min(self.t1, self.t2))
 	end
 
 	-- draw note label
 	tessera.graphics.set_color(theme.text_tip)
 	local note_name = tuning.get_name(self.interval)
-	tessera.graphics.text(note_name, lx + 5, ly - 20)
+	tessera.graphics.text(note_name, x1 + 5, y1 - 20)
 
 	-- draw note preview
 	if self.active then
@@ -166,9 +175,10 @@ function pen:draw(canvas)
 		local c = tessera.graphics.get_color_hsv(ch.hue / 360, 0.75, 0.80)
 		tessera.graphics.set_color(c)
 
+		local x2 = canvas.transform:time(math.max(self.t1, self.t2))
 		tessera.graphics.set_line_width(2.0)
-		tessera.graphics.line(self.ox, y, mx, y)
-		tessera.graphics.circle("fill", lx, y, 3)
+		tessera.graphics.line(x1, y, x2, y)
+		tessera.graphics.circle("fill", x1, y, 3)
 	end
 end
 

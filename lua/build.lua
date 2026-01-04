@@ -36,6 +36,8 @@ function build.new_project()
 	project.settings.preview_notes = true
 	project.settings.chase = false
 	project.settings.follow = false
+	project.settings.snap_time = 3
+	project.settings.snap_pitch = 1
 end
 
 -- build the given "project" is set but nothing else is
