@@ -1,6 +1,6 @@
 use crate::worker::load_and_resample;
 
-const GAIN: f32 = 0.25;
+const GAIN: f32 = 0.2;
 
 pub struct Metronome {
 	sample_down: [Vec<f32>; 2],

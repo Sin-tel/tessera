@@ -1,5 +1,6 @@
 local log = require("log")
 local midi = require("midi")
+local time = require("time")
 
 local RENDER_BLOCK_SIZE = 64
 
@@ -55,16 +56,10 @@ end
 
 function engine.update(dt)
 	if engine.playing then
-		local time_prev = engine.time
-		engine.time = engine.time + dt
 		engine.frame_time = engine.frame_time + dt
-		if tessera.audio.ok() then
-			local beat = math.ceil(engine.time)
-			local beat_prev = math.ceil(time_prev)
-			if project.settings.metronome and beat ~= beat_prev then
-				tessera.audio.metronome(beat % 4 == 1)
-			end
+		engine.time = time.next(engine.time, dt)
 
+		if tessera.audio.ok() then
 			for _, v in ipairs(ui_channels) do
 				v.roll:playback(v)
 			end

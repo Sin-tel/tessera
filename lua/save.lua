@@ -30,7 +30,7 @@ end
 
 local function do_patches(p)
 	-- patch any issues with save files from earlier versions
-	local default = require("default.empty_project")
+	local default = require("default.empty_project")()
 	util.copy_defaults(p, default)
 
 	-- 0.1.1 -> 0.1.2

@@ -3,6 +3,7 @@ local Transform = require("views/transform")
 local Ui = require("ui.ui")
 local View = require("view")
 local engine = require("engine")
+local time = require("time")
 local tuning = require("tuning")
 require("table.new")
 
@@ -13,6 +14,7 @@ local pan = require("tools/pan")
 local pen = require("tools/pen")
 local scale = require("tools/scale")
 local set_transport_time = require("tools/set_transport_time")
+local tempo = require("tools/tempo")
 
 local Button = {}
 Button.__index = Button
@@ -37,6 +39,8 @@ function Canvas.new()
 	table.insert(self.tool_buttons, Button.new(x1, y1, tessera.icon.edit, edit))
 	y1 = y1 + BUTTON_S + Ui.PAD
 	table.insert(self.tool_buttons, Button.new(x1, y1, tessera.icon.pen, pen))
+	y1 = y1 + BUTTON_S + Ui.PAD
+	table.insert(self.tool_buttons, Button.new(x1, y1, tessera.icon.tempo, tempo))
 
 	return self
 end
@@ -267,21 +271,24 @@ function Canvas:draw()
 	tessera.graphics.set_line_width(1.5)
 	if self.transform.sy < -8 then
 		-- octaves only
-		tessera.graphics.set_color(theme.grid_highlight)
+		tessera.graphics.set_color(theme.grid_main)
 		self:draw_pitch_grid("octave")
 	end
 
 	-- time grid
-	tessera.graphics.set_line_width(1.0)
 	local ix = self.transform:time_inv(0)
 	local ex = self.transform:time_inv(self.w)
-	local grid_t_res = 4 ^ math.floor(3.8 - math.log(self.transform.sx, 4))
-	for i = math.floor(ix / grid_t_res) + 1, math.floor(ex / grid_t_res) do
-		tessera.graphics.set_color(theme.grid)
-		if i % 4 == 0 then
-			tessera.graphics.set_color(theme.grid_highlight)
-		end
-		local px = self.transform:time(i * grid_t_res)
+	local grid_major, grid_minor = time.get_grid(ix, ex, self.transform.sx)
+
+	tessera.graphics.set_line_width(1.0)
+	tessera.graphics.set_color(theme.grid)
+	for _, t in ipairs(grid_minor) do
+		local px = self.transform:time(t)
+		tessera.graphics.line(px, 0, px, self.h)
+	end
+	tessera.graphics.set_color(theme.grid_highlight)
+	for _, t in ipairs(grid_major) do
+		local px = self.transform:time(t)
 		tessera.graphics.line(px, 0, px, self.h)
 	end
 
@@ -311,6 +318,14 @@ function Canvas:draw()
 	tessera.graphics.rectangle("fill", 0, -1, self.w, RIBBON_H)
 	tessera.graphics.set_color(theme.background)
 	tessera.graphics.rectangle("line", 0, 0, self.w, RIBBON_H)
+
+	-- time divs
+	tessera.graphics.set_line_width(1.5)
+	tessera.graphics.set_color(theme.grid_main)
+	for _, v in ipairs(project.time) do
+		local x = self.transform:time(v[1])
+		tessera.graphics.line(x, 0, x, self.h)
+	end
 
 	-- playhead
 	local px = self.transform:time(project.transport.start_time)
@@ -561,7 +576,7 @@ function Canvas:auto_zoom()
 
 	-- if there's only a single note, center
 	if p_max == p_min then
-		self.transform.sy_ = -48
+		self.transform.sy_ = -0.25 * self.transform.sx_
 		self.transform.oy_ = -p_max * self.transform.sy_ + 0.5 * self.h
 	end
 end
