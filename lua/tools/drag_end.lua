@@ -24,6 +24,7 @@ function drag_end:mousedown(canvas)
 
 	for i, v in ipairs(selection.list) do
 		local n = #v.verts
+		local t_start = self.prev_state[i].time
 		local t_end = self.prev_state[i].verts[n][1]
 
 		assert(t_end > 0)
@@ -31,7 +32,8 @@ function drag_end:mousedown(canvas)
 		local t_move = t_end + x
 
 		-- snapping
-		t_move = time.snap(t_move)
+		-- t_move = time.snap(t_move)
+		t_move = time.snap(t_start + t_move) - t_start
 
 		t_move = math.max(t_min, t_move)
 
