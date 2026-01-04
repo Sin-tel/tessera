@@ -373,6 +373,7 @@ function Canvas:keypressed(key)
 			clipboard.set(notes)
 			local c = command.NoteDelete.new(notes)
 			command.run_and_register(c)
+			selection.deselect()
 			return true
 		end
 	elseif modifier_keys.ctrl and key == "c" then
@@ -426,6 +427,7 @@ function Canvas:keypressed(key)
 			local notes = selection.get_notes()
 			local c = command.NoteDelete.new(notes)
 			command.run_and_register(c)
+			selection.deselect()
 			return true
 		end
 	elseif key == "g" and not modifier_keys.any then

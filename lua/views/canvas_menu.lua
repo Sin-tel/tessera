@@ -24,8 +24,10 @@ function Menu.new()
 	self.ui.layout:padding(4)
 
 	-- widgets
-	self.selector_time = widgets.Selector.new(project.settings, "snap_time", { list = time.snap_labels })
-	self.selector_pitch = widgets.Selector.new(project.settings, "snap_pitch", { list = tuning.snap_labels })
+	self.selector_time =
+		widgets.Selector.new(project.settings, "snap_time", { list = time.snap_labels, no_undo = true })
+	self.selector_pitch =
+		widgets.Selector.new(project.settings, "snap_pitch", { list = tuning.snap_labels, no_undo = true })
 
 	-- update once to pre-calculate layout
 	self:update()

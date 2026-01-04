@@ -141,7 +141,7 @@ pub enum AudioMessage {
 	ChannelMute(usize, bool),
 	ChannelGain(usize, f32),
 	ReorderEffect(usize, usize, usize),
-	// Swap(?),
+	Metronome(bool),
 }
 
 #[derive(Debug, Serialize)]

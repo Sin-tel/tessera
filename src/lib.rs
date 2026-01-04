@@ -30,6 +30,7 @@ mod effect;
 pub mod embed;
 mod instrument;
 mod meters;
+mod metronome;
 pub mod midi;
 mod render;
 mod scope;

@@ -92,20 +92,7 @@ impl Worker {
 		let sample = match self.samples.entry(path.to_string()) {
 			Entry::Occupied(e) => e.get().clone(),
 			Entry::Vacant(e) => {
-				let (mut sample, source_rate) = load_sample(path)?;
-
-				let source_rate = source_rate as f32;
-				let target_rate = self.sample_rate as f32;
-
-				if (source_rate - target_rate).abs() > 1.0 {
-					let t = std::time::Instant::now();
-
-					let resampler = Resampler::new(source_rate, target_rate);
-					sample = [resampler.process(&sample[0]), resampler.process(&sample[0])];
-
-					log_info!("Resampling took {:.1} ms", 1000.0 * t.elapsed().as_secs_f64());
-				}
-
+				let mut sample = load_and_resample(path, self.sample_rate as f32)?;
 				normalize_power(&mut sample);
 				e.insert(Arc::new(sample)).clone()
 			},
@@ -145,9 +132,19 @@ pub fn load_wavetable(path: &str) -> Result<Vec<f32>> {
 	Ok(table)
 }
 
-pub fn load_sample(path: &str) -> Result<([Vec<f32>; 2], u32)> {
-	let t = std::time::Instant::now();
+pub fn load_and_resample(path: &str, target_rate: f32) -> Result<[Vec<f32>; 2]> {
+	let (mut sample, source_rate) = load_sample(path)?;
+	let source_rate = source_rate as f32;
 
+	if (source_rate - target_rate).abs() > 1.0 {
+		let resampler = Resampler::new(source_rate, target_rate);
+		sample = [resampler.process(&sample[0]), resampler.process(&sample[0])];
+	}
+
+	Ok(sample)
+}
+
+pub fn load_sample(path: &str) -> Result<([Vec<f32>; 2], u32)> {
 	let file_data: &[u8] = &Asset::get(path).ok_or_else(|| anyhow!("Could not find {path}"))?.data;
 	let reader = hound::WavReader::new(file_data)?;
 	let spec = reader.spec();
@@ -176,7 +173,6 @@ pub fn load_sample(path: &str) -> Result<([Vec<f32>; 2], u32)> {
 			left.push(*r);
 		}
 	}
-	log_info!("Loading sample {} took {:.1} ms", path, 1000.0 * t.elapsed().as_secs_f64());
 	Ok(([left, right], spec.sample_rate))
 }
 

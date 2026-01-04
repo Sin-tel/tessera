@@ -6,6 +6,7 @@ use crate::effect::*;
 use crate::instrument;
 use crate::log::log_error;
 use crate::meters::MeterHandle;
+use crate::metronome::Metronome;
 use crate::voice_manager::VoiceManager;
 use crate::worker::{Request, Response};
 use ringbuf::traits::*;
@@ -24,6 +25,7 @@ pub struct Render {
 
 	peak: PeakMeter,
 	meter_handle: MeterHandle,
+	metronome: Metronome,
 }
 
 impl Render {
@@ -47,6 +49,7 @@ impl Render {
 			sample_rate,
 			peak: PeakMeter::new(sample_rate),
 			meter_handle,
+			metronome: Metronome::new(sample_rate),
 		}
 	}
 
@@ -114,6 +117,8 @@ impl Render {
 			// Don't really care if it's full
 			let _ = self.scope_tx.try_push(*s);
 		}
+
+		self.metronome.process(buffer_out);
 
 		// hardclip
 		for s in buffer_out.iter_mut().flat_map(|s| s.iter_mut()) {
@@ -197,6 +202,9 @@ impl Render {
 					let ch = &mut self.channels[ch_index];
 					let e = ch.effects.remove(old_index);
 					ch.effects.insert(new_index, e);
+				},
+				Metronome(accent) => {
+					self.metronome.trigger(accent);
 				},
 				AudioMessage::Panic => panic!("oof"),
 			}
