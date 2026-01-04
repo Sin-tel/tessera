@@ -60,8 +60,7 @@ function Roll:seek(chase)
 		if chase then
 			end_time = note.verts[#note.verts][1]
 		end
-		-- TODO: some annoying edge cases here
-		if note.time + end_time > engine.time then
+		if note.time + end_time >= engine.time then
 			break
 		end
 		self.n_index = self.n_index + 1

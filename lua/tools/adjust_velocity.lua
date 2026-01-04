@@ -24,7 +24,7 @@ function adjust_velocity:mousedown(canvas)
 	for i, v in ipairs(selection.list) do
 		local x = sigmoid_inv(self.prev_state[i].vel)
 		x = sigmoid(x + y)
-		x = util.clamp(x, 0.001, 0.999)
+		x = util.clamp(x, 0.005, 0.995)
 		v.vel = x
 	end
 end

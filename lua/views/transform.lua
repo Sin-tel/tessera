@@ -4,11 +4,11 @@ Transform.__index = Transform
 function Transform.new()
 	local self = setmetatable({}, Transform)
 
-	self.sx = 90
+	self.sx = 70
 	self.sy = -12
 
 	self.ox = 200
-	self.oy = 900
+	self.oy = 1100
 
 	self.ox_ = self.ox
 	self.oy_ = self.oy

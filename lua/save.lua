@@ -29,32 +29,21 @@ function save.write(filename)
 end
 
 local function do_patches(p)
-	-- patch any issues with save files here when they come up
-
-	-- 0.1.0 -> 0.1.1
-	if not p.settings then
-		p.settings = {}
-		p.settings.preview_notes = true
-		p.settings.chase = false
-		p.settings.follow = false
-	end
+	-- patch any issues with save files from earlier versions
+	local default = require("default.empty_project")
+	util.copy_defaults(p, default)
 
 	-- 0.1.1 -> 0.1.2
 	for _, ch in ipairs(p.channels) do
+		-- add channel gain
 		if not ch.gain then
 			ch.gain = 1.0
 		end
+		-- rename pitch -> interval
 		for _, note in ipairs(ch.notes) do
 			if not note.interval then
 				note.interval = note.pitch
 				note.pitch = nil
-			end
-		end
-
-		for _, fx in ipairs(ch.effects) do
-			if fx.name == "convolve" and not fx.state[2] then
-				fx.state[2] = 20.0
-				fx.state[3] = 1
 			end
 		end
 	end
@@ -70,11 +59,6 @@ local function do_patches(p)
 			end
 		end
 	end
-
-	--- TODO: make default project struct and just populate it automatically if anything is missing
-
-	p.settings.snap_time = p.settings.snap_time or 3
-	p.settings.snap_pitch = p.settings.snap_pitch or 1
 
 	-- after patches are done, file should be on new version
 	p.VERSION = VERSION

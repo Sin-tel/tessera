@@ -130,7 +130,7 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 		lua.create_function(|lua, line_width: Option<f32>| {
 			let mut state = lua.app_data_mut::<State>().unwrap();
 
-			state.line_width = line_width.unwrap_or(DEFAULT_LINE_WIDTH * state.scale_factor);
+			state.line_width = line_width.unwrap_or(DEFAULT_LINE_WIDTH) * state.scale_factor;
 			Ok(())
 		})?,
 	)?;

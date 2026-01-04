@@ -180,6 +180,26 @@ end
 
 util.clone = clone
 
+local function copy_defaults(t, default)
+	if t == nil or type(t) ~= "table" then
+		return clone(default)
+	end
+	if type(default) ~= "table" then
+		return t
+	end
+
+	for key, default_value in pairs(default) do
+		if t[key] == nil then
+			t[key] = clone(default_value)
+		elseif type(default_value) == "table" and type(t[key]) == "table" then
+			-- recursive merge
+			copy_defaults(t[key], default_value)
+		end
+	end
+end
+
+util.copy_defaults = copy_defaults
+
 function util.average(t)
 	local n = #t
 	if n == 0 then
