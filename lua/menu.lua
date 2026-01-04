@@ -1,4 +1,3 @@
-local Canvas = require("views/canvas")
 local Ui = require("ui/ui")
 local engine = require("engine")
 local file = require("file")
@@ -94,7 +93,8 @@ function Menu.new(items, x, y)
 
 	self.items = items
 
-	self.x, self.y = x, y
+	self.x = x
+	self.y = y
 
 	self.w = Ui.scale(260)
 	self.h = 0 -- gets updated automatically
@@ -104,8 +104,15 @@ function Menu.new(items, x, y)
 		self.y = mouse.y - Ui.ROW_HEIGHT * 0.5
 	end
 
+	self.x = math.max(0, self.x)
+	self.y = math.max(0, self.y)
+
 	self.ui = Ui.new(self)
 	self.ui.layout:padding(2)
+
+	-- update once to pre-calculate layout
+	self:update()
+	self.ui:cancel_draw()
 
 	return self
 end
@@ -145,7 +152,7 @@ function Menu:update()
 		end
 	end
 
-	self.ui:end_frame(self.x, self.y)
+	self.ui:end_frame()
 
 	self.h = self.ui.layout:total_height()
 

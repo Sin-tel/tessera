@@ -119,6 +119,8 @@ if tuning.rank > 2 then
 	tuning.comma = { 0, 0, 1 }
 end
 
+tuning.snap_labels = { "Diatonic", "Chromatic", "Fine" }
+
 -- generate well-formed scale
 -- n = scale size (nr. of generators)
 -- offset = nr. of generators down from root
@@ -145,6 +147,8 @@ function tuning.load()
 	tuning.chromatic_table = tuning.generate_scale(12, 4)
 	tuning.fine_table = tuning.generate_scale(31, 12)
 	-- tuning.fine_table = tuning.generate_scale(19, 7)
+
+	tuning.tables = { tuning.diatonic_table, tuning.chromatic_table, tuning.fine_table }
 end
 
 function tuning.new_interval()
@@ -155,50 +159,44 @@ function tuning.new_interval()
 	return new
 end
 
--- diatonic home row, 1 = C5
-function tuning.from_diatonic(n, add_octave)
-	add_octave = add_octave or 0
-	local s = #tuning.diatonic_table
-	local oct = math.floor((n - 1) / s)
-	n = n - oct * s
-	local dia = tuning.diatonic_table[n]
+-- Given some pitch p, find interval in current grid that is closest
+-- TODO: rounding assumes scales is relatively even
+function tuning.snap(p)
+	local t = tuning.tables[project.settings.snap_pitch]
+	assert(t)
+	local steps = math.floor(p * (#t / 12) + 0.5)
+	return tuning.from_table(t, steps)
+end
+
+-- Look up interval in table, correcting for octave offsets
+function tuning.from_table(t, i)
+	local s = #t
+	local oct = math.floor(i / s)
+	i = i - oct * s
+	local p = t[i + 1]
 
 	local new = tuning.new_interval()
-	new[1] = dia[1] + oct + add_octave
-	new[2] = dia[2]
+	new[1] = p[1] + oct
+	new[2] = p[2]
 
 	return new
 end
 
--- indexed by midi number, middle C = midi note number 60
+-- Indexed by midi number, middle C = midi note number 60.
+-- Note: we currently assume #chromatic_table = 12 so this works.
 function tuning.from_midi(n)
-	local s = #tuning.chromatic_table
-	local oct = math.floor(n / s)
-	n = n - oct * s
-	local dia = tuning.chromatic_table[n + 1]
-
-	local new = tuning.new_interval()
-	new[1] = dia[1] + oct - 5
-	new[2] = dia[2]
-
-	return new
+	return tuning.from_table(tuning.chromatic_table, n - 60)
 end
 
-function tuning.from_fine(n, add_octave)
-	add_octave = add_octave or 0
-	local s = #tuning.fine_table
-	local oct = math.floor((n - 1) / s)
-	n = n - oct * s
-	local f = tuning.fine_table[n]
-
-	local new = tuning.new_interval()
-	new[1] = f[1] + oct + add_octave
-	new[2] = f[2]
-
-	return new
+-- Project an interval to an n-note scale via linear mapping,
+-- ignoring any extra accidentals.
+function tuning.get_index(n, p)
+	local s1 = math.floor(n * tuning.generators[1] / 12 + 0.5)
+	local s2 = math.floor(n * tuning.generators[2] / 12 + 0.5)
+	return s1 * p[1] + s2 * p[2]
 end
 
--- coordinates to pitch
+-- Convert interval to pitch.
 function tuning.get_pitch(p)
 	return 60 + tuning.get_relative_pitch(p)
 end
@@ -267,18 +265,6 @@ function tuning.get_name(p)
 	local n = tuning.circle_of_fifths[n_i % #tuning.circle_of_fifths + 1]
 
 	return n .. acc .. tostring(o)
-end
-
-function tuning.get_diatonic_index(p)
-	return 1 + 7 * p[1] + 4 * p[2]
-end
-
-function tuning.get_chromatic_index(p)
-	return 1 + 12 * p[1] + 7 * p[2]
-end
-
-function tuning.get_fine_index(p)
-	return 1 + 31 * p[1] + 18 * p[2]
 end
 
 function tuning.add(a, b)

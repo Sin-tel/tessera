@@ -1,3 +1,4 @@
+local time = require("time")
 local util = require("util")
 
 local drag_end = {}
@@ -28,6 +29,10 @@ function drag_end:mousedown(canvas)
 		assert(t_end > 0)
 
 		local t_move = t_end + x
+
+		-- snapping
+		t_move = time.snap(t_move)
+
 		t_move = math.max(t_min, t_move)
 
 		for j in ipairs(v.verts) do

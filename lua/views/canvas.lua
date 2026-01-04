@@ -1,3 +1,4 @@
+local Menu = require("views.canvas_menu")
 local Transform = require("views/transform")
 local Ui = require("ui.ui")
 local View = require("view")
@@ -107,6 +108,11 @@ function Canvas:draw_channel(ch, w_scale)
 	local v_scale = -self.transform.sy
 	v_scale = math.min(32, v_scale)
 
+	local note_head_size = Ui.scale(3.5)
+	local v_size = Ui.scale(2.5)
+	local label_x = Ui.scale(5)
+	local label_y = Ui.scale(20)
+
 	local c_normal = tessera.graphics.get_color_hsv(ch.hue / 360, 0.75, 0.80)
 	local c_select = tessera.graphics.get_color_hsv(ch.hue / 360, 0.50, 0.95)
 	local c_lock = tessera.graphics.get_color_hsv(ch.hue / 360, 0.40, 0.40)
@@ -130,7 +136,7 @@ function Canvas:draw_channel(ch, w_scale)
 				tessera.graphics.set_color_f(0.6, 0.6, 0.6)
 				local vo = note.vel * v_scale
 				tessera.graphics.line(x0, y0t, x0, y0t - vo)
-				tessera.graphics.line(x0 - 2, y0t - vo, x0 + 2, y0t - vo)
+				tessera.graphics.line(x0 - v_size, y0t - vo, x0 + v_size, y0t - vo)
 			end
 
 			-- note
@@ -182,13 +188,13 @@ function Canvas:draw_channel(ch, w_scale)
 
 			-- note head
 			tessera.graphics.set_color(c)
-			tessera.graphics.circle("fill", x0, y0t, 3)
+			tessera.graphics.circle("fill", x0, y0t, note_head_size)
 
 			-- note names
 			if self.transform.sy < -20 then
 				tessera.graphics.set_color(c)
 				local note_name = tuning.get_name(note.interval)
-				tessera.graphics.text(note_name, x0 + 5, y0t - 20)
+				tessera.graphics.text(note_name, x0 + label_x, y0t - label_y)
 			end
 		end
 	end
@@ -211,44 +217,64 @@ function Canvas:draw_channel(ch, w_scale)
 	end
 end
 
+function Canvas:draw_pitch_grid(t)
+	local iy = self.transform:pitch_inv(0)
+	local ey = self.transform:pitch_inv(self.h)
+
+	local oct = tuning.generators[1]
+	for i = math.floor((ey - 60) / oct), math.floor((iy - 60) / oct) do
+		if t == "octave" then
+			local py = self.transform:pitch(tuning.get_pitch({ i }))
+			tessera.graphics.line(0, py, self.w, py)
+		else
+			for j, _ in ipairs(t) do
+				local py = self.transform:pitch(tuning.get_pitch(tuning.from_table(t, j + #t * i)))
+				tessera.graphics.line(0, py, self.w, py)
+			end
+		end
+	end
+end
+
 function Canvas:draw()
 	tessera.graphics.set_color(theme.bg_nested)
 	tessera.graphics.rectangle("fill", 0, 0, self.w, self.h)
 
-	tessera.graphics.set_line_width()
-	-- draw grid
-	local ix, iy = self.transform:inverse(0, 0)
-	local ex, ey = self.transform:inverse(self.w, self.h)
-
+	tessera.graphics.set_line_width(1)
 	-- pitch grid
-	local oct = tuning.generators[1]
-	for i = math.floor((ey - 60) / oct), math.floor((iy - 60) / oct) do
-		if self.transform.sy < -124 then
-			tessera.graphics.set_color(theme.grid)
-			for j, _ in ipairs(tuning.fine_table) do
-				local py = self.transform:pitch(tuning.get_pitch(tuning.from_fine(j, i)))
-				tessera.graphics.line(0, py, self.w, py)
-			end
-		elseif self.transform.sy < -48 then
-			tessera.graphics.set_color(theme.grid)
-			for j, _ in ipairs(tuning.chromatic_table) do
-				local py = self.transform:pitch(tuning.get_pitch(tuning.from_midi(j + 12 * i + 60)))
-				tessera.graphics.line(0, py, self.w, py)
-			end
-		elseif self.transform.sy < -28 then
-			tessera.graphics.set_color(theme.grid)
-			for j, _ in ipairs(tuning.diatonic_table) do
-				local py = self.transform:pitch(tuning.get_pitch(tuning.from_diatonic(j, i)))
-				tessera.graphics.line(0, py, self.w, py)
-			end
-		elseif self.transform.sy < -8 then
-			tessera.graphics.set_color(theme.grid_highlight)
-			local py = self.transform:pitch(tuning.get_pitch({ i }))
-			tessera.graphics.line(0, py, self.w, py)
-		end
+	if self.transform.sy < -124 then
+		-- fine
+		tessera.graphics.set_color(theme.grid)
+		self:draw_pitch_grid(tuning.fine_table)
+
+		tessera.graphics.set_color(theme.grid_highlight)
+		self:draw_pitch_grid(tuning.chromatic_table)
+	elseif self.transform.sy < -48 then
+		-- medium (chromatic)
+		tessera.graphics.set_color(theme.grid)
+		self:draw_pitch_grid(tuning.chromatic_table)
+
+		tessera.graphics.set_color(theme.grid_highlight)
+		self:draw_pitch_grid(tuning.diatonic_table)
+	elseif self.transform.sy < -28 then
+		-- coarse (diatonic)
+		tessera.graphics.set_color(theme.grid)
+		self:draw_pitch_grid(tuning.diatonic_table)
+
+		tessera.graphics.set_color(theme.grid_highlight)
+		self:draw_pitch_grid("octave")
+	end
+
+	tessera.graphics.set_line_width(1.5)
+	if self.transform.sy < -8 then
+		-- octaves only
+		tessera.graphics.set_color(theme.grid_highlight)
+		self:draw_pitch_grid("octave")
 	end
 
 	-- time grid
+	tessera.graphics.set_line_width(1.0)
+	local ix = self.transform:time_inv(0)
+	local ex = self.transform:time_inv(self.w)
 	local grid_t_res = 4 ^ math.floor(3.8 - math.log(self.transform.sx, 4))
 	for i = math.floor(ix / grid_t_res) + 1, math.floor(ex / grid_t_res) do
 		tessera.graphics.set_color(theme.grid)
@@ -263,7 +289,7 @@ function Canvas:draw()
 	local w_scale = 0.3 * math.sqrt(-self.transform.sy * self.transform.sx)
 	w_scale = math.min(20, w_scale)
 
-	tessera.graphics.set_line_width(2.0)
+	tessera.graphics.set_line_width(2.5)
 	tessera.graphics.set_font_notes()
 	tessera.graphics.set_font_size()
 
@@ -442,7 +468,7 @@ function Canvas:keypressed(key)
 			local d_min = math.huge
 			local base = nil
 			for _, note in ipairs(selection.list) do
-				local n = tuning.get_diatonic_index(note.interval)
+				local n = tuning.get_pitch(note.interval)
 				if n < d_min then
 					d_min = n
 					base = note
@@ -450,9 +476,10 @@ function Canvas:keypressed(key)
 			end
 
 			if base then
-				local n = tuning.get_diatonic_index(base.interval)
-				local p_origin = tuning.from_diatonic(n)
-				delta = tuning.from_diatonic(n + move_up)
+				local diatonic = tuning.diatonic_table
+				local n = tuning.get_index(#diatonic, base.interval)
+				local p_origin = tuning.from_table(diatonic, n)
+				delta = tuning.from_table(diatonic, n + move_up)
 				delta = tuning.sub(delta, p_origin)
 			end
 		end
@@ -469,10 +496,11 @@ function Canvas:keypressed(key)
 
 		local move_amt = 1
 		if modifier_keys.shift then
-			move_amt = 0.25
-		end
-		if modifier_keys.alt then
-			move_amt = 0.01
+			move_amt = 1 / 4
+		elseif modifier_keys.ctrl then
+			move_amt = 1 / 16
+		elseif modifier_keys.alt then
+			move_amt = 1 / 128
 		end
 		for _, v in ipairs(selection.list) do
 			v.time = v.time + move_right * move_amt
@@ -657,6 +685,7 @@ function Canvas:mousepressed()
 				self.current_tool = set_transport_time
 			end
 		elseif mouse.button == 2 then
+			workspace:set_overlay(Menu.new(self))
 			return
 		end
 
