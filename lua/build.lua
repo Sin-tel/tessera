@@ -24,7 +24,7 @@ function build.new_project()
 	selection.device_index = nil
 
 	-- init empty project
-	project = util.clone(empty_project)
+	project = empty_project()
 end
 
 -- build the given "project" is set but nothing else is

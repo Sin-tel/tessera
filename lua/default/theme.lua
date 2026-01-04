@@ -30,7 +30,8 @@ return {
 	line_hover =   {0.45, 0.45, 0.45},
 
 	grid =         {0.25, 0.25, 0.25},
-	grid_highlight={0.40, 0.40, 0.40},
+	grid_highlight={0.35, 0.35, 0.35},
+	grid_main =    {0.45, 0.45, 0.45},
 
 	selection =    {0.20, 0.45, 0.90},
 }
