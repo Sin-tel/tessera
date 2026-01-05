@@ -33,10 +33,10 @@ pub struct Analog {
 
 	// parameters
 	pulse_width: Smooth,
-	mix_pulse: f32,
-	mix_saw: f32,
-	mix_sub: f32,
-	mix_noise: f32,
+	mix_pulse: Smooth,
+	mix_saw: Smooth,
+	mix_sub: Smooth,
+	mix_noise: Smooth,
 	vcf_mode: FilterMode,
 	vcf_cutoff: f32,
 	vcf_res: f32,
@@ -68,10 +68,10 @@ impl Instrument for Analog {
 			note_on: false,
 
 			pulse_width: Smooth::new(0., 25.0, sample_rate),
-			mix_pulse: 0.,
-			mix_saw: 0.,
-			mix_sub: 0.,
-			mix_noise: 0.,
+			mix_pulse: Smooth::new(0., 25.0, sample_rate),
+			mix_saw: Smooth::new(0., 25.0, sample_rate),
+			mix_sub: Smooth::new(0., 25.0, sample_rate),
+			mix_noise: Smooth::new(0., 25.0, sample_rate),
 			vcf_mode: FilterMode::default(),
 			vcf_cutoff: 0.,
 			vcf_res: 0.,
@@ -102,6 +102,11 @@ impl Instrument for Analog {
 			let freq = self.freq.process();
 			let pulse_width = self.pulse_width.process();
 
+			let mix_saw = self.mix_saw.process();
+			let mix_pulse = self.mix_pulse.process();
+			let mix_sub = self.mix_sub.process();
+			let mix_noise = self.mix_noise.process();
+
 			let f_sub = 0.5 * freq;
 
 			self.accum += f_sub;
@@ -117,11 +122,11 @@ impl Instrument for Analog {
 
 			// leaky integrator
 			self.z = self.z * 0.998
-				+ self.mix_saw * (s0 + s1)
-				+ self.mix_pulse * (s0 + s1 - s2)
-				+ self.mix_sub * (s0 - s1);
+				+ mix_saw * (s0 + s1)
+				+ mix_pulse * (s0 + s1 - s2)
+				+ mix_sub * (s0 - s1);
 
-			let mix = self.z + self.mix_noise * (self.rng.f32() - 0.5);
+			let mix = self.z + mix_noise * (self.rng.f32() - 0.5);
 
 			*sample = mix * 0.20;
 		}
@@ -193,10 +198,10 @@ impl Instrument for Analog {
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
 			0 => self.pulse_width.set(value),
-			1 => self.mix_pulse = value,
-			2 => self.mix_saw = value,
-			3 => self.mix_sub = value,
-			4 => self.mix_noise = value,
+			1 => self.mix_pulse.set(value),
+			2 => self.mix_saw.set(value),
+			3 => self.mix_sub.set(value),
+			4 => self.mix_noise.set(value),
 			5 => {
 				self.vcf_mode = match value as usize {
 					1 => FilterMode::Lowpass,
@@ -247,7 +252,7 @@ impl Analog {
 			//TODO: store pitch so we can save hz_to_pitch call?
 			pitch_to_hz(
 				self.vcf_cutoff
-					+ self.vcf_kbd * (hz_to_pitch(self.freq.get() * self.sample_rate) - 72.0)
+					+ self.vcf_kbd * (hz_to_pitch(self.freq.target() * self.sample_rate) - 72.0)
 					+ self.vcf_env * self.envelope.get() * 84.0,
 			),
 			self.vcf_res,
