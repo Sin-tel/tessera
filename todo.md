@@ -2,7 +2,7 @@
 - [ ] Freehand draw
 - [ ] Separate velocity edit
 - [ ] Envelope/pressure edit
-- [ ] Snapping settings
+- [x] Snapping settings
 - [ ] Sculpt tools
   - [ ] grab
   - [ ] smooth
@@ -38,7 +38,7 @@
 - [ ] Global transport buttons (play/stop/record)
 - [ ] Tuning presets
 - [ ] linnstrument custom handler
-- [ ] Project tempo
+- [x] Project tempo
 - [ ] Project grid / time division
 - [ ] Loop
 - [ ] Parse tuning files
