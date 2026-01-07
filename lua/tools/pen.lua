@@ -29,36 +29,34 @@ function pen:mousepressed(canvas)
 	end
 
 	local channel = project.channels[ch_index]
-	if channel.lock or not channel.visible then
+	if channel.lock or not channel.visible or not channel.notes then
 		return
 	end
 
-	if selection.ch_index then
-		local mx, my = canvas:get_mouse()
+	local mx, my = canvas:get_mouse()
 
-		self.ox = mx
-		self.oy = my
+	self.ox = mx
+	self.oy = my
 
-		self.min_length = math.max(time.snap_length(), 1 / 64)
+	self.min_length = math.max(time.snap_length(), 1 / 64)
 
-		self.t1 = time.snap(canvas.transform:time_inv(self.ox))
-		self.t2 = self.t1 + math.max(time.snap_length(), 1 / 16)
+	self.t1 = time.snap(canvas.transform:time_inv(self.ox))
+	self.t2 = self.t1 + math.max(time.snap_length(), 1 / 16)
 
-		self.interval = get_interval(canvas, my)
+	self.interval = get_interval(canvas, my)
 
-		self.active = true
+	self.active = true
 
-		-- trigger note_on
-		if project.settings.preview_notes then
-			self.token = tessera.audio.get_token()
-			ui_channels[selection.ch_index]:send_event({
-				name = "note_on",
-				token = self.token,
-				interval = self.interval,
-				vel = DEFAULT_VELOCITY,
-				offset = 0,
-			})
-		end
+	-- trigger note_on
+	if project.settings.preview_notes then
+		self.token = tessera.audio.get_token()
+		ui_channels[selection.ch_index]:send_event({
+			name = "note_on",
+			token = self.token,
+			interval = self.interval,
+			vel = DEFAULT_VELOCITY,
+			offset = 0,
+		})
 	end
 end
 

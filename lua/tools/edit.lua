@@ -46,6 +46,7 @@ function edit:mousepressed(canvas)
 			selection.set(mask)
 		end
 		selection.ch_index = select_ch
+		selection.device_index = nil
 	end
 
 	self.tool:mousepressed(canvas)

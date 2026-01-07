@@ -53,10 +53,12 @@ function selection.get_notes()
 
 	local notes = {}
 	for ch_index, channel in ipairs(project.channels) do
-		notes[ch_index] = {}
-		for _, note in ipairs(channel.notes) do
-			if selection.mask[note] then
-				table.insert(notes[ch_index], note)
+		if channel.notes then
+			notes[ch_index] = {}
+			for _, note in ipairs(channel.notes) do
+				if selection.mask[note] then
+					table.insert(notes[ch_index], note)
+				end
 			end
 		end
 	end
@@ -65,7 +67,7 @@ end
 
 function selection.remove_inactive()
 	for _, channel in ipairs(project.channels) do
-		if not channel.visible or channel.lock then
+		if channel.notes and (not channel.visible or channel.lock) then
 			for _, v in ipairs(channel.notes) do
 				selection.mask[v] = nil
 			end
@@ -75,15 +77,16 @@ function selection.remove_inactive()
 end
 
 function selection.select_default_channel()
-	-- just select the first available channel
+	-- just select the first available channel that is not master
 	local index = nil
 	for i, channel in ipairs(project.channels) do
-		if channel.visible and not channel.lock then
+		if i > 1 and (not channel.visible or channel.lock) then
 			index = i
 			break
 		end
 	end
 	selection.ch_index = index
+	selection.device_index = nil
 end
 
 return selection

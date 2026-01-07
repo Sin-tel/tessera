@@ -21,9 +21,13 @@ pub struct Channel {
 }
 
 impl Channel {
-	pub fn new(sample_rate: f32, instrument: VoiceManager, meter_handle: MeterHandle) -> Self {
+	pub fn new(
+		sample_rate: f32,
+		instrument: Option<VoiceManager>,
+		meter_handle: MeterHandle,
+	) -> Self {
 		Self {
-			instrument: Some(instrument),
+			instrument,
 			effects: Vec::new(),
 			peak: PeakMeter::new(sample_rate),
 			meter_handle,

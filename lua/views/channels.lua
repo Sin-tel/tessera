@@ -54,6 +54,7 @@ function Channels:update()
 		end
 		if ch:update(self.ui, i, bg_color, self.w) then
 			selection.ch_index = i
+			selection.device_index = nil
 		end
 	end
 	-- remember for next frame

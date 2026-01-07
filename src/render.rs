@@ -1,10 +1,9 @@
 use crate::audio::MAX_BUF_SIZE;
 use crate::channel::Channel;
 use crate::context::{AudioMessage, LuaMessage};
-use crate::dsp::PeakMeter;
 use crate::effect::*;
 use crate::instrument;
-use crate::log::log_error;
+use crate::log::*;
 use crate::meters::MeterHandle;
 use crate::metronome::Metronome;
 use crate::voice_manager::VoiceManager;
@@ -23,8 +22,6 @@ pub struct Render {
 	buffer: [[f32; MAX_BUF_SIZE]; 2],
 	pub sample_rate: f32,
 
-	peak: PeakMeter,
-	meter_handle: MeterHandle,
 	metronome: Metronome,
 }
 
@@ -36,7 +33,6 @@ impl Render {
 		worker_tx: SyncSender<Request>,
 		worker_rx: Receiver<Response>,
 		scope_tx: HeapProd<f32>,
-		meter_handle: MeterHandle,
 	) -> Render {
 		Render {
 			audio_rx,
@@ -47,8 +43,6 @@ impl Render {
 			channels: Vec::new(),
 			buffer: [[0.0f32; MAX_BUF_SIZE]; 2],
 			sample_rate,
-			peak: PeakMeter::new(sample_rate),
-			meter_handle,
 			metronome: Metronome::new(sample_rate),
 		}
 	}
@@ -57,18 +51,28 @@ impl Render {
 		let _ = self.lua_tx.try_send(m).is_err();
 	}
 
-	pub fn insert_channel(
+	pub fn insert_channel(&mut self, channel_index: usize, meter_handle_channel: MeterHandle) {
+		if channel_index > self.channels.len() {
+			log_error!("Insert channel index {} out of bounds.", channel_index);
+			return;
+		}
+		let channel = Channel::new(self.sample_rate, None, meter_handle_channel);
+		self.channels.insert(channel_index, channel);
+	}
+
+	pub fn insert_instrument(
 		&mut self,
 		channel_index: usize,
 		instrument_name: &str,
-		meter_handle_channel: MeterHandle,
 		meter_handle_instrument: MeterHandle,
 	) {
+		assert!(channel_index > 0, "Trying to insert instrument on master channel");
 		let instrument = instrument::new(self.sample_rate, instrument_name);
 		let voice_manager =
 			VoiceManager::new(self.sample_rate, instrument, meter_handle_instrument);
-		let channel = Channel::new(self.sample_rate, voice_manager, meter_handle_channel);
-		self.channels.insert(channel_index, channel);
+
+		let ch = &mut self.channels[channel_index];
+		ch.instrument = Some(voice_manager);
 	}
 
 	pub fn remove_channel(&mut self, index: usize) {
@@ -92,7 +96,11 @@ impl Render {
 		ch.effects.remove(effect_index);
 	}
 
-	pub fn process(&mut self, buffer_out: &mut [&mut [f32]; 2]) {
+	pub fn process<'a>(&'a mut self, buffer_out: &mut [&'a mut [f32]; 2]) {
+		if self.channels.is_empty() {
+			return;
+		}
+
 		let len = buffer_out[0].len();
 
 		let (l, r) = self.buffer.split_at_mut(1);
@@ -104,13 +112,16 @@ impl Render {
 		}
 
 		// Process all channels
-		for ch in &mut self.channels {
+		for ch in &mut self.channels[1..] {
 			ch.process(buffer_in, buffer_out);
 		}
 
-		// Calculate master peak
-		let peak = self.peak.process_block(buffer_out);
-		self.meter_handle.set(peak);
+		// swap buffers for master
+		std::mem::swap(buffer_in, buffer_out);
+		for buf in buffer_out.iter_mut() {
+			buf.fill(0.);
+		}
+		self.channels[0].process(buffer_in, buffer_out);
 
 		// Send everything to scope.
 		for s in buffer_out[0].iter() {

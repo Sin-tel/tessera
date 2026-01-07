@@ -38,8 +38,11 @@ function ChannelSettings:update()
 
 	if selection.ch_index then
 		local ch = ui_channels[selection.ch_index]
-		if ch.instrument:update(self.ui, 0, self.w) then
-			selection.device_index = 0
+
+		if ch.instrument then
+			if ch.instrument:update(self.ui, 0, self.w) then
+				selection.device_index = 0
+			end
 		end
 
 		for i, v in ipairs(ch.effects) do

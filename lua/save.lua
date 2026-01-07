@@ -40,10 +40,12 @@ local function do_patches(p)
 			ch.gain = 1.0
 		end
 		-- rename pitch -> interval
-		for _, note in ipairs(ch.notes) do
-			if not note.interval then
-				note.interval = note.pitch
-				note.pitch = nil
+		if ch.notes then
+			for _, note in ipairs(ch.notes) do
+				if not note.interval then
+					note.interval = note.pitch
+					note.pitch = nil
+				end
 			end
 		end
 	end
@@ -51,13 +53,21 @@ local function do_patches(p)
 	-- fix projects with different rank
 	local tuning = require("tuning")
 	for _, ch in ipairs(p.channels) do
-		for _, note in ipairs(ch.notes) do
-			for i = 1, tuning.rank do
-				if not note.interval[i] then
-					note.interval[i] = 0
+		if ch.notes then
+			for _, note in ipairs(ch.notes) do
+				for i = 1, tuning.rank do
+					if not note.interval[i] then
+						note.interval[i] = 0
+					end
 				end
 			end
 		end
+	end
+
+	-- 0.1.2 -> 0.1.2
+	if #p.channels == 0 or not p.channels[1].master then
+		local master_ch = build.new_channel_data({ master = true, name = "Master" })
+		table.insert(p.channels, 1, master_ch)
 	end
 
 	-- after patches are done, file should be on new version

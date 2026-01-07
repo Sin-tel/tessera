@@ -1,83 +1,5 @@
-local SliderValue = require("ui/slider_value")
 local build = require("build")
 local device_list = require("device_list")
-
-local function min_hue_dist(hue)
-    -- calculate distance to closest hue that already exists
-    local min_dist = 180.0
-    for _, v in ipairs(project.channels) do
-        -- distance in degrees
-        local a = math.abs(hue - v.hue - 360.0 * math.floor(0.5 + (hue - v.hue) / 360.0))
-        if a < min_dist then
-            min_dist = a
-        end
-    end
-    return min_dist
-end
-
-local function find_hue()
-    -- try some random hues, pick  the one that is furthest away from existing ones
-    local hue = math.random() * 360.0
-    local min_dist = min_hue_dist(hue)
-    for _ = 1, 10 do
-        local p_hue = math.random() * 360.0
-        local p_min_dist = min_hue_dist(p_hue)
-        if p_min_dist > min_dist then
-            hue = p_hue
-            min_dist = p_min_dist
-        end
-    end
-    return hue
-end
-
-local function new_device_data(key, options)
-    local state = {}
-
-    local index = 1
-
-    for _, v in ipairs(options.parameters) do
-        local w_name = v[1]
-        local w_type = v[2] or w_name
-        local w_options = v[3] or {}
-
-        if w_type ~= "label" and w_type ~= "separator" then
-            if w_type == "slider" then
-                local sv = SliderValue.new(w_options)
-                state[index] = sv.default
-            elseif w_type == "selector" then
-                state[index] = w_options.default or 1
-            elseif w_type == "dropdown" then
-                state[index] = w_options.default or 1
-            elseif w_type == "toggle" then
-                state[index] = w_options.default or false
-            else
-                error(w_type .. " not supported!")
-            end
-
-            assert(state[index] ~= nil)
-            index = index + 1
-        end
-    end
-
-    return { name = key, display_name = options.name, state = state, mute = false }
-end
-
-local function new_channel_data(key, options)
-    return {
-        instrument = new_device_data(key, options),
-        effects = {},
-        notes = {},
-        control = {},
-        mute = false,
-        solo = false,
-        armed = false,
-        visible = true,
-        lock = false,
-        gain = 1.0,
-        hue = find_hue(),
-        name = options.name,
-    }
-end
 
 local function remove_channel(ch_index)
     table.remove(project.channels, ch_index)
@@ -139,13 +61,15 @@ function NewChannel:run()
     local options = device_list.instruments[self.name]
     assert(options)
     -- build state
-    local channel = new_channel_data(self.name, options)
+    options.instrument_key = self.name
+    local channel = build.new_channel_data(options)
     table.insert(project.channels, channel)
 
     build.channel(self.ch_index, channel)
 
     -- select it
     selection.ch_index = self.ch_index
+    selection.device_index = nil
 
     return channel
 end
@@ -194,7 +118,7 @@ function NewEffect:run()
     local options = device_list.effects[self.name]
     assert(options)
 
-    local effect = new_device_data(self.name, options)
+    local effect = build.new_device_data(self.name, options)
     table.insert(project.channels[self.ch_index].effects, effect)
 
     build.effect(self.ch_index, self.effect_index, effect)
