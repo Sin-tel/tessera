@@ -124,10 +124,6 @@ function util.curve_dB_inv(x, max)
 	return math.exp((util.to_dB(x) - (max or 0)) / curve_param)
 end
 
-function util.ratio(r)
-	return 12.0 * math.log(r) / math.log(2)
-end
-
 -- TODO: make this configurable (per intrument?)
 -- 0.01 = 40dB dynamic range
 -- 0.02 = 34dB dynamic range

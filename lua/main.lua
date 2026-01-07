@@ -100,7 +100,8 @@ function tessera.load(test_run)
 	setup = save.read_setup()
 	save.init_setup()
 
-	tuning.load()
+	-- tuning.load("pele_7")
+	tuning.load("ji_5")
 
 	mouse:load()
 
