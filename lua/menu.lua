@@ -92,6 +92,13 @@ function Menu.options(x, y)
 				{ label = "Metronome", style = "menu", pad = indent_s, size = 0.66, no_undo = true }
 			),
 		},
+		{
+			widget = widgets.Toggle.new(
+				project.settings,
+				"relative_note_names",
+				{ label = "Relative note names", style = "menu", pad = indent_s, size = 0.66, no_undo = true }
+			),
+		},
 	}
 	return Menu.new(items, x, y)
 end

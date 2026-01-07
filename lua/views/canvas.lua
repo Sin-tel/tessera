@@ -222,17 +222,26 @@ function Canvas:draw_channel(ch, w_scale)
 end
 
 function Canvas:draw_pitch_grid(t)
-	local iy = self.transform:pitch_inv(0)
-	local ey = self.transform:pitch_inv(self.h)
+	local c = tuning.get_center()
+	local cy = tuning.get_pitch(c)
+	local iy = self.transform:pitch_inv(0) - cy
+	local ey = self.transform:pitch_inv(self.h) - cy
 
-	local oct = tuning.generators[1]
-	for i = math.floor((ey - 60) / oct), math.floor((iy - 60) / oct) do
+	local ti
+	if t ~= "octave" then
+		ti = tuning.get_index(#t, c)
+	end
+
+	local oct = tuning.get_relative_pitch(tuning.octave)
+	for i = math.floor(ey / oct), math.floor(iy / oct) do
 		if t == "octave" then
-			local py = self.transform:pitch(tuning.get_pitch({ i }))
+			local o = tuning.mul(tuning.octave, i)
+			local py = self.transform:pitch(tuning.get_pitch(tuning.add(c, o)))
 			tessera.graphics.line(0, py, self.w, py)
 		else
 			for j, _ in ipairs(t) do
-				local py = self.transform:pitch(tuning.get_pitch(tuning.from_table(t, j + #t * i)))
+				local p = tuning.from_table(t, j + ti + #t * i)
+				local py = self.transform:pitch(tuning.get_pitch(p))
 				tessera.graphics.line(0, py, self.w, py)
 			end
 		end
@@ -469,6 +478,10 @@ function Canvas:keypressed(key)
 		end
 	elseif key == "kp." or key == "." then
 		self:auto_zoom()
+		return true
+	elseif key == "c" then
+		self:set_pitch_center()
+		return true
 	end
 
 	if zoom_factor then
@@ -586,6 +599,24 @@ function Canvas:auto_zoom()
 	if p_max == p_min then
 		self.transform.sy_ = -0.25 * self.transform.sx_
 		self.transform.oy_ = -p_max * self.transform.sy_ + 0.5 * self.h
+	end
+end
+
+function Canvas:set_pitch_center()
+	if not selection.is_empty() then
+		local d_min = math.huge
+		local base = nil
+		for _, note in ipairs(selection.list) do
+			local n = tuning.get_pitch(note.interval)
+			if n < d_min then
+				d_min = n
+				base = note
+			end
+		end
+
+		if base then
+			tuning.set_center(base.interval)
+		end
 	end
 end
 

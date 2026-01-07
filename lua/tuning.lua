@@ -149,6 +149,8 @@ function tuning.load()
 	-- tuning.fine_table = tuning.generate_scale(19, 7)
 
 	tuning.tables = { tuning.diatonic_table, tuning.chromatic_table, tuning.fine_table }
+
+	tuning.center = tuning.new_interval()
 end
 
 function tuning.new_interval()
@@ -157,6 +159,13 @@ function tuning.new_interval()
 		new[i] = 0
 	end
 	return new
+end
+
+function tuning.get_center(p)
+	return tuning.center
+end
+function tuning.set_center(p)
+	tuning.center = util.clone(p)
 end
 
 -- Given some pitch p, find interval in current grid that is closest
@@ -170,6 +179,9 @@ end
 
 -- Look up interval in table, correcting for octave offsets
 function tuning.from_table(t, i)
+	local start = tuning.get_index(#t, tuning.center)
+
+	i = i - start
 	local s = #t
 	local oct = math.floor(i / s)
 	i = i - oct * s
@@ -178,6 +190,8 @@ function tuning.from_table(t, i)
 	local new = tuning.new_interval()
 	new[1] = p[1] + oct
 	new[2] = p[2]
+
+	new = tuning.add(new, tuning.center)
 
 	return new
 end
@@ -212,9 +226,25 @@ end
 
 -- TODO: generalize this to other systems
 function tuning.get_name(p)
+	if project.settings.relative_note_names then
+		p = tuning.sub(p, tuning.center)
+	elseif tuning.rank > 2 then
+		-- only move by extra accidentals
+		local new = {}
+		for i = 1, tuning.rank do
+			if i > 2 then
+				new[i] = (p[i] or 0) - (tuning.center[i] or 0)
+			else
+				new[i] = p[i]
+			end
+		end
+		p = new
+	end
+
 	-- factor 4/7 is because base note name does not change when altering by an apotome (#) which is [-4, 7]
 	local o = p[1] + math.floor(p[2] * 4 / 7) + 4
 	local n_i = (p[2] + 1)
+
 	local sharps = math.floor(n_i / #tuning.circle_of_fifths)
 
 	local acc = ""
