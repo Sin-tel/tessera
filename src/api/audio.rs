@@ -47,19 +47,18 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				if let Err(e) = check_architecture() {
 					return Err(mlua::Error::RuntimeError(e.to_string()));
 				}
-
 				let state = &mut *lua.app_data_mut::<State>().unwrap();
 				let lua_tx = state.lua_tx.clone();
 
 				match AudioContext::new(&host_name, &device_name, buffer_size, lua_tx) {
-					Ok((ctx, meter_id)) => {
+					Ok(ctx) => {
 						state.audio = Some(ctx);
-						Ok(Some(meter_id + 1))
+						Ok(())
 					},
 					Err(e) => {
 						log_error!("{e}");
 						state.audio = None;
-						Ok(None)
+						Ok(())
 					},
 				}
 			},
@@ -302,20 +301,29 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 
 	audio.set(
 		"insert_channel",
-		lua.create_function(|lua, (index, instrument_name): (usize, String)| {
+		lua.create_function(|lua, index: usize| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				let (meter_handle_channel, meter_id_channel) = ctx.meters.register();
+				let mut render = ctx.render.lock();
+				render.insert_channel(index - 1, meter_handle_channel);
+				Ok(Some(meter_id_channel + 1))
+			} else {
+				log_error!("Failed to insert channel");
+				Ok(None)
+			}
+		})?,
+	)?;
+
+	audio.set(
+		"insert_instrument",
+		lua.create_function(|lua, (index, instrument_name): (usize, String)| {
+			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
 				let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
 				let mut render = ctx.render.lock();
-				render.insert_channel(
-					index - 1,
-					&instrument_name,
-					meter_handle_channel,
-					meter_handle_instrument,
-				);
-				Ok((Some(meter_id_channel + 1), Some(meter_id_instrument + 1)))
+				render.insert_instrument(index - 1, &instrument_name, meter_handle_instrument);
+				Ok(Some(meter_id_instrument + 1))
 			} else {
-				Ok((None, None))
+				Ok(None)
 			}
 		})?,
 	)?;

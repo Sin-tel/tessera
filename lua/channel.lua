@@ -4,17 +4,30 @@ local log = require("log")
 local tuning = require("tuning")
 local widgets = require("ui.widgets")
 
+local function channel_group()
+	-- get all channels in a group (there is only a single group right now)
+	local group = {}
+	for i, v in ipairs(project.channels) do
+		if i > 1 then
+			table.insert(group, v)
+		end
+	end
+	return group
+end
+
+-- TODO: fix master
 local function solo_mute(ch)
+	local group = channel_group()
 	local all = true
-	for _, v in ipairs(project.channels) do
+	for _, v in ipairs(group) do
 		all = all and v.mute
 	end
 	if all then
-		for _, v in ipairs(project.channels) do
+		for _, v in ipairs(group) do
 			v.mute = false
 		end
 	else
-		for _, v in ipairs(project.channels) do
+		for _, v in ipairs(group) do
 			v.mute = true
 		end
 		ch.mute = false
@@ -22,34 +35,36 @@ local function solo_mute(ch)
 end
 
 local function solo_visible(ch)
+	local group = channel_group()
 	local all = false
-	for _, v in ipairs(project.channels) do
+	for _, v in ipairs(group) do
 		all = all or v.visible
 	end
 
 	if all then
-		for _, v in ipairs(project.channels) do
+		for _, v in ipairs(group) do
 			v.visible = false
 		end
 		ch.visible = true
 	else
-		for _, v in ipairs(project.channels) do
+		for _, v in ipairs(group) do
 			v.visible = true
 		end
 	end
 end
 
 local function solo_lock(ch)
+	local group = channel_group()
 	local all = true
-	for _, v in ipairs(project.channels) do
+	for _, v in ipairs(group) do
 		all = all and v.lock
 	end
 	if all then
-		for _, v in ipairs(project.channels) do
+		for _, v in ipairs(group) do
 			v.lock = false
 		end
 	else
-		for _, v in ipairs(project.channels) do
+		for _, v in ipairs(group) do
 			v.lock = true
 		end
 		ch.lock = false
@@ -69,14 +84,15 @@ function Channel.new(ch_index, data, instrument, meter_id)
 	self.mute_old = false
 	self.gain_old = nil
 
-	self.instrument = instrument
+	if instrument then
+		self.instrument = instrument
+		self.roll = Roll.new(ch_index)
+	end
 	self.effects = {}
 
 	self.meter_id = meter_id
 	self.meter_l = 0.0
 	self.meter_r = 0.0
-
-	self.roll = Roll.new(ch_index)
 
 	-- UI widgets
 	self.gain_slider = widgets.Slider.new(self.data, "gain", { default = 0, max = 12, t = "dB" })
@@ -122,48 +138,50 @@ function Channel:update(ui, ch_index, bg_color, w)
 		ui.layout:col(w_pad)
 	end
 
-	ui.layout:padding(Ui.scale(2))
-	ui.layout:col(w_button)
-	if self.button_armed:update(ui, ch.armed) then
-		if ch.armed then
-			ch.armed = false
-		else
-			if not modifier_keys.shift then
-				for _, v in ipairs(project.channels) do
-					v.armed = false
+	if ch_index > 1 then
+		ui.layout:padding(Ui.scale(2))
+		ui.layout:col(w_button)
+		if self.button_armed:update(ui, ch.armed) then
+			if ch.armed then
+				ch.armed = false
+			else
+				if not modifier_keys.shift then
+					for _, v in ipairs(project.channels) do
+						v.armed = false
+					end
 				end
+				ch.armed = true
 			end
-			ch.armed = true
 		end
-	end
 
-	ui.layout:col(w_button)
-	if self.button_mute:update(ui, ch.mute) then
-		if ui.double_click then
-			solo_mute(ch)
-		else
-			ch.mute = not ch.mute
+		ui.layout:col(w_button)
+		if self.button_mute:update(ui, ch.mute) then
+			if ui.double_click then
+				solo_mute(ch)
+			else
+				ch.mute = not ch.mute
+			end
 		end
-	end
 
-	ui.layout:col(w_button)
-	if self.button_visible:update(ui, ch.visible) then
-		if ui.double_click then
-			solo_visible(ch)
-		else
-			ch.visible = not ch.visible
+		ui.layout:col(w_button)
+		if self.button_visible:update(ui, ch.visible) then
+			if ui.double_click then
+				solo_visible(ch)
+			else
+				ch.visible = not ch.visible
+			end
+			selection.remove_inactive()
 		end
-		selection.remove_inactive()
-	end
 
-	ui.layout:col(w_button)
-	if self.button_lock:update(ui, ch.lock) then
-		if ui.double_click then
-			solo_lock(ch)
-		else
-			ch.lock = not ch.lock
+		ui.layout:col(w_button)
+		if self.button_lock:update(ui, ch.lock) then
+			if ui.double_click then
+				solo_lock(ch)
+			else
+				ch.lock = not ch.lock
+			end
+			selection.remove_inactive()
 		end
-		selection.remove_inactive()
 	end
 
 	ui.layout:padding()
@@ -182,8 +200,10 @@ function Channel:update(ui, ch_index, bg_color, w)
 end
 
 function Channel:event(event)
-	self.roll:event(event)
-	self:send_event(event)
+	if self.instrument then
+		self.roll:event(event)
+		self:send_event(event)
+	end
 end
 
 -- send an event to the backend

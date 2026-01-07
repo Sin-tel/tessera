@@ -74,6 +74,8 @@ local function audio_setup()
 		-- load project
 		local success = file.load_last()
 		if not success then
+			-- TODO: use command.NewProject?
+			build.new_project()
 			load_default_project()
 		end
 		initial_setup = false
@@ -107,7 +109,7 @@ function tessera.load(test_run)
 		workspace:load()
 
 		-- set up empty project
-		build.new_project()
+		build.empty_project()
 	end
 end
 
@@ -308,7 +310,7 @@ function tessera.keypressed(key, key_str, isrepeat)
 		if selection.ch_index then
 			if selection.device_index and selection.device_index > 0 then
 				command.run_and_register(command.RemoveEffect.new(selection.ch_index, selection.device_index))
-			else
+			elseif selection.ch_index > 1 then
 				command.run_and_register(command.RemoveChannel.new(selection.ch_index))
 			end
 		end

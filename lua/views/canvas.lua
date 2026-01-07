@@ -106,7 +106,7 @@ function Canvas:update()
 end
 
 function Canvas:draw_channel(ch, w_scale)
-	if not ch.visible then
+	if not (ch.visible and ch.notes) then
 		return
 	end
 	local v_scale = -self.transform.sy
@@ -383,7 +383,7 @@ function Canvas:keypressed(key)
 		-- select all
 		local mask = {}
 		for _, channel in ipairs(project.channels) do
-			if channel.visible and not channel.lock then
+			if channel.visible and not channel.lock and channel.notes then
 				for _, note in ipairs(channel.notes) do
 					mask[note] = true
 				end
@@ -548,7 +548,7 @@ function Canvas:auto_zoom()
 	local p_min = math.huge
 	local p_max = -math.huge
 	for _, channel in ipairs(project.channels) do
-		if channel.visible then
+		if channel.visible and channel.notes then
 			for _, note in ipairs(channel.notes) do
 				if all_notes or selection.mask[note] then
 					local t_start = note.time
@@ -630,7 +630,7 @@ function Canvas:find_closest_note(mx, my, max_distance)
 	local c2 = 0
 
 	for ch_index, channel in ipairs(project.channels) do
-		if channel.visible and not channel.lock then
+		if channel.visible and not channel.lock and channel.notes then
 			for _, note in ipairs(channel.notes) do
 				-- Broad phase: bound by time range
 				local t_start = note.time
@@ -667,7 +667,7 @@ function Canvas:find_closest_end(mx, my, max_distance)
 	local closest_ch
 	local dmax = max_distance or math.huge
 	for ch_index, channel in ipairs(project.channels) do
-		if channel.visible and not channel.lock then
+		if channel.visible and not channel.lock and channel.notes then
 			for _, note in ipairs(channel.notes) do
 				local t_end = note.time + note.verts[#note.verts][1]
 				local p_end = tuning.get_pitch(note.interval) + note.verts[#note.verts][2]

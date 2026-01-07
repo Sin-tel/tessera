@@ -150,7 +150,7 @@ function NoteDelete.new(notes)
     self.notes = notes
     self.mask = {}
 
-    for ch_index in ipairs(self.notes) do
+    for ch_index in pairs(self.notes) do
         for _, note in ipairs(self.notes[ch_index]) do
             self.mask[note] = true
         end
@@ -161,16 +161,18 @@ end
 function NoteDelete:run()
     -- remove selected notes
     for _, channel in ipairs(project.channels) do
-        for i = #channel.notes, 1, -1 do
-            if self.mask[channel.notes[i]] then
-                table.remove(channel.notes, i)
+        if channel.notes then
+            for i = #channel.notes, 1, -1 do
+                if self.mask[channel.notes[i]] then
+                    table.remove(channel.notes, i)
+                end
             end
         end
     end
 end
 
 function NoteDelete:reverse()
-    for ch_index in ipairs(self.notes) do
+    for ch_index in pairs(self.notes) do
         for _, note in ipairs(self.notes[ch_index]) do
             table.insert(project.channels[ch_index].notes, note)
         end
@@ -208,9 +210,11 @@ end
 
 function NoteAdd:reverse()
     for _, channel in ipairs(project.channels) do
-        for i = #channel.notes, 1, -1 do
-            if self.mask[channel.notes[i]] then
-                table.remove(channel.notes, i)
+        if channel.notes then
+            for i = #channel.notes, 1, -1 do
+                if self.mask[channel.notes[i]] then
+                    table.remove(channel.notes, i)
+                end
             end
         end
     end

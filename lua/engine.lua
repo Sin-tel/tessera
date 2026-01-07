@@ -12,16 +12,14 @@ engine.render_end = 8
 engine.time = 0
 engine.frame_time = 0
 
-engine.meter_id = nil
-engine.meter_l = 0
-engine.meter_r = 0
-
 function engine.start()
 	engine.seek(project.transport.start_time)
 	engine.playing = true
 
 	for _, v in ipairs(ui_channels) do
-		v.roll:start(project.settings.chase)
+		if v.instrument then
+			v.roll:start(project.settings.chase)
+		end
 	end
 end
 
@@ -36,9 +34,11 @@ function engine.stop()
 
 	tessera.audio:all_notes_off()
 	for i, v in ipairs(ui_channels) do
-		added_notes[i] = v.roll.recorded_notes
-		total = total + #added_notes[i]
-		v.roll:stop()
+		if v.instrument then
+			added_notes[i] = v.roll.recorded_notes
+			total = total + #added_notes[i]
+			v.roll:stop()
+		end
 	end
 	if total > 0 then
 		local c = command.NoteAdd.new(added_notes)
@@ -61,7 +61,9 @@ function engine.update(dt)
 
 		if tessera.audio.ok() then
 			for _, v in ipairs(ui_channels) do
-				v.roll:playback(v)
+				if v.instrument then
+					v.roll:playback(v)
+				end
 			end
 		end
 	end
@@ -154,10 +156,9 @@ function engine.setup_stream()
 	local device = setup.configs[host].device
 	local buffer_size = setup.configs[host].buffer_size
 	if device then
-		engine.meter_id = tessera.audio.setup(host, device, buffer_size)
+		tessera.audio.setup(host, device, buffer_size)
 	else
-		engine.meter_id = nil
-		log.error("No device configured")
+		log.error("No audio device configured")
 	end
 end
 
@@ -273,14 +274,14 @@ function engine.update_meters()
 	local meters = tessera.audio.get_meters()
 
 	if not meters then
-		engine.meter_l = 0
-		engine.meter_r = 0
-
 		for _, ch in ipairs(ui_channels) do
 			ch.meter_l = 0
 			ch.meter_r = 0
-			ch.instrument.meter_l = 0
-			ch.instrument.meter_r = 0
+
+			if ch.instrument then
+				ch.instrument.meter_l = 0
+				ch.instrument.meter_r = 0
+			end
 			for _, fx in ipairs(ch.effects) do
 				fx.meter_l = 0
 				fx.meter_r = 0
@@ -289,19 +290,16 @@ function engine.update_meters()
 		return
 	end
 
-	if engine.meter_id then
-		engine.meter_l = meters[engine.meter_id][1]
-		engine.meter_r = meters[engine.meter_id][2]
-	end
-
 	for _, ch in ipairs(ui_channels) do
 		local i = ch.meter_id
 		ch.meter_l = meters[i][1]
 		ch.meter_r = meters[i][2]
 
-		local k = ch.instrument.meter_id
-		ch.instrument.meter_l = meters[k][1]
-		ch.instrument.meter_r = meters[k][2]
+		if ch.instrument then
+			local k = ch.instrument.meter_id
+			ch.instrument.meter_l = meters[k][1]
+			ch.instrument.meter_r = meters[k][2]
+		end
 		for _, fx in ipairs(ch.effects) do
 			i = fx.meter_id
 			fx.meter_l = meters[i][1]
@@ -322,15 +320,17 @@ function engine.send_parameters()
 	for ch_index, ch in ipairs(ui_channels) do
 		send_channel_parameters(ch, ch_index)
 
-		send_device_mute(ch.instrument, ch_index, 0)
+		if ch.instrument then
+			send_device_mute(ch.instrument, ch_index, 0)
 
-		for l = 1, ch.instrument.n_parameters do
-			local new_value = ch.instrument.state[l]
-			local old_value = ch.instrument.state_old[l]
-			if old_value ~= new_value then
-				local value = new_value
-				tessera.audio.send_parameter(ch_index, 0, l, to_float(value))
-				ch.instrument.state_old[l] = new_value
+			for l = 1, ch.instrument.n_parameters do
+				local new_value = ch.instrument.state[l]
+				local old_value = ch.instrument.state_old[l]
+				if old_value ~= new_value then
+					local value = new_value
+					tessera.audio.send_parameter(ch_index, 0, l, to_float(value))
+					ch.instrument.state_old[l] = new_value
+				end
 			end
 		end
 
@@ -353,7 +353,9 @@ end
 function engine.reset_parameters()
 	for _, ch in ipairs(ui_channels) do
 		ch:reset()
-		ch.instrument:reset()
+		if ch.instrument then
+			ch.instrument:reset()
+		end
 		for _, fx in ipairs(ch.effects) do
 			fx:reset()
 		end

@@ -199,8 +199,13 @@ function workspace:draw()
 	y1 = 0.5 * (Ui.RIBBON_HEIGHT - h1)
 	x1 = self.w - Ui.scale(224) - y1
 
-	local ml = engine.meter_l
-	local mr = engine.meter_r
+	local ml = 0
+	local mr = 0
+
+	if #ui_channels > 0 then
+		ml = ui_channels[1].meter_l
+		mr = ui_channels[1].meter_r
+	end
 
 	local wl = util.clamp((util.to_dB(ml) + 80) / 80, 0, 1)
 	local wr = util.clamp((util.to_dB(mr) + 80) / 80, 0, 1)

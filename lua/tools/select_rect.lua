@@ -29,7 +29,7 @@ function select_rect:mousereleased(canvas)
 	local by2 = math.max(self.oy, my)
 
 	for _, channel in ipairs(project.channels) do
-		if channel.visible and not channel.lock then
+		if channel.visible and not channel.lock and channel.notes then
 			for _, note in ipairs(channel.notes) do
 				-- broad phase: reject based on time range
 				local t_start = note.time

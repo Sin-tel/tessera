@@ -31,7 +31,7 @@ function drag:mousedown(canvas)
 		else
 			if drag.mode == "clone" then
 				local notes = util.clone(selection.get_notes())
-				for ch_index in ipairs(notes) do
+				for ch_index in pairs(notes) do
 					for _, note in ipairs(notes[ch_index]) do
 						table.insert(project.channels[ch_index].notes, note)
 					end

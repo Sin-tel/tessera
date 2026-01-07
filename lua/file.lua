@@ -19,7 +19,7 @@ function file.poll_dialogs()
 				overwrite_check = false
 			elseif dialog_pending == "open" then
 				-- TODO: undo
-				build.new_project()
+				build.empty_project()
 				save.read(f)
 				dialog_pending = nil
 				overwrite_check = false
