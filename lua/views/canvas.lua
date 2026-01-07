@@ -257,21 +257,21 @@ function Canvas:draw()
 	if self.transform.sy < -124 then
 		-- fine
 		tessera.graphics.set_color(theme.grid)
-		self:draw_pitch_grid(tuning.fine_table)
+		self:draw_pitch_grid(tuning.fine)
 
 		tessera.graphics.set_color(theme.grid_highlight)
-		self:draw_pitch_grid(tuning.chromatic_table)
+		self:draw_pitch_grid(tuning.chromatic)
 	elseif self.transform.sy < -48 then
 		-- medium (chromatic)
 		tessera.graphics.set_color(theme.grid)
-		self:draw_pitch_grid(tuning.chromatic_table)
+		self:draw_pitch_grid(tuning.chromatic)
 
 		tessera.graphics.set_color(theme.grid_highlight)
-		self:draw_pitch_grid(tuning.diatonic_table)
+		self:draw_pitch_grid(tuning.diatonic)
 	elseif self.transform.sy < -28 then
 		-- coarse (diatonic)
 		tessera.graphics.set_color(theme.grid)
-		self:draw_pitch_grid(tuning.diatonic_table)
+		self:draw_pitch_grid(tuning.diatonic)
 
 		tessera.graphics.set_color(theme.grid_highlight)
 		self:draw_pitch_grid("octave")
@@ -514,7 +514,7 @@ function Canvas:keypressed(key)
 			end
 
 			if base then
-				local diatonic = tuning.diatonic_table
+				local diatonic = tuning.diatonic
 				local n = tuning.get_index(#diatonic, base.interval)
 				local p_origin = tuning.from_table(diatonic, n)
 				delta = tuning.from_table(diatonic, n + move_up)

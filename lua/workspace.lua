@@ -1,7 +1,6 @@
 local Box = require("box")
 local Menu = require("menu")
 local Ui = require("ui/ui")
-local engine = require("engine")
 local views = require("views")
 
 local workspace = {}

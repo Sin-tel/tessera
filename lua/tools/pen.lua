@@ -15,8 +15,6 @@ local pen = {}
 pen.ox = 0
 pen.oy = 0
 
-pen.interval = tuning.new_interval()
-
 local function get_interval(canvas, my)
 	local f = canvas.transform:pitch_inv(my) - 60
 	return tuning.snap(f)
@@ -152,6 +150,10 @@ end
 
 function pen:draw(canvas)
 	local mx, my = canvas:get_mouse()
+
+	if not self.interval then
+		return
+	end
 
 	local p = tuning.get_pitch(self.interval)
 	local y = canvas.transform:pitch(p)

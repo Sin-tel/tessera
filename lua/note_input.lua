@@ -16,7 +16,7 @@ function note_input:keypressed(key)
 		for i, v in ipairs(self.diatonic_row) do
 			if v == key then
 				local o = tuning.mul(tuning.octave, octave)
-				local interval = tuning.from_table(tuning.diatonic_table, i - 1)
+				local interval = tuning.from_table(tuning.diatonic, i - 1)
 				interval = tuning.add(interval, o)
 				local token = tessera.audio.get_token()
 				key_down[i] = token

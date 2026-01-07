@@ -1,140 +1,85 @@
---[[
-pitch system is based on a diatonic (octave/fifth or period/gen) generated scale (can be any rank 2 MOS)
-which is notated with alphabetic characters + b/#
-there is also 6 extra accidental pairs
-	-> total max 8 dimensions (e.g. up to 19-limit JI)
-]]
-
--- TODO: load tuning info from file
-
+local tuning_presets = require("default.tuning_presets")
 local tuning = {}
--- local ratio = util.ratio
-
--- 11-limit JI table
--- tuning.rank = 5
--- tuning.generators = {
--- 	ratio(2/1),
--- 	ratio(3/2),
--- 	ratio(81/80),
--- 	ratio(64/63),
--- 	ratio(33/32),
--- }
-
--- 5-limit JI
--- tuning.rank = 3
--- tuning.generators = {
--- 	ratio(2 / 1),
--- 	ratio(3 / 2),
--- 	ratio(81 / 80),
--- }
-
--- Argent / Pele / Hemifamity (7-limit)
--- 5/4 = E-
--- 7/4 = Bb-
--- tuning.rank = 3
--- tuning.generators = {
--- 	11.9972,
--- 	7.02664,
--- 	0.24493,
--- }
-
--- Pele (11-limit)
--- 5/4 = E-
--- 7/4 = Bb-
--- 11/8 = Gb-
--- tuning.rank = 3
--- tuning.generators = {
--- 	11.99542,
--- 	7.03011,
--- 	0.25316,
--- }
-
--- Akea (11-limit)
--- 5/4 = E-
--- 7/4 = Bb-
--- 11/8 = F++
--- tuning.rank = 3
--- tuning.generators = {
--- 	12.0014,
--- 	7.02924,
--- 	0.26236,
--- }
-
--- 41edo rank3
--- tuning.rank = 3
--- tuning.generators = {
--- 	12,
--- 	12 * 24 / 41,
--- 	12 * 1 / 41,
--- }
-
--- septimal meantone WE
--- 7/4 = A#
--- 11/8 = Ex or Gbb
-tuning.rank = 2
-tuning.generators = {
-	12.01236,
-	6.97212,
-}
-
--- 31edo rank 2
--- tuning.rank = 2
--- tuning.generators = {
--- 	12.0,
--- 	12.0 * 18.0 / 31.0,
--- }
-
--- flattone
--- 7/4 = Bbb
--- 11/8 = F#
--- tuning.rank = 2
--- tuning.generators = {
--- 	12.02062,
--- 	6.94545,
--- }
-
--- archytas
--- tuning.rank = 2
--- tuning.generators = {
--- 	11.96955,
--- 	7.07522,
--- }
-
--- 29edo
--- tuning.rank = 2
--- tuning.generators = {
--- 	12.0,
--- 	7.03448,
--- }
-
-tuning.circle_of_fifths = { "F", "C", "G", "D", "A", "E", "B" }
-
-tuning.octave = { 1 }
-tuning.tone = { -1, 2 } -- whole tone
-tuning.semitone = { 3, -5 } -- diatonic semitone
-tuning.chroma = { -4, 7 } -- apotome, chromatic semitone
-tuning.comma = { 7, -12 } -- Pythagorean comma / diesis
-
-if tuning.rank > 2 then
-	tuning.comma = { 0, 0, 1 }
-end
 
 tuning.snap_labels = { "Diatonic", "Chromatic", "Fine" }
 
--- generate well-formed scale
--- n = scale size (nr. of generators)
--- offset = nr. of generators down from root
-function tuning.generate_scale(n, offset)
-	local scale = {}
-	local o = tuning.get_relative_pitch(tuning.octave)
-	for i = 0, n - 1 do
-		local note = { 0, i - offset }
+local PRIMES = {
+	2,
+	3,
+	5,
+	7,
+	11,
+	13,
+}
 
-		local p = tuning.get_relative_pitch(note)
-		note[1] = -math.floor(p / o)
-		table.insert(scale, note)
+local function factorize(p, q)
+	local _p, _q = p, q
+	local f = {}
+	for i, v in ipairs(PRIMES) do
+		f[i] = 0
+		while p % v == 0 do
+			p = p / v
+			f[i] = f[i] + 1
+		end
+
+		while q % v == 0 do
+			q = q / v
+			f[i] = f[i] - 1
+		end
+		if q == 1 and p == 1 then
+			break
+		end
+	end
+	assert(p == 1 and q == 1, "Prime decomposition failed for " .. _p .. "/" .. _q)
+	return f
+end
+
+-- change from prime to pythagorean + accidental basis
+-- TODO: generalize this for higher limits depending on required accidentals
+local function change_basis(f)
+	for i, v in ipairs(PRIMES) do
+		f[i] = f[i] or 0
+		if v > 5 then
+			assert(f[i] == nil or f[i] == 0, "Only up to 5-limit supported.")
+		end
 	end
 
+	local c = -f[3]
+	local b = f[2] - 4 * c
+	local a = f[1] + b + 4 * c
+	return { a, b, c }
+end
+
+local function ratio_to_pitch(r)
+	return 12.0 * math.log(r) / math.log(2)
+end
+
+local function parse_ratio(s)
+	local p, q = s:match("(%d+)/(%d+)")
+	assert(p)
+	assert(q)
+	return math.floor(p), math.floor(q)
+end
+
+local function parse_scale(s)
+	local scale = {}
+
+	-- add 1/1
+	scale[1] = { 0, 0 }
+
+	for i, str in ipairs(s) do
+		if i == #s then
+			-- assume octaves for now
+			local p, q = parse_ratio(str)
+			assert(p == 2, q == 1)
+			break
+		end
+
+		local f = change_basis(factorize(parse_ratio(str)))
+		table.insert(scale, f)
+	end
+
+	-- Should be already sorted, but can't hurt
 	table.sort(scale, function(a, b)
 		return tuning.get_relative_pitch(a) < tuning.get_relative_pitch(b)
 	end)
@@ -142,14 +87,60 @@ function tuning.generate_scale(n, offset)
 	return scale
 end
 
-function tuning.load()
-	tuning.diatonic_table = tuning.generate_scale(7, 1)
-	tuning.chromatic_table = tuning.generate_scale(12, 4)
-	tuning.fine_table = tuning.generate_scale(31, 12)
-	-- tuning.fine_table = tuning.generate_scale(19, 7)
+function tuning.load(key)
+	local settings = tuning_presets[key]
+	tuning.settings = settings
 
-	tuning.tables = { tuning.diatonic_table, tuning.chromatic_table, tuning.fine_table }
+	-- load generators
+	tuning.generators = {}
+	tuning.rank = #settings.generators
 
+	for i, v in ipairs(settings.generators) do
+		-- Parse ratio if given as string
+		if type(v) == "string" then
+			local p, q = parse_ratio(v)
+			tuning.generators[i] = ratio_to_pitch(p / q)
+		end
+	end
+
+	-- interval definitions
+	tuning.circle_of_fifths = { "F", "C", "G", "D", "A", "E", "B" }
+
+	tuning.octave = { 1 }
+	tuning.tone = { -1, 2 } -- whole tone
+	tuning.semitone = { 3, -5 } -- diatonic semitone
+	tuning.chroma = { -4, 7 } -- apotome, chromatic semitone
+
+	if settings.type == "meantone" then
+		assert(tuning.rank == 2)
+		-- Pythagorean comma / diesis
+		tuning.comma = { 7, -12 }
+
+		tuning.diatonic = tuning.generate_scale(7, 1)
+		tuning.chromatic = tuning.generate_scale(12, 4)
+		tuning.fine = tuning.generate_scale(31, 12)
+	elseif settings.type == "pyth" then
+		assert(tuning.rank == 2)
+		-- comma is flipped in pythagorean systems
+		tuning.comma = { -7, 12 }
+
+		tuning.diatonic = tuning.generate_scale(7, 1)
+		tuning.chromatic = tuning.generate_scale(12, 4)
+		tuning.fine = tuning.generate_scale(29, 11)
+	elseif settings.type == "ji_5" then
+		assert(tuning.rank == 3)
+		-- 81/80
+		tuning.comma = { 0, 0, 1 }
+		tuning.diatonic = parse_scale(tuning_presets.scales.zarlino)
+		tuning.chromatic = parse_scale(tuning_presets.scales.duodene)
+		tuning.fine = parse_scale(tuning_presets.scales.ji_5_fine)
+	else
+		assert(false, "Unknown tuning type: " .. settings.type)
+	end
+
+	tuning.tables = { tuning.diatonic, tuning.chromatic, tuning.fine }
+
+	util.pprint(tuning.tables)
 	tuning.center = tuning.new_interval()
 end
 
@@ -169,7 +160,6 @@ function tuning.set_center(p)
 end
 
 -- Given some pitch p, find interval in current grid that is closest
--- TODO: rounding assumes scales is relatively even
 function tuning.snap(p)
 	local t = tuning.tables[project.settings.snap_pitch]
 	assert(t)
@@ -188,8 +178,10 @@ function tuning.from_table(t, i)
 	local p = t[i + 1]
 
 	local new = tuning.new_interval()
-	new[1] = p[1] + oct
-	new[2] = p[2]
+	for k = 1, tuning.rank do
+		new[k] = (p[k] or 0)
+	end
+	new[1] = new[1] + oct
 
 	new = tuning.add(new, tuning.center)
 
@@ -197,9 +189,9 @@ function tuning.from_table(t, i)
 end
 
 -- Indexed by midi number, middle C = midi note number 60.
--- Note: we currently assume #chromatic_table = 12 so this works.
+-- Note: we currently assume #chromatic = 12 so this works.
 function tuning.from_midi(n)
-	return tuning.from_table(tuning.chromatic_table, n - 60)
+	return tuning.from_table(tuning.chromatic, n - 60)
 end
 
 -- Project an interval to an n-note scale via linear mapping,
@@ -296,6 +288,29 @@ function tuning.get_name(p)
 
 	return n .. acc .. tostring(o)
 end
+
+-- generate well-formed scale
+-- n = scale size (nr. of generators)
+-- offset = nr. of generators down from root
+function tuning.generate_scale(n, offset)
+	local scale = {}
+	local o = tuning.get_relative_pitch(tuning.octave)
+	for i = 0, n - 1 do
+		local note = { 0, i - offset }
+
+		local p = tuning.get_relative_pitch(note)
+		note[1] = -math.floor(p / o)
+		table.insert(scale, note)
+	end
+
+	table.sort(scale, function(a, b)
+		return tuning.get_relative_pitch(a) < tuning.get_relative_pitch(b)
+	end)
+
+	return scale
+end
+
+-- basic arithmetic functions
 
 function tuning.add(a, b)
 	-- add two pitches a and b
