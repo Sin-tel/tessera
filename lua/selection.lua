@@ -80,7 +80,7 @@ function selection.select_default_channel()
 	-- just select the first available channel that is not master
 	local index = nil
 	for i, channel in ipairs(project.channels) do
-		if i > 1 and (not channel.visible or channel.lock) then
+		if i > 1 and channel.visible and not channel.lock then
 			index = i
 			break
 		end
