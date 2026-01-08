@@ -1,3 +1,4 @@
+local log = require("log")
 local tuning_presets = require("default.tuning_presets")
 local tuning = {}
 
@@ -44,9 +45,21 @@ local function change_basis(f)
 		end
 	end
 
+	-- 5-limit map:
+	-- 1  1  0
+	-- 0  1  4
+	-- 0  0 -1
+	local a = f[1] + f[2]
+	local b = f[2] + 4 * f[3]
 	local c = -f[3]
-	local b = f[2] - 4 * c
-	local a = f[1] + b + 4 * c
+	return { a, b, c }
+end
+
+local function change_basis_inv(f)
+	-- invert and transpose
+	local a = f[1]
+	local b = -f[1] + f[2]
+	local c = -4 * f[1] + 4 * f[2] - f[3]
 	return { a, b, c }
 end
 
@@ -89,7 +102,18 @@ end
 
 function tuning.load(key)
 	local settings = tuning_presets[key]
+	if not settings then
+		log.error("Could not find tuning: " .. key)
+		return
+	end
 	tuning.settings = settings
+	tuning.key = key
+
+	if project.settings then
+		-- persist in save file
+		project.settings.tuning_key = key
+		log.info("Loading tuning: " .. key)
+	end
 
 	-- load generators
 	tuning.generators = {}
@@ -100,6 +124,10 @@ function tuning.load(key)
 		if type(v) == "string" then
 			local p, q = parse_ratio(v)
 			tuning.generators[i] = ratio_to_pitch(p / q)
+		elseif type(v) == "number" then
+			tuning.generators[i] = v
+		else
+			assert(false, "unsupported generator " .. v)
 		end
 	end
 
@@ -118,7 +146,11 @@ function tuning.load(key)
 
 		tuning.diatonic = tuning.generate_scale(7, 1)
 		tuning.chromatic = tuning.generate_scale(12, 4)
-		tuning.fine = tuning.generate_scale(31, 12)
+		if settings.fine then
+			tuning.fine = tuning.generate_scale(settings.fine[1], settings.fine[2])
+		else
+			tuning.fine = tuning.generate_scale(31, 12)
+		end
 	elseif settings.type == "pyth" then
 		assert(tuning.rank == 2)
 		-- comma is flipped in pythagorean systems
@@ -126,7 +158,8 @@ function tuning.load(key)
 
 		tuning.diatonic = tuning.generate_scale(7, 1)
 		tuning.chromatic = tuning.generate_scale(12, 4)
-		tuning.fine = tuning.generate_scale(29, 11)
+		-- tuning.fine = tuning.generate_scale(29, 11)
+		tuning.fine = tuning.generate_scale(17, 6)
 	elseif settings.type == "ji_5" then
 		assert(tuning.rank == 3)
 		-- 81/80
@@ -140,7 +173,26 @@ function tuning.load(key)
 
 	tuning.tables = { tuning.diatonic, tuning.chromatic, tuning.fine }
 
-	util.pprint(tuning.tables)
+	-- pre-calculate projections onto ETs for scale lookups
+	tuning.maps = {}
+	for _, t in pairs(tuning.tables) do
+		local n = #t
+		tuning.maps[n] = change_basis_inv({
+			math.floor(ratio_to_pitch(2) * n / 12 + 0.5),
+			math.floor(ratio_to_pitch(3) * n / 12 + 0.5),
+			math.floor(ratio_to_pitch(5) * n / 12 + 0.5),
+		})
+	end
+
+	-- check if mappings are one-to-one
+	for t_name, t in pairs(tuning.tables) do
+		for i, v in ipairs(t) do
+			if tuning.get_index(#t, v) + 1 ~= i then
+				log.warn("Inconsistency in scale " .. t_name .. " index " .. i)
+			end
+		end
+	end
+
 	tuning.center = tuning.new_interval()
 end
 
@@ -163,7 +215,15 @@ end
 function tuning.snap(p)
 	local t = tuning.tables[project.settings.snap_pitch]
 	assert(t)
-	local steps = math.floor(p * (#t / 12) + 0.5)
+	local p_start = tuning.get_pitch(tuning.center)
+	local s_start = tuning.get_index(#t, tuning.center)
+	local steps = math.floor((p - p_start) * (#t / 12) + 0.5)
+	return tuning.from_table(t, steps + s_start)
+end
+
+function tuning.snap_interval(f)
+	local t = tuning.tables[project.settings.snap_pitch]
+	local steps = tuning.get_index(#t, f)
 	return tuning.from_table(t, steps)
 end
 
@@ -194,12 +254,13 @@ function tuning.from_midi(n)
 	return tuning.from_table(tuning.chromatic, n - 60)
 end
 
--- Project an interval to an n-note scale via linear mapping,
--- ignoring any extra accidentals.
+-- Project an interval to an n-note scale via linear mapping.
 function tuning.get_index(n, p)
-	local s1 = math.floor(n * tuning.generators[1] / 12 + 0.5)
-	local s2 = math.floor(n * tuning.generators[2] / 12 + 0.5)
-	return s1 * p[1] + s2 * p[2]
+	local sum = 0.0
+	for i = 1, tuning.rank do
+		sum = sum + tuning.maps[n][i] * (p[i] or 0)
+	end
+	return sum
 end
 
 -- Convert interval to pitch.
@@ -236,40 +297,21 @@ function tuning.get_name(p)
 	-- factor 4/7 is because base note name does not change when altering by an apotome (#) which is [-4, 7]
 	local o = p[1] + math.floor(p[2] * 4 / 7) + 4
 	local n_i = (p[2] + 1)
-
+	local nominal = tuning.circle_of_fifths[n_i % #tuning.circle_of_fifths + 1]
 	local sharps = math.floor(n_i / #tuning.circle_of_fifths)
 
 	local acc = ""
 	if sharps > 0 then
-		if sharps % 2 == 1 then
-			acc = "c" -- #
-		end
-		local double_sharps = math.floor(sharps / 2)
 		-- x
+		local double_sharps = math.floor(sharps / 2)
 		acc = acc .. string.rep("d", double_sharps)
+
+		if sharps % 2 == 1 then
+			acc = acc .. "c" -- #
+		end
 	elseif sharps < 0 then
 		local flats = -sharps
-		if flats == 1 then
-			acc = "a" --b
-		elseif flats == 2 then
-			acc = "e" --bb
-		elseif flats == 3 then
-			acc = "f" --bbb
-		else
-			local group = (flats - 1) % 3
-			if group == 0 then
-				acc = "ee" -- bb bb
-			elseif group == 1 then
-				acc = "ef" -- bb bbb
-			else
-				acc = "ff" -- bbb bbb
-			end
-			local triple_flats = math.floor((flats - 4) / 3)
-			if triple_flats > 0 then
-				--- bbb
-				acc = acc .. string.rep("f", triple_flats)
-			end
-		end
+		acc = acc .. string.rep("a", flats)
 	end
 
 	if tuning.rank >= 3 then
@@ -284,9 +326,7 @@ function tuning.get_name(p)
 		end
 	end
 
-	local n = tuning.circle_of_fifths[n_i % #tuning.circle_of_fifths + 1]
-
-	return n .. acc .. tostring(o)
+	return nominal .. acc .. tostring(o)
 end
 
 -- generate well-formed scale

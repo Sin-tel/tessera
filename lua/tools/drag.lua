@@ -6,8 +6,6 @@ local drag = {}
 drag.mode = "drag"
 
 function drag:mousepressed(canvas)
-	self.ix, self.iy = mouse.x, mouse.y
-
 	local mx, my = canvas:get_mouse()
 
 	local closest, _ = canvas:find_closest_note(mx, my, 32)
@@ -19,14 +17,20 @@ function drag:mousepressed(canvas)
 
 	assert(self.note_origin)
 
-	self.start_x, self.start_y = canvas.transform:inverse(mouse.x, mouse.y)
+	self.start_x, self.start_y = canvas.transform:inverse(mx, my)
+
+	-- self.start_snap = tuning.snap(self.start_y)
+	self.start_snap = self.note_origin
 
 	self.edit = false
 end
 
 function drag:mousedown(canvas)
+	local mx, my = canvas:get_mouse()
+	local cx, cy = canvas.transform:inverse(mx, my)
+
 	if not self.edit then
-		if util.dist(self.ix, self.iy, mouse.x, mouse.y) < mouse.DRAG_DIST then
+		if util.dist(self.start_x, self.start_y, mx, my) < mouse.DRAG_DIST then
 			return
 		else
 			if drag.mode == "clone" then
@@ -44,13 +48,12 @@ function drag:mousedown(canvas)
 		end
 	end
 
-	local mx, my = canvas.transform:inverse(mouse.x, mouse.y)
-	local x = mx - self.start_x
-	local y = my - self.start_y
+	local x = cx - self.start_x
+	local y = cy - self.start_y
 
 	if modifier_keys.shift then
 		-- Constrain to one axis
-		if math.abs(self.ix - mouse.x) < math.abs(self.iy - mouse.y) then
+		if math.abs(self.start_x - mx) < math.abs(self.start_y - my) then
 			x = 0
 		else
 			y = 0
@@ -61,10 +64,13 @@ function drag:mousedown(canvas)
 	x = time.snap(ix + x) - ix
 
 	-- calculate relative offset
-	local p = tuning.get_pitch(self.note_origin.interval)
-	local p_origin = tuning.snap(p)
+	local p_origin = tuning.snap_interval(self.note_origin.interval)
+	local p = tuning.get_pitch(p_origin)
 	local delta = tuning.snap(p + y)
 	delta = tuning.sub(delta, p_origin)
+
+	-- local f = tuning.snap(cy)
+	-- local delta = tuning.sub(f, self.note_origin.interval)
 
 	-- Update interval and time
 	for i, v in ipairs(selection.list) do

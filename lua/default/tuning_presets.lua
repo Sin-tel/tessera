@@ -25,11 +25,22 @@ presets.meantone = {
 
 presets.meantone_quarter = {
 	generators = {
-		12.01236,
-		6.97212,
+		12.0,
+		6.96578,
 	},
 	type = "meantone",
 	name = "1/4-comma meantone",
+}
+
+presets.meantone_19et = {
+	-- 19-et meantone
+	generators = {
+		12.0,
+		11 * (12 / 19),
+	},
+	type = "meantone",
+	name = "19-ET meantone",
+	fine = { 19, 8 },
 }
 
 presets.meantone_31et = {
@@ -69,6 +80,7 @@ presets.archytas = {
 	name = "Archytas/superpyth",
 }
 
+-- Doesn't work!
 presets.diaschismic = {
 	-- Diaschismic with pure octaves
 	generators = {
