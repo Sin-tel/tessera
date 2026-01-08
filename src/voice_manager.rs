@@ -188,6 +188,7 @@ impl VoiceManager {
 			*v = Voice::default();
 		}
 		self.sustain = false;
+		self.queue.clear();
 	}
 
 	pub fn set_mute(&mut self, mute: bool) {
