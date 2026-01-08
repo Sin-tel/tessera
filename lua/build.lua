@@ -4,6 +4,7 @@ local SliderValue = require("ui/slider_value")
 local device_list = require("device_list")
 local empty_project = require("default.empty_project")
 local engine = require("engine")
+local tuning = require("tuning")
 
 local build = {}
 
@@ -22,6 +23,7 @@ local function setup_project()
 		selection.device_index = nil
 	end
 
+	tuning.load(project.settings.tuning_key)
 	engine.seek(project.transport.start_time)
 end
 

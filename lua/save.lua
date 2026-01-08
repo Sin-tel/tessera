@@ -50,12 +50,11 @@ local function do_patches(p)
 		end
 	end
 
-	-- fix projects with different rank
-	local tuning = require("tuning")
+	-- fix projects with low rank
 	for _, ch in ipairs(p.channels) do
 		if ch.notes then
 			for _, note in ipairs(ch.notes) do
-				for i = 1, tuning.rank do
+				for i = 1, 3 do
 					if not note.interval[i] then
 						note.interval[i] = 0
 					end

@@ -16,7 +16,7 @@ pen.ox = 0
 pen.oy = 0
 
 local function get_interval(canvas, my)
-	local f = canvas.transform:pitch_inv(my) - 60
+	local f = canvas.transform:pitch_inv(my)
 	return tuning.snap(f)
 end
 
