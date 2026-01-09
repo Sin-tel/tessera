@@ -315,7 +315,7 @@ function Canvas:draw()
 
 	tessera.graphics.set_line_width(2.5)
 	tessera.graphics.set_font_notes()
-	tessera.graphics.set_font_size()
+	tessera.graphics.set_font_size(16)
 
 	for ch_index = #project.channels, 1, -1 do
 		if ch_index ~= selection.ch_index then

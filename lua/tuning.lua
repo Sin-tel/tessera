@@ -109,6 +109,9 @@ function tuning.load(key)
 	tuning.settings = settings
 	tuning.key = key
 
+	-- style of accidentals ("plus", "ups", "heji")
+	tuning.acc_style = "ups"
+
 	if project.settings then
 		-- persist in save file
 		project.settings.tuning_key = key
@@ -139,6 +142,10 @@ function tuning.load(key)
 	tuning.semitone = { 3, -5 } -- diatonic semitone
 	tuning.chroma = { -4, 7 } -- apotome, chromatic semitone
 
+	if settings.fine then
+		tuning.fine = tuning.generate_scale(settings.fine[1], settings.fine[2])
+	end
+
 	if settings.type == "meantone" then
 		assert(tuning.rank == 2)
 		-- Pythagorean comma / diesis
@@ -146,9 +153,7 @@ function tuning.load(key)
 
 		tuning.diatonic = tuning.generate_scale(7, 1)
 		tuning.chromatic = tuning.generate_scale(12, 4)
-		if settings.fine then
-			tuning.fine = tuning.generate_scale(settings.fine[1], settings.fine[2])
-		else
+		if not settings.fine then
 			tuning.fine = tuning.generate_scale(31, 12)
 		end
 	elseif settings.type == "pyth" then
@@ -159,14 +164,18 @@ function tuning.load(key)
 		tuning.diatonic = tuning.generate_scale(7, 1)
 		tuning.chromatic = tuning.generate_scale(12, 4)
 		-- tuning.fine = tuning.generate_scale(29, 11)
-		tuning.fine = tuning.generate_scale(17, 6)
+		if not settings.fine then
+			tuning.fine = tuning.generate_scale(17, 6)
+		end
 	elseif settings.type == "ji_5" then
 		assert(tuning.rank == 3)
 		-- 81/80
 		tuning.comma = { 0, 0, 1 }
 		tuning.diatonic = parse_scale(tuning_presets.scales.zarlino)
 		tuning.chromatic = parse_scale(tuning_presets.scales.duodene)
-		tuning.fine = parse_scale(tuning_presets.scales.ji_5_fine)
+		if not settings.fine then
+			tuning.fine = parse_scale(tuning_presets.scales.ji_5_fine)
+		end
 	else
 		assert(false, "Unknown tuning type: " .. settings.type)
 	end
@@ -193,7 +202,9 @@ function tuning.load(key)
 		end
 	end
 
-	tuning.center = tuning.new_interval()
+	if not tuning.center then
+		tuning.center = tuning.new_interval()
+	end
 end
 
 function tuning.new_interval()
@@ -277,6 +288,16 @@ function tuning.get_relative_pitch(p)
 	return f
 end
 
+local function accidental(n, c_up, c_down)
+	if n > 0 then
+		return string.rep(c_up, n)
+	elseif n < 0 then
+		return string.rep(c_down, -n)
+	else
+		return ""
+	end
+end
+
 -- TODO: generalize this to other systems
 function tuning.get_name(p)
 	if project.settings.relative_note_names then
@@ -301,32 +322,29 @@ function tuning.get_name(p)
 	local sharps = math.floor(n_i / #tuning.circle_of_fifths)
 
 	local acc = ""
+	local acc_pre = ""
 	if sharps > 0 then
-		-- x
-		local double_sharps = math.floor(sharps / 2)
-		acc = acc .. string.rep("d", double_sharps)
-
 		if sharps % 2 == 1 then
 			acc = acc .. "c" -- #
 		end
+		local double_sharps = math.floor(sharps / 2)
+		acc = acc .. string.rep("d", double_sharps) -- x
 	elseif sharps < 0 then
 		local flats = -sharps
 		acc = acc .. string.rep("a", flats)
 	end
 
 	if tuning.rank >= 3 then
-		local plus = p[3]
-		if plus > 0 then
-			acc = acc .. string.rep("l", plus)
-			-- acc = acc .. string.rep("j", plus)
-		elseif plus < 0 then
-			local minus = -plus
-			acc = acc .. string.rep("m", minus)
-			-- acc = acc .. string.rep("k", minus)
+		if tuning.acc_style == "heji" then
+			acc = acc .. accidental(p[3], "r", "s")
+		elseif tuning.acc_style == "ups" then
+			acc_pre = acc_pre .. accidental(p[3], "w", "v")
+		else
+			acc = acc .. accidental(p[3], "l", "m")
 		end
 	end
 
-	return nominal .. acc .. tostring(o)
+	return acc_pre .. nominal .. acc .. tostring(o)
 end
 
 -- generate well-formed scale

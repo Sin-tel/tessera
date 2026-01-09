@@ -134,33 +134,30 @@ port over the tracking scripts for midi input
 
 ### Custom note font
 maps ascii characters to accidentals
+combinations are done mostly through ligatures, with some exceptions (#x)
 
 Note names are just uppercase A, B, C, etc.
 other characters:
 `()+,-./0123456789:<=>~`
 
-accidentals:
+characters:
 a: single flat b
 b: natural
 c: single sharp #
 d: double sharp x
 e: double flat bb
-f: triple flat bbb
 g: 1/2 flat d
 h: 1/2 sharp t
-i: 3/2 sharp
-j: caret down
-k: caret up
+g: 3/2 sharp
+
 l: small + (Johnston)
 m: small - (Johnston)
+
 n: septimal down L (heji)
 o: septimal up (heji)
-p: septimal double down (heji)
-q: septimal double up (heji)
 r: arrow up
 s: arrow down
-t: arrow double up
-u: arrow double down
+
 
 testing:
 !: alternative triple flat (slanted)

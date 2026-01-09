@@ -147,8 +147,8 @@ end
 
 function Settings:update()
 	local lw = math.min(800, self.w - 64)
-	local x = 64
-	local y = 24
+	local x = Ui.scale(64)
+	local y = Ui.scale(24)
 
 	self.ui:start_frame(x, y)
 
