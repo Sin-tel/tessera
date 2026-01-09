@@ -316,7 +316,7 @@ function tuning.get_name(p)
 	end
 
 	-- factor 4/7 is because base note name does not change when altering by an apotome (#) which is [-4, 7]
-	local o = p[1] + math.floor(p[2] * 4 / 7) + 4
+	-- local o = p[1] + math.floor(p[2] * 4 / 7) + 4
 	local n_i = (p[2] + 1)
 	local nominal = tuning.circle_of_fifths[n_i % #tuning.circle_of_fifths + 1]
 	local sharps = math.floor(n_i / #tuning.circle_of_fifths)
@@ -344,7 +344,8 @@ function tuning.get_name(p)
 		end
 	end
 
-	return acc_pre .. nominal .. acc .. tostring(o)
+	-- return acc_pre .. nominal .. acc .. tostring(o)
+	return acc_pre .. nominal .. acc
 end
 
 -- generate well-formed scale
