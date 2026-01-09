@@ -282,9 +282,6 @@ where
 	let mut cpu_load = AttackRelease::new_direct(0.05, 0.01);
 
 	move |cpal_buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
-		// init fastrand on this thread (allocates)
-		fastrand::seed(42);
-
 		let result = panic::catch_unwind(AssertUnwindSafe(|| {
 			assert_no_alloc(|| {
 				enable_fpu_traps();
@@ -297,6 +294,9 @@ where
 							start = true;
 							let sample_rate = render.sample_rate;
 							render.send(LuaMessage::StreamSettings { buffer_size, sample_rate });
+
+							// init fastrand on this thread (allocates)
+							fastrand::seed(42);
 						}
 
 						let time = std::time::Instant::now();
