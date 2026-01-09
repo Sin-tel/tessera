@@ -20,7 +20,7 @@ presets.meantone = {
 		6.97212,
 	},
 	type = "meantone",
-	name = "Septimal meantone",
+	name = "Meantone",
 }
 
 presets.meantone_quarter = {
@@ -39,7 +39,7 @@ presets.meantone_19et = {
 		11 * (12 / 19),
 	},
 	type = "meantone",
-	name = "19-ET meantone",
+	name = "19 Equal Temperament",
 	fine = { 19, 8 },
 }
 
@@ -53,7 +53,7 @@ presets.meantone_31et = {
 		18 * (12 / 31),
 	},
 	type = "meantone",
-	name = "31-ET meantone",
+	name = "31 Equal Temperament",
 }
 
 presets.flattone = {
@@ -77,7 +77,7 @@ presets.archytas = {
 		7.07522,
 	},
 	type = "pyth",
-	name = "Archytas/superpyth",
+	name = "Archytas",
 }
 
 -- Doesn't work!
@@ -113,7 +113,7 @@ presets.marvel = {
 		0.18001,
 	},
 	type = "ji_5",
-	name = "Marvel temperament (7-limit)",
+	name = "Marvel (7-limit)",
 }
 
 presets.pele_7 = {
@@ -126,7 +126,7 @@ presets.pele_7 = {
 		0.24493,
 	},
 	type = "ji_5",
-	name = "Pele temperament (7-limit)",
+	name = "Pele (7-limit)",
 }
 
 presets.pele_11 = {
@@ -140,7 +140,7 @@ presets.pele_11 = {
 		0.25316,
 	},
 	type = "ji_5",
-	name = "Pele temperament (11-limit)",
+	name = "Pele (11-limit)",
 }
 
 presets.akea = {
@@ -154,7 +154,7 @@ presets.akea = {
 		0.26236,
 	},
 	type = "ji_5",
-	name = "Akea temperament (11-limit)",
+	name = "Akea (11-limit)",
 }
 
 presets.et_41 = {
@@ -167,7 +167,8 @@ presets.et_41 = {
 		1 * (12 / 41),
 	},
 	type = "ji_5",
-	name = "41-ET, rank-3 structure",
+	name = "41 Equal Temperament",
+	fine = { 41, 12 },
 }
 
 -- higher rank (currently not working!)

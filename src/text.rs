@@ -261,7 +261,7 @@ impl TextEngine {
 		let mut db = fontdb::Database::new();
 
 		db.load_font_data(Asset::get("font/inter.ttf").unwrap().data.to_vec());
-		db.load_font_data(Asset::get("font/notes.ttf").unwrap().data.to_vec());
+		db.load_font_data(Asset::get("font/notes.otf").unwrap().data.to_vec());
 
 		// dbg!(&db.faces().last().unwrap().families);
 
