@@ -145,9 +145,8 @@ a: single flat b
 b: natural
 c: single sharp #
 d: double sharp x
-e: double flat bb
-g: 1/2 flat d
-h: 1/2 sharp t
+e: 1/2 flat d
+f: 1/2 sharp t
 g: 3/2 sharp
 
 l: small + (Johnston)
@@ -155,18 +154,16 @@ m: small - (Johnston)
 
 n: septimal down L (heji)
 o: septimal up (heji)
+
 r: arrow up
 s: arrow down
 
+v: caret down
+w: caret up
 
 testing:
-!: alternative triple flat (slanted)
-": triple +
 #: double caret down vv
 $: double caret down stacked
-
-unused:
-`vwxyz%&'*;?@[]{}|^_`
 
 ## MIDI
 also need midi out ports
