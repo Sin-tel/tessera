@@ -24,7 +24,8 @@ Ui.PARAMETER_PAD = scale(8) -- padding for parameters
 Ui.CORNER_RADIUS = scale(4)
 
 Ui.PAD = scale(5)
-Ui.TITLE_FONT_SIZE = scale(16)
+
+Ui.TITLE_FONT_SIZE = 16
 
 function Ui.new(view)
 	local self = setmetatable({}, Ui)
@@ -83,6 +84,7 @@ function Ui:start_frame(x, y)
 end
 
 function Ui:end_frame()
+	assert(self.start)
 	self.start = false
 	self.max_scroll = math.max(0, self.layout:total_height() - self.view.h)
 end

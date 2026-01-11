@@ -9,6 +9,7 @@ ProjectSettings.__index = ProjectSettings
 
 local TUNING_KEYS = {
 	"meantone",
+	"diaschismic",
 	"ji_5",
 	"marvel",
 	"pele_7",

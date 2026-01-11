@@ -36,7 +36,7 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 		"set_font_size",
 		lua.create_function(|lua, font_size: Option<f32>| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
-			state.font_size = font_size.unwrap_or(DEFAULT_FONT_SIZE * state.scale_factor);
+			state.font_size = font_size.unwrap_or(DEFAULT_FONT_SIZE) * state.scale_factor;
 			// round to quarter increments to avoid spamming the cache
 			state.font_size = (state.font_size * 4.0).round() / 4.0;
 			Ok(())

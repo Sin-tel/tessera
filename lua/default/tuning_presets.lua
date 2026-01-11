@@ -84,10 +84,12 @@ presets.archytas = {
 presets.diaschismic = {
 	-- Diaschismic with pure octaves
 	generators = {
-		6.00,
-		1.04958,
+		12.00,
+		7.04958,
+		0.29748,
 	},
-	type = "diaschismic",
+	-- type = "diaschismic",
+	type = "ji_5",
 	name = "Diaschismic",
 }
 
