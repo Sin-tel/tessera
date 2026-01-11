@@ -296,7 +296,9 @@ where
 							render.send(LuaMessage::StreamSettings { buffer_size, sample_rate });
 
 							// init fastrand on this thread (allocates)
-							fastrand::seed(42);
+							permit_alloc(|| {
+								fastrand::seed(42);
+							});
 						}
 
 						let time = std::time::Instant::now();
