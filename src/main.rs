@@ -4,6 +4,8 @@ use femtovg::Color;
 use mlua::prelude::*;
 use std::error::Error;
 use std::fs;
+use std::sync::atomic;
+use std::sync::atomic::AtomicBool;
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 use winit::application::ApplicationHandler;
@@ -24,9 +26,9 @@ use tessera::context::LuaMessage;
 use tessera::embed::Script;
 use tessera::log::*;
 use tessera::midi;
-use tessera::opengl::Surface;
-use tessera::opengl::WindowSurface;
-use tessera::opengl::setup_window;
+use tessera::opengl::{Surface, UserEvent, WindowSurface, setup_window};
+
+pub static BUSY: AtomicBool = AtomicBool::new(false);
 
 fn wrap_call<T: IntoLuaMulti>(status: &mut Status, lua_fn: &LuaFunction, args: T) {
 	if let Status::Error(_) = status {
@@ -123,6 +125,21 @@ fn run() -> Result<(), Box<dyn Error>> {
 
 	wrap_call(&mut app.status, &app.hooks.load, ());
 
+	let proxy = event_loop.create_proxy();
+
+	std::thread::Builder::new()
+		.name("timer".to_string())
+		.spawn(move || {
+			loop {
+				if !BUSY.load(atomic::Ordering::Relaxed) {
+					BUSY.store(true, atomic::Ordering::Relaxed);
+					let _ = proxy.send_event(UserEvent::Update);
+				}
+				std::thread::sleep(Duration::from_micros(1500));
+			}
+		})
+		.expect("Failed to spawn timer");
+
 	if let Err(e) = event_loop.run_app(&mut app) {
 		log_error!("{e}");
 	}
@@ -139,18 +156,19 @@ struct App {
 	lua: Lua,
 	surface: Surface,
 	last_update: Instant,
+	next_draw: Instant,
 	hooks: Hooks,
 	status: Status,
 }
 
 impl App {
 	pub fn new(lua: Lua, surface: Surface, hooks: Hooks) -> Self {
-		let last_update = Instant::now();
-		Self { lua, surface, last_update, hooks, status: Status::Running }
+		let now = Instant::now();
+		Self { lua, surface, last_update: now, next_draw: now, hooks, status: Status::Running }
 	}
 }
 
-impl ApplicationHandler for App {
+impl ApplicationHandler<UserEvent> for App {
 	fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
 		// Only show window after initializing state to prevent blank screen
 		let app_state = self.lua.app_data_mut::<State>().unwrap();
@@ -167,6 +185,8 @@ impl ApplicationHandler for App {
 	) {
 		match event {
 			WindowEvent::RedrawRequested => {
+				let now = Instant::now();
+				self.next_draw = now + Duration::from_micros(16_000);
 				render_start(&self.lua);
 				match &self.status {
 					Status::Running => {
@@ -292,29 +312,31 @@ impl ApplicationHandler for App {
 	}
 
 	fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-		let start = Instant::now();
-		loop {
-			self.lua.app_data_mut::<State>().unwrap().check_audio_status();
-
-			let now = Instant::now();
-			let dt = (now - self.last_update).as_secs_f64();
-			self.last_update = now;
-
-			wrap_call(&mut self.status, &self.hooks.update, dt);
-
-			let accum = (Instant::now() - start).as_secs_f64() + 0.004;
-			if accum >= 1.0 / 60.0 {
-				break;
-			}
-			std::thread::sleep(Duration::from_micros(2000));
-		}
-
 		let app_state = self.lua.app_data_mut::<State>().unwrap();
 		if app_state.exit {
 			event_loop.exit();
 		}
+	}
 
-		app_state.window.request_redraw();
+	fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: UserEvent) {
+		match event {
+			UserEvent::Update => {
+				self.lua.app_data_mut::<State>().unwrap().check_audio_status();
+
+				let now = Instant::now();
+				if now > self.next_draw {
+					let app_state = self.lua.app_data_mut::<State>().unwrap();
+					app_state.window.request_redraw();
+				}
+
+				let now = Instant::now();
+				let dt = (now - self.last_update).as_secs_f64();
+				self.last_update = now;
+
+				wrap_call(&mut self.status, &self.hooks.update, dt);
+				BUSY.store(false, atomic::Ordering::Relaxed);
+			},
+		}
 	}
 
 	fn exiting(&mut self, _event_loop: &ActiveEventLoop) {

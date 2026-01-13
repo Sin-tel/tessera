@@ -1,8 +1,14 @@
 use crate::app::INIT_HEIGHT;
 use crate::app::INIT_WIDTH;
 use crate::embed::Asset;
+use glutin::surface::SwapInterval;
 use winit::window::Icon;
 use winit::window::Window;
+
+#[derive(Debug)]
+pub enum UserEvent {
+	Update,
+}
 
 #[allow(dead_code)]
 pub trait WindowSurface {
@@ -62,8 +68,8 @@ fn load_icon() -> Icon {
 	Icon::from_rgba(icon_rgba, icon_width, icon_height).expect("Failed to open icon")
 }
 
-pub fn setup_window() -> (Canvas<Renderer>, EventLoop<()>, Surface, Window) {
-	let event_loop = EventLoop::new().unwrap();
+pub fn setup_window() -> (Canvas<Renderer>, EventLoop<UserEvent>, Surface, Window) {
+	let event_loop = EventLoop::<UserEvent>::with_user_event().build().unwrap();
 
 	let icon = Some(load_icon());
 
@@ -82,8 +88,6 @@ pub fn setup_window() -> (Canvas<Renderer>, EventLoop<()>, Surface, Window) {
 
 		let (window, gl_config) = display_builder
 			.build(&event_loop, template, |configs| {
-				// Find the config with the maximum number of samples, so our triangle will
-				// be smooth.
 				configs
 					.reduce(|accum, config| {
 						let transparency_check = config.supports_transparency().unwrap_or(false)
@@ -137,6 +141,12 @@ pub fn setup_window() -> (Canvas<Renderer>, EventLoop<()>, Surface, Window) {
 
 		let mut canvas = Canvas::new(renderer).expect("Cannot create canvas");
 		canvas.set_size(width, height, window.scale_factor() as f32);
+
+		// disable vsync
+		surface
+			.set_swap_interval(&gl_context, SwapInterval::DontWait)
+			// .set_swap_interval(&gl_context, SwapInterval::Wait(NonZeroU32::new(1).unwrap()))
+			.unwrap();
 
 		(canvas, window, gl_context, surface)
 	};
