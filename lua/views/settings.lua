@@ -146,9 +146,11 @@ function Settings:rebuild()
 end
 
 function Settings:update()
-	local lw = math.min(800, self.w - 64)
 	local x = Ui.scale(64)
+	local lw = math.min(Ui.scale(800), self.w - 2 * x)
 	local y = Ui.scale(24)
+
+	tessera.graphics.set_font_main()
 
 	self.ui:start_frame(x, y)
 
@@ -308,9 +310,9 @@ function Settings:update()
 				if midi.open_ports[v.name] then
 					self.ui:label("Active")
 				elseif midi.available_ports[v.name] then
-					self.ui:label("Disabled", nil, theme.text_dim)
+					self.ui:label("Disabled", { color = theme.text_dim })
 				else
-					self.ui:label("Not found", nil, theme.text_dim)
+					self.ui:label("Not found", { color = theme.text_dim })
 				end
 			end
 		end

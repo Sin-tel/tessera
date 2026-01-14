@@ -4,6 +4,21 @@ local tuning = {}
 
 tuning.snap_labels = { "Diatonic", "Chromatic", "Fine" }
 
+tuning.systems = {
+	"meantone",
+	"diaschismic",
+	"archytas",
+	"ji_5",
+	"marvel",
+	"pele_7",
+	"et_19",
+	"et_31",
+	"et_34",
+	"et_41",
+}
+
+tuning.notation_styles = { "ups", "heji", "plus" }
+
 local PRIMES = {
 	2,
 	3,
@@ -45,7 +60,7 @@ local function change_basis(f)
 		end
 	end
 
-	-- 5-limit map:
+	-- 5-limit inverse mapping:
 	-- 1  1  0
 	-- 0  1  4
 	-- 0  0 -1
@@ -56,7 +71,10 @@ local function change_basis(f)
 end
 
 local function change_basis_inv(f)
-	-- invert and transpose
+	-- 5-limit mapping (2/1, 3/2, 81/80):
+	-- 1 -1 -4
+	-- 0  1  4
+	-- 0  0 -1
 	local a = f[1]
 	local b = -f[1] + f[2]
 	local c = -4 * f[1] + 4 * f[2] - f[3]
@@ -106,11 +124,8 @@ function tuning.load(key)
 		log.error("Could not find tuning: " .. key)
 		return
 	end
-	tuning.settings = settings
+	tuning.info = settings.info
 	tuning.key = key
-
-	-- style of accidentals ("plus", "ups", "heji")
-	tuning.acc_style = "ups"
 
 	if project.settings then
 		-- persist in save file
@@ -154,7 +169,7 @@ function tuning.load(key)
 		tuning.diatonic = tuning.generate_scale(7, 1)
 		tuning.chromatic = tuning.generate_scale(12, 4)
 		if not settings.fine then
-			tuning.fine = tuning.generate_scale(31, 12)
+			tuning.fine = tuning.generate_scale(31, 13)
 		end
 	elseif settings.type == "pyth" then
 		assert(tuning.rank == 2)
@@ -174,7 +189,7 @@ function tuning.load(key)
 		tuning.diatonic = parse_scale(tuning_presets.scales.zarlino)
 		tuning.chromatic = parse_scale(tuning_presets.scales.duodene)
 		if not settings.fine then
-			tuning.fine = parse_scale(tuning_presets.scales.ji_5_fine)
+			tuning.fine = parse_scale(tuning_presets.scales.ji_5_22)
 		end
 	else
 		assert(false, "Unknown tuning type: " .. settings.type)
@@ -335,9 +350,9 @@ function tuning.get_name(p)
 	end
 
 	if tuning.rank >= 3 then
-		if tuning.acc_style == "heji" then
+		if project.settings.notation_style == "heji" then
 			acc = acc .. accidental(p[3], "r", "s")
-		elseif tuning.acc_style == "ups" then
+		elseif project.settings.notation_style == "ups" then
 			acc_pre = acc_pre .. accidental(p[3], "w", "v")
 		else
 			acc = acc .. accidental(p[3], "l", "m")
@@ -352,6 +367,8 @@ end
 -- n = scale size (nr. of generators)
 -- offset = nr. of generators down from root
 function tuning.generate_scale(n, offset)
+	-- Heuristic scale size: equal number up/down if center is D
+	offset = offset or math.floor(0.5 + ((n - 1) / 2) - 2)
 	local scale = {}
 	local o = tuning.get_relative_pitch(tuning.octave)
 	for i = 0, n - 1 do

@@ -136,7 +136,7 @@ function pen:mousereleased(canvas)
 	local c = command.NoteAdd.new(notes)
 	command.run_and_register(c)
 
-	selection.add({ [note] = true })
+	selection.set({ [note] = true })
 
 	if project.settings.preview_notes then
 		assert(self.token)

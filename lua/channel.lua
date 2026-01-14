@@ -133,7 +133,7 @@ function Channel:update(ui, ch_index, bg_color, w)
 	else
 		color = tessera.graphics.get_color_hsv(ch.hue / 360, 0.70, 0.90)
 	end
-	ui:label(self.data.name, tessera.graphics.ALIGN_LEFT, color)
+	ui:label(self.data.name, { align = tessera.graphics.ALIGN_LEFT, color = color })
 	if w_pad > 0 then
 		ui.layout:col(w_pad)
 	end

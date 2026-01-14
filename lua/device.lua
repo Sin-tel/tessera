@@ -109,14 +109,14 @@ function Device:update(ui, index, w)
 				ui.layout:col(w_label)
 				ui.layout:col(w - w_label)
 
-				ui:label(v.label, tessera.graphics.ALIGN_LEFT)
+				ui:label(v.label, { align = tessera.graphics.ALIGN_LEFT })
 				ui.layout:new_row()
 			elseif v.widget == "separator" then
 				ui:separator()
 			else
 				ui.layout:col(w_label)
 				if v.label then
-					ui:label(v.label, tessera.graphics.ALIGN_RIGHT)
+					ui:label(v.label, { align = tessera.graphics.ALIGN_RIGHT })
 				end
 				ui.layout:col(w - w_label)
 				v.widget:update(ui)
