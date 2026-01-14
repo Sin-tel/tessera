@@ -7,17 +7,6 @@ local widgets = require("ui/widgets")
 local ProjectSettings = View.derive("Project Settings")
 ProjectSettings.__index = ProjectSettings
 
-local TUNING_KEYS = {
-	"meantone",
-	"diaschismic",
-	"ji_5",
-	"marvel",
-	"pele_7",
-	"meantone_19et",
-	"meantone_31et",
-	"et_41",
-}
-
 function ProjectSettings.new()
 	local self = setmetatable({}, ProjectSettings)
 
@@ -27,42 +16,65 @@ function ProjectSettings.new()
 	self.indent = Ui.scale(32)
 
 	local name_list = {}
-	for i, k in ipairs(TUNING_KEYS) do
+	for i, k in ipairs(tuning.systems) do
 		local name = tuning_presets[k].name
 		assert(name)
 		name_list[i] = name
 	end
 
-	self.tuning_key = 1
-	self.select_tuning = widgets.Dropdown.new(self, "tuning_key", { list = name_list, no_undo = true })
+	self.tuning_index = 1
+	self.notation_index = 1
+	self.select_tuning = widgets.Dropdown.new(self, "tuning_index", { list = name_list, no_undo = true })
+	self.select_accidentals =
+		widgets.Selector.new(self, "notation_index", { list = { "ups/downs", "HEJI", "+/-" }, no_undo = true })
 
 	return self
 end
 
 function ProjectSettings:update()
-	local key = util.find(TUNING_KEYS, project.settings.tuning_key)
-	if key then
-		self.tuning_key = key
+	local index = util.find(tuning.systems, project.settings.tuning_key)
+	if index then
+		self.tuning_index = index
+	end
+	index = util.find(tuning.notation_styles, project.settings.notation_style)
+	if index then
+		self.notation_index = index
 	end
 
-	local s = Ui.scale(64)
-	local lw = math.min(800, self.w - s)
+	tessera.graphics.set_font_main()
+
 	local x = Ui.scale(64)
+	local lw = math.min(Ui.scale(600), self.w - 2 * x)
 	local y = Ui.scale(24)
 
 	local c1 = self.indent
 	local c2 = 0.3 * (lw - c1)
-	local c3 = 0.4 * (lw - c1)
+	local c3 = 0.7 * (lw - c1)
 
 	self.ui:start_frame(x, y)
 
-	self.ui.layout:col(c1 + c2)
-	self.ui:label("Tuning system")
+	self.ui.layout:new_row()
+	self.ui.layout:col(lw)
+	self.ui:label("Tuning settings")
+
+	self.ui:background(theme.bg_nested)
+
+	self.ui.layout:new_row()
+	self.ui.layout:col(c1)
+	self.ui.layout:col(c2)
+	self.ui:label("System")
 	self.ui.layout:col(c3)
 	if self.select_tuning:update(self.ui) then
-		tuning.load(TUNING_KEYS[self.tuning_key])
+		tuning.load(tuning.systems[self.tuning_index])
 	end
 	self.ui.layout:new_row()
+	self.ui.layout:col(c1)
+	self.ui.layout:col(c2)
+	self.ui:label("Accidentals")
+	self.ui.layout:col(c3)
+	if self.select_accidentals:update(self.ui) then
+		project.settings.notation_style = tuning.notation_styles[self.notation_index]
+	end
 
 	self.ui:end_frame()
 end

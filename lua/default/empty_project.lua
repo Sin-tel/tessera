@@ -19,6 +19,7 @@ local function empty_project()
 			metronome = false,
 			relative_note_names = true,
 			tuning_key = "meantone",
+			notation_style = "ups",
 		},
 
 		time = {

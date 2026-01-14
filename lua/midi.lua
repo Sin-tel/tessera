@@ -146,7 +146,7 @@ end
 
 function midi.update_device(device_index, device)
 	local events = tessera.midi.poll(device_index)
-	if not events then
+	if not events or #events == 0 then
 		return
 	end
 

@@ -104,15 +104,24 @@ end
 
 local function nothing() end
 
-local function draw_label(text, align, color, x, y, w, h)
+local function draw_label(text, align, color, font, x, y, w, h)
+	if font == "main" then
+		tessera.graphics.set_font_main()
+	else
+		tessera.graphics.set_font_notes()
+	end
+
 	tessera.graphics.set_color(color)
 	tessera.graphics.label(text, x, y, w, h, align)
 end
 
-function Ui:label(text, align, color)
+function Ui:label(text, options)
+	options = options or {}
 	local x, y, w, h = self:next()
-	color = color or theme.ui_text
-	self:push_draw(draw_label, { text, align, color, x, y, w, h })
+	local color = options.color or theme.ui_text
+	local font = options.font or "main"
+	local align = options.align
+	self:push_draw(draw_label, { text, align, color, font, x, y, w, h })
 end
 
 function Ui:separator(text, align, color)

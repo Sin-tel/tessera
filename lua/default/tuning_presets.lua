@@ -1,5 +1,57 @@
 local presets = {}
 
+-- equal temperaments
+
+presets.et_19 = {
+	-- 19-et meantone
+	generators = {
+		12.0,
+		11 * (12 / 19),
+	},
+	type = "meantone",
+	name = "19 Equal Temperament",
+	fine = { 19, 8 },
+}
+
+presets.et_31 = {
+	-- 31-et meantone
+	-- Fifth = 18 steps
+	-- 7/4 = A#
+	-- 11/8 = Ex or Gbb
+	generators = {
+		12.0,
+		18 * (12 / 31),
+	},
+	type = "meantone",
+	name = "31 Equal Temperament",
+}
+
+presets.et_34 = {
+	generators = {
+		12,
+		20 * (12 / 34),
+		1 * (12 / 34),
+	},
+	type = "ji_5",
+	name = "34 Equal Temperament",
+	-- TODO: Fix
+	-- fine = { 34 },
+}
+
+presets.et_41 = {
+	-- 41-et rank3
+	-- fifth = 24 steps
+	-- accidental = 1 step
+	generators = {
+		12,
+		24 * (12 / 41),
+		1 * (12 / 41),
+	},
+	type = "ji_5",
+	name = "41 Equal Temperament",
+	fine = { 41 },
+}
+
 -- rank 2 systems
 
 presets.pythagorean = {
@@ -32,30 +84,6 @@ presets.meantone_quarter = {
 	name = "1/4-comma meantone",
 }
 
-presets.meantone_19et = {
-	-- 19-et meantone
-	generators = {
-		12.0,
-		11 * (12 / 19),
-	},
-	type = "meantone",
-	name = "19 Equal Temperament",
-	fine = { 19, 8 },
-}
-
-presets.meantone_31et = {
-	-- 31-et meantone
-	-- Fifth = 18 steps
-	-- 7/4 = A#
-	-- 11/8 = Ex or Gbb
-	generators = {
-		12.0,
-		18 * (12 / 31),
-	},
-	type = "meantone",
-	name = "31 Equal Temperament",
-}
-
 presets.flattone = {
 	-- flattone
 	-- 7/4 = Bbb
@@ -80,7 +108,6 @@ presets.archytas = {
 	name = "Archytas",
 }
 
--- Doesn't work!
 presets.diaschismic = {
 	-- Diaschismic with pure octaves
 	generators = {
@@ -88,7 +115,6 @@ presets.diaschismic = {
 		7.04958,
 		0.29748,
 	},
-	-- type = "diaschismic",
 	type = "ji_5",
 	name = "Diaschismic",
 }
@@ -159,20 +185,6 @@ presets.akea = {
 	name = "Akea (11-limit)",
 }
 
-presets.et_41 = {
-	-- 41-et rank3
-	-- fifth = 24 steps
-	-- accidental = 1 step
-	generators = {
-		12,
-		24 * (12 / 41),
-		1 * (12 / 41),
-	},
-	type = "ji_5",
-	name = "41 Equal Temperament",
-	fine = { 41, 12 },
-}
-
 -- higher rank (currently not working!)
 
 presets.ji_7 = {
@@ -227,7 +239,7 @@ presets.scales.duodene = {
 	"2/1",
 }
 
-presets.scales.ji_5_fine = {
+presets.scales.ji_5_22 = {
 	"25/24",
 	"16/15",
 	"10/9",

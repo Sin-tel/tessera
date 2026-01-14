@@ -37,7 +37,7 @@ function UiTest:update()
 	self.ui.layout:new_row()
 
 	self.ui.layout:col(self.w * 0.5)
-	self.ui:label("center aligned", tessera.graphics.ALIGN_CENTER)
+	self.ui:label("center aligned", { align = tessera.graphics.ALIGN_CENTER })
 
 	self.ui.layout:col(self.w * 0.3)
 	if self.button:update(self.ui) then
@@ -54,7 +54,7 @@ function UiTest:update()
 
 		local w_label = self.w * 0.3
 		self.ui.layout:col(w_label)
-		self.ui:label("a slider", tessera.graphics.ALIGN_RIGHT)
+		self.ui:label("a slider", { align = tessera.graphics.ALIGN_RIGHT })
 		self.ui.layout:col(self.w - w_label)
 		self.slider:update(self.ui)
 		self.ui:background()
