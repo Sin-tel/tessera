@@ -494,7 +494,13 @@ function Canvas:keypressed(key)
 
 		local delta = tuning.new_interval()
 
-		if modifier_keys.shift then
+		if modifier_keys.shift and modifier_keys.ctrl and tuning.chroma_alt then
+			delta = tuning.mul(tuning.chroma_alt, move_up)
+		elseif modifier_keys.ctrl and modifier_keys.alt and tuning.comma_alt then
+			delta = tuning.mul(tuning.comma_alt, move_up)
+		elseif modifier_keys.shift and modifier_keys.alt and tuning.comma_alt2 then
+			delta = tuning.mul(tuning.comma_alt2, move_up)
+		elseif modifier_keys.shift then
 			delta = tuning.mul(tuning.octave, move_up)
 		elseif modifier_keys.ctrl then
 			delta = tuning.mul(tuning.chroma, move_up)

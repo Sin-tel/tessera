@@ -26,7 +26,7 @@ function ProjectSettings.new()
 	self.notation_index = 1
 	self.select_tuning = widgets.Dropdown.new(self, "tuning_index", { list = name_list, no_undo = true })
 	self.select_accidentals =
-		widgets.Selector.new(self, "notation_index", { list = { "ups/downs", "HEJI", "+/-" }, no_undo = true })
+		widgets.Selector.new(self, "notation_index", { list = { "ups/downs", "HEJI", "Johnston" }, no_undo = true })
 
 	return self
 end
@@ -70,7 +70,7 @@ function ProjectSettings:update()
 	self.ui.layout:new_row()
 	self.ui.layout:col(c1)
 	self.ui.layout:col(c2)
-	self.ui:label("Accidentals")
+	self.ui:label("Style")
 	self.ui.layout:col(c3)
 	if self.select_accidentals:update(self.ui) then
 		project.settings.notation_style = tuning.notation_styles[self.notation_index]

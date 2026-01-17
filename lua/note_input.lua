@@ -30,6 +30,20 @@ function note_input:keypressed(key)
 				return true
 			end
 		end
+
+		if key == "z" then
+			octave = octave - 1
+			if octave < -4 then
+				octave = -4
+			end
+			return true
+		elseif key == "x" then
+			octave = octave + 1
+			if octave > 4 then
+				octave = 4
+			end
+			return true
+		end
 	end
 
 	return false
@@ -46,20 +60,6 @@ function note_input:keyreleased(key)
 				end
 				return true
 			end
-		end
-
-		if key == "z" then
-			octave = octave - 1
-			if octave < -4 then
-				octave = -4
-			end
-			return true
-		elseif key == "x" then
-			octave = octave + 1
-			if octave > 4 then
-				octave = 4
-			end
-			return true
 		end
 	end
 	return false
