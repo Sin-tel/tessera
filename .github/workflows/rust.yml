@@ -46,7 +46,13 @@ jobs:
     - uses: Swatinem/rust-cache@v2
 
     - name: Build Release
-      run: cargo build --release
+      run: |
+        rustup target add x86_64-apple-darwin
+        cargo build --release --target x86_64-apple-darwin
+        cargo build --release --target aarch64-apple-darwin
+        lipo -create -output target/release/tessera \
+          target/x86_64-apple-darwin/release/tessera \
+          target/aarch64-apple-darwin/release/tessera
 
     - name: Tests
       run: cargo test --release -- --nocapture
