@@ -275,8 +275,6 @@ function tuning.load(key)
 		})
 	end
 
-	util.pprint(tuning.maps)
-
 	-- check if mappings are one-to-one
 	for t_name, t in pairs(tuning.tables) do
 		for i, v in ipairs(t) do
