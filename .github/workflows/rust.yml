@@ -51,21 +51,23 @@ jobs:
     - name: Test run
       run: cargo run --release -- --test-run
 
-    - name: Build Release
+    - name: Build universal binary
       run: |
         rustup target add x86_64-apple-darwin
         cargo build --release --target x86_64-apple-darwin
         cargo build --release --target aarch64-apple-darwin
-        lipo -create -output target/release/tessera \
+        mkdir -p artifacts
+        lipo -create -output artifacts/tessera \
           target/x86_64-apple-darwin/release/tessera \
           target/aarch64-apple-darwin/release/tessera
-        lipo -info target/release/tessera-universal
+        lipo -info artifacts/tessera
+        ls -lh artifacts/
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: tessera_macos
-        path: target/release/tessera
+        path: artifacts/tessera
 
   build-windows:
 
