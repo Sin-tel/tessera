@@ -2,13 +2,24 @@ local log = require("log")
 local tuning_presets = require("default.tuning_presets")
 local tuning = {}
 
+local MAX_RANK = 5
+
 tuning.snap_labels = { "Diatonic", "Chromatic", "Fine" }
 
 tuning.systems = {
 	"meantone",
-	"diaschismic",
+	-- "meantone_quarter",
+	-- "flattone",
 	"archytas",
+	-- "mavila",
+	"porcupine",
+	"diaschismic",
+	-- "semaphore",
+	"slendric",
 	"ji_5",
+	"ji_7",
+	"ji_11",
+	"septal",
 	"marvel",
 	"pele_7",
 	"et_19",
@@ -17,7 +28,7 @@ tuning.systems = {
 	"et_41",
 }
 
-tuning.notation_styles = { "ups", "heji", "plus" }
+tuning.notation_styles = { "ups", "heji", "johnston" }
 
 local PRIMES = {
 	2,
@@ -55,30 +66,46 @@ end
 local function change_basis(f)
 	for i, v in ipairs(PRIMES) do
 		f[i] = f[i] or 0
-		if v > 5 then
-			assert(f[i] == nil or f[i] == 0, "Only up to 5-limit supported.")
+		if v > 11 then
+			assert(f[i] == nil or f[i] == 0, "Only up to 11-limit supported.")
 		end
 	end
 
+	local p = tuning.new_interval()
+
 	-- 5-limit inverse mapping:
-	-- 1  1  0
-	-- 0  1  4
-	-- 0  0 -1
-	local a = f[1] + f[2]
-	local b = f[2] + 4 * f[3]
-	local c = -f[3]
-	return { a, b, c }
+	--  [ 1  1  0  4  4]
+	--  [ 0  1  4 -2 -1]
+	--  [ 0  0 -1  0  0]
+	--  [ 0  0  0 -1  0]
+	--  [ 0  0  0  0  1]
+	p[1] = f[1] + f[2] + 4 * f[4] + 4 * f[5]
+	p[2] = f[2] + 4 * f[3] - 2 * f[4] - f[5]
+	p[3] = -f[3]
+	p[4] = -f[4]
+	p[5] = f[5]
+	return p
 end
 
 local function change_basis_inv(f)
-	-- 5-limit mapping (2/1, 3/2, 81/80):
-	-- 1 -1 -4
-	-- 0  1  4
-	-- 0  0 -1
-	local a = f[1]
-	local b = -f[1] + f[2]
-	local c = -4 * f[1] + 4 * f[2] - f[3]
-	return { a, b, c }
+	local p = {}
+	for i = 1, MAX_RANK do
+		f[i] = f[i] or 0
+	end
+
+	-- 5-limit mapping (2/1, 3/2, 81/80, 64/63, 33/32):
+	-- 	[ 1 -1 -4  6 -5]
+	--  [ 0  1  4 -2  1]
+	--  [ 0  0 -1  0  0]
+	--  [ 0  0  0 -1  0]
+	--  [ 0  0  0  0  1]
+
+	p[1] = f[1]
+	p[2] = -f[1] + f[2]
+	p[3] = -4 * f[1] + 4 * f[2] - f[3]
+	p[4] = 6 * f[1] - 2 * f[2] - f[4]
+	p[5] = -5 * f[1] + f[2] + f[5]
+	return p
 end
 
 local function ratio_to_pitch(r)
@@ -110,11 +137,6 @@ local function parse_scale(s)
 		table.insert(scale, f)
 	end
 
-	-- Should be already sorted, but can't hurt
-	table.sort(scale, function(a, b)
-		return tuning.get_relative_pitch(a) < tuning.get_relative_pitch(b)
-	end)
-
 	return scale
 end
 
@@ -126,6 +148,7 @@ function tuning.load(key)
 	end
 	tuning.info = settings.info
 	tuning.key = key
+	tuning.type = settings.type
 
 	if project.settings then
 		-- persist in save file
@@ -157,11 +180,20 @@ function tuning.load(key)
 	tuning.semitone = { 3, -5 } -- diatonic semitone
 	tuning.chroma = { -4, 7 } -- apotome, chromatic semitone
 
+	-- use 81/80 for ups/downs by default
+	tuning.ups_index = 3
+
 	if settings.fine then
-		tuning.fine = tuning.generate_scale(settings.fine[1], settings.fine[2])
+		if type(settings.fine) == "table" then
+			tuning.fine = tuning.generate_scale(settings.fine[1], settings.fine[2])
+		elseif type(settings.fine) == "string" then
+			tuning.fine = parse_scale(tuning_presets.scales[settings.fine])
+		else
+			assert(false, settings.fine)
+		end
 	end
 
-	if settings.type == "meantone" then
+	if tuning.type == "meantone" then
 		assert(tuning.rank == 2)
 		-- Pythagorean comma / diesis
 		tuning.comma = { 7, -12 }
@@ -171,7 +203,19 @@ function tuning.load(key)
 		if not settings.fine then
 			tuning.fine = tuning.generate_scale(31, 13)
 		end
-	elseif settings.type == "pyth" then
+	elseif tuning.type == "mavila" then
+		assert(tuning.rank == 2)
+		-- chroma is flipped
+		tuning.chroma = { 4, -7 }
+		-- 16et comma
+		tuning.comma = { -9, 16 }
+
+		tuning.diatonic = tuning.generate_scale(7, 1)
+		tuning.chromatic = parse_scale(tuning_presets.scales.mavila_12)
+		if not settings.fine then
+			tuning.fine = tuning.generate_scale(16)
+		end
+	elseif tuning.type == "pyth" then
 		assert(tuning.rank == 2)
 		-- comma is flipped in pythagorean systems
 		tuning.comma = { -7, 12 }
@@ -182,17 +226,38 @@ function tuning.load(key)
 		if not settings.fine then
 			tuning.fine = tuning.generate_scale(17, 6)
 		end
-	elseif settings.type == "ji_5" then
-		assert(tuning.rank == 3)
+	elseif tuning.type == "ji_5" or tuning.type == "ji_7" or tuning.type == "ji_11" then
+		-- assert(tuning.rank == 3)
 		-- 81/80
 		tuning.comma = { 0, 0, 1 }
+
+		-- 25/24
+		tuning.chroma_alt = { -4, 7, -2 }
+
+		if tuning.type == "ji_7" or tuning.type == "ji_11" then
+			tuning.comma_alt = { 0, 0, 0, 1 }
+		end
+		if tuning.type == "ji_11" then
+			tuning.comma_alt2 = { 0, 0, 0, 0, 1 }
+		end
+
 		tuning.diatonic = parse_scale(tuning_presets.scales.zarlino)
 		tuning.chromatic = parse_scale(tuning_presets.scales.duodene)
 		if not settings.fine then
 			tuning.fine = parse_scale(tuning_presets.scales.ji_5_22)
 		end
+	elseif tuning.type == "septal" then
+		assert(tuning.rank == 4)
+		-- 64/63
+		tuning.ups_index = 4
+		tuning.comma = { 0, 0, 0, 1 }
+		tuning.diatonic = parse_scale(tuning_presets.scales.septal_7)
+		tuning.chromatic = parse_scale(tuning_presets.scales.septal_12)
+		if not settings.fine then
+			tuning.fine = parse_scale(tuning_presets.scales.septal_36)
+		end
 	else
-		assert(false, "Unknown tuning type: " .. settings.type)
+		assert(false, "Unknown tuning type: " .. tuning.type)
 	end
 
 	tuning.tables = { tuning.diatonic, tuning.chromatic, tuning.fine }
@@ -205,8 +270,12 @@ function tuning.load(key)
 			math.floor(ratio_to_pitch(2) * n / 12 + 0.5),
 			math.floor(ratio_to_pitch(3) * n / 12 + 0.5),
 			math.floor(ratio_to_pitch(5) * n / 12 + 0.5),
+			math.floor(ratio_to_pitch(7) * n / 12 + 0.5),
+			math.floor(ratio_to_pitch(11) * n / 12 + 0.5),
 		})
 	end
+
+	util.pprint(tuning.maps)
 
 	-- check if mappings are one-to-one
 	for t_name, t in pairs(tuning.tables) do
@@ -313,7 +382,54 @@ local function accidental(n, c_up, c_down)
 	end
 end
 
--- TODO: generalize this to other systems
+local function get_name_johnston(p)
+	local n_i = (p[2] + 1)
+	local n_f = n_i % #tuning.circle_of_fifths
+	local nominal = tuning.circle_of_fifths[n_f + 1]
+	local sharps = math.floor(n_i / #tuning.circle_of_fifths)
+
+	local acc = ""
+
+	if sharps > 0 then
+		if sharps % 2 == 1 then
+			acc = acc .. "c" -- #
+		end
+		local double_sharps = math.floor(sharps / 2)
+		acc = acc .. string.rep("d", double_sharps) -- x
+	elseif sharps < 0 then
+		local flats = -sharps
+		acc = acc .. string.rep("a", flats)
+	end
+
+	-- 25/24 = vv#
+	local plus = sharps * 2
+
+	-- A, E, B need extra +
+	if n_f > 3 then
+		plus = plus + 1
+	end
+
+	if tuning.rank >= 4 then
+		-- 36/35 = ^7
+		acc = acc .. accidental(p[4], "p", "q")
+		plus = plus - p[4]
+	end
+	if tuning.rank >= 5 then
+		-- 33/32 works the same
+		-- re-uses arrows from HEJI
+		acc = acc .. accidental(p[5], "r", "s")
+	end
+
+	-- add plus/minus last
+	if tuning.rank >= 3 then
+		-- 81/80 = +
+		plus = plus + p[3]
+		acc = acc .. accidental(plus, "l", "m")
+	end
+
+	return nominal .. acc
+end
+
 function tuning.get_name(p)
 	if project.settings.relative_note_names then
 		p = tuning.sub(p, tuning.center)
@@ -330,8 +446,12 @@ function tuning.get_name(p)
 		p = new
 	end
 
-	-- factor 4/7 is because base note name does not change when altering by an apotome (#) which is [-4, 7]
-	-- local o = p[1] + math.floor(p[2] * 4 / 7) + 4
+	local notation_style = project.settings.notation_style
+
+	if notation_style == "johnston" then
+		return get_name_johnston(p)
+	end
+
 	local n_i = (p[2] + 1)
 	local nominal = tuning.circle_of_fifths[n_i % #tuning.circle_of_fifths + 1]
 	local sharps = math.floor(n_i / #tuning.circle_of_fifths)
@@ -350,16 +470,31 @@ function tuning.get_name(p)
 	end
 
 	if tuning.rank >= 3 then
-		if project.settings.notation_style == "heji" then
+		if notation_style == "ups" then
+			acc_pre = acc_pre .. accidental(p[tuning.ups_index], "w", "v")
+		end
+
+		if notation_style == "heji" and not (notation_style == "ups" and tuning.ups_index == 3) then
 			acc = acc .. accidental(p[3], "r", "s")
-		elseif project.settings.notation_style == "ups" then
-			acc_pre = acc_pre .. accidental(p[3], "w", "v")
-		else
+		elseif notation_style == "plus" then
 			acc = acc .. accidental(p[3], "l", "m")
 		end
 	end
 
-	-- return acc_pre .. nominal .. acc .. tostring(o)
+	if tuning.rank >= 4 then
+		-- septimal comma (64/63)
+		if not (notation_style == "ups" and tuning.ups_index == 4) then
+			acc = acc .. accidental(p[4], "o", "n")
+		end
+	end
+
+	if tuning.rank >= 5 then
+		-- half sharp / flat (33/32)
+		if not (notation_style == "ups" and tuning.ups_index == 5) then
+			acc = acc .. accidental(p[5], "h", "e")
+		end
+	end
+
 	return acc_pre .. nominal .. acc
 end
 

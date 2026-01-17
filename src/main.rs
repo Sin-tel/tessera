@@ -105,7 +105,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 	let (canvas, event_loop, surface, window) = setup_window();
 
 	// We check scale factor before loading lua, and assume it doesn't change for simplicity
-	let scale_factor = window.scale_factor();
+	let scale_factor = window.scale_factor() * 1.5;
 
 	let lua = create_lua(scale_factor)?;
 	let state = State::new(canvas, window, lua_tx, lua_rx, scale_factor as f32);
