@@ -138,7 +138,7 @@ pub fn load_and_resample(path: &str, target_rate: f32) -> Result<[Vec<f32>; 2]> 
 
 	if (source_rate - target_rate).abs() > 1.0 {
 		let resampler = Resampler::new(source_rate, target_rate);
-		sample = [resampler.process(&sample[0]), resampler.process(&sample[0])];
+		sample = [resampler.process(&sample[0]), resampler.process(&sample[1])];
 	}
 
 	Ok(sample)
@@ -212,7 +212,7 @@ fn normalize_power(sample: &mut [Vec<f32>; 2]) {
 	// Normalize channels by total energy
 	for channel in sample.iter_mut() {
 		let sqr_sum = channel.iter().fold(0.0, |sqr_sum, s| sqr_sum + s * s);
-		let gain = 0.25 / sqr_sum.sqrt();
+		let gain = 0.5 / sqr_sum.sqrt();
 
 		for s in channel.iter_mut() {
 			*s *= gain;
