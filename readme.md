@@ -27,7 +27,7 @@ JACK is enabled by default.
 Install the necessary dependencies:
 #### Debian based
 ```bash
-sudo apt get libasound2-dev libjack-jackd2-dev libjack-jackd2-0 libdbus-1-dev
+sudo apt install libasound2-dev libjack-jackd2-dev libjack-jackd2-0 libdbus-1-dev
 ```
 #### Fedora based
 ```bash
