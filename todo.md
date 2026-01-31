@@ -48,7 +48,7 @@
 
 ## Audio
 - [x] Per channel gain
-- [ ] Master channel
+- [x] Master channel
 - [ ] Mixer / channel strip view
 - [ ] Change sample rate
 - [ ] Group channels

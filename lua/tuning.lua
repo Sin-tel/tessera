@@ -6,29 +6,40 @@ local MAX_RANK = 5
 
 tuning.snap_labels = { "Diatonic", "Chromatic", "Fine" }
 
-tuning.systems = {
-	"meantone",
-	-- "meantone_quarter",
-	-- "flattone",
-	"archytas",
-	-- "mavila",
-	"porcupine",
-	"diaschismic",
-	-- "semaphore",
-	"slendric",
-	"ji_5",
-	"ji_7",
-	"ji_11",
-	"septal",
-	"marvel",
-	"pele_7",
-	"et_19",
-	"et_31",
-	"et_34",
-	"et_41",
+tuning.modes = {
+	"temperament",
+	"equal",
+	"ji",
 }
 
-tuning.notation_styles = { "ups", "heji", "johnston" }
+tuning.temperaments = {
+	"meantone",
+	"meantone_quarter",
+	"flattone",
+	"archytas",
+	"mavila",
+	"porcupine",
+	"diaschismic",
+	"kleismic",
+	"magic",
+	"tetracot",
+	"slendric",
+	"neutral",
+	"marvel",
+	"starling",
+	"pele_7",
+}
+
+tuning.ets = {
+	"et_15",
+	"et_17",
+	"et_19",
+	"et_22",
+	"et_31",
+	"et_34",
+	"et_36",
+	"et_41",
+}
 
 local PRIMES = {
 	2,
@@ -140,6 +151,14 @@ local function parse_scale(s)
 	return scale
 end
 
+local function load_scale(scale_def)
+	if type(scale_def) == "table" then
+		return tuning.generate_scale(scale_def[1], scale_def[2])
+	elseif type(scale_def) == "string" then
+		return parse_scale(tuning_presets.scales[scale_def])
+	end
+end
+
 function tuning.load(key)
 	local settings = tuning_presets[key]
 	if not settings then
@@ -183,26 +202,20 @@ function tuning.load(key)
 	-- use 81/80 for ups/downs by default
 	tuning.ups_index = 3
 
-	if settings.fine then
-		if type(settings.fine) == "table" then
-			tuning.fine = tuning.generate_scale(settings.fine[1], settings.fine[2])
-		elseif type(settings.fine) == "string" then
-			tuning.fine = parse_scale(tuning_presets.scales[settings.fine])
-		else
-			assert(false, settings.fine)
-		end
-	end
+	tuning.half_sharp = false
+
+	tuning.diatonic = load_scale(settings.diatonic)
+	tuning.chromatic = load_scale(settings.chromatic)
+	tuning.fine = load_scale(settings.fine)
 
 	if tuning.type == "meantone" then
 		assert(tuning.rank == 2)
 		-- Pythagorean comma / diesis
 		tuning.comma = { 7, -12 }
 
-		tuning.diatonic = tuning.generate_scale(7, 1)
-		tuning.chromatic = tuning.generate_scale(12, 4)
-		if not settings.fine then
-			tuning.fine = tuning.generate_scale(31, 13)
-		end
+		tuning.diatonic = tuning.diatonic or tuning.generate_scale(7, 1)
+		tuning.chromatic = tuning.chromatic or tuning.generate_scale(12, 4)
+		tuning.fine = tuning.fine or tuning.generate_scale(31, 13)
 	elseif tuning.type == "mavila" then
 		assert(tuning.rank == 2)
 		-- chroma is flipped
@@ -210,22 +223,17 @@ function tuning.load(key)
 		-- 16et comma
 		tuning.comma = { -9, 16 }
 
-		tuning.diatonic = tuning.generate_scale(7, 1)
-		tuning.chromatic = parse_scale(tuning_presets.scales.mavila_12)
-		if not settings.fine then
-			tuning.fine = tuning.generate_scale(16)
-		end
+		tuning.diatonic = tuning.diatonic or tuning.generate_scale(7, 1)
+		tuning.chromatic = tuning.chromatic or parse_scale(tuning_presets.scales.mavila_12)
+		tuning.fine = tuning.fine or tuning.generate_scale(16)
 	elseif tuning.type == "pyth" then
 		assert(tuning.rank == 2)
 		-- comma is flipped in pythagorean systems
 		tuning.comma = { -7, 12 }
 
-		tuning.diatonic = tuning.generate_scale(7, 1)
-		tuning.chromatic = tuning.generate_scale(12, 4)
-		-- tuning.fine = tuning.generate_scale(29, 11)
-		if not settings.fine then
-			tuning.fine = tuning.generate_scale(17, 6)
-		end
+		tuning.diatonic = tuning.diatonic or tuning.generate_scale(7, 1)
+		tuning.chromatic = tuning.chromatic or tuning.generate_scale(12, 4)
+		tuning.fine = tuning.fine or tuning.generate_scale(17, 6)
 	elseif tuning.type == "ji_5" or tuning.type == "ji_7" or tuning.type == "ji_11" then
 		-- assert(tuning.rank == 3)
 		-- 81/80
@@ -241,24 +249,33 @@ function tuning.load(key)
 			tuning.comma_alt2 = { 0, 0, 0, 0, 1 }
 		end
 
-		tuning.diatonic = parse_scale(tuning_presets.scales.zarlino)
-		tuning.chromatic = parse_scale(tuning_presets.scales.duodene)
-		if not settings.fine then
-			tuning.fine = parse_scale(tuning_presets.scales.ji_5_22)
-		end
+		tuning.diatonic = tuning.diatonic or parse_scale(tuning_presets.scales.zarlino)
+		tuning.chromatic = tuning.chromatic or parse_scale(tuning_presets.scales.duodene)
+		tuning.fine = tuning.fine or parse_scale(tuning_presets.scales.ji_5_22)
 	elseif tuning.type == "septal" then
 		assert(tuning.rank == 4)
 		-- 64/63
 		tuning.ups_index = 4
 		tuning.comma = { 0, 0, 0, 1 }
-		tuning.diatonic = parse_scale(tuning_presets.scales.septal_7)
-		tuning.chromatic = parse_scale(tuning_presets.scales.septal_12)
-		if not settings.fine then
-			tuning.fine = parse_scale(tuning_presets.scales.septal_36)
-		end
+		tuning.diatonic = tuning.diatonic or parse_scale(tuning_presets.scales.septal_7)
+		tuning.chromatic = tuning.chromatic or parse_scale(tuning_presets.scales.septal_12)
+		tuning.fine = tuning.fine or parse_scale(tuning_presets.scales.septal_36)
+	elseif tuning.type == "neutral" then
+		assert(tuning.rank == 5)
+		-- 33/32
+		tuning.half_sharp = true
+		-- tuning.ups_index = 5
+		tuning.comma = { 0, 0, 0, 0, 1 }
+		tuning.diatonic = tuning.diatonic or tuning.generate_scale(7, 1)
+		tuning.chromatic = tuning.chromatic or tuning.generate_scale(12, 4)
+		tuning.fine = tuning.fine or tuning.generate_scale(17, 6)
 	else
 		assert(false, "Unknown tuning type: " .. tuning.type)
 	end
+
+	assert(tuning.diatonic)
+	assert(tuning.chromatic)
+	assert(tuning.fine)
 
 	tuning.tables = { tuning.diatonic, tuning.chromatic, tuning.fine }
 
@@ -278,8 +295,9 @@ function tuning.load(key)
 	-- check if mappings are one-to-one
 	for t_name, t in pairs(tuning.tables) do
 		for i, v in ipairs(t) do
-			if tuning.get_index(#t, v) + 1 ~= i then
-				log.warn("Inconsistency in scale " .. t_name .. " index " .. i)
+			local ti = tuning.get_index(#t, v) + 1
+			if ti ~= i then
+				log.warn("Inconsistency in scale " .. t_name .. " index " .. i .. " ~= " .. ti)
 			end
 		end
 	end
@@ -456,6 +474,32 @@ function tuning.get_name(p)
 
 	local acc = ""
 	local acc_pre = ""
+
+	if tuning.half_sharp then
+		local hsharp = sharps * 2 + p[5]
+
+		if hsharp >= 0 then
+			if hsharp % 4 == 3 then
+				-- one-and-a-half sharp
+				acc = acc .. "g"
+				sharps = math.floor(hsharp / 2) - 1
+			else
+				if hsharp % 2 == 1 then
+					-- half sharp
+					acc = acc .. "f"
+				end
+				sharps = math.floor(hsharp / 2)
+			end
+		elseif hsharp < 0 then
+			local hflat = -hsharp
+			if hflat % 2 == 1 then
+				-- half flat (d)
+				acc = acc .. "e"
+			end
+			sharps = -math.floor(hflat / 2)
+		end
+	end
+
 	if sharps > 0 then
 		if sharps % 2 == 1 then
 			acc = acc .. "c" -- #
@@ -488,8 +532,13 @@ function tuning.get_name(p)
 
 	if tuning.rank >= 5 then
 		-- half sharp / flat (33/32)
-		if not (notation_style == "ups" and tuning.ups_index == 5) then
-			acc = acc .. accidental(p[5], "h", "e")
+
+		-- if tuning.half_sharp then
+		-- 	acc = acc .. accidental(p[5], "f", "e")
+		if not tuning.half_sharp then
+			if not (notation_style == "ups" and tuning.ups_index == 5) then
+				acc = acc .. accidental(p[5], "h", "e")
+			end
 		end
 	end
 

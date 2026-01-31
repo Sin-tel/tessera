@@ -24,18 +24,18 @@ function Debug:draw()
 
 	tessera.graphics.set_font_size(fsize)
 
-	local ls = fsize * 1.5
+	local ls = fsize * 2.0
 
 	local w = self.w - ix
 	tessera.graphics.set_font_notes()
-	tessera.graphics.label("abcdefghijklmnopqrstu", ix, iy, w, ls)
-	tessera.graphics.label("vDea Fcd", ix, iy + ls, w, ls)
+	tessera.graphics.label("abcdefghijklmnopqrstuvwxyz", ix, iy, w, ls)
+	tessera.graphics.label("vD vvD vvvD wD wwD wwwD", ix, iy + ls, w, ls)
 	tessera.graphics.label("vvAal Baall Caaalll", ix, iy + 2 * ls, w, ls)
 	tessera.graphics.label("wDaaaa vEar Faas Gammm", ix, iy + 3 * ls, w, ls)
 	tessera.graphics.label("(a) +-lm hci 5/4 7/8 11/8 - 4:5:6:7 Ac~Ba", ix, iy + 4 * ls, w, ls)
 
-	tessera.graphics.set_font_main()
-	tessera.graphics.label("abc - pnoq - jk - (a)", ix, iy + 5 * ls, w, ls)
+	-- tessera.graphics.set_font_main()
+	-- tessera.graphics.label("abc - pnoq - jk - (a)", ix, iy + 5 * ls, w, ls)
 
 	-- tessera.graphics.set_line_width(5)
 	-- tessera.graphics.polyline(self.line_x, self.line_y)
