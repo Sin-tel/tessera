@@ -2,6 +2,17 @@ local presets = {}
 
 -- equal temperaments
 
+presets.et_17 = {
+	-- 17-et superpyth
+	generators = {
+		12.0,
+		10 * (12 / 17),
+	},
+	type = "pyth",
+	name = "17",
+	fine = { 17 },
+}
+
 presets.et_19 = {
 	-- 19-et meantone
 	generators = {
@@ -9,7 +20,7 @@ presets.et_19 = {
 		11 * (12 / 19),
 	},
 	type = "meantone",
-	name = "19 Equal Temperament",
+	name = "19",
 	fine = { 19, 8 },
 }
 
@@ -23,7 +34,43 @@ presets.et_31 = {
 		18 * (12 / 31),
 	},
 	type = "meantone",
-	name = "31 Equal Temperament",
+	name = "31",
+}
+
+-- add ups and downs
+-- convenient for septimal intervals, vBb = A#
+presets.et_31_alt = {
+	generators = {
+		12.0,
+		18 * (12 / 31),
+		0,
+		1 * (12 / 31),
+	},
+	type = "septal",
+	name = "31",
+}
+
+presets.et_15 = {
+	generators = {
+		12,
+		9 * (12 / 15),
+		1 * (12 / 15),
+	},
+	type = "ji_5",
+	name = "15",
+	-- chromatic = "chromatic_15",
+	fine = "fine_15",
+}
+
+presets.et_22 = {
+	generators = {
+		12,
+		13 * (12 / 22),
+		1 * (12 / 22),
+	},
+	type = "ji_5",
+	name = "22",
+	fine = "ji_5_22",
 }
 
 presets.et_34 = {
@@ -33,7 +80,7 @@ presets.et_34 = {
 		1 * (12 / 34),
 	},
 	type = "ji_5",
-	name = "34 Equal Temperament",
+	name = "34",
 	fine = "ji_5_34",
 }
 
@@ -44,8 +91,20 @@ presets.et_41 = {
 		1 * (12 / 41),
 	},
 	type = "ji_5",
-	name = "41 Equal Temperament",
+	name = "41",
 	fine = { 41 },
+}
+
+presets.et_36 = {
+	generators = {
+		12,
+		21 * (12 / 36),
+		0,
+		1 * (12 / 36),
+	},
+	type = "septal",
+	name = "36",
+	fine = "septal_36",
 }
 
 -- fifth based system
@@ -109,6 +168,8 @@ presets.archytas = {
 -- rank 2 temperaments (~ 5-limit)
 
 presets.porcupine = {
+	-- vvvC# = C
+	-- vvE = ^Eb
 	generators = {
 		12.00329,
 		7.0796,
@@ -120,6 +181,7 @@ presets.porcupine = {
 
 presets.diaschismic = {
 	-- Diaschismic with pure octaves
+	-- vvB# = C
 	generators = {
 		12.00,
 		7.04958,
@@ -129,19 +191,40 @@ presets.diaschismic = {
 	name = "Diaschismic",
 }
 
--- rank 2 systems on other subgroups
-
--- TODO: fix fine scale
-presets.semaphore = {
+presets.kleismic = {
+	-- ^^^ ^^^Dbbb = C
 	generators = {
-		12.00,
-		7.01378,
-		0,
-		0.46555,
+		12.0016,
+		7.02134,
+		0.2312,
 	},
-	type = "septal",
-	name = "Semaphore",
+	type = "ji_5",
+	name = "Kleismic",
 }
+
+presets.magic = {
+	-- vvv vvBx = C
+	generators = {
+		12.01245,
+		7.0102,
+		0.21137,
+	},
+	type = "ji_5",
+	name = "Magic",
+}
+
+presets.tetracot = {
+	-- vvvvC# = C
+	generators = {
+		11.99559,
+		7.0438,
+		0.33106,
+	},
+	type = "ji_5",
+	name = "Tetracot",
+}
+
+-- rank 2 systems on other subgroups
 
 presets.slendric = {
 	-- c = o - 5*f
@@ -155,12 +238,25 @@ presets.slendric = {
 	name = "Slendric",
 }
 
+presets.neutral = {
+	generators = {
+		12.00064,
+		7.01088,
+		0,
+		0,
+		0.5368,
+	},
+	type = "neutral",
+	name = "Neutral",
+}
+
 -- rank 3 systems
 
 presets.marvel = {
 	-- Marvel (7-limit)
-	-- 5/4 = E-
-	-- 7/4 = A#--
+	-- 5/4 = vE
+	-- 7/4 = vvA#
+	-- (11/8 = vvvGbb)
 	generators = {
 		12.00597,
 		7.00756,
@@ -170,10 +266,24 @@ presets.marvel = {
 	name = "Marvel (7-limit)",
 }
 
+presets.starling = {
+	-- Starling (7-limit)
+	-- 5/4 = vE
+	-- 7/4 = vvvA#
+	-- (11/8 = vvvvvEx)
+	generators = {
+		11.99793,
+		7.01131,
+		0.14906,
+	},
+	type = "ji_5",
+	name = "Starling (7-limit)",
+}
+
 presets.pele_7 = {
 	-- Argent / Pele / Hemifamity (7-limit)
-	-- 5/4 = E-
-	-- 7/4 = Bb-
+	-- 5/4 = vE
+	-- 7/4 = vBb
 	generators = {
 		11.9972,
 		7.02664,
@@ -185,9 +295,9 @@ presets.pele_7 = {
 
 presets.pele_11 = {
 	-- Pele (11-limit)
-	-- 5/4 = E-
-	-- 7/4 = Bb-
-	-- 11/8 = Gb-
+	-- 5/4 = vE
+	-- 7/4 = vBb
+	-- 11/8 = vGb
 	generators = {
 		11.99542,
 		7.03011,
@@ -199,9 +309,9 @@ presets.pele_11 = {
 
 presets.akea = {
 	-- Akea (11-limit)
-	-- 5/4 = E-
-	-- 7/4 = Bb-
-	-- 11/8 = F++
+	-- 5/4 = vE
+	-- 7/4 = vBb
+	-- 11/8 = ^^F
 	generators = {
 		12.0014,
 		7.02924,
@@ -320,6 +430,25 @@ presets.scales.ji_5_22 = {
 	"9/5",
 	"15/8",
 	"243/128",
+	"2/1",
+}
+
+-- duodene + 10/9, 27/20, 16/9
+presets.scales.fine_15 = {
+	"16/15",
+	"10/9",
+	"9/8",
+	"6/5",
+	"5/4",
+	"4/3",
+	"27/20",
+	"45/32",
+	"3/2",
+	"8/5",
+	"5/3",
+	"16/9",
+	"9/5",
+	"15/8",
 	"2/1",
 }
 

@@ -1,32 +1,70 @@
+tuning:
+ * make categories (ET / temp / JI)
+ * adjust notation
+
+rastmic / neutral
+  notation should use half-sharps if 243/242 is tempered
+  rank 2 ~ 2.3.11 (33/32)
+  rank 3 ~ 2.3.5.11 (81/80, 33/32) also can temper out 5120/5103 (81/80~64/63, 33/32)
+  rank 4 ~ 11-limit
+
+  some EDOs can also be notated like this (notably 31 and 41!)
+
 move 'flush_messages' to backend
 
-master channel
-limiter
+be more consistent with levels.
+target should be ~ -18dB RMS
+
+edit sustain
+option to only edit active track (auto lock)
+mono/poly switch (make sure mpe works, start w simple poly)
+loop
+snap transport time
+
 - save layout
 - project settings / tuning presets
 
+if we crashed, don't load previous save automatically!
+
+use C4 on backend for consistency
+
 add lock all/none button on top?
+
+ui/layout
+  reduce the number of ad-hoc ui elements, make layout system more generic
+
+more options for body responses in convolver
+ -> maybe split menu into categories
+ also add cabinet / microphone splits
+
+panner: instead of only binaural panning also allow for some kind of virtual room
+ - emulate common microphone setups (m/s, ORTF, AB, etc)
+
+transient shaper
 
 mute icon speaker
 
-pitch system
-  add 'edo mode' where gens are integers, and the finest grid is the edo
-  make it more generic
+try to do something more sensible for snapping notes outside of the scale
+
+merge undos for same actions (esp move commands)
+
+move MIDI handling to Rust
+
+ramp/envelope testing for compressor / limiter
+
+note preview on move
 
 transport buttons
 
 autosave / crash recovery
 
-
 implement delayline with interpolating reader
 
 allow clone notes to be triggered when ctrl is pressed after initial drag
 
-snapping settings:
- - shared between grab / pen / etc ?
- - seperate settings for time / pitch
- - could be entirely context-dependent, but maybe allow override
-    i.e. have "auto" snap setting by default
+add some testing harness for instruments and effects
+ -> test if process - flush - process produces identical outputs
+  needs a macro helper to setup without too much copy-paste
 
 File
  - reset workspace
@@ -44,7 +82,7 @@ display midi activity indicator for each device
 in principle, the stream and render instances could be seperated
   allows for rendering even when there's no stream
 
-spacers / collapse sections in device settings
+collapse sections in device settings
 
 allow only one instance of each view?
  makes some logic easier
@@ -61,6 +99,85 @@ Linux: "null" ("Discard all samples ...") is used as default device. Should pick
 
 should we use audio_thread_priority?
 
+modulation routing system for instruments would be nice to have
+ e.g. allow pressure to be applied to any slider
+
+## routing
+
+grouping: tree structure of channels
+ - group can be either just mix bus or an "instrument rack" type thing
+    how to switch between these?
+    instrument group can be a "fake" instrument with its own Roll
+ - send tracks can be handled seperately (need to be processed just before master)
+    do this later, maybe have a fixed max amount of sends
+
+
+## devices
+
+BBD delay
+  time: discrete clock settings + flexible time settings w interpolation
+
+Reverb: dispersion setting (lowest should be more delay-ish)
+
+Gain: make util instead (gain / pan / width)
+incrase max gain
+
+Analog delay
+  - mode switch
+  BBD / bode shifter / pitch
+
+
+## visuals
+
+triple buffer generic vec<f32> for every device
+
+```rust
+pub struct Wavetable {
+  // ...
+  visual_tx: triple_buffer::Input<Vec<f32>>,
+}
+
+
+pub trait Instrument {
+  fn new(sample_rate: f32) -> (Self, Option<Output<Vec<f32>>>)
+}
+
+
+pub struct AudioContext {
+  visuals: HashMap<usize, triple_buffer::Output<Vec<f32>>>,
+}
+
+audio.set("get_visual", lua.create_function(|lua, handle: usize| {
+    let state = lua.app_data_ref::<State>().unwrap();
+
+    if let Some(output) = state.visuals.get(&handle) {
+        let buf = output.read();
+        return Ok(Some(buf.clone()));
+    }
+    Ok(None)
+})?)?;
+
+```
+Hashmap is index by some handle, similar to how meters work.
+Then we add add a widget for the specific device e.g.
+
+```lua
+function Visualizer:draw(ui, x, y, w, h)
+    local data = tessera.audio.get_visual(self.handle)
+
+    if data then
+        tessera.graphics.set_color(theme.line)
+        local points = {}
+        local step = w / #data
+        for i, val in ipairs(data) do
+            table.insert(points, x + (i-1) * step)
+            table.insert(points, y + h/2 - (val * h/2))
+        end
+        tessera.graphics.polyline(points)
+    end
+end
+```
+
 ## building
 
 on WSL:
@@ -73,17 +190,6 @@ sudo apt install libasound2-plugins pulseaudio
 # jack
 sudo apt install libjack-dev
 
-macos universal binary:
-```yml
-    - name: Build Release
-      run: |
-        rustup target add x86_64-apple-darwin
-        cargo build --release --target x86_64-apple-darwin
-        cargo build --release --target aarch64-apple-darwin
-        lipo -create -output target/release/tessera \
-          target/x86_64-apple-darwin/release/tessera \
-          target/aarch64-apple-darwin/release/tessera
-```
 ## note datastructure:
 pitch: {
     interval: array of harmonic coordinates
@@ -148,12 +254,15 @@ d: double sharp x
 e: 1/2 flat d
 f: 1/2 sharp t
 g: 3/2 sharp
+e: 1/2 sharp alt (HEJI)
 
 l: small + (Johnston)
 m: small - (Johnston)
 
-n: septimal down L (heji)
-o: septimal up (heji)
+n: septimal down L (HEJI)
+o: septimal up (HEJI)
+p: septimal down L (johnston)
+q: septimal up 7 (johnston)
 
 r: arrow up
 s: arrow down

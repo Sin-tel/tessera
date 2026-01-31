@@ -17,6 +17,7 @@ pub struct Event {
 pub enum Message {
 	NoteOff { note: u8 },
 	NoteOn { note: u8, vel: f32 },
+	Aftertouch { note: u8, pressure: f32 },
 	Controller { controller: u8, value: f32 },
 	Pressure(f32),
 	PitchBend(f32),
@@ -113,6 +114,7 @@ impl Event {
 					NoteOn { note: a, vel: f32::from(b) / 127.0 }
 				}
 			},
+			10 => Aftertouch { note: a, pressure: f32::from(b) / 127.0 },
 			11 => Controller { controller: a, value: f32::from(b) / 127.0 },
 			12 => return None, // Program change
 			13 => Pressure(f32::from(a) / 127.0),
@@ -144,6 +146,11 @@ impl IntoLua for Event {
 			NoteOff { note } => {
 				table.set("name", "note_off")?;
 				table.set("note", note)?;
+			},
+			Aftertouch { note, pressure } => {
+				table.set("name", "aftertouch")?;
+				table.set("note", note)?;
+				table.set("pressure", pressure)?;
 			},
 			Controller { controller, value } => {
 				table.set("name", "controller")?;

@@ -15,31 +15,64 @@ function ProjectSettings.new()
 	self.ui.layout:padding(6)
 	self.indent = Ui.scale(32)
 
-	local name_list = {}
-	for i, k in ipairs(tuning.systems) do
+	local temperament_name_list = {}
+	for i, k in ipairs(tuning.temperaments) do
 		local name = tuning_presets[k].name
 		assert(name)
-		name_list[i] = name
+		temperament_name_list[i] = name
 	end
 
-	self.tuning_index = 1
+	local et_name_list = {}
+	for i, k in ipairs(tuning.ets) do
+		local name = tuning_presets[k].name
+		assert(name)
+		et_name_list[i] = name
+	end
+
+	self.tuning_mode = 1
+	self.temperament_index = 1
+	self.et_index = util.find(tuning.ets, "et_31")
 	self.notation_index = 1
-	self.select_tuning = widgets.Dropdown.new(self, "tuning_index", { list = name_list, no_undo = true })
-	self.select_accidentals =
-		widgets.Selector.new(self, "notation_index", { list = { "ups/downs", "HEJI", "Johnston" }, no_undo = true })
+	self.select_tuning_mode = widgets.Selector.new(
+		self,
+		"tuning_mode",
+		{ list = { "Temperament", "Equal", "Just Intonation" }, no_undo = true }
+	)
+
+	self.select_temperament =
+		widgets.Dropdown.new(self, "temperament_index", { list = temperament_name_list, arrows = true, no_undo = true })
+	self.select_et = widgets.Dropdown.new(self, "et_index", { list = et_name_list, arrows = true, no_undo = true })
+
+	self.select_ji_notation =
+		widgets.Selector.new(self, "notation_index", { list = { "HEJI", "Johnston" }, no_undo = true })
 
 	return self
 end
 
+function ProjectSettings:set_notation()
+	local mode = tuning.modes[self.tuning_mode]
+
+	if mode == "ji" then
+		if self.notation_index == 1 then
+			project.settings.notation_style = "heji"
+		else
+			project.settings.notation_style = "johnston"
+		end
+	else
+		project.settings.notation_style = "ups"
+	end
+	print("notation:", project.settings.notation_style)
+end
+
 function ProjectSettings:update()
-	local index = util.find(tuning.systems, project.settings.tuning_key)
-	if index then
-		self.tuning_index = index
-	end
-	index = util.find(tuning.notation_styles, project.settings.notation_style)
-	if index then
-		self.notation_index = index
-	end
+	-- local index = util.find(tuning.systems, project.settings.tuning_key)
+	-- if index then
+	-- 	self.tuning_index = index
+	-- end
+	-- index = util.find(tuning.notation_styles, project.settings.notation_style)
+	-- if index then
+	-- 	self.notation_index = index
+	-- end
 
 	tessera.graphics.set_font_main()
 
@@ -64,16 +97,50 @@ function ProjectSettings:update()
 	self.ui.layout:col(c2)
 	self.ui:label("System")
 	self.ui.layout:col(c3)
-	if self.select_tuning:update(self.ui) then
-		tuning.load(tuning.systems[self.tuning_index])
+
+	if self.select_tuning_mode:update(self.ui) then
+		self:set_notation()
+		local mode = tuning.modes[self.tuning_mode]
+		if mode == "ji" then
+			tuning.load("ji_11")
+		end
 	end
-	self.ui.layout:new_row()
-	self.ui.layout:col(c1)
-	self.ui.layout:col(c2)
-	self.ui:label("Style")
-	self.ui.layout:col(c3)
-	if self.select_accidentals:update(self.ui) then
-		project.settings.notation_style = tuning.notation_styles[self.notation_index]
+	-- 	self:update_category()
+	-- 	-- tuning.load(tuning.systems[self.tuning_index])
+	-- end
+
+	local mode = tuning.modes[self.tuning_mode]
+	if mode == "temperament" then
+		self.ui.layout:new_row()
+		self.ui.layout:col(c1)
+		self.ui.layout:col(c2)
+		-- self.ui:label("Temperament")
+		self.ui.layout:col(c3)
+		if self.select_temperament:update(self.ui) then
+			tuning.load(tuning.temperaments[self.temperament_index])
+			self:set_notation()
+		end
+	elseif mode == "equal" then
+		self.ui.layout:new_row()
+		self.ui.layout:col(c1)
+		self.ui.layout:col(c2)
+		-- self.ui:label("ET")
+		self.ui.layout:col(c3)
+		if self.select_et:update(self.ui) then
+			tuning.load(tuning.ets[self.et_index])
+			self:set_notation()
+		end
+	elseif mode == "ji" then
+		self.ui.layout:new_row()
+		self.ui.layout:col(c1)
+		self.ui.layout:col(c2)
+		self.ui:label("Notation")
+		self.ui.layout:col(c3)
+		if self.select_ji_notation:update(self.ui) then
+			self:set_notation()
+		end
+	else
+		assert(false, "unreachable")
 	end
 
 	self.ui:end_frame()

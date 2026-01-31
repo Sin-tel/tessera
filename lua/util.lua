@@ -141,7 +141,7 @@ end
 local METER_CLIP_COLOR = { 1.00, 0.30, 0.20 }
 
 function util.meter_color(x, darken)
-	if x > 1 then
+	if x > 1.0 then
 		return METER_CLIP_COLOR
 	else
 		assert(x >= 0)
@@ -152,7 +152,7 @@ function util.meter_color(x, darken)
 			v = 0.9 * x_log
 			v = util.clamp(v, 0, 1)
 		end
-		return tessera.graphics.get_color_hsv((140 - 110 * x * x) / 360, 0.7, v)
+		return tessera.graphics.get_color_hsv((140 - 130 * x * x) / 360, 0.7, v)
 	end
 end
 
