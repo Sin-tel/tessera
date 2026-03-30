@@ -18,11 +18,11 @@ doctest = false
 
 # Pull in the right cpal features depending on platform
 [target.'cfg(target_os = "windows")'.dependencies]
-cpal = { version = "0.17", features = ["asio"], git = "https://github.com/sin-tel/cpal.git", rev = "e0a61fd3f732f9aa2c9296b6bb831f50e6abac9e" }
+cpal = { version = "0.18", features = ["asio"], git = "https://github.com/sin-tel/cpal.git", rev = "3157371f2dff786339ea70e5d295c39d7f1c513e" }
 [target.'cfg(target_os = "macos")'.dependencies]
-cpal = { version = "0.17", git = "https://github.com/sin-tel/cpal.git", rev = "e0a61fd3f732f9aa2c9296b6bb831f50e6abac9e" }
+cpal = { version = "0.18", git = "https://github.com/sin-tel/cpal.git", rev = "3157371f2dff786339ea70e5d295c39d7f1c513e" }
 [target.'cfg(target_os = "linux")'.dependencies]
-cpal = { version = "0.17", features = ["jack"], git = "https://github.com/sin-tel/cpal.git", rev = "e0a61fd3f732f9aa2c9296b6bb831f50e6abac9e" }
+cpal = { version = "0.18", features = ["jack"], git = "https://github.com/sin-tel/cpal.git", rev = "3157371f2dff786339ea70e5d295c39d7f1c513e" }
 
 [dependencies]
 assert_no_alloc = {version = "1.1", features = ["warn_debug"]}
@@ -34,7 +34,8 @@ rustfft = "6.4"
 realfft = "3.5"
 fft_convolution = {version = "0.1", git = "https://github.com/Sin-tel/fft-convolution.git", rev = "ef197e8efb6d9de68df4b4794ca2bcf3b999474e" }
 hound = "3.5"
-midir = "0.10"
+# midir = "0.10.3"
+midir = {version = "0.11.0-pre", git = "https://github.com/Sin-tel/midir.git", rev = "c62b473e2a3cfe392ef1c1fcf5c8fdba14cabc5c" }
 num-complex = "0.4"
 halfband = "0.2"
 windowfunctions = "0.1"

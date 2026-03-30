@@ -234,21 +234,22 @@ pub fn build_stream(
 	Ok((stream, stream_tx, error_rx))
 }
 
-#[cfg(target_os = "windows")]
 pub fn open_control_panel(device: &Device) {
 	use cpal::platform::asio::AsioDeviceExt;
-	// Opening UI panel may block, so spawn a thread for it.
 	// ASIO device is just Arc internally, so clone is cheap.
 	let device = device.clone();
+
+	// Opening UI panel may block, so spawn a thread for it.
 	std::thread::spawn(move || {
-		if let Err(e) = device.asio_open_control_panel() {
-			log_error!("Could not open panel: {:?}", e);
+		if let Some(d) = device.as_asio() {
+			if let Err(e) = d.open_control_panel() {
+				log_error!("Could not open panel: {:?}", e);
+			}
+		} else {
+			log_error!("Not an ASIO device.");
 		}
 	});
 }
-
-#[cfg(not(target_os = "windows"))]
-pub fn open_control_panel(_device: &Device) {}
 
 pub fn build_stream_inner<T>(
 	device: &Device,
@@ -263,7 +264,7 @@ where
 	let audio_closure = build_closure::<T>(stream_rx, render);
 
 	let stream =
-		device.build_output_stream(config, audio_closure, error_closure(error_tx), None)?;
+		device.build_output_stream(*config, audio_closure, error_closure(error_tx), None)?;
 
 	Ok(stream)
 }
@@ -388,6 +389,7 @@ fn error_closure(mut error_tx: HeapProd<ErrorMessage>) -> impl FnMut(StreamError
 			log_error!("Device error: {description}");
 			// TODO should we handle these?
 		},
+		err => log_error!("Unhandled stream error {:?}", err),
 	}
 }
 
