@@ -51,7 +51,7 @@ impl WindowSurface for Surface {
 		}
 	}
 	fn present(&self, canvas: &mut femtovg::Canvas<Self::Renderer>) {
-		canvas.flush_to_surface(&());
+		canvas.flush();
 		self.surface.swap_buffers(&self.context).unwrap();
 	}
 }
