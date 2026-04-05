@@ -463,10 +463,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"pop_error",
 		lua.create_function(|lua, ()| {
 			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				match ctx.error_rx.try_pop() {
-					Some(p) => Ok(Some(lua.to_value(&p)?)),
-					None => Ok(None),
-				}
+				Ok(ctx.error_rx.try_pop())
 			} else {
 				Ok(None)
 			}

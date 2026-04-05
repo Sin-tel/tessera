@@ -261,14 +261,14 @@ impl Hooks {
 
 macro_rules! lua_serde {
 	($t:ty) => {
-		impl IntoLua for $t {
-			fn into_lua(self, lua: &Lua) -> LuaResult<LuaValue> {
-				lua.to_value(&self)
+		impl mlua::IntoLua for $t {
+			fn into_lua(self, lua: &mlua::Lua) -> mlua::Result<mlua::Value> {
+				mlua::LuaSerdeExt::to_value(lua, &self)
 			}
 		}
-		impl FromLua for $t {
-			fn from_lua(value: LuaValue, lua: &Lua) -> LuaResult<Self> {
-				lua.from_value(value)
+		impl mlua::FromLua for $t {
+			fn from_lua(value: mlua::Value, lua: &mlua::Lua) -> mlua::Result<Self> {
+				mlua::LuaSerdeExt::from_value(lua, value)
 			}
 		}
 	};
