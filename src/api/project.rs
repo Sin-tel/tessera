@@ -1,7 +1,7 @@
 // Currently broken! Not going to fix until more stable
 
+use crate::api::lua_serde;
 use crate::app::State;
-use crate::log_error;
 use mlua::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -13,6 +13,8 @@ pub struct Project {
 	pub channels: Vec<Channel>,
 	pub transport: Transport,
 }
+
+lua_serde!(Project);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Channel {
@@ -108,38 +110,30 @@ impl<'de> Deserialize<'de> for Vertex {
 	}
 }
 
-pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
-	let project = lua.create_table()?;
+lua_serde!(Vertex);
 
-	project.set(
+pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
+	let m = lua.create_table()?;
+
+	m.set(
 		"set",
-		lua.create_function(|lua, project: LuaValue| {
+		lua.create_function(|lua, project: Project| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
-			state.project = match lua.from_value(project) {
-				Ok(p) => Some(p),
-				Err(e) => {
-					log_error!("{e}");
-					None
-				},
-			};
+			state.project = Some(project);
 			// dbg!(&state.project);
 			Ok(())
 		})?,
 	)?;
 
-	project.set(
+	m.set(
 		"get",
 		lua.create_function(|lua, ()| {
 			let state = &lua.app_data_ref::<State>().unwrap();
-			if let Some(project) = &state.project {
-				Ok(Some(lua.to_value(&project)?))
-			} else {
-				Ok(None)
-			}
+			Ok(state.project.clone())
 		})?,
 	)?;
 
-	Ok(project)
+	Ok(m)
 }
 
 #[cfg(test)]
@@ -151,8 +145,8 @@ mod tests {
 		let lua = Lua::new();
 
 		// quick test function
-		let project = lua.create_function(|lua, project: LuaValue| {
-			let project_data: Project = lua.from_value(project)?;
+		let project = lua.create_function(|_, project: Project| {
+			let project_data = project;
 			assert!(project_data.name == "Test Project");
 			Ok(())
 		})?;
@@ -194,7 +188,7 @@ mod tests {
 			version: Version { major: 1, minor: 0, patch: 0 },
 			transport: Transport { recording: false, start_time: 0.0 },
 		};
-		lua.globals().set("p", lua.to_value(&project)?)?;
+		lua.globals().set("p", project)?;
 
 		Ok(())
 	}
@@ -204,7 +198,7 @@ mod tests {
 		let lua = Lua::new();
 
 		let vertex = Vertex { x: 1.0, y: 2.0, w: 3.0 };
-		lua.globals().set("v", lua.to_value(&vertex)?)?;
+		lua.globals().set("v", vertex)?;
 
 		lua.load(
 			r#"
@@ -231,7 +225,7 @@ mod tests {
 		)
 		.exec()?;
 
-		let verts: Vec<Vertex> = lua.from_value(lua.globals().get("verts")?)?;
+		let verts: Vec<Vertex> = lua.globals().get("verts")?;
 		assert_eq!(verts.len(), 2);
 		assert_eq!(verts[0].x, 0.5);
 		assert_eq!(verts[0].y, 1.0);

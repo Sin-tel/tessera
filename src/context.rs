@@ -1,4 +1,5 @@
 use crate::api::audio::DeviceInfo;
+use crate::api::lua_serde;
 use crate::audio::{build_config, build_stream, die, find_output_device};
 use crate::log::*;
 use crate::meters::Meters;
@@ -10,7 +11,7 @@ use anyhow::Result;
 use parking_lot::Mutex;
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd, HeapRb};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::sync::mpsc::SyncSender;
 
@@ -131,16 +132,20 @@ pub enum AudioMessage {
 	Metronome(bool),
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "tag")]
 pub enum LuaMessage {
 	StreamSettings { buffer_size: usize, sample_rate: f32 },
 	Log { level: String, message: String },
 }
 
-#[derive(Debug, Serialize)]
+lua_serde!(LuaMessage);
+
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "tag")]
 pub enum ErrorMessage {
 	ResetRequest,
 	DeviceNotAvailable,
 }
+
+lua_serde!(ErrorMessage);
