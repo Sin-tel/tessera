@@ -33,13 +33,14 @@ Settings.devices = {}
 
 -- shared ui state
 Settings.state = {
-	host_id = 1,
-	device_id = 1,
+	host_index = 1,
+	device_index = 1,
 	buffer_size = 128,
 	toggle_buffer = false,
 	midi_ports = {},
 	mpe = {},
 	devices = {},
+	device_name_list = {},
 }
 
 function Settings.new()
@@ -62,11 +63,15 @@ function Settings.new()
 
 	self.control_panel_button = widgets.Button.new("Open control panel")
 
-	self.state.host_id = util.find(Settings.hosts, setup.host) or 1
-	self.select_host =
-		widgets.Selector.new(self.state, "host_id", { list = util.map(Settings.hosts, display_name), no_undo = true })
+	self.state.host_index = util.find(Settings.hosts, setup.host) or 1
+	self.select_host = widgets.Selector.new(
+		self.state,
+		"host_index",
+		{ list = util.map(Settings.hosts, display_name), no_undo = true }
+	)
 
-	self.select_device = widgets.Dropdown.new(self.state, "device_id", { list = self.state.devices, no_undo = true })
+	self.select_device =
+		widgets.Dropdown.new(self.state, "device_index", { list = self.state.device_name_list, no_undo = true })
 
 	self.slider = widgets.Slider.new(
 		self.state,
@@ -123,19 +128,26 @@ function Settings:rebuild()
 		Settings.devices[setup.host] = tessera.audio.get_output_devices(setup.host)
 	end
 
+	local devices = Settings.devices[setup.host]
+
 	-- update device list in-place
-	table.clear(self.state.devices)
+	table.clear(self.state.device_name_list)
 	for i, v in ipairs(Settings.devices[setup.host]) do
-		self.state.devices[i] = v
+		self.state.device_name_list[i] = v.name
 	end
 
 	-- In case devices is empty we add a dummy value
-	if #self.state.devices == 0 then
-		self.state.devices[1] = "null"
+	if #devices == 0 then
+		self.state.device_name_list[1] = "null"
 	end
 
-	-- build list of devices for display and find current index
-	self.state.device_id = util.find(self.state.devices, setup.configs[setup.host].device) or 1
+	-- Find currently selected device index by its unique id
+	self.state.device_index = 1
+	for i, v in ipairs(devices) do
+		if v.id == setup.configs[setup.host].device.id then
+			self.state.device_index = i
+		end
+	end
 
 	if setup.configs[setup.host].buffer_size then
 		self.state.toggle_buffer = true
@@ -192,9 +204,9 @@ function Settings:update()
 	self.ui.layout:col(c2)
 	self.ui:label("Driver type")
 	self.ui.layout:col(c3)
-	local host_id = self.select_host:update(self.ui)
-	if host_id then
-		setup.host = Settings.hosts[host_id]
+	local host_index = self.select_host:update(self.ui)
+	if host_index then
+		setup.host = Settings.hosts[host_index]
 		-- need to come first or some hosts won't report devices correctly
 		self:rebuild()
 		engine.rebuild_stream()
@@ -206,10 +218,12 @@ function Settings:update()
 	self.ui:label("Output device")
 	self.ui.layout:col(c3)
 
-	local device_id = self.select_device:update(self.ui)
-	if device_id then
-		local new_device = self.state.devices[device_id]
-		if setup.configs[setup.host].device ~= new_device then
+	local device_index = self.select_device:update(self.ui)
+	if device_index then
+		local devices = Settings.devices[setup.host]
+		local new_device = devices[device_index]
+
+		if setup.configs[setup.host].device.id ~= new_device.id then
 			setup.configs[setup.host].device = new_device
 			engine.rebuild_stream()
 		end
@@ -258,7 +272,7 @@ function Settings:update()
 
 	-- check if the device changed due to fallback
 	local find_id = util.find(Settings.hosts, setup.host)
-	if find_id and self.state.host_id ~= find_id then
+	if find_id and self.state.host_index ~= find_id then
 		self:rebuild()
 	end
 

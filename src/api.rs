@@ -1,4 +1,4 @@
-mod audio;
+pub mod audio;
 pub mod graphics;
 pub mod icon;
 pub mod image;
@@ -258,3 +258,20 @@ impl Hooks {
 		})
 	}
 }
+
+macro_rules! lua_serde {
+	($t:ty) => {
+		impl IntoLua for $t {
+			fn into_lua(self, lua: &Lua) -> LuaResult<LuaValue> {
+				lua.to_value(&self)
+			}
+		}
+		impl FromLua for $t {
+			fn from_lua(value: LuaValue, lua: &Lua) -> LuaResult<Self> {
+				lua.from_value(value)
+			}
+		}
+	};
+}
+
+pub(crate) use lua_serde;

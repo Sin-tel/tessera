@@ -156,7 +156,7 @@ function engine.setup_stream()
 	local device = setup.configs[host].device
 	local buffer_size = setup.configs[host].buffer_size
 	if device then
-		tessera.audio.setup(host, device, buffer_size)
+		tessera.audio.setup(device, buffer_size)
 	else
 		log.error("No audio device configured")
 	end
@@ -172,7 +172,7 @@ function engine.rebuild_stream()
 		local device = setup.configs[host].device
 		local buffer_size = setup.configs[host].buffer_size
 		if device then
-			tessera.audio.rebuild(host, device, buffer_size)
+			tessera.audio.rebuild(device, buffer_size)
 		else
 			log.error("No device configured")
 			tessera.audio.quit()

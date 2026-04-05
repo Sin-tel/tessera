@@ -1,3 +1,4 @@
+use crate::api::audio::DeviceInfo;
 use crate::audio::{build_config, build_stream, die, find_output_device};
 use crate::log::*;
 use crate::meters::Meters;
@@ -29,12 +30,11 @@ pub struct AudioContext {
 
 impl AudioContext {
 	pub fn new(
-		host_str: &str,
-		device_name: &str,
+		device_info: &DeviceInfo,
 		buffer_size: Option<u32>,
 		lua_tx: SyncSender<LuaMessage>,
 	) -> Result<AudioContext> {
-		let device = find_output_device(host_str, device_name)?;
+		let device = find_output_device(device_info)?;
 		let (config, format) = build_config(&device, buffer_size)?;
 		let sample_rate = config.sample_rate;
 
@@ -70,15 +70,14 @@ impl AudioContext {
 
 	pub fn rebuild_stream(
 		&mut self,
-		host_str: &str,
-		device_name: &str,
+		device_info: &DeviceInfo,
 		buffer_size: Option<u32>,
 	) -> Result<()> {
 		// drop old stream
 		self.stream = None;
 		self.device = None;
 
-		let device = find_output_device(host_str, device_name)?;
+		let device = find_output_device(device_info)?;
 		let (config, format) = build_config(&device, buffer_size)?;
 
 		// TODO: handle this properly

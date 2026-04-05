@@ -1,7 +1,7 @@
 use anyhow::{Result, anyhow, bail};
 use assert_no_alloc::*;
 use cpal::{
-	BackendSpecificError, BufferSize, Device, HostId, SampleFormat, Stream, StreamConfig,
+	BackendSpecificError, BufferSize, Device, DeviceId, HostId, SampleFormat, Stream, StreamConfig,
 	StreamError, SupportedBufferSize, SupportedStreamConfigRange,
 	traits::{DeviceTrait, HostTrait, StreamTrait},
 };
@@ -15,6 +15,7 @@ use std::panic::AssertUnwindSafe;
 use std::str::FromStr;
 use std::sync::{Arc, atomic, atomic::AtomicBool};
 
+use crate::api::audio::DeviceInfo;
 use crate::context::{ErrorMessage, LuaMessage};
 use crate::dsp::atomic_float::AtomicFloat;
 use crate::dsp::env::AttackRelease;
@@ -55,64 +56,52 @@ pub fn get_default_host() -> String {
 	cpal::default_host().id().to_string()
 }
 
-pub fn get_output_devices(host_str: &str) -> Result<Vec<String>> {
+pub fn get_output_devices(host_str: &str) -> Result<Vec<DeviceInfo>> {
 	let host_id = HostId::from_str(host_str)?;
 	let host = cpal::host_from_id(host_id)?;
 
 	let mut devices = Vec::new();
 
-	for d in host.output_devices()? {
-		match d.description() {
-			Ok(d) => {
-				let name = d.name();
-				devices.push(name.to_string());
-			},
-			Err(e) => log_warn!("Couldn't get name: {e}"),
+	for device in host.output_devices()? {
+		match DeviceInfo::from_device(&device) {
+			Ok(device_info) => devices.push(device_info),
+			Err(e) => log_error!("Failed to get device info: {}", e),
 		}
 	}
 
 	Ok(devices)
 }
 
-pub fn get_default_output_device(host_str: &str) -> Result<String> {
+pub fn get_default_output_device(host_str: &str) -> Result<DeviceInfo> {
 	let host_id = HostId::from_str(host_str)?;
 	let host = cpal::host_from_id(host_id)?;
 
 	// It's possible there are no devices at all
-	let default_device = match host.default_output_device() {
-		Some(device) => device.description()?.name().to_string(),
+	match host.default_output_device() {
+		Some(device) => DeviceInfo::from_device(&device),
 		None => bail!("No default device found."),
-	};
-
-	Ok(default_device)
+	}
 }
 
-// search output device by name
-// TODO: use DeviceId instead to simplify
-// We can use device.id()?.to_string() to get a unique id, convert back using from_str
-// device_id.0 should contain HostId
-pub fn find_output_device(host_str: &str, device_name: &str) -> Result<Device> {
-	let host_id = HostId::from_str(host_str)?;
+// search output device by id
+pub fn find_output_device(info: &DeviceInfo) -> Result<Device> {
+	let device_id = DeviceId::from_str(&info.id)?;
+
+	let host_id = device_id.0;
 	let host = cpal::host_from_id(host_id)?;
 
-	let mut output_device = None;
-
-	for device in host.output_devices()? {
-		if let Ok(description) = device.description()
-			&& description.name() == device_name
-		{
-			output_device = Some(device);
-		}
+	match host.device_by_id(&device_id) {
+		Some(device) => {
+			log_info!(
+				"Using: host: \"{}\", output device: \"{}\" ({})",
+				host.id().name(),
+				info.name,
+				info.id
+			);
+			Ok(device)
+		},
+		None => bail!("Couldn't find device \"{}\"", info.name),
 	}
-
-	let output_device =
-		output_device.ok_or_else(|| anyhow!("Couldn't find device \"{device_name}\""))?;
-
-	let description = output_device.description()?;
-	let name = description.name();
-	log_info!("Host: \"{}\", output device: \"{}\"", host.id().name(), name);
-
-	Ok(output_device)
 }
 
 fn config_cmp(a: &SupportedStreamConfigRange, b: &SupportedStreamConfigRange) -> cmp::Ordering {
