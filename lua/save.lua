@@ -114,12 +114,12 @@ function save.read_setup()
 		local new_setup = setfenv(loadstring(content), {})()
 
 		local new_v = util.version_str(new_setup.VERSION)
-		if util.version_compatible(VERSION, new_setup.VERSION) then
+		if util.version_compatible_strict(VERSION, new_setup.VERSION) then
 			log.info("Loaded setup.lua")
 			return new_setup
 		else
 			-- Losing the setup file is not really a big deal, so don't try to be clever about it
-			log.warn("File setup.lua created with version " .. new_v .. ". Ignoring.")
+			log.warn("File setup.lua created with version " .. new_v .. ". Resetting.")
 		end
 	else
 		log.info("No setup.lua found, generating default.")

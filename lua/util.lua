@@ -239,6 +239,18 @@ function util.version_compatible(current, other)
 	return false
 end
 
+function util.version_compatible_strict(current, other)
+	if current.MAJOR == 0 and other.MAJOR == 0 then
+		if current.MINOR == other.MINOR and current.PATCH == other.PATCH then
+			return true
+		end
+	else
+		return current.MAJOR == other.MAJOR and current.MINOR == other.MINOR
+	end
+
+	return false
+end
+
 function util.version_str(version)
 	return string.format("v%d.%d.%d", version.MAJOR, version.MINOR, version.PATCH)
 end

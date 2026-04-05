@@ -1,3 +1,4 @@
+use crate::api::lua_serde;
 use crate::app::State;
 use crate::audio;
 use crate::audio::CPU_LOAD;
@@ -8,9 +9,12 @@ use crate::audio::{
 use crate::context::{AudioContext, AudioMessage};
 use crate::log::{log_error, log_info};
 use crate::voice_manager::Token;
+use cpal::Device;
+use cpal::traits::DeviceTrait;
 use mlua::prelude::*;
 use no_denormals::no_denormals;
 use ringbuf::traits::*;
+use serde::{Deserialize, Serialize};
 
 pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	let audio = lua.create_table()?;
@@ -32,7 +36,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	audio.set(
 		"get_default_output_device",
 		lua.create_function(|_, host_name: String| match get_default_output_device(&host_name) {
-			Ok(name) => Ok(Some(name)),
+			Ok(device_info) => Ok(Some(device_info)),
 			Err(e) => {
 				log_error!("{e}");
 				Ok(None)
@@ -42,44 +46,40 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 
 	audio.set(
 		"setup",
-		lua.create_function(
-			|lua, (host_name, device_name, buffer_size): (String, String, Option<u32>)| {
-				if let Err(e) = check_architecture() {
-					return Err(mlua::Error::RuntimeError(e.to_string()));
-				}
-				let state = &mut *lua.app_data_mut::<State>().unwrap();
-				let lua_tx = state.lua_tx.clone();
+		lua.create_function(|lua, (device_info, buffer_size): (DeviceInfo, Option<u32>)| {
+			if let Err(e) = check_architecture() {
+				return Err(mlua::Error::RuntimeError(e.to_string()));
+			}
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			let lua_tx = state.lua_tx.clone();
 
-				match AudioContext::new(&host_name, &device_name, buffer_size, lua_tx) {
-					Ok(ctx) => {
-						state.audio = Some(ctx);
-						Ok(())
-					},
-					Err(e) => {
-						log_error!("{e}");
-						state.audio = None;
-						Ok(())
-					},
-				}
-			},
-		)?,
+			match AudioContext::new(&device_info, buffer_size, lua_tx) {
+				Ok(ctx) => {
+					state.audio = Some(ctx);
+					Ok(())
+				},
+				Err(e) => {
+					log_error!("{e}");
+					state.audio = None;
+					Ok(())
+				},
+			}
+		})?,
 	)?;
 
 	audio.set(
 		"rebuild",
-		lua.create_function(
-			|lua, (host_name, device_name, buffer_size): (String, String, Option<u32>)| {
-				#[allow(clippy::collapsible_if)]
-				let state = &mut *lua.app_data_mut::<State>().unwrap();
-				if let Some(ctx) = &mut state.audio
-					&& let Err(e) = ctx.rebuild_stream(&host_name, &device_name, buffer_size)
-				{
+		lua.create_function(|lua, (device_info, buffer_size): (DeviceInfo, Option<u32>)| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			#[allow(clippy::collapsible_if)]
+			if let Some(ctx) = &mut state.audio {
+				if let Err(e) = ctx.rebuild_stream(&device_info, buffer_size) {
 					state.audio = None;
 					log_error!("{e}");
 				}
-				Ok(())
-			},
-		)?,
+			}
+			Ok(())
+		})?,
 	)?;
 
 	audio.set(
@@ -475,3 +475,31 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 
 	Ok(audio)
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeviceInfo {
+	pub name: String,
+	pub id: String,
+}
+
+impl DeviceInfo {
+	pub fn from_device(device: &Device) -> anyhow::Result<Self> {
+		let description = device.description()?;
+		let mut name = description.name().to_string();
+
+		// If available, add driver name.
+		// Fixes WASAPI generic names, e.g. replaces "Speakers" with "Speakers (Realtek Audio)"
+		// TODO: Submit fix for this in cpal.
+		#[cfg(target_os = "windows")]
+		if let Some(driver) = description.driver()
+			&& driver != name
+		{
+			name = format!("{name} ({driver})");
+		}
+
+		let id = device.id()?.to_string();
+		Ok(Self { name, id })
+	}
+}
+
+lua_serde!(DeviceInfo);
