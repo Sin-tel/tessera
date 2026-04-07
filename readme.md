@@ -22,16 +22,16 @@ You also need LLVM installed. If you haven't, go to <https://github.com/llvm/llv
 More detailed build instructions are on the [cpal repo](https://github.com/RustAudio/cpal#asio-on-windows).
 
 ### Linux
-JACK is enabled by default.
+PipeWire and JACK are enabled by default.
 
 Install the necessary dependencies:
 #### Debian based
 ```bash
-sudo apt install libasound2-dev libjack-jackd2-dev libjack-jackd2-0 libdbus-1-dev
+sudo apt install libasound2-dev libjack-jackd2-dev libjack-jackd2-0 libdbus-1-dev libpipewire-0.3-dev
 ```
 #### Fedora based
 ```bash
-sudo dnf install alsa-lib-devel jack-audio-connection-kit-devel
+sudo dnf install alsa-lib-devel jack-audio-connection-kit-devel pipewire-devel
 ```
 
 ### MacOS
