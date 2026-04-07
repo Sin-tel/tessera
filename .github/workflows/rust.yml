@@ -20,7 +20,7 @@ jobs:
     - name: Cache Linux audio packages
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
-        packages: libasound2-dev libjack-jackd2-dev libjack-jackd2-0 libdbus-1-dev
+        packages: libasound2-dev libjack-jackd2-dev libjack-jackd2-0 libdbus-1-dev libpipewire-0.3-dev
 
     - name: Build Release
       run: cargo build --release
