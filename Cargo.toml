@@ -22,7 +22,7 @@ cpal = { version = "0.18", features = ["asio"], git = "https://github.com/sin-te
 [target.'cfg(target_os = "macos")'.dependencies]
 cpal = { version = "0.18", git = "https://github.com/sin-tel/cpal.git", rev = "3157371f2dff786339ea70e5d295c39d7f1c513e" }
 [target.'cfg(target_os = "linux")'.dependencies]
-cpal = { version = "0.18", features = ["jack"], git = "https://github.com/sin-tel/cpal.git", rev = "3157371f2dff786339ea70e5d295c39d7f1c513e" }
+cpal = { version = "0.18", features = ["jack", "pipewire"], git = "https://github.com/sin-tel/cpal.git", rev = "3157371f2dff786339ea70e5d295c39d7f1c513e" }
 
 [dependencies]
 assert_no_alloc = {version = "1.1", features = ["warn_debug"]}
