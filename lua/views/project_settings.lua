@@ -65,6 +65,8 @@ function ProjectSettings:set_notation()
 end
 
 function ProjectSettings:update()
+	-- TODO: Fix this!
+
 	-- local index = util.find(tuning.systems, project.settings.tuning_key)
 	-- if index then
 	-- 	self.tuning_index = index

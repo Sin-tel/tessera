@@ -79,7 +79,7 @@ pub fn get_default_output_device(host_str: &str) -> Result<DeviceInfo> {
 	// It's possible there are no devices at all
 	match host.default_output_device() {
 		Some(device) => DeviceInfo::from_device(&device),
-		None => bail!("No default device found."),
+		None => bail!("No default device found for host \"{host_str}\"."),
 	}
 }
 

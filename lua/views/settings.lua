@@ -220,10 +220,10 @@ function Settings:update()
 
 	local device_index = self.select_device:update(self.ui)
 	if device_index then
-		local devices = Settings.devices[setup.host]
-		local new_device = devices[device_index]
+		local old_device = setup.configs[setup.host].device
+		local new_device = Settings.devices[setup.host][device_index]
 
-		if setup.configs[setup.host].device.id ~= new_device.id then
+		if old_device and new_device and old_device.id ~= new_device.id then
 			setup.configs[setup.host].device = new_device
 			engine.rebuild_stream()
 		end

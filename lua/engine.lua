@@ -238,10 +238,12 @@ end
 function engine.end_time()
 	local t_end = 0.0
 	for _, ch in ipairs(project.channels) do
-		for _, v in ipairs(ch.notes) do
-			local t = v.time + v.verts[#v.verts][1]
-			if t > t_end then
-				t_end = t
+		if ch.notes then
+			for _, v in ipairs(ch.notes) do
+				local t = v.time + v.verts[#v.verts][1]
+				if t > t_end then
+					t_end = t
+				end
 			end
 		end
 	end
