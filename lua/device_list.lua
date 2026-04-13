@@ -6,6 +6,14 @@ local DEFAULT_Q = 1 / math.sqrt(2)
 
 device_list.instruments = {}
 
+device_list.instruments.vst_wrapper = {
+	name = "VST3",
+	-- hide = true,
+	parameters = {
+		{ "Show UI", "button" },
+	},
+}
+
 device_list.instruments.sine = {
 	name = "Test Sine",
 	hide = true,

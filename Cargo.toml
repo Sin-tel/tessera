@@ -54,6 +54,9 @@ glutin =  "0.32.0"
 glutin-winit = "0.5"
 raw-window-handle = "0.6"
 
+vst3 = "0.3"
+libloading = "0.9"
+
 cosmic-text = "0.18"
 swash = "0.2"
 unicode-script = "0.5.5"
