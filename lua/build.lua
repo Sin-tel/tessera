@@ -129,6 +129,8 @@ function build.new_device_data(device_key, options)
 				state[index] = w_options.default or 1
 			elseif w_type == "toggle" then
 				state[index] = w_options.default or false
+			elseif w_type == "button" then
+				state[index] = w_options.default or false
 			else
 				error(w_type .. " not supported!")
 			end

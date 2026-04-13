@@ -78,6 +78,12 @@ function Device.new(data, options, meter_id)
 				element.widget =
 					widgets.Toggle.new(self.state, index, { label = w_name, style = "checkbox", default = default })
 				element.label = nil
+			elseif w_type == "button" then
+				-- hack to disable initial state update
+				self.state[index] = nil
+
+				element.widget = widgets.Toggle.new(self.state, index, { label = w_name, style = "toggle" })
+				element.label = nil
 			else
 				error(w_type .. " not supported!")
 			end
