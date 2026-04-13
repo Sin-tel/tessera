@@ -9,7 +9,7 @@ local Settings = View.derive("Settings")
 Settings.__index = Settings
 
 -- fix some capitalization, host_str has to match with backend
-local function display_name(host_str)
+local function host_display_name(host_str)
 	if host_str == "alsa" then
 		return "ALSA"
 	elseif host_str == "asio" then
@@ -20,9 +20,30 @@ local function display_name(host_str)
 		return "JACK"
 	elseif host_str == "wasapi" then
 		return "WASAPI"
+	elseif host_str == "pipewire" then
+		return "PipeWire"
 	else
 		return host_str
 	end
+end
+
+-- Build display name list of devices
+local function device_names()
+	local list = {}
+
+	local devices = Settings.devices[setup.host]
+	if devices then
+		for i, v in ipairs(devices) do
+			list[i] = v.name
+		end
+	end
+
+	-- In case devices is empty we add a dummy value
+	if #list == 0 then
+		list[1] = "Unavailable"
+	end
+
+	return list
 end
 
 -- TODO: defer queries to first time we need them
@@ -39,8 +60,6 @@ Settings.state = {
 	toggle_buffer = false,
 	midi_ports = {},
 	mpe = {},
-	devices = {},
-	device_name_list = {},
 }
 
 function Settings.new()
@@ -51,7 +70,7 @@ function Settings.new()
 	self.ui.layout:padding(6)
 	self.indent = Ui.scale(32)
 
-	-- HOST
+	-- query hosts
 	if #Settings.hosts == 0 then
 		Settings.hosts = tessera.audio.get_hosts()
 	end
@@ -67,11 +86,10 @@ function Settings.new()
 	self.select_host = widgets.Selector.new(
 		self.state,
 		"host_index",
-		{ list = util.map(Settings.hosts, display_name), no_undo = true }
+		{ list = util.map(Settings.hosts, host_display_name), no_undo = true }
 	)
 
-	self.select_device =
-		widgets.Dropdown.new(self.state, "device_index", { list = self.state.device_name_list, no_undo = true })
+	self.select_device = widgets.Dropdown.new(self.state, "device_index", { list = device_names(), no_undo = true })
 
 	self.slider = widgets.Slider.new(
 		self.state,
@@ -123,27 +141,15 @@ end
 function Settings:rebuild()
 	-- when host changes, we need to query available devices and sync widget state
 
-	-- DEVICE
 	if not Settings.devices[setup.host] then
 		Settings.devices[setup.host] = tessera.audio.get_output_devices(setup.host)
 	end
 
-	local devices = Settings.devices[setup.host]
-
-	-- update device list in-place
-	table.clear(self.state.device_name_list)
-	for i, v in ipairs(Settings.devices[setup.host]) do
-		self.state.device_name_list[i] = v.name
-	end
-
-	-- In case devices is empty we add a dummy value
-	if #devices == 0 then
-		self.state.device_name_list[1] = "null"
-	end
+	self.select_device.list = device_names()
 
 	-- Find currently selected device index by its unique id
 	self.state.device_index = 1
-	for i, v in ipairs(devices) do
+	for i, v in ipairs(Settings.devices[setup.host]) do
 		if v.id == setup.configs[setup.host].device.id then
 			self.state.device_index = i
 		end
