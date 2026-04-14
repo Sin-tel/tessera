@@ -10,6 +10,8 @@ local build = {}
 
 local find_hue
 
+local VST_ID = 0
+
 -- build the given "project" is set but nothing else is
 local function setup_project()
 	for i, v in ipairs(project.channels) do
@@ -27,6 +29,18 @@ local function setup_project()
 	engine.seek(project.transport.start_time)
 end
 
+-- some extra logic for channel cleanup
+-- TODO: probably should centrally handle instrument / effect deletion
+function build.remove_channel(index)
+	if ui_channels[index].instrument then
+		local vst_id = ui_channels[index].instrument.vst_id
+		if vst_id then
+			tessera.audio.remove_vst_instance(vst_id)
+		end
+	end
+	tessera.audio.remove_channel(index)
+end
+
 -- clear the project from a valid state
 function build.empty_project()
 	-- make sure there is no lingering state on the backend.
@@ -35,7 +49,7 @@ function build.empty_project()
 
 	if project.channels then
 		for i = #project.channels, 1, -1 do
-			tessera.audio.remove_channel(i)
+			build.remove_channel(i)
 		end
 	end
 
@@ -76,8 +90,21 @@ function build.channel(ch_index, channel_data)
 	if channel_data.instrument then
 		local options = device_list.instruments[channel_data.instrument.name]
 		assert(options, 'Could not find options for "' .. channel_data.instrument.name .. '"')
-		local meter_id_instrument = tessera.audio.insert_instrument(ch_index, channel_data.instrument.name)
-		instrument = Device.new(channel_data.instrument, options, meter_id_instrument)
+
+		if channel_data.instrument.name == "vst_wrapper" then
+			-- TODO: scan and store
+			local path = "C:\\Program Files\\Common Files\\VST3\\Pianoteq 7.vst3"
+
+			options.vst = true
+			options.vst_id = VST_ID
+			VST_ID = VST_ID + 1
+
+			local meter_id_instrument = tessera.audio.insert_instrument_vst(ch_index, options.vst_id, path)
+			instrument = Device.new(channel_data.instrument, options, meter_id_instrument)
+		else
+			local meter_id_instrument = tessera.audio.insert_instrument(ch_index, channel_data.instrument.name)
+			instrument = Device.new(channel_data.instrument, options, meter_id_instrument)
+		end
 	end
 
 	local channel = Channel.new(ch_index, channel_data, instrument, meter_id_channel)
@@ -130,7 +157,8 @@ function build.new_device_data(device_key, options)
 			elseif w_type == "toggle" then
 				state[index] = w_options.default or false
 			elseif w_type == "button" then
-				state[index] = w_options.default or false
+				-- button has no state
+				state[index] = false
 			else
 				error(w_type .. " not supported!")
 			end
