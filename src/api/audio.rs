@@ -8,13 +8,17 @@ use crate::audio::{
 };
 use crate::context::{AudioContext, AudioMessage};
 use crate::log::{log_error, log_info};
+use crate::opengl::UserEvent;
 use crate::voice_manager::Token;
+use crate::vst3;
+use crate::vst3::scan::probe_vst3;
 use cpal::Device;
 use cpal::traits::DeviceTrait;
 use mlua::prelude::*;
 use no_denormals::no_denormals;
 use ringbuf::traits::*;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	let audio = lua.create_table()?;
@@ -317,11 +321,42 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	audio.set(
 		"insert_instrument",
 		lua.create_function(|lua, (index, instrument_name): (usize, String)| {
-			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
-				let mut render = ctx.render.lock();
-				render.insert_instrument(index - 1, &instrument_name, meter_handle_instrument);
-				Ok(Some(meter_id_instrument + 1))
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			if let Some(ctx) = &mut state.audio {
+				if instrument_name == "vst_wrapper" {
+					const PATH: &str = r"C:\Program Files\Common Files\VST3\Pianoteq 7.vst3";
+
+					let mut plugin_info = probe_vst3(&PathBuf::from(PATH)).unwrap();
+					assert!(plugin_info.len() == 1);
+					let plugin = plugin_info.pop().unwrap();
+
+					let (editor, processor) = vst3::load(&plugin, ctx.sample_rate as f32).unwrap();
+
+					// TODO
+					let vst_id = index;
+
+					state.vst_editors.insert(vst_id, editor);
+
+					log_info!("Plugin '{}' loaded succesfully", plugin.name);
+					if let Err(e) = state.event_loop.send_event(UserEvent::OpenVstWindow(vst_id)) {
+						log_error!("{e}");
+					}
+
+					// ---
+					let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
+					let mut render = ctx.render.lock();
+					render.insert_instrument(index - 1, &instrument_name, meter_handle_instrument);
+					// ---
+
+					render.set_processor(index - 1, processor);
+
+					Ok(Some(meter_id_instrument + 1))
+				} else {
+					let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
+					let mut render = ctx.render.lock();
+					render.insert_instrument(index - 1, &instrument_name, meter_handle_instrument);
+					Ok(Some(meter_id_instrument + 1))
+				}
 			} else {
 				Ok(None)
 			}

@@ -8,6 +8,7 @@ use winit::window::Window;
 #[derive(Debug)]
 pub enum UserEvent {
 	Update,
+	OpenVstWindow(usize),
 }
 
 #[allow(dead_code)]
@@ -123,9 +124,11 @@ pub fn setup_window() -> (Canvas<Renderer>, EventLoop<UserEvent>, Surface, Windo
 				})
 		});
 
+		let raw_window_handle = raw_window_handle.unwrap();
+
 		let (width, height): (u32, u32) = window.inner_size().into();
 		let attrs = SurfaceAttributesBuilder::<glutin::surface::WindowSurface>::new().build(
-			raw_window_handle.unwrap(),
+			raw_window_handle,
 			NonZeroU32::new(width).unwrap(),
 			NonZeroU32::new(height).unwrap(),
 		);

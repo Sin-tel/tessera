@@ -2,6 +2,7 @@ use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::resample::Resampler;
 use crate::embed::Asset;
 use crate::log::*;
+use crate::vst3::Vst3Processor;
 use anyhow::{Result, anyhow, bail};
 use fft_convolution::Convolution;
 use fft_convolution::fft_convolver::TwoStageFFTConvolver;
@@ -243,4 +244,5 @@ pub enum ResponseData {
 	Sample(Arc<[Vec<f32>; 2]>),
 	Wavetable(Arc<Vec<f32>>),
 	IR(Box<[TwoStageFFTConvolver; 2]>),
+	Vst3Processor(Box<Vst3Processor>),
 }
