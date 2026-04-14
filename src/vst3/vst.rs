@@ -10,6 +10,7 @@ use std::ffi::c_void;
 use std::mem::MaybeUninit;
 use std::path::Path;
 use std::sync::Arc;
+use winit::window::WindowId;
 
 use vst3::Steinberg::Vst::BusDirections_::kOutput;
 use vst3::Steinberg::Vst::BusInfo_::BusFlags_;
@@ -114,9 +115,17 @@ impl Drop for Vst3Library {
 }
 
 #[allow(unused)]
+struct Vst3Window {
+	plug_view: ComPtr<IPlugView>,
+	frame: ComPtr<IPlugFrame>,
+	id: WindowId,
+}
+
+#[allow(unused)]
 pub struct Vst3Editor {
-	plug_view: Option<ComPtr<IPlugView>>,
-	frame: Option<ComPtr<IPlugFrame>>,
+	id: usize,
+	name: String,
+	window: Option<Vst3Window>,
 	edit_controller: ComPtr<IEditController>,
 	host_context: ComWrapper<PluginHost>,
 	lib: Arc<Vst3Library>,
@@ -124,6 +133,7 @@ pub struct Vst3Editor {
 
 #[allow(unused)]
 pub struct Vst3Processor {
+	id: usize,
 	pub events: EventQueue,
 	pub automation: AutomationQueue,
 	audio_processor: ComPtr<IAudioProcessor>,
@@ -134,6 +144,7 @@ pub struct Vst3Processor {
 pub fn load(
 	plugin: &PluginDescriptor,
 	sample_rate: f32,
+	id: usize,
 ) -> Result<(Vst3Editor, Vst3Processor), String> {
 	let lib = Vst3Library::new(&plugin.library_path)?;
 
@@ -273,18 +284,20 @@ pub fn load(
 		.as_result()?;
 	}
 
-	// Instantiate your new queue
+	// Instantiate queue
 	let automation = AutomationQueue::new(pitch_bend_ids);
 
 	let editor = Vst3Editor {
-		plug_view: None,
-		frame: None,
+		id,
+		name: plugin.name.clone(),
+		window: None,
 		edit_controller,
 		host_context,
 		lib: Arc::clone(&lib),
 	};
 
 	let processor = Vst3Processor {
+		id,
 		events: EventQueue::new(),
 		automation,
 		audio_processor,
@@ -296,6 +309,18 @@ pub fn load(
 }
 
 impl Vst3Editor {
+	pub fn id(&self) -> usize {
+		self.id
+	}
+
+	pub fn name(&self) -> String {
+		self.name.clone()
+	}
+
+	pub fn window_id(&self) -> Option<WindowId> {
+		self.window.as_ref().map(|w| w.id)
+	}
+
 	pub fn open_window(&mut self, window: &Window) -> Result<(), String> {
 		let view_ptr = unsafe { self.edit_controller.createView(ViewType::kEditor) };
 		if view_ptr.is_null() {
@@ -333,13 +358,24 @@ impl Vst3Editor {
 			}
 		}
 
-		self.plug_view = Some(plug_view);
-		self.frame = Some(frame);
+		self.window = Some(Vst3Window { plug_view, frame, id: window.id() });
+
+		window.set_visible(true);
+		// window.request_redraw();
+
 		Ok(())
+	}
+
+	pub fn close_window(&mut self) {
+		self.window = None;
 	}
 }
 
 impl Vst3Processor {
+	pub fn id(&self) -> usize {
+		self.id
+	}
+
 	pub fn process(&mut self, left_buf: &mut [f32], right_buf: &mut [f32]) {
 		// VST3 wants a pointer to an array of channel pointers
 		let mut channels = [left_buf.as_mut_ptr(), right_buf.as_mut_ptr()];

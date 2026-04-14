@@ -8,9 +8,10 @@ use vst3::{Class, ComPtr, ComWrapper};
 
 pub const N_CHANNELS: usize = 16;
 
+// We only send a single event per buffer
 struct ParameterBuffer {
 	id: u32,
-	points: UnsafeCell<Vec<(i32, f64)>>, // (sample_offset, normalized_value)
+	value: UnsafeCell<Option<f64>>,
 }
 unsafe impl Send for ParameterBuffer {}
 unsafe impl Sync for ParameterBuffer {}
@@ -28,17 +29,14 @@ impl IParamValueQueueTrait for ParamValueQueue {
 		self.buffer.id
 	}
 	unsafe fn getPointCount(&self) -> i32 {
-		unsafe { (*self.buffer.points.get()).len() as i32 }
+		unsafe { if (*self.buffer.value.get()).is_some() { 1 } else { 0 } }
 	}
 	unsafe fn getPoint(&self, index: i32, sample_offset: *mut i32, value: *mut f64) -> tresult {
 		unsafe {
-			let pts = &*self.buffer.points.get();
-			if index >= 0 && (index as usize) < pts.len() {
-				if !sample_offset.is_null() {
-					*sample_offset = pts[index as usize].0;
-				}
-				if !value.is_null() {
-					*value = pts[index as usize].1;
+			if index == 0 {
+				if let Some(v) = { *self.buffer.value.get() } {
+					*sample_offset = 0;
+					*value = v;
 				}
 				kResultOk
 			} else {
@@ -70,12 +68,12 @@ impl IParameterChangesTrait for ParameterChanges {
 	}
 	unsafe fn getParameterData(&self, index: i32) -> *mut IParamValueQueue {
 		let index = index as usize;
-		unsafe {
-			if index < self.ptrs.len() && !(*self.buffers[index].points.get()).is_empty() {
-				self.ptrs[index].as_ptr()
-			} else {
-				std::ptr::null_mut()
-			}
+		let value = unsafe { *self.buffers[index].value.get() };
+
+		if index < N_CHANNELS && value.is_some() {
+			self.ptrs[index].as_ptr()
+		} else {
+			std::ptr::null_mut()
 		}
 	}
 	unsafe fn addParameterData(&self, _id: *const u32, _index: *mut i32) -> *mut IParamValueQueue {
@@ -95,16 +93,13 @@ impl AutomationQueue {
 		let mut ptrs = Vec::with_capacity(N_CHANNELS);
 
 		for i in 0..N_CHANNELS {
-			let queue = Arc::new(ParameterBuffer {
-				id: ids[i],
-				points: UnsafeCell::new(Vec::with_capacity(32)),
-			});
+			let buffer = Arc::new(ParameterBuffer { id: ids[i], value: None.into() });
 
-			let value_queue = ParamValueQueue { buffer: Arc::clone(&queue) };
-			let value_queue_obj = ComWrapper::new(value_queue);
-			let value_queue_ptr = value_queue_obj.to_com_ptr::<IParamValueQueue>().unwrap();
+			let value_queue = ParamValueQueue { buffer: Arc::clone(&buffer) };
+			let value_queue_ptr =
+				ComWrapper::new(value_queue).to_com_ptr::<IParamValueQueue>().unwrap();
 
-			buffers.push(Arc::clone(&queue));
+			buffers.push(Arc::clone(&buffer));
 			ptrs.push(value_queue_ptr);
 		}
 
@@ -115,18 +110,17 @@ impl AutomationQueue {
 		Self { changes_obj, changes_ptr }
 	}
 
-	pub fn push(&self, channel: usize, sample_offset: i32, normalized_value: f64) {
+	pub fn push(&self, channel: usize, normalized_value: f64) {
 		unsafe {
-			(*self.changes_obj.buffers[channel].points.get())
-				.push((sample_offset, normalized_value));
+			*self.changes_obj.buffers[channel].value.get() = Some(normalized_value);
 		}
 	}
 
 	pub fn clear(&self) {
 		// clear all channels
-		for channel in &self.changes_obj.buffers {
-			unsafe {
-				(*channel.points.get()).clear();
+		unsafe {
+			for channel in &self.changes_obj.buffers {
+				*channel.value.get() = None;
 			}
 		}
 	}

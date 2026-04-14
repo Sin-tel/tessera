@@ -51,7 +51,7 @@ impl Instrument for VstWrapper {
 			// normalize pitchbend value (assuming +/- 200c)
 			let pitchbend = 0.5 + pitch_offset * 0.25;
 
-			processor.automation.push(id, 0, pitchbend);
+			processor.automation.push(id, pitchbend);
 		}
 	}
 
@@ -77,7 +77,9 @@ impl Instrument for VstWrapper {
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		#[allow(clippy::single_match_else)]
 		match index {
-			0 => println!("UI button pressed ({value})"),
+			0 => {
+				// This corresponds to the ui button. Ignore.
+			},
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 		None

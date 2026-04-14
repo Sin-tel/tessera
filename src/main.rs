@@ -13,8 +13,8 @@ use winit::event::DeviceId;
 use winit::event::{DeviceEvent, ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
 use winit::keyboard::{Key, KeyCode, NamedKey, PhysicalKey};
-use winit::window::WindowLevel;
 use winit::window::{Window, WindowId};
+use winit::window::{WindowButtons, WindowLevel};
 
 use tessera::api::Hooks;
 use tessera::api::create_lua;
@@ -187,12 +187,19 @@ impl ApplicationHandler<UserEvent> for App {
 	) {
 		{
 			let state = &mut *self.lua.app_data_mut::<State>().unwrap();
-			if let Some((_vst_id, _)) = state.vst_windows.get(&window_id) {
+			if let Some((vst_id, _)) = state.vst_windows.get(&window_id) {
+				println!("{:?}", event);
 				match event {
 					WindowEvent::CloseRequested => {
+						if let Some(editor) = state.vst_editors.get_mut(&vst_id) {
+							editor.close_window();
+						} else {
+							log_error!("Editor for id {} not found!", vst_id)
+						}
 						state.vst_windows.remove(&window_id);
 						return;
 					},
+					// pass through
 					WindowEvent::KeyboardInput { .. } => {},
 					_ => {
 						return;
@@ -354,22 +361,35 @@ impl ApplicationHandler<UserEvent> for App {
 				wrap_call(&mut self.status, &self.hooks.update, dt);
 				BUSY.store(false, atomic::Ordering::Relaxed);
 			},
-			UserEvent::OpenVstWindow(id) => {
+			UserEvent::OpenVstWindow(vst_id) => {
 				let state = &mut *self.lua.app_data_mut::<State>().unwrap();
 
-				if let Some(editor) = state.vst_editors.get_mut(&id) {
-					let window = event_loop
-						.create_window(
-							Window::default_attributes()
-								.with_title("VST3 Plugin")
-								.with_window_level(WindowLevel::AlwaysOnTop),
-						)
-						.unwrap();
-
-					if let Err(e) = editor.open_window(&window) {
-						log_error!("Failed to open VST window: {e:?}");
+				if let Some(editor) = state.vst_editors.get_mut(&vst_id) {
+					if let Some(window_id) = editor.window_id() {
+						// Focus
+						if let Some((_, window)) = state.vst_windows.get(&window_id) {
+							window.set_minimized(false);
+							window.focus_window();
+						}
 					} else {
-						state.vst_windows.insert(window.id(), (id, window));
+						let window = event_loop
+							.create_window(
+								Window::default_attributes()
+									.with_title(editor.name())
+									.with_window_level(WindowLevel::AlwaysOnTop)
+									.with_resizable(false)
+									.with_visible(false)
+									.with_enabled_buttons(
+										WindowButtons::CLOSE | WindowButtons::MINIMIZE,
+									),
+							)
+							.unwrap();
+
+						if let Err(e) = editor.open_window(&window) {
+							log_error!("Failed to open VST window: {e:?}");
+						} else {
+							state.vst_windows.insert(window.id(), (vst_id, window));
+						}
 					}
 				} else {
 					log_error!("VST editor not found");

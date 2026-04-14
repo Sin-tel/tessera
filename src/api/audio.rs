@@ -323,43 +323,74 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		lua.create_function(|lua, (index, instrument_name): (usize, String)| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 			if let Some(ctx) = &mut state.audio {
-				if instrument_name == "vst_wrapper" {
-					const PATH: &str = r"C:\Program Files\Common Files\VST3\Pianoteq 7.vst3";
-
-					let mut plugin_info = probe_vst3(&PathBuf::from(PATH)).unwrap();
-					assert!(plugin_info.len() == 1);
-					let plugin = plugin_info.pop().unwrap();
-
-					let (editor, processor) = vst3::load(&plugin, ctx.sample_rate as f32).unwrap();
-
-					// TODO
-					let vst_id = index;
-
-					state.vst_editors.insert(vst_id, editor);
-
-					log_info!("Plugin '{}' loaded succesfully", plugin.name);
-					if let Err(e) = state.event_loop.send_event(UserEvent::OpenVstWindow(vst_id)) {
-						log_error!("{e}");
-					}
-
-					// ---
-					let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
-					let mut render = ctx.render.lock();
-					render.insert_instrument(index - 1, &instrument_name, meter_handle_instrument);
-					// ---
-
-					render.set_processor(index - 1, processor);
-
-					Ok(Some(meter_id_instrument + 1))
-				} else {
-					let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
-					let mut render = ctx.render.lock();
-					render.insert_instrument(index - 1, &instrument_name, meter_handle_instrument);
-					Ok(Some(meter_id_instrument + 1))
-				}
+				assert!(instrument_name != "vst_wrapper");
+				let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
+				let mut render = ctx.render.lock();
+				render.insert_instrument(index - 1, &instrument_name, meter_handle_instrument);
+				Ok(Some(meter_id_instrument + 1))
 			} else {
 				Ok(None)
 			}
+		})?,
+	)?;
+
+	audio.set(
+		"insert_instrument_vst",
+		lua.create_function(|lua, (index, vst_id, path): (usize, usize, String)| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			if let Some(ctx) = &mut state.audio {
+				let mut plugin_info = probe_vst3(&PathBuf::from(path)).unwrap();
+				assert!(plugin_info.len() == 1);
+				let plugin = plugin_info.pop().unwrap();
+
+				let (editor, processor) =
+					vst3::load(&plugin, ctx.sample_rate as f32, vst_id).unwrap();
+
+				state.vst_editors.insert(vst_id, editor);
+
+				log_info!("Plugin '{}' loaded succesfully", plugin.name);
+
+				let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
+				let mut render = ctx.render.lock();
+				render.insert_instrument(index - 1, "vst_wrapper", meter_handle_instrument);
+				render.set_processor(index - 1, processor);
+
+				Ok(Some(meter_id_instrument + 1))
+			} else {
+				Ok(None)
+			}
+		})?,
+	)?;
+
+	audio.set(
+		"open_vst_window",
+		lua.create_function(|lua, vst_id: usize| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			if let Some(editor) = state.vst_editors.get(&vst_id) {
+				assert_eq!(editor.id(), vst_id);
+				log_info!("Open window '{}' ({})", editor.name(), vst_id);
+				if let Err(e) = state.event_loop.send_event(UserEvent::OpenVstWindow(vst_id)) {
+					log_error!("{e}");
+				}
+			} else {
+				log_error!("VST id {} not found!", vst_id)
+			}
+
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"remove_vst_instance",
+		lua.create_function(|lua, vst_id: usize| {
+			// We only need to clean up vst_editors and vst_windows, the processor is dropped automatically
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			state.vst_windows.retain(|_, (id, _)| *id != vst_id);
+			state.vst_editors.remove(&vst_id);
+
+			Ok(())
 		})?,
 	)?;
 
