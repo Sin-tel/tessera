@@ -13,7 +13,8 @@ use winit::event::DeviceId;
 use winit::event::{DeviceEvent, ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
 use winit::keyboard::{Key, KeyCode, NamedKey, PhysicalKey};
-use winit::window::WindowId;
+use winit::window::WindowLevel;
+use winit::window::{Window, WindowId};
 
 use tessera::api::Hooks;
 use tessera::api::create_lua;
@@ -103,12 +104,13 @@ fn run() -> Result<(), Box<dyn Error>> {
 	init_logging(lua_tx.clone());
 
 	let (canvas, event_loop, surface, window) = setup_window();
+	let proxy = event_loop.create_proxy();
 
 	// We check scale factor before loading lua, and assume it doesn't change for simplicity
 	let scale_factor = window.scale_factor() * 1.0;
 
 	let lua = create_lua(scale_factor)?;
-	let state = State::new(canvas, window, lua_tx, lua_rx, scale_factor as f32);
+	let state = State::new(canvas, window, lua_tx, lua_rx, proxy, scale_factor as f32);
 
 	lua.set_app_data(state);
 
@@ -180,9 +182,25 @@ impl ApplicationHandler<UserEvent> for App {
 	fn window_event(
 		&mut self,
 		event_loop: &ActiveEventLoop,
-		_window_id: WindowId,
+		window_id: WindowId,
 		event: WindowEvent,
 	) {
+		{
+			let state = &mut *self.lua.app_data_mut::<State>().unwrap();
+			if let Some((_vst_id, _)) = state.vst_windows.get(&window_id) {
+				match event {
+					WindowEvent::CloseRequested => {
+						state.vst_windows.remove(&window_id);
+						return;
+					},
+					WindowEvent::KeyboardInput { .. } => {},
+					_ => {
+						return;
+					},
+				}
+			}
+		}
+
 		match event {
 			WindowEvent::RedrawRequested => {
 				let now = Instant::now();
@@ -318,7 +336,7 @@ impl ApplicationHandler<UserEvent> for App {
 		}
 	}
 
-	fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: UserEvent) {
+	fn user_event(&mut self, event_loop: &ActiveEventLoop, event: UserEvent) {
 		match event {
 			UserEvent::Update => {
 				self.lua.app_data_mut::<State>().unwrap().check_audio_status();
@@ -335,6 +353,27 @@ impl ApplicationHandler<UserEvent> for App {
 
 				wrap_call(&mut self.status, &self.hooks.update, dt);
 				BUSY.store(false, atomic::Ordering::Relaxed);
+			},
+			UserEvent::OpenVstWindow(id) => {
+				let state = &mut *self.lua.app_data_mut::<State>().unwrap();
+
+				if let Some(editor) = state.vst_editors.get_mut(&id) {
+					let window = event_loop
+						.create_window(
+							Window::default_attributes()
+								.with_title("VST3 Plugin")
+								.with_window_level(WindowLevel::AlwaysOnTop),
+						)
+						.unwrap();
+
+					if let Err(e) = editor.open_window(&window) {
+						log_error!("Failed to open VST window: {e:?}");
+					} else {
+						state.vst_windows.insert(window.id(), (id, window));
+					}
+				} else {
+					log_error!("VST editor not found");
+				}
 			},
 		}
 	}

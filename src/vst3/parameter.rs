@@ -78,7 +78,6 @@ impl IParameterChangesTrait for ParameterChanges {
 			}
 		}
 	}
-	// Note: Depending on your vst3-rs version, _id might be `&u32`, `u32`, or `*const u32`. Adjust as needed!
 	unsafe fn addParameterData(&self, _id: *const u32, _index: *mut i32) -> *mut IParamValueQueue {
 		std::ptr::null_mut()
 	}

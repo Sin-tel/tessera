@@ -75,6 +75,17 @@ impl Render {
 		ch.instrument = Some(voice_manager);
 	}
 
+	pub fn set_processor(&mut self, channel_index: usize, processor: crate::vst3::Vst3Processor) {
+		let channel = &mut self.channels[channel_index];
+
+		if let Some(instrument) = &mut channel.instrument {
+			let data = crate::worker::ResponseData::Vst3Processor(Box::new(processor));
+			let _ = instrument.instrument.receive_data(data);
+		} else {
+			panic!("Failed to set processor");
+		};
+	}
+
 	pub fn remove_channel(&mut self, index: usize) {
 		self.channels.remove(index);
 	}
