@@ -10,6 +10,7 @@ pub mod project;
 use crate::app::{State, get_version};
 use crate::embed::setup_lua_loader;
 use crate::log::*;
+use crate::vst3;
 use mlua::prelude::*;
 use std::sync::mpsc;
 
@@ -203,6 +204,18 @@ pub fn create_lua(scale_factor: f64) -> LuaResult<Lua> {
 				Err(e) => log_error!("{e}"),
 			}
 			Ok(())
+		})?,
+	)?;
+
+	tessera.set(
+		"scan_plugins",
+		lua.create_function(|_lua, ()| {
+			let mut plugins = Vec::new();
+			for path in vst3::scan::standard_vst3_paths() {
+				plugins.extend(vst3::scan::scan_folder(&path));
+			}
+			log_info!("Scanning plugins ({} found)", plugins.len());
+			Ok(plugins)
 		})?,
 	)?;
 

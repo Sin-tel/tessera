@@ -149,4 +149,23 @@ function save.init_setup()
 	end
 end
 
+local plugin_list_path = "out/plugin_list.lua"
+
+function save.read_plugin_list()
+	local plugin_list
+	if util.file_exists(plugin_list_path) then
+		local content = util.readfile(plugin_list_path)
+		plugin_list = setfenv(loadstring(content), {})()
+	else
+		plugin_list = tessera.scan_plugins()
+		save.write_plugin_list(plugin_list)
+	end
+	return plugin_list
+end
+
+function save.write_plugin_list(plugin_list)
+	local content = serialize(plugin_list, "plugin_list")
+	util.writefile(plugin_list_path, content)
+end
+
 return save

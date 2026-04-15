@@ -1,6 +1,8 @@
+use crate::api::lua_serde;
 use crate::vst3::error::ToResultExt;
 use crate::vst3::util::extract_cstring;
 use crate::vst3::vst::Vst3Library;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::mem::MaybeUninit;
 use std::path::{Path, PathBuf};
@@ -9,7 +11,7 @@ use vst3::Steinberg::{
 	IPluginFactory, IPluginFactory2, IPluginFactory2Trait, IPluginFactoryTrait, PClassInfo2,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(unused)]
 pub struct PluginDescriptor {
 	pub name: String,
@@ -18,6 +20,8 @@ pub struct PluginDescriptor {
 	pub processor_cid: [i8; 16],
 	pub library_path: PathBuf,
 }
+
+lua_serde!(PluginDescriptor);
 
 /// Load a VST3 dynamic library to extract its plugin descriptors.
 pub fn probe_vst3(library_path: &Path) -> Result<Vec<PluginDescriptor>, String> {
