@@ -10,6 +10,7 @@ use std::ffi::c_void;
 use std::mem::MaybeUninit;
 use std::path::Path;
 use std::sync::Arc;
+use vst3::Steinberg::kInvalidArgument;
 use winit::window::WindowId;
 
 use vst3::Steinberg::Vst::BusDirections_::kOutput;
@@ -58,7 +59,9 @@ impl IHostApplicationTrait for PluginHost {
 	}
 }
 
-pub struct PluginFrame;
+pub struct PluginFrame {
+	window: Arc<Window>,
+}
 
 impl Class for PluginFrame {
 	type Interfaces = (IPlugFrame,);
@@ -68,10 +71,23 @@ impl Class for PluginFrame {
 impl IPlugFrameTrait for PluginFrame {
 	unsafe fn resizeView(
 		&self,
-		_view: *mut vst3::Steinberg::IPlugView,
-		_new_size: *mut ViewRect,
+		view: *mut vst3::Steinberg::IPlugView,
+		new_size: *mut ViewRect,
 	) -> tresult {
-		// TODO
+		if new_size.is_null() {
+			return kInvalidArgument;
+		}
+
+		let rect = unsafe { *new_size };
+		let width = rect.right - rect.left;
+		let height = rect.bottom - rect.top;
+		let _ = self
+			.window
+			.request_inner_size(winit::dpi::PhysicalSize::new(width, height));
+
+		let plug_view = unsafe { ComRef::from_raw(view).unwrap() };
+		unsafe { plug_view.onSize(new_size) };
+
 		kResultOk
 	}
 }
@@ -321,7 +337,7 @@ impl Vst3Editor {
 		self.window.as_ref().map(|w| w.id)
 	}
 
-	pub fn open_window(&mut self, window: &Window) -> Result<(), String> {
+	pub fn open_window(&mut self, window: Arc<Window>) -> Result<(), String> {
 		let view_ptr = unsafe { self.edit_controller.createView(ViewType::kEditor) };
 		if view_ptr.is_null() {
 			return Err("Plugin does not have a GUI!".into());
@@ -345,16 +361,18 @@ impl Vst3Editor {
 		unsafe { plug_view.attached(system_window_handle, platform_type) }.as_result()?;
 
 		// Setup frame
-		let frame = ComWrapper::new(PluginFrame).to_com_ptr::<IPlugFrame>().unwrap();
+		let frame = ComWrapper::new(PluginFrame { window: Arc::clone(&window) })
+			.to_com_ptr::<IPlugFrame>()
+			.unwrap();
 		unsafe { plug_view.setFrame(frame.as_ptr()) }.as_result()?;
 
 		// Set window to initial size
 		let mut view_rect = vst3::Steinberg::ViewRect { left: 0, top: 0, right: 0, bottom: 0 };
 		unsafe {
 			if plug_view.getSize(&mut view_rect) == kResultOk {
-				let width = f64::from(view_rect.right - view_rect.left);
-				let height = f64::from(view_rect.bottom - view_rect.top);
-				let _ = window.request_inner_size(winit::dpi::LogicalSize::new(width, height));
+				let width = view_rect.right - view_rect.left;
+				let height = view_rect.bottom - view_rect.top;
+				let _ = window.request_inner_size(winit::dpi::PhysicalSize::new(width, height));
 			}
 		}
 

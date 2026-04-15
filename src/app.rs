@@ -11,6 +11,7 @@ use femtovg::{Canvas, Color, ImageId, Path};
 use semver::Version;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::sync::{LazyLock, OnceLock, RwLock, atomic::Ordering, mpsc};
 use std::time::Instant;
@@ -47,7 +48,7 @@ pub struct State {
 	pub midi_session: Option<midir::MidiInput>,
 	pub midi_connections: Vec<midi::Connection>,
 	pub vst_editors: HashMap<usize, Vst3Editor>,
-	pub vst_windows: HashMap<WindowId, (usize, Window)>,
+	pub vst_windows: HashMap<WindowId, (usize, Arc<Window>)>,
 	pub event_loop: EventLoopProxy<UserEvent>,
 	pub lua_tx: SyncSender<LuaMessage>,
 	pub lua_rx: Receiver<LuaMessage>,

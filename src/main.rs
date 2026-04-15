@@ -4,6 +4,7 @@ use femtovg::Color;
 use mlua::prelude::*;
 use std::error::Error;
 use std::fs;
+use std::sync::Arc;
 use std::sync::atomic;
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc;
@@ -188,7 +189,6 @@ impl ApplicationHandler<UserEvent> for App {
 		{
 			let state = &mut *self.lua.app_data_mut::<State>().unwrap();
 			if let Some((vst_id, _)) = state.vst_windows.get(&window_id) {
-				println!("{:?}", event);
 				match event {
 					WindowEvent::CloseRequested => {
 						if let Some(editor) = state.vst_editors.get_mut(&vst_id) {
@@ -372,20 +372,22 @@ impl ApplicationHandler<UserEvent> for App {
 							window.focus_window();
 						}
 					} else {
-						let window = event_loop
-							.create_window(
-								Window::default_attributes()
-									.with_title(editor.name())
-									.with_window_level(WindowLevel::AlwaysOnTop)
-									.with_resizable(false)
-									.with_visible(false)
-									.with_enabled_buttons(
-										WindowButtons::CLOSE | WindowButtons::MINIMIZE,
-									),
-							)
-							.unwrap();
+						let window = Arc::new(
+							event_loop
+								.create_window(
+									Window::default_attributes()
+										.with_title(editor.name())
+										.with_window_level(WindowLevel::AlwaysOnTop)
+										.with_resizable(false)
+										.with_visible(false)
+										.with_enabled_buttons(
+											WindowButtons::CLOSE | WindowButtons::MINIMIZE,
+										),
+								)
+								.unwrap(),
+						);
 
-						if let Err(e) = editor.open_window(&window) {
+						if let Err(e) = editor.open_window(Arc::clone(&window)) {
 							log_error!("Failed to open VST window: {e:?}");
 						} else {
 							state.vst_windows.insert(window.id(), (vst_id, window));
