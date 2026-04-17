@@ -74,7 +74,8 @@ impl EventQueue {
 	}
 }
 
-pub fn note_on(channel: i16, pitch: i16, velocity: f32) -> Event {
+pub fn note_on(id: usize, pitch: i16, velocity: f32) -> Event {
+	let channel = (id + 1) as i16;
 	Event {
 		busIndex: 0,
 		sampleOffset: 0,
@@ -87,7 +88,8 @@ pub fn note_on(channel: i16, pitch: i16, velocity: f32) -> Event {
 	}
 }
 
-pub fn note_off(channel: i16, pitch: i16) -> Event {
+pub fn note_off(id: usize, pitch: i16) -> Event {
+	let channel = (id + 1) as i16;
 	Event {
 		busIndex: 0,
 		sampleOffset: 0,

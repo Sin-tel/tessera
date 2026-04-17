@@ -9,12 +9,13 @@ use std::any::Any;
 pub struct VstWrapper {
 	processor: Option<Vst3Processor>,
 	voice_pitches: [i16; N_CHANNELS],
+	mpe_initialized: bool,
 }
 
 #[allow(unused)]
 impl Instrument for VstWrapper {
 	fn new(sample_rate: f32) -> Self {
-		VstWrapper { processor: None, voice_pitches: [0; 16] }
+		VstWrapper { processor: None, voice_pitches: [0; N_CHANNELS], mpe_initialized: false }
 	}
 
 	fn voice_count(&self) -> usize {
@@ -23,6 +24,11 @@ impl Instrument for VstWrapper {
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		if let Some(processor) = &mut self.processor {
+			if !self.mpe_initialized {
+				processor.automation.mpe_init();
+				self.mpe_initialized = true;
+			}
+
 			let [bl, br] = buffer;
 			processor.process(bl, br);
 		}
@@ -44,21 +50,20 @@ impl Instrument for VstWrapper {
 			let base_pitch = base_pitch as i16;
 			self.voice_pitches[id] = base_pitch;
 
-			processor
-				.events
-				.push(vst3::event::note_on(id as i16, base_pitch, vel));
+			processor.events.push(vst3::event::note_on(id, base_pitch, vel));
 
-			// normalize pitchbend value (assuming +/- 200c)
-			let pitchbend = 0.5 + pitch_offset * 0.25;
+			// normalize pitchbend value
+			const PB_RANGE: f64 = 48.0;
+			let pitchbend = 0.5 + pitch_offset * (0.5 / PB_RANGE);
 
-			processor.automation.push(id, pitchbend);
+			processor.automation.push(id + 1, pitchbend);
 		}
 	}
 
 	fn note_off(&mut self, id: usize) {
 		if let Some(processor) = &mut self.processor {
 			let base_pitch = self.voice_pitches[id];
-			processor.events.push(vst3::event::note_off(id as i16, base_pitch));
+			processor.events.push(vst3::event::note_off(id, base_pitch));
 		}
 	}
 	fn flush(&mut self) {

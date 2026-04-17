@@ -93,7 +93,9 @@ function build.channel(ch_index, channel_data)
 
 		if channel_data.instrument.name == "vst_wrapper" then
 			-- TODO: scan and store
-			local path = "C:\\Program Files\\Common Files\\VST3\\Pianoteq 7.vst3"
+			-- local path = "C:\\Program Files\\Common Files\\VST3\\Pianoteq 7.vst3"
+			local path =
+				"C:\\Program Files\\Common Files\\VST3\\Surge Synth Team\\Surge XT.vst3\\Contents\\x86_64-win\\Surge XT.vst3"
 
 			options.vst = true
 			options.vst_id = VST_ID

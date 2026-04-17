@@ -6,7 +6,8 @@ use vst3::Steinberg::Vst::{
 use vst3::Steinberg::{kResultOk, tresult};
 use vst3::{Class, ComPtr, ComWrapper};
 
-pub const N_CHANNELS: usize = 16;
+// Channel 0 is reserved for master channel
+pub const N_CHANNELS: usize = 15;
 
 // We only send a single event per buffer
 struct ParameterBuffer {
@@ -64,17 +65,18 @@ impl Class for ParameterChanges {
 
 impl IParameterChangesTrait for ParameterChanges {
 	unsafe fn getParameterCount(&self) -> i32 {
-		N_CHANNELS as i32
+		self.ptrs.len() as i32
 	}
 	unsafe fn getParameterData(&self, index: i32) -> *mut IParamValueQueue {
 		let index = index as usize;
-		let value = unsafe { *self.buffers[index].value.get() };
 
-		if index < N_CHANNELS && value.is_some() {
-			self.ptrs[index].as_ptr()
-		} else {
-			std::ptr::null_mut()
+		if index < self.ptrs.len() {
+			let value = unsafe { *self.buffers[index].value.get() };
+			if value.is_some() {
+				return self.ptrs[index].as_ptr();
+			}
 		}
+		std::ptr::null_mut()
 	}
 	unsafe fn addParameterData(&self, _id: *const u32, _index: *mut i32) -> *mut IParamValueQueue {
 		std::ptr::null_mut()
@@ -88,11 +90,11 @@ pub struct AutomationQueue {
 }
 
 impl AutomationQueue {
-	pub fn new(ids: [u32; N_CHANNELS]) -> Self {
-		let mut buffers = Vec::with_capacity(N_CHANNELS);
-		let mut ptrs = Vec::with_capacity(N_CHANNELS);
+	pub fn new(ids: [u32; 16], rpn_lsb: u32, rpn_msb: u32, data_msb: u32) -> Self {
+		let mut buffers = Vec::with_capacity(16);
+		let mut ptrs = Vec::with_capacity(16);
 
-		for i in 0..N_CHANNELS {
+		for i in 0..16 {
 			let buffer = Arc::new(ParameterBuffer { id: ids[i], value: None.into() });
 
 			let value_queue = ParamValueQueue { buffer: Arc::clone(&buffer) };
@@ -103,6 +105,31 @@ impl AutomationQueue {
 			ptrs.push(value_queue_ptr);
 		}
 
+		//------
+		let buffer = Arc::new(ParameterBuffer { id: rpn_lsb, value: None.into() });
+		let value_queue = ParamValueQueue { buffer: Arc::clone(&buffer) };
+		let value_queue_ptr =
+			ComWrapper::new(value_queue).to_com_ptr::<IParamValueQueue>().unwrap();
+		buffers.push(Arc::clone(&buffer));
+		ptrs.push(value_queue_ptr);
+
+		//------
+		let buffer = Arc::new(ParameterBuffer { id: rpn_msb, value: None.into() });
+		let value_queue = ParamValueQueue { buffer: Arc::clone(&buffer) };
+		let value_queue_ptr =
+			ComWrapper::new(value_queue).to_com_ptr::<IParamValueQueue>().unwrap();
+		buffers.push(Arc::clone(&buffer));
+		ptrs.push(value_queue_ptr);
+
+		//------
+		let buffer = Arc::new(ParameterBuffer { id: data_msb, value: None.into() });
+		let value_queue = ParamValueQueue { buffer: Arc::clone(&buffer) };
+		let value_queue_ptr =
+			ComWrapper::new(value_queue).to_com_ptr::<IParamValueQueue>().unwrap();
+		buffers.push(Arc::clone(&buffer));
+		ptrs.push(value_queue_ptr);
+
+		//--------------------------------
 		let changes = ParameterChanges { buffers, ptrs };
 		let changes_obj = ComWrapper::new(changes);
 		let changes_ptr = changes_obj.to_com_ptr::<IParameterChanges>().unwrap();
@@ -110,17 +137,28 @@ impl AutomationQueue {
 		Self { changes_obj, changes_ptr }
 	}
 
-	pub fn push(&self, channel: usize, normalized_value: f64) {
+	pub fn mpe_init(&self) {
+		// Send MPE message lower zone 15 channels
+		// 176  100    6
+		// 176  101    0
+		// 176    6   15
+
+		self.push(16, 6.0 / 127.0);
+		self.push(17, 0.0 / 127.0);
+		self.push(18, 15.0 / 127.0);
+	}
+
+	pub fn push(&self, id: usize, normalized_value: f64) {
 		unsafe {
-			*self.changes_obj.buffers[channel].value.get() = Some(normalized_value);
+			*self.changes_obj.buffers[id].value.get() = Some(normalized_value);
 		}
 	}
 
 	pub fn clear(&self) {
 		// clear all channels
 		unsafe {
-			for channel in &self.changes_obj.buffers {
-				*channel.value.get() = None;
+			for buffer in &self.changes_obj.buffers {
+				*buffer.value.get() = None;
 			}
 		}
 	}
