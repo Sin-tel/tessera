@@ -300,8 +300,23 @@ pub fn load(
 		.as_result()?;
 	}
 
+	let mut param_rpn_lsb = 0;
+	let mut param_rpn_msb = 0;
+	let mut param_data_msb = 0;
+
+	// 100 = RPN LSB
+	// 101 = RPN MSB
+	// 6 = Data Entry MSB
+	unsafe { midi_mapping.getMidiControllerAssignment(0, 0, 100, &mut param_rpn_lsb) }
+		.as_result()?;
+	unsafe { midi_mapping.getMidiControllerAssignment(0, 0, 101, &mut param_rpn_msb) }
+		.as_result()?;
+	unsafe { midi_mapping.getMidiControllerAssignment(0, 0, 6, &mut param_data_msb) }
+		.as_result()?;
+
 	// Instantiate queue
-	let automation = AutomationQueue::new(pitch_bend_ids);
+	let automation =
+		AutomationQueue::new(pitch_bend_ids, param_rpn_lsb, param_rpn_msb, param_data_msb);
 
 	let editor = Vst3Editor {
 		id,
