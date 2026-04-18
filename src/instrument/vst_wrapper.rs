@@ -56,7 +56,7 @@ impl Instrument for VstWrapper {
 			const PB_RANGE: f64 = 48.0;
 			let pitchbend = 0.5 + pitch_offset * (0.5 / PB_RANGE);
 
-			processor.automation.push(id + 1, pitchbend);
+			processor.automation.push_pitchend(id, pitchbend);
 		}
 	}
 
@@ -74,7 +74,6 @@ impl Instrument for VstWrapper {
 		assert!(self.processor.is_none());
 		if let ResponseData::Vst3Processor(processor) = data {
 			self.processor = Some(*processor);
-			println!("received processor");
 		}
 		None
 	}

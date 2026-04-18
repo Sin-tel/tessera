@@ -1,10 +1,13 @@
+use crate::vst3::error::ToResultExt;
 use std::cell::UnsafeCell;
 use std::sync::Arc;
+use vst3::Steinberg::Vst::ControllerNumbers_;
 use vst3::Steinberg::Vst::{
-	IParamValueQueue, IParamValueQueueTrait, IParameterChanges, IParameterChangesTrait,
+	IMidiMapping, IMidiMappingTrait, IParamValueQueue, IParamValueQueueTrait, IParameterChanges,
+	IParameterChangesTrait,
 };
 use vst3::Steinberg::{kResultOk, tresult};
-use vst3::{Class, ComPtr, ComWrapper};
+use vst3::{Class, ComPtr, ComRef, ComWrapper};
 
 // Channel 0 is reserved for master channel
 pub const N_CHANNELS: usize = 15;
@@ -83,6 +86,10 @@ impl IParameterChangesTrait for ParameterChanges {
 	}
 }
 
+const RPN_LSB: usize = 16;
+const RPN_MSB: usize = 17;
+const DATA_MSB: usize = 18;
+
 // Convenience wrapper for 16 channel midi event data
 pub struct AutomationQueue {
 	changes_obj: ComWrapper<ParameterChanges>,
@@ -90,51 +97,60 @@ pub struct AutomationQueue {
 }
 
 impl AutomationQueue {
-	pub fn new(ids: [u32; 16], rpn_lsb: u32, rpn_msb: u32, data_msb: u32) -> Self {
+	pub fn new(midi_mapping: ComRef<IMidiMapping>) -> Result<Self, String> {
 		let mut buffers = Vec::with_capacity(16);
 		let mut ptrs = Vec::with_capacity(16);
 
-		for i in 0..16 {
-			let buffer = Arc::new(ParameterBuffer { id: ids[i], value: None.into() });
+		let mut add_channel = |id: u32| {
+			let buffer = Arc::new(ParameterBuffer { id, value: None.into() });
 
 			let value_queue = ParamValueQueue { buffer: Arc::clone(&buffer) };
 			let value_queue_ptr =
 				ComWrapper::new(value_queue).to_com_ptr::<IParamValueQueue>().unwrap();
 
-			buffers.push(Arc::clone(&buffer));
+			let index = buffers.len();
+
+			buffers.push(buffer);
 			ptrs.push(value_queue_ptr);
+			index
+		};
+
+		// Query pitch bend for all 16 channels
+		for i in 0..16 {
+			let mut id = 0;
+			unsafe {
+				midi_mapping.getMidiControllerAssignment(
+					0,
+					i as i16,
+					ControllerNumbers_::kPitchBend as i16,
+					&mut id,
+				)
+			}
+			.as_result()?;
+			add_channel(id);
 		}
 
-		//------
-		let buffer = Arc::new(ParameterBuffer { id: rpn_lsb, value: None.into() });
-		let value_queue = ParamValueQueue { buffer: Arc::clone(&buffer) };
-		let value_queue_ptr =
-			ComWrapper::new(value_queue).to_com_ptr::<IParamValueQueue>().unwrap();
-		buffers.push(Arc::clone(&buffer));
-		ptrs.push(value_queue_ptr);
+		// Query other parameters
+		let params = [
+			(ControllerNumbers_::kCtrlRPNSelectLSB, RPN_LSB),
+			(ControllerNumbers_::kCtrlRPNSelectMSB, RPN_MSB),
+			(ControllerNumbers_::kCtrlDataEntryMSB, DATA_MSB),
+		];
 
-		//------
-		let buffer = Arc::new(ParameterBuffer { id: rpn_msb, value: None.into() });
-		let value_queue = ParamValueQueue { buffer: Arc::clone(&buffer) };
-		let value_queue_ptr =
-			ComWrapper::new(value_queue).to_com_ptr::<IParamValueQueue>().unwrap();
-		buffers.push(Arc::clone(&buffer));
-		ptrs.push(value_queue_ptr);
+		for (ctrl_id, index) in &params {
+			let mut param_id = 0;
+			unsafe {
+				midi_mapping.getMidiControllerAssignment(0, 0, *ctrl_id as i16, &mut param_id)
+			}
+			.as_result()?;
+			assert_eq!(add_channel(param_id), *index);
+		}
 
-		//------
-		let buffer = Arc::new(ParameterBuffer { id: data_msb, value: None.into() });
-		let value_queue = ParamValueQueue { buffer: Arc::clone(&buffer) };
-		let value_queue_ptr =
-			ComWrapper::new(value_queue).to_com_ptr::<IParamValueQueue>().unwrap();
-		buffers.push(Arc::clone(&buffer));
-		ptrs.push(value_queue_ptr);
-
-		//--------------------------------
 		let changes = ParameterChanges { buffers, ptrs };
 		let changes_obj = ComWrapper::new(changes);
 		let changes_ptr = changes_obj.to_com_ptr::<IParameterChanges>().unwrap();
 
-		Self { changes_obj, changes_ptr }
+		Ok(Self { changes_obj, changes_ptr })
 	}
 
 	pub fn mpe_init(&self) {
@@ -143,9 +159,14 @@ impl AutomationQueue {
 		// 176  101    0
 		// 176    6   15
 
-		self.push(16, 6.0 / 127.0);
-		self.push(17, 0.0 / 127.0);
-		self.push(18, 15.0 / 127.0);
+		self.push(RPN_LSB, 6.0 / 127.0);
+		self.push(RPN_MSB, 0.0 / 127.0);
+		self.push(DATA_MSB, 15.0 / 127.0);
+	}
+
+	pub fn push_pitchend(&self, id: usize, normalized_value: f64) {
+		assert!(id < N_CHANNELS);
+		self.push(id + 1, normalized_value);
 	}
 
 	pub fn push(&self, id: usize, normalized_value: f64) {
