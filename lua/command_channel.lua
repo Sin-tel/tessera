@@ -2,7 +2,7 @@ local build = require("build")
 local device_list = require("device_list")
 
 local function remove_channel(ch_index)
-    build.remove_channel(ch_index)
+    tessera.audio.remove_channel(ch_index)
     table.remove(project.channels, ch_index)
     table.remove(ui_channels, ch_index)
     build.refresh_channels()

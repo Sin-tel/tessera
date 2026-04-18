@@ -49,6 +49,8 @@ pub struct State {
 	pub midi_connections: Vec<midi::Connection>,
 	pub vst_editors: HashMap<usize, Vst3Editor>,
 	pub vst_windows: HashMap<WindowId, (usize, Arc<Window>)>,
+	pub vst_cleanup_tx: mpsc::SyncSender<usize>,
+	pub vst_cleanup_rx: mpsc::Receiver<usize>,
 	pub event_loop: EventLoopProxy<UserEvent>,
 	pub lua_tx: SyncSender<LuaMessage>,
 	pub lua_rx: Receiver<LuaMessage>,
@@ -64,6 +66,7 @@ impl State {
 		event_loop: EventLoopProxy<UserEvent>,
 		scale_factor: f32,
 	) -> Self {
+		let (vst_cleanup_tx, vst_cleanup_rx) = mpsc::sync_channel::<usize>(32);
 		State {
 			current_color: Color::white(),
 			mouse_position: (0., 0.),
@@ -89,6 +92,8 @@ impl State {
 			midi_connections: Vec::new(),
 			vst_editors: HashMap::new(),
 			vst_windows: HashMap::new(),
+			vst_cleanup_tx,
+			vst_cleanup_rx,
 			event_loop,
 			lua_tx,
 			lua_rx,

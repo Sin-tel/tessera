@@ -147,6 +147,7 @@ function tessera.draw()
 	end
 
 	file.poll_dialogs()
+	tessera.audio.poll_vst_destroyed()
 
 	local t_start = tessera.get_time()
 

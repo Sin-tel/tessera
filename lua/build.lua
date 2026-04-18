@@ -29,18 +29,6 @@ local function setup_project()
 	engine.seek(project.transport.start_time)
 end
 
--- some extra logic for channel cleanup
--- TODO: probably should centrally handle instrument / effect deletion
-function build.remove_channel(index)
-	if ui_channels[index].instrument then
-		local vst_id = ui_channels[index].instrument.vst_id
-		if vst_id then
-			tessera.audio.remove_vst_instance(vst_id)
-		end
-	end
-	tessera.audio.remove_channel(index)
-end
-
 -- clear the project from a valid state
 function build.empty_project()
 	-- make sure there is no lingering state on the backend.
@@ -49,7 +37,7 @@ function build.empty_project()
 
 	if project.channels then
 		for i = #project.channels, 1, -1 do
-			build.remove_channel(i)
+			tessera.audio.remove_channel(i)
 		end
 	end
 
