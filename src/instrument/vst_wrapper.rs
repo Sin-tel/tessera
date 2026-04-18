@@ -10,12 +10,17 @@ pub struct VstWrapper {
 	processor: Option<Vst3Processor>,
 	voice_pitches: [i16; N_CHANNELS],
 	mpe_initialized: bool,
+	pb_range: f64,
 }
 
-#[allow(unused)]
 impl Instrument for VstWrapper {
-	fn new(sample_rate: f32) -> Self {
-		VstWrapper { processor: None, voice_pitches: [0; N_CHANNELS], mpe_initialized: false }
+	fn new(_sample_rate: f32) -> Self {
+		VstWrapper {
+			processor: None,
+			voice_pitches: [0; N_CHANNELS],
+			mpe_initialized: false,
+			pb_range: 48.0,
+		}
 	}
 
 	fn voice_count(&self) -> usize {
@@ -35,11 +40,20 @@ impl Instrument for VstWrapper {
 	}
 
 	fn pitch(&mut self, pitch: f32, id: usize) {
-		// TODO
+		if let Some(processor) = &mut self.processor {
+			let base_pitch = f32::from(self.voice_pitches[id]);
+			let pitch_offset = f64::from(pitch - base_pitch);
+
+			// normalize pitchbend value
+			let pitchbend = 0.5 + pitch_offset * (0.5 / self.pb_range);
+			processor.automation.push_pitchend(id, pitchbend);
+		}
 	}
 
 	fn pressure(&mut self, pressure: f32, id: usize) {
-		// TODO
+		if let Some(processor) = &mut self.processor {
+			processor.automation.push_pressure(id, f64::from(pressure));
+		}
 	}
 
 	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {
@@ -53,9 +67,7 @@ impl Instrument for VstWrapper {
 			processor.events.push(vst3::event::note_on(id, base_pitch, vel));
 
 			// normalize pitchbend value
-			const PB_RANGE: f64 = 48.0;
-			let pitchbend = 0.5 + pitch_offset * (0.5 / PB_RANGE);
-
+			let pitchbend = 0.5 + pitch_offset * (0.5 / self.pb_range);
 			processor.automation.push_pitchend(id, pitchbend);
 		}
 	}
@@ -78,7 +90,7 @@ impl Instrument for VstWrapper {
 		None
 	}
 
-	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
+	fn set_parameter(&mut self, index: usize, _value: f32) -> Option<RequestData> {
 		#[allow(clippy::single_match_else)]
 		match index {
 			0 => {
