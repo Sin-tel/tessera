@@ -311,13 +311,6 @@ pub fn load(
 	Ok((editor, processor))
 }
 
-impl Drop for Vst3Processor {
-	fn drop(&mut self) {
-		// Note: this may block, but dropping the processor is not realtime safe anyway.
-		let _ = self.cleanup_tx.send(self.id);
-	}
-}
-
 impl Vst3Editor {
 	pub fn id(&self) -> usize {
 		self.id
@@ -439,5 +432,18 @@ impl Vst3Processor {
 		// Clear the queue for the next call
 		self.events.clear();
 		self.automation.clear();
+	}
+
+	pub fn flush(&self) -> Result<(), String> {
+		unsafe { self.audio_processor.setProcessing(0) }.as_result()?;
+		unsafe { self.audio_processor.setProcessing(1) }.as_result()?;
+		Ok(())
+	}
+}
+
+impl Drop for Vst3Processor {
+	fn drop(&mut self) {
+		// Note: this may block, but dropping the processor is not realtime safe anyway.
+		let _ = self.cleanup_tx.send(self.id);
 	}
 }
