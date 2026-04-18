@@ -86,9 +86,9 @@ impl IParameterChangesTrait for ParameterChanges {
 	}
 }
 
-const RPN_LSB: usize = 16;
-const RPN_MSB: usize = 17;
-const DATA_MSB: usize = 18;
+const RPN_LSB: usize = 32;
+const RPN_MSB: usize = 33;
+const DATA_MSB: usize = 34;
 
 // Convenience wrapper for 16 channel midi event data
 pub struct AutomationQueue {
@@ -123,6 +123,21 @@ impl AutomationQueue {
 					0,
 					i as i16,
 					ControllerNumbers_::kPitchBend as i16,
+					&mut id,
+				)
+			}
+			.as_result()?;
+			add_channel(id);
+		}
+
+		// Query channel pressure for all 16 channels
+		for i in 0..16 {
+			let mut id = 0;
+			unsafe {
+				midi_mapping.getMidiControllerAssignment(
+					0,
+					i as i16,
+					ControllerNumbers_::kAfterTouch as i16,
 					&mut id,
 				)
 			}
@@ -167,6 +182,11 @@ impl AutomationQueue {
 	pub fn push_pitchend(&self, id: usize, normalized_value: f64) {
 		assert!(id < N_CHANNELS);
 		self.push(id + 1, normalized_value);
+	}
+
+	pub fn push_pressure(&self, id: usize, normalized_value: f64) {
+		assert!(id < N_CHANNELS);
+		self.push(id + 17, normalized_value);
 	}
 
 	pub fn push(&self, id: usize, normalized_value: f64) {
