@@ -79,7 +79,9 @@ impl Instrument for VstWrapper {
 		}
 	}
 	fn flush(&mut self) {
-		// TODO
+		if let Some(processor) = &mut self.processor {
+			let _ = processor.flush();
+		}
 	}
 
 	fn receive_data(&mut self, data: ResponseData) -> Option<Box<dyn Any + Send>> {

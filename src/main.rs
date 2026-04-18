@@ -387,6 +387,7 @@ impl ApplicationHandler<UserEvent> for App {
 								.unwrap(),
 						);
 
+						// TODO: do this on a worker thread
 						if let Err(e) = editor.open_window(Arc::clone(&window)) {
 							log_error!("Failed to open VST window: {e:?}");
 						} else {

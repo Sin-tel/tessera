@@ -343,6 +343,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				assert!(plugin_info.len() == 1);
 				let plugin = plugin_info.pop().unwrap();
 
+				// TODO: do this on a worker thread
 				let (editor, processor) = vst3::load(
 					&plugin,
 					ctx.sample_rate as f32,
