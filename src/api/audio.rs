@@ -374,7 +374,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 					log_error!("{e}");
 				}
 			} else {
-				log_error!("VST id {} not found!", vst_id)
+				log_error!("VST id {} not found!", vst_id);
 			}
 
 			Ok(())

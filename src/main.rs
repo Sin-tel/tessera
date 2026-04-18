@@ -191,7 +191,7 @@ impl ApplicationHandler<UserEvent> for App {
 			if let Some((vst_id, _)) = state.vst_windows.get(&window_id) {
 				match event {
 					WindowEvent::CloseRequested => {
-						if let Some(editor) = state.vst_editors.get_mut(&vst_id) {
+						if let Some(editor) = state.vst_editors.get_mut(vst_id) {
 							editor.close_window();
 						} else {
 							log_error!("Editor for id {} not found!", vst_id)

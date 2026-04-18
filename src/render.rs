@@ -83,7 +83,7 @@ impl Render {
 			let _ = instrument.instrument.receive_data(data);
 		} else {
 			panic!("Failed to set processor");
-		};
+		}
 	}
 
 	pub fn remove_channel(&mut self, index: usize) {
