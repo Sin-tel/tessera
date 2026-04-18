@@ -10,20 +10,19 @@ use std::ffi::c_void;
 use std::mem::MaybeUninit;
 use std::path::Path;
 use std::sync::Arc;
+use vst3::Steinberg::Vst::MediaTypes_::kAudio;
 use vst3::Steinberg::kInvalidArgument;
 use winit::window::WindowId;
 
 use vst3::Steinberg::Vst::BusDirections_::kOutput;
 use vst3::Steinberg::Vst::BusInfo_::BusFlags_;
-use vst3::Steinberg::Vst::ControllerNumbers_::kPitchBend;
-use vst3::Steinberg::Vst::MediaTypes_::kAudio;
 use vst3::Steinberg::Vst::ProcessModes_::kRealtime;
 use vst3::Steinberg::Vst::SymbolicSampleSizes_::kSample32;
 use vst3::Steinberg::Vst::{
 	AudioBusBuffers, AudioBusBuffers__type0, BusInfo, IAudioProcessor, IAudioProcessorTrait,
 	IComponent, IComponentTrait, IConnectionPoint, IConnectionPointTrait, IEditController,
-	IEditControllerTrait, IHostApplication, IHostApplicationTrait, IMidiMapping, IMidiMappingTrait,
-	ProcessData, ProcessSetup, SpeakerArr, ViewType,
+	IEditControllerTrait, IHostApplication, IHostApplicationTrait, IMidiMapping, ProcessData,
+	ProcessSetup, SpeakerArr, ViewType,
 };
 use vst3::Steinberg::{
 	IPlugFrame, IPlugFrameTrait, IPlugView, IPlugViewTrait, IPluginBaseTrait, IPluginFactory,
@@ -285,38 +284,7 @@ pub fn load(
 		.cast::<IMidiMapping>()
 		.ok_or("Plugin doesn't support IMidiMapping.")?;
 
-	let mut pitch_bend_ids = [0; 16];
-
-	for channel in 0..16 {
-		// Map Channel 0 Pitch bend
-		unsafe {
-			midi_mapping.getMidiControllerAssignment(
-				0,
-				channel as i16,
-				kPitchBend as i16,
-				&mut pitch_bend_ids[channel],
-			)
-		}
-		.as_result()?;
-	}
-
-	let mut param_rpn_lsb = 0;
-	let mut param_rpn_msb = 0;
-	let mut param_data_msb = 0;
-
-	// 100 = RPN LSB
-	// 101 = RPN MSB
-	// 6 = Data Entry MSB
-	unsafe { midi_mapping.getMidiControllerAssignment(0, 0, 100, &mut param_rpn_lsb) }
-		.as_result()?;
-	unsafe { midi_mapping.getMidiControllerAssignment(0, 0, 101, &mut param_rpn_msb) }
-		.as_result()?;
-	unsafe { midi_mapping.getMidiControllerAssignment(0, 0, 6, &mut param_data_msb) }
-		.as_result()?;
-
-	// Instantiate queue
-	let automation =
-		AutomationQueue::new(pitch_bend_ids, param_rpn_lsb, param_rpn_msb, param_data_msb);
+	let automation = AutomationQueue::new(midi_mapping.as_com_ref())?;
 
 	let editor = Vst3Editor {
 		id,
