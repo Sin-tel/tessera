@@ -343,8 +343,13 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				assert!(plugin_info.len() == 1);
 				let plugin = plugin_info.pop().unwrap();
 
-				let (editor, processor) =
-					vst3::load(&plugin, ctx.sample_rate as f32, vst_id).unwrap();
+				let (editor, processor) = vst3::load(
+					&plugin,
+					ctx.sample_rate as f32,
+					vst_id,
+					state.vst_cleanup_tx.clone(),
+				)
+				.unwrap();
 
 				state.vst_editors.insert(vst_id, editor);
 
@@ -382,14 +387,15 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	audio.set(
-		"remove_vst_instance",
-		lua.create_function(|lua, vst_id: usize| {
-			// We only need to clean up vst_editors and vst_windows, the processor is dropped automatically
+		"poll_vst_destroyed",
+		lua.create_function(|lua, ()| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 
-			state.vst_windows.retain(|_, (id, _)| *id != vst_id);
-			state.vst_editors.remove(&vst_id);
-
+			while let Ok(dead_id) = state.vst_cleanup_rx.try_recv() {
+				// Processor is already dropped since it triggered this
+				state.vst_windows.retain(|_, (id, _)| *id != dead_id);
+				state.vst_editors.remove(&dead_id);
+			}
 			Ok(())
 		})?,
 	)?;

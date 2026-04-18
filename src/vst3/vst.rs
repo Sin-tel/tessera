@@ -10,6 +10,7 @@ use std::ffi::c_void;
 use std::mem::MaybeUninit;
 use std::path::Path;
 use std::sync::Arc;
+use std::sync::mpsc::SyncSender;
 use vst3::Steinberg::Vst::MediaTypes_::kAudio;
 use vst3::Steinberg::kInvalidArgument;
 use winit::window::WindowId;
@@ -149,6 +150,7 @@ pub struct Vst3Editor {
 #[allow(unused)]
 pub struct Vst3Processor {
 	id: usize,
+	cleanup_tx: SyncSender<usize>,
 	pub events: EventQueue,
 	pub automation: AutomationQueue,
 	audio_processor: ComPtr<IAudioProcessor>,
@@ -160,6 +162,7 @@ pub fn load(
 	plugin: &PluginDescriptor,
 	sample_rate: f32,
 	id: usize,
+	cleanup_tx: SyncSender<usize>,
 ) -> Result<(Vst3Editor, Vst3Processor), String> {
 	let lib = Vst3Library::new(&plugin.library_path)?;
 
@@ -297,6 +300,7 @@ pub fn load(
 
 	let processor = Vst3Processor {
 		id,
+		cleanup_tx,
 		events: EventQueue::new(),
 		automation,
 		audio_processor,
@@ -305,6 +309,13 @@ pub fn load(
 	};
 
 	Ok((editor, processor))
+}
+
+impl Drop for Vst3Processor {
+	fn drop(&mut self) {
+		// Note: this may block, but dropping the processor is not realtime safe anyway.
+		let _ = self.cleanup_tx.send(self.id);
+	}
 }
 
 impl Vst3Editor {
