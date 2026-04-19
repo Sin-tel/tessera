@@ -72,6 +72,7 @@ open = "5.3"
 ureq = {version = "3.1", features = ["json"]}
 serde_json = "1.0"
 anyhow = "1.0"
+base64 = "0.22"
 
 [[bench]]
 name = "bench"
