@@ -7,6 +7,7 @@ use crate::log::*;
 use crate::meters::MeterHandle;
 use crate::metronome::Metronome;
 use crate::voice_manager::VoiceManager;
+use crate::vst3::{Vst3Processor, Vst3State};
 use crate::worker::{Request, Response};
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd};
@@ -75,15 +76,22 @@ impl Render {
 		ch.instrument = Some(voice_manager);
 	}
 
-	pub fn set_processor(&mut self, channel_index: usize, processor: crate::vst3::Vst3Processor) {
+	pub fn vst_set_processor(&mut self, channel_index: usize, processor: Vst3Processor) {
 		let channel = &mut self.channels[channel_index];
+		let instrument = &mut channel.instrument.as_mut().unwrap();
+		instrument.instrument.as_vst().set_processor(processor);
+	}
 
-		if let Some(instrument) = &mut channel.instrument {
-			let data = crate::worker::ResponseData::Vst3Processor(Box::new(processor));
-			let _ = instrument.instrument.receive_data(data);
-		} else {
-			panic!("Failed to set processor");
-		}
+	pub fn vst_set_state(&mut self, channel_index: usize, state: &Vst3State) {
+		let channel = &mut self.channels[channel_index];
+		let instrument = &mut channel.instrument.as_mut().unwrap();
+		instrument.instrument.as_vst().set_state(&state);
+	}
+
+	pub fn vst_get_state(&mut self, channel_index: usize) -> String {
+		let channel = &mut self.channels[channel_index];
+		let instrument = &mut channel.instrument.as_mut().unwrap();
+		instrument.instrument.as_vst().get_state().unwrap()
 	}
 
 	pub fn remove_channel(&mut self, index: usize) {
