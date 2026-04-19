@@ -2,8 +2,8 @@ use crate::instrument::*;
 use crate::log::*;
 use crate::vst3;
 use crate::vst3::Vst3Processor;
+use crate::vst3::Vst3State;
 use crate::vst3::parameter::N_CHANNELS;
-use std::any::Any;
 
 #[allow(unused)]
 pub struct VstWrapper {
@@ -11,6 +11,30 @@ pub struct VstWrapper {
 	voice_pitches: [i16; N_CHANNELS],
 	mpe_initialized: bool,
 	pb_range: f64,
+}
+
+impl VstWrapper {
+	pub fn get_state(&self) -> Option<String> {
+		if let Some(processor) = &self.processor
+			&& let Ok(state) = processor.get_state()
+		{
+			return Some(state.into_string());
+		}
+		None
+	}
+
+	pub fn set_state(&mut self, state: &Vst3State) {
+		if let Some(processor) = &self.processor
+			&& let Err(e) = processor.set_state(state)
+		{
+			log_error!("{e}");
+		}
+	}
+
+	pub fn set_processor(&mut self, processor: Vst3Processor) {
+		assert!(self.processor.is_none());
+		self.processor = Some(processor);
+	}
 }
 
 impl Instrument for VstWrapper {
@@ -84,14 +108,6 @@ impl Instrument for VstWrapper {
 		}
 	}
 
-	fn receive_data(&mut self, data: ResponseData) -> Option<Box<dyn Any + Send>> {
-		assert!(self.processor.is_none());
-		if let ResponseData::Vst3Processor(processor) = data {
-			self.processor = Some(*processor);
-		}
-		None
-	}
-
 	fn set_parameter(&mut self, index: usize, _value: f32) -> Option<RequestData> {
 		#[allow(clippy::single_match_else)]
 		match index {
@@ -101,5 +117,9 @@ impl Instrument for VstWrapper {
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 		None
+	}
+
+	fn as_vst(&mut self) -> &mut VstWrapper {
+		self
 	}
 }

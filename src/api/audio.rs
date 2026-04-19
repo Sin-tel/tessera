@@ -11,6 +11,7 @@ use crate::log::{log_error, log_info};
 use crate::opengl::UserEvent;
 use crate::voice_manager::Token;
 use crate::vst3;
+use crate::vst3::Vst3State;
 use crate::vst3::scan::probe_vst3;
 use cpal::Device;
 use cpal::traits::DeviceTrait;
@@ -359,7 +360,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
 				let mut render = ctx.render.lock();
 				render.insert_instrument(index - 1, "vst_wrapper", meter_handle_instrument);
-				render.set_processor(index - 1, processor);
+				render.vst_set_processor(index - 1, processor);
 
 				Ok(Some(meter_id_instrument + 1))
 			} else {
@@ -375,7 +376,6 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 
 			if let Some(editor) = state.vst_editors.get(&vst_id) {
 				assert_eq!(editor.id(), vst_id);
-				log_info!("Open window '{}' ({})", editor.name(), vst_id);
 				if let Err(e) = state.event_loop.send_event(UserEvent::OpenVstWindow(vst_id)) {
 					log_error!("{e}");
 				}
@@ -383,6 +383,42 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				log_error!("VST id {} not found!", vst_id);
 			}
 
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"vst_get_state",
+		lua.create_function(|lua, index: usize| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			if let Some(ctx) = &mut state.audio {
+				let mut render = ctx.render.lock();
+				let vst_state = render.vst_get_state(index - 1);
+				Ok(Some(vst_state))
+			} else {
+				Ok(None)
+			}
+		})?,
+	)?;
+
+	audio.set(
+		"vst_set_state",
+		lua.create_function(|lua, (index, vst_id, state_base64): (usize, usize, String)| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			if let Some(ctx) = &mut state.audio {
+				if let Ok(vst_state) = Vst3State::from_string(state_base64) {
+					let mut render = ctx.render.lock();
+					render.vst_set_state(index - 1, &vst_state);
+
+					if let Some(editor) = state.vst_editors.get(&vst_id) {
+						editor.set_state(&vst_state).unwrap();
+					} else {
+						log_error!("VST id {} not found!", vst_id);
+					}
+				} else {
+					log_error!("Failed to decode vst state");
+				}
+			}
 			Ok(())
 		})?,
 	)?;

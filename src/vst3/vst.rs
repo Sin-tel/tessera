@@ -3,6 +3,7 @@ use crate::vst3::error::ToResultExt;
 use crate::vst3::event::EventQueue;
 use crate::vst3::parameter::AutomationQueue;
 use crate::vst3::scan::PluginDescriptor;
+use crate::vst3::state::Vst3State;
 use crate::vst3::util::extract_cstring_utf16;
 use libloading::{Library, Symbol};
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
@@ -324,6 +325,15 @@ impl Vst3Editor {
 		self.window.as_ref().map(|w| w.id)
 	}
 
+	pub fn set_state(&self, state: &Vst3State) -> Result<(), String> {
+		state.rewind()?;
+		#[allow(non_upper_case_globals)]
+		match unsafe { self.edit_controller.setComponentState(state.as_ptr()) } {
+			kResultOk | kNotImplemented => Ok(()),
+			other => other.as_result(),
+		}
+	}
+
 	pub fn open_window(&mut self, window: Arc<Window>) -> Result<(), String> {
 		let view_ptr = unsafe { self.edit_controller.createView(ViewType::kEditor) };
 		if view_ptr.is_null() {
@@ -379,6 +389,17 @@ impl Vst3Editor {
 impl Vst3Processor {
 	pub fn id(&self) -> usize {
 		self.id
+	}
+
+	pub fn get_state(&self) -> Result<Vst3State, String> {
+		let state = Vst3State::new();
+		unsafe { self.component.getState(state.as_ptr()) }.as_result()?;
+		Ok(state)
+	}
+
+	pub fn set_state(&self, state: &Vst3State) -> Result<(), String> {
+		state.rewind()?;
+		unsafe { self.component.setState(state.as_ptr()) }.as_result()
 	}
 
 	pub fn process(&mut self, left_buf: &mut [f32], right_buf: &mut [f32]) {
