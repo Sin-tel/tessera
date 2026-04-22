@@ -1,7 +1,7 @@
 use crate::audio::MAX_BUF_SIZE;
 use crate::vst3::error::ToResultExt;
-use crate::vst3::event::EventQueue;
-use crate::vst3::parameter::AutomationQueue;
+use crate::vst3::event::Events;
+use crate::vst3::parameter::Parameters;
 use crate::vst3::scan::PluginDescriptor;
 use crate::vst3::state::Vst3State;
 use crate::vst3::util::extract_cstring_utf16;
@@ -152,8 +152,8 @@ pub struct Vst3Editor {
 pub struct Vst3Processor {
 	id: usize,
 	cleanup_tx: SyncSender<usize>,
-	pub events: EventQueue,
-	pub automation: AutomationQueue,
+	pub events: Events,
+	pub parameters: Parameters,
 	audio_processor: ComPtr<IAudioProcessor>,
 	component: ComPtr<IComponent>,
 	lib: Arc<Vst3Library>,
@@ -288,7 +288,7 @@ pub fn load(
 		.cast::<IMidiMapping>()
 		.ok_or("Plugin doesn't support IMidiMapping.")?;
 
-	let automation = AutomationQueue::new(midi_mapping.as_com_ref())?;
+	let parameters = Parameters::new(midi_mapping.as_com_ref())?;
 
 	let editor = Vst3Editor {
 		id,
@@ -302,8 +302,8 @@ pub fn load(
 	let processor = Vst3Processor {
 		id,
 		cleanup_tx,
-		events: EventQueue::new(),
-		automation,
+		events: Events::new(),
+		parameters,
 		audio_processor,
 		component,
 		lib: Arc::clone(&lib),
@@ -435,7 +435,7 @@ impl Vst3Processor {
 			outputEvents: std::ptr::null_mut(),
 
 			// Parameters
-			inputParameterChanges: self.automation.as_com_ptr(),
+			inputParameterChanges: self.parameters.as_com_ptr(),
 			outputParameterChanges: std::ptr::null_mut(),
 
 			// Optional according to docs, but might be required for some plugins to work properly
@@ -452,7 +452,7 @@ impl Vst3Processor {
 
 		// Clear the queue for the next call
 		self.events.clear();
-		self.automation.clear();
+		self.parameters.clear();
 	}
 
 	pub fn flush(&self) -> Result<(), String> {

@@ -1,6 +1,5 @@
 use crate::vst3::error::ToResultExt;
 use std::cell::UnsafeCell;
-use std::sync::Arc;
 use vst3::Steinberg::Vst::ControllerNumbers_;
 use vst3::Steinberg::Vst::{
 	IMidiMapping, IMidiMappingTrait, IParamValueQueue, IParamValueQueueTrait, IParameterChanges,
@@ -13,16 +12,12 @@ use vst3::{Class, ComPtr, ComRef, ComWrapper};
 pub const N_CHANNELS: usize = 15;
 
 // We only send a single event per buffer
-struct ParameterBuffer {
+struct ParamValueQueue {
 	id: u32,
 	value: UnsafeCell<Option<f64>>,
 }
-unsafe impl Send for ParameterBuffer {}
-unsafe impl Sync for ParameterBuffer {}
-
-struct ParamValueQueue {
-	buffer: Arc<ParameterBuffer>,
-}
+unsafe impl Send for ParamValueQueue {}
+unsafe impl Sync for ParamValueQueue {}
 
 impl Class for ParamValueQueue {
 	type Interfaces = (IParamValueQueue,);
@@ -30,15 +25,15 @@ impl Class for ParamValueQueue {
 
 impl IParamValueQueueTrait for ParamValueQueue {
 	unsafe fn getParameterId(&self) -> u32 {
-		self.buffer.id
+		self.id
 	}
 	unsafe fn getPointCount(&self) -> i32 {
-		unsafe { if (*self.buffer.value.get()).is_some() { 1 } else { 0 } }
+		unsafe { if (*self.value.get()).is_some() { 1 } else { 0 } }
 	}
 	unsafe fn getPoint(&self, index: i32, sample_offset: *mut i32, value: *mut f64) -> tresult {
 		unsafe {
 			if index == 0 {
-				if let Some(v) = { *self.buffer.value.get() } {
+				if let Some(v) = { *self.value.get() } {
 					*sample_offset = 0;
 					*value = v;
 				}
@@ -54,9 +49,34 @@ impl IParamValueQueueTrait for ParamValueQueue {
 	}
 }
 
+// Safe wrapper around ParamValueQueue
+struct Parameter {
+	param: ComWrapper<ParamValueQueue>,
+	com_ptr: ComPtr<IParamValueQueue>,
+}
+
+impl Parameter {
+	fn new(id: u32) -> Self {
+		let param = ComWrapper::new(ParamValueQueue { id, value: None.into() });
+		let com_ptr = param.to_com_ptr::<IParamValueQueue>().unwrap();
+		Self { param, com_ptr }
+	}
+
+	fn get(&self) -> Option<f64> {
+		unsafe { *self.param.value.get() }
+	}
+
+	fn set(&self, value: f64) {
+		unsafe { *self.param.value.get() = Some(value) }
+	}
+
+	fn clear(&self) {
+		unsafe { *self.param.value.get() = None }
+	}
+}
+
 struct ParameterChanges {
-	buffers: Vec<Arc<ParameterBuffer>>,
-	ptrs: Vec<ComPtr<IParamValueQueue>>,
+	parameters: Vec<Parameter>,
 }
 
 unsafe impl Send for ParameterChanges {}
@@ -68,20 +88,21 @@ impl Class for ParameterChanges {
 
 impl IParameterChangesTrait for ParameterChanges {
 	unsafe fn getParameterCount(&self) -> i32 {
-		self.ptrs.len() as i32
+		self.parameters.len() as i32
 	}
 	unsafe fn getParameterData(&self, index: i32) -> *mut IParamValueQueue {
 		let index = index as usize;
 
-		if index < self.ptrs.len() {
-			let value = unsafe { *self.buffers[index].value.get() };
+		if index < self.parameters.len() {
+			let value = self.parameters[index].get();
 			if value.is_some() {
-				return self.ptrs[index].as_ptr();
+				return self.parameters[index].com_ptr.as_ptr();
 			}
 		}
 		std::ptr::null_mut()
 	}
 	unsafe fn addParameterData(&self, _id: *const u32, _index: *mut i32) -> *mut IParamValueQueue {
+		// Not implemented
 		std::ptr::null_mut()
 	}
 }
@@ -91,68 +112,47 @@ const RPN_MSB: usize = 33;
 const DATA_MSB: usize = 34;
 
 // Convenience wrapper for 16 channel midi event data
-pub struct AutomationQueue {
-	changes_obj: ComWrapper<ParameterChanges>,
-	changes_ptr: ComPtr<IParameterChanges>,
+pub struct Parameters {
+	changes: ComWrapper<ParameterChanges>,
+	com_ptr: ComPtr<IParameterChanges>,
 }
 
-impl AutomationQueue {
+impl Parameters {
 	pub fn new(midi_mapping: ComRef<IMidiMapping>) -> Result<Self, String> {
-		let mut buffers = Vec::with_capacity(16);
-		let mut ptrs = Vec::with_capacity(16);
+		let mut parameters = Vec::with_capacity(16);
 
 		let mut add_channel = |id: u32| {
-			let buffer = Arc::new(ParameterBuffer { id, value: None.into() });
-
-			let value_queue = ParamValueQueue { buffer: Arc::clone(&buffer) };
-			let value_queue_ptr =
-				ComWrapper::new(value_queue).to_com_ptr::<IParamValueQueue>().unwrap();
-
-			let index = buffers.len();
-
-			buffers.push(buffer);
-			ptrs.push(value_queue_ptr);
+			let index = parameters.len();
+			parameters.push(Parameter::new(id));
 			index
 		};
 
 		// Query pitch bend for all 16 channels
+		const PITCHBEND: i16 = ControllerNumbers_::kPitchBend as i16;
 		for i in 0..16 {
 			let mut id = 0;
-			unsafe {
-				midi_mapping.getMidiControllerAssignment(
-					0,
-					i as i16,
-					ControllerNumbers_::kPitchBend as i16,
-					&mut id,
-				)
-			}
-			.as_result()?;
+			unsafe { midi_mapping.getMidiControllerAssignment(0, i as i16, PITCHBEND, &mut id) }
+				.as_result()?;
 			add_channel(id);
 		}
 
-		// Query channel pressure for all 16 channels
+		// Query aftertouch (channel pressure) for all 16 channels
+		const AFTERTOUCH: i16 = ControllerNumbers_::kAfterTouch as i16;
 		for i in 0..16 {
 			let mut id = 0;
-			unsafe {
-				midi_mapping.getMidiControllerAssignment(
-					0,
-					i as i16,
-					ControllerNumbers_::kAfterTouch as i16,
-					&mut id,
-				)
-			}
-			.as_result()?;
+			unsafe { midi_mapping.getMidiControllerAssignment(0, i as i16, AFTERTOUCH, &mut id) }
+				.as_result()?;
 			add_channel(id);
 		}
 
 		// Query other parameters
-		let params = [
+		let param_list = [
 			(ControllerNumbers_::kCtrlRPNSelectLSB, RPN_LSB),
 			(ControllerNumbers_::kCtrlRPNSelectMSB, RPN_MSB),
 			(ControllerNumbers_::kCtrlDataEntryMSB, DATA_MSB),
 		];
 
-		for (ctrl_id, index) in &params {
+		for (ctrl_id, index) in &param_list {
 			let mut param_id = 0;
 			unsafe {
 				midi_mapping.getMidiControllerAssignment(0, 0, *ctrl_id as i16, &mut param_id)
@@ -161,11 +161,10 @@ impl AutomationQueue {
 			assert_eq!(add_channel(param_id), *index);
 		}
 
-		let changes = ParameterChanges { buffers, ptrs };
-		let changes_obj = ComWrapper::new(changes);
-		let changes_ptr = changes_obj.to_com_ptr::<IParameterChanges>().unwrap();
+		let changes = ComWrapper::new(ParameterChanges { parameters });
+		let com_ptr = changes.to_com_ptr::<IParameterChanges>().unwrap();
 
-		Ok(Self { changes_obj, changes_ptr })
+		Ok(Self { changes, com_ptr })
 	}
 
 	pub fn mpe_init(&self) {
@@ -179,32 +178,28 @@ impl AutomationQueue {
 		self.push(DATA_MSB, 15.0 / 127.0);
 	}
 
-	pub fn push_pitchend(&self, id: usize, normalized_value: f64) {
+	pub fn push_pitchend(&self, id: usize, value: f64) {
 		assert!(id < N_CHANNELS);
-		self.push(id + 1, normalized_value);
+		self.push(id + 1, value);
 	}
 
-	pub fn push_pressure(&self, id: usize, normalized_value: f64) {
+	pub fn push_pressure(&self, id: usize, value: f64) {
 		assert!(id < N_CHANNELS);
-		self.push(id + 17, normalized_value);
+		self.push(id + 17, value);
 	}
 
-	pub fn push(&self, id: usize, normalized_value: f64) {
-		unsafe {
-			*self.changes_obj.buffers[id].value.get() = Some(normalized_value);
-		}
+	pub fn push(&self, id: usize, value: f64) {
+		self.changes.parameters[id].set(value);
 	}
 
 	pub fn clear(&self) {
 		// clear all channels
-		unsafe {
-			for buffer in &self.changes_obj.buffers {
-				*buffer.value.get() = None;
-			}
+		for parameter in &self.changes.parameters {
+			parameter.clear();
 		}
 	}
 
 	pub fn as_com_ptr(&self) -> *mut IParameterChanges {
-		self.changes_ptr.as_ptr()
+		self.com_ptr.as_ptr()
 	}
 }
