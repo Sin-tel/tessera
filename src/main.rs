@@ -186,6 +186,7 @@ impl ApplicationHandler<UserEvent> for App {
 		window_id: WindowId,
 		event: WindowEvent,
 	) {
+		// Check for events that belong to child VST windows
 		{
 			let state = &mut *self.lua.app_data_mut::<State>().unwrap();
 			if let Some((vst_id, _)) = state.vst_windows.get(&window_id) {
@@ -208,10 +209,17 @@ impl ApplicationHandler<UserEvent> for App {
 			}
 		}
 
+		// Main handler
 		match event {
 			WindowEvent::RedrawRequested => {
 				let now = Instant::now();
 				self.next_draw = now + Duration::from_micros(16_000);
+
+				// Make sure OpenGL context is current
+				if let Err(e) = self.surface.make_current() {
+					log_warn!("Failed to make GL context current: {e:?}");
+				}
+
 				render_start(&self.lua);
 				match &self.status {
 					Status::Running => {
