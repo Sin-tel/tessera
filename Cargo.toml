@@ -34,8 +34,7 @@ rustfft = "6.4"
 realfft = "3.5"
 fft_convolution = {version = "0.1", git = "https://github.com/Sin-tel/fft-convolution.git", rev = "ef197e8efb6d9de68df4b4794ca2bcf3b999474e" }
 hound = "3.5"
-# midir = "0.10.3"
-midir = {version = "0.11.0-pre", git = "https://github.com/Sin-tel/midir.git", rev = "c62b473e2a3cfe392ef1c1fcf5c8fdba14cabc5c" }
+midir = "0.11"
 num-complex = "0.4"
 halfband = "0.2"
 windowfunctions = "0.1"
