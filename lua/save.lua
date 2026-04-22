@@ -23,6 +23,13 @@ end
 function save.write(filename)
 	log.info('saving project "' .. filename .. '"')
 
+	-- ensure all VST state is serialized to project
+	for ch_index, channel in ipairs(project.channels) do
+		if channel.instrument and channel.instrument.plugin then
+			channel.instrument.plugin.state = tessera.audio.vst_get_state(ch_index)
+		end
+	end
+
 	local content = serialize(project, "project")
 	util.writefile(filename, content)
 	save.set_save_location(filename)
@@ -150,20 +157,24 @@ function save.init_setup()
 end
 
 local plugin_list_path = "out/plugin_list.lua"
+local plugin_list
 
-function save.read_plugin_list()
-	local plugin_list
-	if util.file_exists(plugin_list_path) then
-		local content = util.readfile(plugin_list_path)
-		plugin_list = setfenv(loadstring(content), {})()
-	else
-		plugin_list = tessera.scan_plugins()
-		save.write_plugin_list(plugin_list)
+function save.read_plugins()
+	if not plugin_list then
+		if util.file_exists(plugin_list_path) then
+			local content = util.readfile(plugin_list_path)
+			plugin_list = setfenv(loadstring(content), {})()
+		else
+			save.scan_plugins()
+		end
 	end
 	return plugin_list
 end
 
-function save.write_plugin_list(plugin_list)
+function save.scan_plugins()
+	plugin_list = tessera.scan_plugins()
+
+	-- persist to disk
 	local content = serialize(plugin_list, "plugin_list")
 	util.writefile(plugin_list_path, content)
 end

@@ -5,12 +5,12 @@ mod pluck;
 mod polysine;
 mod sampler;
 mod sine;
-pub mod vst_wrapper;
+pub mod vst_instrument;
 mod wavetable;
 
 use crate::instrument::{
 	analog::Analog, epiano::Epiano, fm::Fm, pluck::Pluck, polysine::Polysine, sampler::Sampler,
-	sine::Sine, vst_wrapper::VstWrapper, wavetable::Wavetable,
+	sine::Sine, vst_instrument::VstInstrument, wavetable::Wavetable,
 };
 use crate::log::log_warn;
 use crate::worker::RequestData;
@@ -27,7 +27,7 @@ pub fn new(sample_rate: f32, name: &str) -> Box<dyn Instrument + Send> {
 		"polysine" => Box::new(Polysine::new(sample_rate)),
 		"sampler" => Box::new(Sampler::new(sample_rate)),
 		"sine" => Box::new(Sine::new(sample_rate)),
-		"vst_wrapper" => Box::new(VstWrapper::new(sample_rate)),
+		"vst_instrument" => Box::new(VstInstrument::new(sample_rate)),
 		"wavetable" => Box::new(Wavetable::new(sample_rate)),
 		_ => {
 			log_warn!("Instrument with name \"{name}\" not found. Returning default.");
@@ -53,7 +53,7 @@ pub trait Instrument {
 		log_warn!("Instrument received data with no handler");
 		None
 	}
-	fn as_vst(&mut self) -> &mut VstWrapper {
+	fn as_vst(&mut self) -> &mut VstInstrument {
 		unimplemented!();
 	}
 }

@@ -105,7 +105,7 @@ function tessera.load(test_run)
 	-- load default tuning
 	tuning.load("meantone")
 
-	local plugin_list = save.read_plugin_list()
+	local plugin_list = save.read_plugins()
 	for _, plugin in ipairs(plugin_list) do
 		if plugin.is_instrument then
 			print(plugin.name)

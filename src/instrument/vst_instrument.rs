@@ -6,14 +6,14 @@ use crate::vst3::Vst3State;
 use crate::vst3::parameter::N_CHANNELS;
 
 #[allow(unused)]
-pub struct VstWrapper {
+pub struct VstInstrument {
 	processor: Option<Vst3Processor>,
 	voice_pitches: [i16; N_CHANNELS],
 	mpe_initialized: bool,
 	pb_range: f64,
 }
 
-impl VstWrapper {
+impl VstInstrument {
 	pub fn get_state(&self) -> Option<String> {
 		if let Some(processor) = &self.processor
 			&& let Ok(state) = processor.get_state()
@@ -37,9 +37,9 @@ impl VstWrapper {
 	}
 }
 
-impl Instrument for VstWrapper {
+impl Instrument for VstInstrument {
 	fn new(_sample_rate: f32) -> Self {
-		VstWrapper {
+		VstInstrument {
 			processor: None,
 			voice_pitches: [0; N_CHANNELS],
 			mpe_initialized: false,
@@ -119,7 +119,7 @@ impl Instrument for VstWrapper {
 		None
 	}
 
-	fn as_vst(&mut self) -> &mut VstWrapper {
+	fn as_vst(&mut self) -> &mut VstInstrument {
 		self
 	}
 }
