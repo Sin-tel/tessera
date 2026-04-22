@@ -2,6 +2,7 @@ local Menu = require("menu")
 local Ui = require("ui/ui")
 local View = require("view")
 local device_list = require("device_list")
+local save = require("save")
 local widgets = require("ui/widgets")
 
 local Channels = View.derive("Channels")
@@ -12,15 +13,39 @@ function Channels.new()
 
 	self.ui = Ui.new(self)
 
-	-- make list of instrument (name, key) and sort them
+	-- make list of instruments and sort them
 	self.intrument_list = {}
 	for key, v in pairs(device_list.instruments) do
-		if not v.hide or not release then
-			table.insert(self.intrument_list, { v.name, key })
+		if (not v.hide or not release) and key ~= "vst_instrument" then
+			local instrument = util.clone(v)
+			local options = {
+				name = instrument.display_name,
+				instrument = instrument,
+			}
+			table.insert(self.intrument_list, options)
 		end
 	end
+
+	-- add plugins dynamically
+	local plugins = save.read_plugins()
+	for _, v in ipairs(plugins) do
+		if v.is_instrument then
+			local instrument = util.clone(device_list.instruments.vst_instrument)
+			instrument.display_name = "VST: " .. v.name
+			instrument.plugin = {
+				descriptor = v,
+			}
+
+			local options = {
+				name = instrument.display_name,
+				instrument = instrument,
+			}
+			table.insert(self.intrument_list, options)
+		end
+	end
+
 	table.sort(self.intrument_list, function(a, b)
-		return a[1] < b[1]
+		return a.name < b.name
 	end)
 
 	self.dropdown = widgets.Button.new("Add channel")
@@ -37,8 +62,8 @@ function Channels:update()
 	end
 
 	if self.add_instrument_index then
-		local key = self.intrument_list[self.add_instrument_index][2]
-		command.run_and_register(command.NewChannel.new(key))
+		local options = self.intrument_list[self.add_instrument_index]
+		command.run_and_register(command.NewChannel.new(options))
 		self.add_instrument_index = nil
 	end
 	self.ui.layout:new_row()
@@ -75,7 +100,7 @@ function Channels:menu()
 	local items = {}
 	for i, v in ipairs(self.intrument_list) do
 		table.insert(items, {
-			widget = widgets.Button.new(v[1], options),
+			widget = widgets.Button.new(v.name, options),
 			action = function()
 				self.add_instrument_index = i
 			end,

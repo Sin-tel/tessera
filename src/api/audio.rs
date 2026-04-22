@@ -12,14 +12,13 @@ use crate::opengl::UserEvent;
 use crate::voice_manager::Token;
 use crate::vst3;
 use crate::vst3::Vst3State;
-use crate::vst3::scan::probe_vst3;
+use crate::vst3::scan::PluginDescriptor;
 use cpal::Device;
 use cpal::traits::DeviceTrait;
 use mlua::prelude::*;
 use no_denormals::no_denormals;
 use ringbuf::traits::*;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 
 pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	let audio = lua.create_table()?;
@@ -324,7 +323,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		lua.create_function(|lua, (index, instrument_name): (usize, String)| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 			if let Some(ctx) = &mut state.audio {
-				assert!(instrument_name != "vst_wrapper");
+				assert!(instrument_name != "vst_instrument");
 				let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
 				let mut render = ctx.render.lock();
 				render.insert_instrument(index - 1, &instrument_name, meter_handle_instrument);
@@ -337,13 +336,9 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 
 	audio.set(
 		"insert_instrument_vst",
-		lua.create_function(|lua, (index, vst_id, path): (usize, usize, String)| {
+		lua.create_function(|lua, (index, vst_id, plugin): (usize, usize, PluginDescriptor)| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 			if let Some(ctx) = &mut state.audio {
-				let mut plugin_info = probe_vst3(&PathBuf::from(path)).unwrap();
-				assert!(plugin_info.len() == 1);
-				let plugin = plugin_info.pop().unwrap();
-
 				// TODO: do this on a worker thread
 				let (editor, processor) = vst3::load(
 					&plugin,
@@ -359,7 +354,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 
 				let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
 				let mut render = ctx.render.lock();
-				render.insert_instrument(index - 1, "vst_wrapper", meter_handle_instrument);
+				render.insert_instrument(index - 1, "vst_instrument", meter_handle_instrument);
 				render.vst_set_processor(index - 1, processor);
 
 				Ok(Some(meter_id_instrument + 1))

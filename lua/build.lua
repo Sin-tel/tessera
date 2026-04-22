@@ -79,17 +79,23 @@ function build.channel(ch_index, channel_data)
 		local options = device_list.instruments[channel_data.instrument.name]
 		assert(options, 'Could not find options for "' .. channel_data.instrument.name .. '"')
 
-		if channel_data.instrument.name == "vst_wrapper" then
-			-- TODO: scan and store
-			-- local path = "C:\\Program Files\\Common Files\\VST3\\Pianoteq 7.vst3"
-			local path =
-				"C:\\Program Files\\Common Files\\VST3\\Surge Synth Team\\Surge XT.vst3\\Contents\\x86_64-win\\Surge XT.vst3"
-
-			options.vst = true
+		if channel_data.instrument.plugin then
+			local descriptor = channel_data.instrument.plugin.descriptor
 			options.vst_id = VST_ID
 			VST_ID = VST_ID + 1
 
-			local meter_id_instrument = tessera.audio.insert_instrument_vst(ch_index, options.vst_id, path)
+			local meter_id_instrument = tessera.audio.insert_instrument_vst(ch_index, options.vst_id, descriptor)
+
+			if channel_data.instrument.plugin.state then
+				-- set initial state
+				local state = channel_data.instrument.plugin.state
+				tessera.audio.vst_set_state(ch_index, options.vst_id, state)
+			else
+				print("No state in plugin save, polling initial")
+				local state = tessera.audio.vst_get_state(ch_index)
+				channel_data.instrument.plugin.state = state
+			end
+
 			instrument = Device.new(channel_data.instrument, options, meter_id_instrument)
 		else
 			local meter_id_instrument = tessera.audio.insert_instrument(ch_index, channel_data.instrument.name)
@@ -126,7 +132,7 @@ function build.refresh_channels()
 	end
 end
 
-function build.new_device_data(device_key, options)
+function build.new_device_data(options)
 	local state = {}
 
 	local index = 1
@@ -158,7 +164,13 @@ function build.new_device_data(device_key, options)
 		end
 	end
 
-	return { name = device_key, display_name = options.name, state = state, mute = false }
+	assert(options.name)
+	assert(options.display_name)
+
+	local device = { name = options.name, display_name = options.display_name, state = state, mute = false }
+	device.plugin = options.plugin
+
+	return device
 end
 
 function build.new_channel_data(options)
@@ -176,8 +188,9 @@ function build.new_channel_data(options)
 		master = options.master,
 	}
 
-	if options.instrument_key then
-		new.instrument = build.new_device_data(options.instrument_key, options)
+	if options.instrument then
+		assert(options.instrument.name)
+		new.instrument = build.new_device_data(options.instrument)
 		new.notes = {}
 		new.control = {}
 	end

@@ -47,10 +47,10 @@ end
 local NewChannel = {}
 NewChannel.__index = NewChannel
 
-function NewChannel.new(name)
+function NewChannel.new(options)
     local self = setmetatable({}, NewChannel)
 
-    self.name = name
+    self.options = options
     self.ch_index = #project.channels + 1
 
     assert(self.ch_index)
@@ -58,11 +58,8 @@ function NewChannel.new(name)
 end
 
 function NewChannel:run()
-    local options = device_list.instruments[self.name]
-    assert(options)
     -- build state
-    options.instrument_key = self.name
-    local channel = build.new_channel_data(options)
+    local channel = build.new_channel_data(self.options)
     table.insert(project.channels, channel)
 
     build.channel(self.ch_index, channel)
@@ -104,21 +101,19 @@ end
 local NewEffect = {}
 NewEffect.__index = NewEffect
 
-function NewEffect.new(ch_index, name)
+function NewEffect.new(ch_index, options)
     local self = setmetatable({}, NewEffect)
 
     self.ch_index = ch_index
     self.effect_index = #project.channels[ch_index].effects + 1
-    self.name = name
-    self.display_name = name
+
+    assert(options)
+    self.options = options
     return self
 end
 
 function NewEffect:run()
-    local options = device_list.effects[self.name]
-    assert(options)
-
-    local effect = build.new_device_data(self.name, options)
+    local effect = build.new_device_data(self.options)
     table.insert(project.channels[self.ch_index].effects, effect)
 
     build.effect(self.ch_index, self.effect_index, effect)

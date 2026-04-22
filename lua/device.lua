@@ -38,7 +38,9 @@ function Device.new(data, options, meter_id)
 
 	local index = 1
 
-	if options.vst then
+	if data.plugin then
+		assert(options.vst_id)
+		assert(data.plugin.descriptor)
 		self.vst = true
 		self.vst_id = options.vst_id
 	end
