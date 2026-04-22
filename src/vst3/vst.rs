@@ -13,6 +13,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::mpsc::SyncSender;
 use vst3::Steinberg::Vst::MediaTypes_::kAudio;
+use vst3::Steinberg::Vst::ProcessContext_::StatesAndFlags_;
 use vst3::Steinberg::kInvalidArgument;
 use winit::window::WindowId;
 
@@ -21,10 +22,10 @@ use vst3::Steinberg::Vst::BusInfo_::BusFlags_;
 use vst3::Steinberg::Vst::ProcessModes_::kRealtime;
 use vst3::Steinberg::Vst::SymbolicSampleSizes_::kSample32;
 use vst3::Steinberg::Vst::{
-	AudioBusBuffers, AudioBusBuffers__type0, BusInfo, IAudioProcessor, IAudioProcessorTrait,
-	IComponent, IComponentTrait, IConnectionPoint, IConnectionPointTrait, IEditController,
-	IEditControllerTrait, IHostApplication, IHostApplicationTrait, IMidiMapping, ProcessData,
-	ProcessSetup, SpeakerArr, ViewType,
+	AudioBusBuffers, AudioBusBuffers__type0, BusInfo, Chord, FrameRate, IAudioProcessor,
+	IAudioProcessorTrait, IComponent, IComponentTrait, IConnectionPoint, IConnectionPointTrait,
+	IEditController, IEditControllerTrait, IHostApplication, IHostApplicationTrait, IMidiMapping,
+	ProcessContext, ProcessData, ProcessSetup, SpeakerArr, ViewType,
 };
 use vst3::Steinberg::{
 	IPlugFrame, IPlugFrameTrait, IPlugView, IPlugViewTrait, IPluginBaseTrait, IPluginFactory,
@@ -151,6 +152,7 @@ pub struct Vst3Editor {
 #[allow(unused)]
 pub struct Vst3Processor {
 	id: usize,
+	sample_rate: f32,
 	cleanup_tx: SyncSender<usize>,
 	pub events: Events,
 	pub parameters: Parameters,
@@ -301,6 +303,7 @@ pub fn load(
 
 	let processor = Vst3Processor {
 		id,
+		sample_rate,
 		cleanup_tx,
 		events: Events::new(),
 		parameters,
@@ -416,6 +419,35 @@ impl Vst3Processor {
 			__field0: AudioBusBuffers__type0 { channelBuffers32: channels.as_mut_ptr() },
 		};
 
+		let mut context = ProcessContext {
+			// TODO: Send correct playing flag
+			state: (StatesAndFlags_::kPlaying as u32)
+				| (StatesAndFlags_::kTempoValid as u32)
+				| (StatesAndFlags_::kProjectTimeMusicValid as u32),
+
+			sampleRate: f64::from(self.sample_rate),
+
+			// TODO: hardcoded for now
+			tempo: 120.0,
+
+			// TODO (Transport quarter notes)
+			projectTimeMusic: 0.0,
+			projectTimeSamples: 0,
+
+			// Other fields we don't care about
+			barPositionMusic: 0.0,
+			cycleStartMusic: 0.0,
+			cycleEndMusic: 0.0,
+			timeSigNumerator: 4,
+			timeSigDenominator: 4,
+			systemTime: 0,
+			smpteOffsetSubframes: 0,
+			frameRate: FrameRate { framesPerSecond: 60, flags: 0 },
+			chord: Chord { keyNote: 0, rootNote: 0, chordMask: 0 },
+			samplesToNextClock: 0,
+			continousTimeSamples: 0,
+		};
+
 		// Populate buffer process data
 		let mut process_data = ProcessData {
 			processMode: kRealtime,
@@ -439,7 +471,7 @@ impl Vst3Processor {
 			outputParameterChanges: std::ptr::null_mut(),
 
 			// Optional according to docs, but might be required for some plugins to work properly
-			processContext: std::ptr::null_mut(),
+			processContext: &mut context,
 		};
 
 		// Run processing
