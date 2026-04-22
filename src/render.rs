@@ -85,7 +85,7 @@ impl Render {
 	pub fn vst_set_state(&mut self, channel_index: usize, state: &Vst3State) {
 		let channel = &mut self.channels[channel_index];
 		let instrument = &mut channel.instrument.as_mut().unwrap();
-		instrument.instrument.as_vst().set_state(&state);
+		instrument.instrument.as_vst().set_state(state);
 	}
 
 	pub fn vst_get_state(&mut self, channel_index: usize) -> String {

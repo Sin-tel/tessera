@@ -1,5 +1,4 @@
 use std::cell::UnsafeCell;
-use std::sync::Arc;
 use vst3::Steinberg::Vst::Event_::EventTypes_;
 use vst3::Steinberg::Vst::NoteOffEvent;
 use vst3::Steinberg::Vst::{Event, Event__type0, IEventList, IEventListTrait, NoteOnEvent};
@@ -9,13 +8,15 @@ use vst3::{Class, ComPtr, ComWrapper};
 // capacity doesn't need to be very big since buffers are tiny
 const CAPACITY: usize = 32;
 
-struct EventBuffer(UnsafeCell<Vec<Event>>);
+struct EventList(UnsafeCell<Vec<Event>>);
 
-unsafe impl Send for EventBuffer {}
-unsafe impl Sync for EventBuffer {}
+unsafe impl Send for EventList {}
+unsafe impl Sync for EventList {}
 
-struct EventList {
-	buffer: Arc<EventBuffer>,
+impl EventList {
+	fn new() -> Self {
+		Self(UnsafeCell::new(Vec::with_capacity(CAPACITY)))
+	}
 }
 
 impl Class for EventList {
@@ -24,12 +25,12 @@ impl Class for EventList {
 
 impl IEventListTrait for EventList {
 	unsafe fn getEventCount(&self) -> i32 {
-		unsafe { (*self.buffer.0.get()).len() as i32 }
+		unsafe { (*self.0.get()).len() as i32 }
 	}
 
 	unsafe fn getEvent(&self, index: i32, event: *mut Event) -> tresult {
 		unsafe {
-			let vec = &*self.buffer.0.get();
+			let vec = &*self.0.get();
 			if index >= 0 && (index as usize) < vec.len() {
 				*event = vec[index as usize];
 				kResultOk
@@ -45,28 +46,25 @@ impl IEventListTrait for EventList {
 	}
 }
 
-pub struct EventQueue {
-	buffer: Arc<EventBuffer>,
+pub struct Events {
+	events: ComWrapper<EventList>,
 	com_ptr: ComPtr<IEventList>,
 }
 
-impl EventQueue {
+impl Events {
 	pub fn new() -> Self {
-		let buffer = Arc::new(EventBuffer(UnsafeCell::new(Vec::with_capacity(CAPACITY))));
-
-		let com_obj = ComWrapper::new(EventList { buffer: Arc::clone(&buffer) });
-		let com_ptr = com_obj.to_com_ptr::<IEventList>().unwrap();
-
-		Self { buffer, com_ptr }
+		let events = ComWrapper::new(EventList::new());
+		let com_ptr = events.to_com_ptr::<IEventList>().unwrap();
+		Self { events, com_ptr }
 	}
 
 	pub fn clear(&mut self) {
-		unsafe { (*self.buffer.0.get()).clear() };
+		unsafe { (*self.events.0.get()).clear() };
 	}
 
 	pub fn push(&mut self, event: Event) {
 		// Note: may still allocate if we exceed capacity.
-		unsafe { (*self.buffer.0.get()).push(event) };
+		unsafe { (*self.events.0.get()).push(event) };
 	}
 
 	pub fn as_com_ptr(&self) -> *mut IEventList {

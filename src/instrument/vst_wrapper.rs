@@ -54,7 +54,7 @@ impl Instrument for VstWrapper {
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		if let Some(processor) = &mut self.processor {
 			if !self.mpe_initialized {
-				processor.automation.mpe_init();
+				processor.parameters.mpe_init();
 				self.mpe_initialized = true;
 			}
 
@@ -70,13 +70,13 @@ impl Instrument for VstWrapper {
 
 			// normalize pitchbend value
 			let pitchbend = 0.5 + pitch_offset * (0.5 / self.pb_range);
-			processor.automation.push_pitchend(id, pitchbend);
+			processor.parameters.push_pitchend(id, pitchbend);
 		}
 	}
 
 	fn pressure(&mut self, pressure: f32, id: usize) {
 		if let Some(processor) = &mut self.processor {
-			processor.automation.push_pressure(id, f64::from(pressure));
+			processor.parameters.push_pressure(id, f64::from(pressure));
 		}
 	}
 
@@ -92,7 +92,7 @@ impl Instrument for VstWrapper {
 
 			// normalize pitchbend value
 			let pitchbend = 0.5 + pitch_offset * (0.5 / self.pb_range);
-			processor.automation.push_pitchend(id, pitchbend);
+			processor.parameters.push_pitchend(id, pitchbend);
 		}
 	}
 

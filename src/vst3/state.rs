@@ -1,12 +1,17 @@
 use crate::vst3::error::ToResultExt;
 use base64::{Engine, engine::general_purpose::STANDARD};
+use parking_lot::Mutex;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use vst3::Steinberg::IBStream_::IStreamSeekMode_;
 use vst3::Steinberg::{
 	IBStream, IBStreamTrait, kInvalidArgument, kResultFalse, kResultOk, tresult,
 };
 use vst3::{Class, ComPtr, ComWrapper};
+
+const SEEK_START: i32 = IStreamSeekMode_::kIBSeekSet;
+const SEEK_CURRENT: i32 = IStreamSeekMode_::kIBSeekCur;
+const SEEK_END: i32 = IStreamSeekMode_::kIBSeekEnd;
 
 struct Stream {
 	buffer: Arc<Mutex<Cursor<Vec<u8>>>>,
@@ -27,7 +32,7 @@ impl IBStreamTrait for Stream {
 			return kInvalidArgument;
 		}
 
-		let mut cursor = self.buffer.lock().unwrap();
+		let mut cursor = self.buffer.lock();
 		let slice =
 			unsafe { std::slice::from_raw_parts_mut(buffer as *mut u8, num_bytes as usize) };
 
@@ -52,7 +57,7 @@ impl IBStreamTrait for Stream {
 			return kInvalidArgument;
 		}
 
-		let mut cursor = self.buffer.lock().unwrap();
+		let mut cursor = self.buffer.lock();
 		let slice = unsafe { std::slice::from_raw_parts(buffer as *const u8, num_bytes as usize) };
 
 		match cursor.write_all(slice) {
@@ -67,12 +72,12 @@ impl IBStreamTrait for Stream {
 	}
 
 	unsafe fn seek(&self, pos: i64, mode: i32, result: *mut i64) -> tresult {
-		let mut cursor = self.buffer.lock().unwrap();
+		let mut cursor = self.buffer.lock();
 
 		let seek_from = match mode {
-			IStreamSeekMode_::kIBSeekSet => SeekFrom::Start(pos as u64),
-			IStreamSeekMode_::kIBSeekCur => SeekFrom::Current(pos),
-			IStreamSeekMode_::kIBSeekEnd => SeekFrom::End(pos),
+			SEEK_START => SeekFrom::Start(pos as u64),
+			SEEK_CURRENT => SeekFrom::Current(pos),
+			SEEK_END => SeekFrom::End(pos),
 			_ => return kInvalidArgument,
 		};
 
@@ -91,7 +96,7 @@ impl IBStreamTrait for Stream {
 		if pos.is_null() {
 			return kInvalidArgument;
 		}
-		let mut cursor = self.buffer.lock().unwrap();
+		let mut cursor = self.buffer.lock();
 
 		match cursor.stream_position() {
 			Ok(current_pos) => {
@@ -132,11 +137,11 @@ impl Vst3State {
 	}
 
 	pub fn rewind(&self) -> Result<(), String> {
-		unsafe { self.stream.seek(0, 0, std::ptr::null_mut()) }.as_result()
+		unsafe { self.stream.seek(0, SEEK_START, std::ptr::null_mut()) }.as_result()
 	}
 
 	pub fn into_string(self) -> String {
-		let bytes = self.buffer.lock().unwrap();
+		let bytes = self.buffer.lock();
 		STANDARD.encode(bytes.get_ref())
 	}
 }
