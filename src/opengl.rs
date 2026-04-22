@@ -1,6 +1,7 @@
 use crate::app::INIT_HEIGHT;
 use crate::app::INIT_WIDTH;
 use crate::embed::Asset;
+use glutin::context::PossiblyCurrentGlContext;
 use glutin::surface::SwapInterval;
 use winit::window::Icon;
 use winit::window::Window;
@@ -37,6 +38,12 @@ use winit::event_loop::EventLoop;
 pub struct Surface {
 	context: glutin::context::PossiblyCurrentContext,
 	surface: glutin::surface::Surface<glutin::surface::WindowSurface>,
+}
+
+impl Surface {
+	pub fn make_current(&self) -> Result<(), glutin::error::Error> {
+		self.context.make_current(&self.surface)
+	}
 }
 
 impl WindowSurface for Surface {
@@ -154,7 +161,7 @@ pub fn setup_window() -> (Canvas<Renderer>, EventLoop<UserEvent>, Surface, Windo
 		(canvas, window, gl_context, surface)
 	};
 
-	let demo_surface = Surface { context, surface };
+	let surface = Surface { context, surface };
 
-	(canvas, event_loop, demo_surface, window)
+	(canvas, event_loop, surface, window)
 }
