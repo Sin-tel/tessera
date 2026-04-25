@@ -108,11 +108,16 @@ impl Instrument for VstInstrument {
 		}
 	}
 
-	fn set_parameter(&mut self, index: usize, _value: f32) -> Option<RequestData> {
-		#[allow(clippy::single_match_else)]
+	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
 			0 => {
 				// This corresponds to the ui button. Ignore.
+			},
+			1 => {
+				self.pb_range = match value as usize {
+					1 => 2.0,
+					_ => 48.0,
+				};
 			},
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
