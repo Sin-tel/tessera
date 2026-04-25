@@ -10,6 +10,7 @@ device_list.instruments.vst_instrument = {
 	display_name = "VST (unknown)",
 	parameters = {
 		{ "Show UI", "button" },
+		{ "Pitch Bend Range", "selector", { list = { "2", "48" }, default = 2 } },
 	},
 }
 
