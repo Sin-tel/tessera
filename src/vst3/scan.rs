@@ -28,11 +28,9 @@ pub fn guid_from_hex(s: &str) -> Result<[i8; 16]> {
 	}
 
 	let mut guid = [0i8; 16];
-	for (i, chunk) in s.as_bytes().chunks(2).enumerate() {
-		let hex_pair = std::str::from_utf8(chunk)
-			.map_err(|e| anyhow!("Invalid UTF-8 at byte {}: {}", i * 2, e))?;
-		let byte = u8::from_str_radix(hex_pair, 16)
-			.map_err(|e| anyhow!("Invalid hex at byte {}: {}", i * 2, e))?;
+	for (i, pos) in (0..32).step_by(2).enumerate() {
+		let byte = u8::from_str_radix(&s[pos..pos + 2], 16)
+			.map_err(|e| anyhow!("Invalid hex at position {pos}: {e}"))?;
 		guid[i] = byte as i8;
 	}
 
