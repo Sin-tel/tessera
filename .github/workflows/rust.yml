@@ -32,7 +32,7 @@ jobs:
       run: cargo run --release -- --test-run
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: tessera_linux
         path: target/release/tessera
@@ -65,7 +65,7 @@ jobs:
         file artifacts/tessera
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: tessera_macos
         path: artifacts/tessera
@@ -97,7 +97,7 @@ jobs:
       run: cargo run --release -- --test-run
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: tessera_windows
         path: target/release/tessera.exe
