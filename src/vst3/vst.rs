@@ -412,6 +412,14 @@ impl Vst3Editor {
 	}
 }
 
+impl Drop for Vst3Editor {
+	fn drop(&mut self) {
+		unsafe {
+			let _ = self.edit_controller.terminate();
+		}
+	}
+}
+
 impl Vst3Processor {
 	pub fn id(&self) -> usize {
 		self.id
@@ -519,6 +527,12 @@ impl Vst3Processor {
 
 impl Drop for Vst3Processor {
 	fn drop(&mut self) {
+		unsafe {
+			let _ = self.audio_processor.setProcessing(0);
+			let _ = self.component.setActive(0);
+			let _ = self.component.terminate();
+		}
+
 		// Note: this may block, but dropping the processor is not realtime safe anyway.
 		let _ = self.cleanup_tx.send(self.id);
 	}
