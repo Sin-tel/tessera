@@ -12,13 +12,41 @@ use vst3::Steinberg::{
 	IPluginFactory, IPluginFactory2, IPluginFactory2Trait, IPluginFactoryTrait, PClassInfo2,
 };
 
+use std::fmt::Write;
+
+pub fn guid_to_hex(guid: &[i8; 16]) -> String {
+	let mut s = String::with_capacity(32);
+	for &byte in guid.iter() {
+		write!(s, "{:02x}", byte as u8).unwrap();
+	}
+	s
+}
+
+pub fn guid_from_hex(s: &str) -> Result<[i8; 16]> {
+	if s.len() != 32 {
+		return Err(anyhow!("Expected 32 hex characters, got {}", s.len()));
+	}
+
+	let mut guid = [0i8; 16];
+	for (i, chunk) in s.as_bytes().chunks(2).enumerate() {
+		let hex_pair = std::str::from_utf8(chunk)
+			.map_err(|e| anyhow!("Invalid UTF-8 at byte {}: {}", i * 2, e))?;
+		let byte = u8::from_str_radix(hex_pair, 16)
+			.map_err(|e| anyhow!("Invalid hex at byte {}: {}", i * 2, e))?;
+		guid[i] = byte as i8;
+	}
+
+	Ok(guid)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(unused)]
 pub struct PluginDescriptor {
 	pub name: String,
 	pub category: String,
 	pub is_instrument: bool,
-	pub processor_cid: [i8; 16],
+	pub enabled: bool,
+	pub guid: String,
 	pub library_path: PathBuf,
 }
 
@@ -52,13 +80,14 @@ pub fn probe_vst3(library_path: &Path) -> Result<Vec<PluginDescriptor>> {
 			if category == "Audio Module Class" {
 				let name = extract_cstring(&info.name);
 				let sub_categories = extract_cstring(&info.subCategories);
-				let processor_cid = info.cid;
+				let guid = guid_to_hex(&info.cid);
 				let is_instrument = sub_categories.contains("Instrument");
 				descriptors.push(PluginDescriptor {
 					name,
 					category: sub_categories,
 					is_instrument,
-					processor_cid,
+					enabled: false,
+					guid,
 					library_path: library_path.to_path_buf(),
 				});
 			}
