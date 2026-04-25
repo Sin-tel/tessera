@@ -26,7 +26,7 @@ function Channels.update_list()
 	-- add plugins dynamically
 	local plugins = save.read_plugins()
 	for _, v in ipairs(plugins) do
-		if v.is_instrument then
+		if v.is_instrument and v.enabled then
 			local instrument = util.clone(device_list.instruments.vst_instrument)
 			instrument.display_name = "VST: " .. v.name
 			instrument.plugin = {

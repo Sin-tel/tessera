@@ -156,27 +156,25 @@ function save.init_setup()
 	end
 end
 
-local plugin_list_path = "out/plugin_list.lua"
-local plugin_list
-
 function save.read_plugins()
-	if not plugin_list then
-		if util.file_exists(plugin_list_path) then
-			local content = util.readfile(plugin_list_path)
-			plugin_list = setfenv(loadstring(content), {})()
-		else
-			save.scan_plugins()
-		end
+	if not setup.plugin_list then
+		save.scan_plugins()
 	end
-	return plugin_list
+	return setup.plugin_list
 end
 
-function save.scan_plugins()
-	plugin_list = tessera.scan_plugins()
+local whitelist = { "pianoteq", "surge xt" }
 
-	-- persist to disk
-	local content = serialize(plugin_list, "plugin_list")
-	util.writefile(plugin_list_path, content)
+function save.scan_plugins()
+	setup.plugin_list = tessera.scan_plugins()
+
+	for _, plugin in ipairs(setup.plugin_list) do
+		for _, w in ipairs(whitelist) do
+			if string.find(string.lower(plugin.name), w) then
+				plugin.enabled = true
+			end
+		end
+	end
 end
 
 return save

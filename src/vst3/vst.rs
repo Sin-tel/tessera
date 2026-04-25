@@ -3,6 +3,7 @@ use crate::vst3::error::ToResultExt;
 use crate::vst3::event::Events;
 use crate::vst3::parameter::Parameters;
 use crate::vst3::scan::PluginDescriptor;
+use crate::vst3::scan::guid_from_hex;
 use crate::vst3::state::Vst3State;
 use crate::vst3::util::extract_cstring_utf16;
 use anyhow::{Context, Result, anyhow};
@@ -174,11 +175,13 @@ pub fn load(
 	let factory_ptr = lib.get_factory()?;
 	let factory = unsafe { ComRef::<IPluginFactory>::from_raw(factory_ptr as *mut _).unwrap() };
 
+	let plugin_cid = guid_from_hex(&plugin.guid)?;
+
 	// Create the processor IComponent
 	let mut component_ptr: *mut c_void = std::ptr::null_mut();
 	unsafe {
 		factory.createInstance(
-			plugin.processor_cid.as_ptr(),
+			plugin_cid.as_ptr(),
 			IComponent::IID.as_ptr() as *const i8,
 			&mut component_ptr,
 		);
