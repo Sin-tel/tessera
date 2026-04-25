@@ -1,8 +1,10 @@
 require("table.clear")
+local Channels = require("views/channels")
 local Ui = require("ui/ui")
 local View = require("view")
 local engine = require("engine")
 local midi = require("midi")
+local save = require("save")
 local widgets = require("ui/widgets")
 
 local Settings = View.derive("Settings")
@@ -81,6 +83,7 @@ function Settings.new()
 	self.update_button = widgets.Button.new("Go to downloads")
 
 	self.control_panel_button = widgets.Button.new("Open control panel")
+	self.rescan_button = widgets.Button.new("Rescan")
 
 	self.state.host_index = util.find(Settings.hosts, setup.host) or 1
 	self.select_host = widgets.Selector.new(
@@ -342,6 +345,19 @@ function Settings:update()
 		self.ui.layout:col(c2 + c3)
 		self.ui:label("MIDI not available")
 	end
+
+	-- PLUGINS
+	self.ui:background(theme.background)
+	self.ui.layout:new_row()
+	self.ui.layout:col(c1 + c2)
+	self.ui:label("Plugins")
+	self.ui.layout:col(c3)
+	if self.rescan_button:update(self.ui) then
+		save.scan_plugins()
+		Channels.update_list()
+	end
+	-- self.ui.layout:new_row()
+	-- self.ui.layout:col(c1 + c2)
 
 	self.ui:end_frame()
 end

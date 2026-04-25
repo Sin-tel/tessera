@@ -1,4 +1,14 @@
-tuning:
+# VST
+add pressure queue too
+
+need to fix voice alloc, some stuck notes when pedaling
+should plugin handle pedal itself? kind of annoying...
+
+dump state and save preset
+
+scanning and saving list
+
+# tuning
  * make categories (ET / temp / JI)
  * adjust notation
 

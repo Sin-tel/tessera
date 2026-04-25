@@ -34,8 +34,7 @@ rustfft = "6.4"
 realfft = "3.5"
 fft_convolution = {version = "0.1", git = "https://github.com/Sin-tel/fft-convolution.git", rev = "ef197e8efb6d9de68df4b4794ca2bcf3b999474e" }
 hound = "3.5"
-# midir = "0.10.3"
-midir = {version = "0.11.0-pre", git = "https://github.com/Sin-tel/midir.git", rev = "c62b473e2a3cfe392ef1c1fcf5c8fdba14cabc5c" }
+midir = "0.11"
 num-complex = "0.4"
 halfband = "0.2"
 windowfunctions = "0.1"
@@ -54,6 +53,9 @@ glutin =  "0.32.0"
 glutin-winit = "0.5"
 raw-window-handle = "0.6"
 
+vst3 = "0.3"
+libloading = "0.9"
+
 cosmic-text = "0.18"
 swash = "0.2"
 unicode-script = "0.5.5"
@@ -69,6 +71,7 @@ open = "5.3"
 ureq = {version = "3.1", features = ["json"]}
 serde_json = "1.0"
 anyhow = "1.0"
+base64 = "0.22"
 
 [[bench]]
 name = "bench"

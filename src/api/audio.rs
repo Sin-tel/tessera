@@ -8,7 +8,11 @@ use crate::audio::{
 };
 use crate::context::{AudioContext, AudioMessage};
 use crate::log::{log_error, log_info};
+use crate::opengl::UserEvent;
 use crate::voice_manager::Token;
+use crate::vst3;
+use crate::vst3::Vst3State;
+use crate::vst3::scan::PluginDescriptor;
 use cpal::Device;
 use cpal::traits::DeviceTrait;
 use mlua::prelude::*;
@@ -317,7 +321,9 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	audio.set(
 		"insert_instrument",
 		lua.create_function(|lua, (index, instrument_name): (usize, String)| {
-			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			if let Some(ctx) = &mut state.audio {
+				assert!(instrument_name != "vst_instrument");
 				let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
 				let mut render = ctx.render.lock();
 				render.insert_instrument(index - 1, &instrument_name, meter_handle_instrument);
@@ -325,6 +331,108 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 			} else {
 				Ok(None)
 			}
+		})?,
+	)?;
+
+	audio.set(
+		"insert_instrument_vst",
+		lua.create_function(|lua, (index, vst_id, plugin): (usize, usize, PluginDescriptor)| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			if let Some(ctx) = &mut state.audio {
+				let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
+				{
+					let mut render = ctx.render.lock();
+					render.insert_instrument(index - 1, "vst_instrument", meter_handle_instrument);
+				}
+				// TODO: do this on a worker thread
+				match vst3::load(
+					&plugin,
+					ctx.sample_rate as f32,
+					vst_id,
+					state.vst_cleanup_tx.clone(),
+				) {
+					Ok((editor, processor)) => {
+						log_info!("Plugin '{}' loaded succesfully", plugin.name);
+
+						state.vst_editors.insert(vst_id, editor);
+						{
+							let mut render = ctx.render.lock();
+							render.vst_set_processor(index - 1, processor);
+						}
+					},
+					Err(e) => log_error!("Error loading VST: {e:?}"),
+				}
+				return Ok(Some(meter_id_instrument + 1));
+			}
+			Ok(None)
+		})?,
+	)?;
+
+	audio.set(
+		"open_vst_window",
+		lua.create_function(|lua, vst_id: usize| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			if let Some(editor) = state.vst_editors.get(&vst_id) {
+				assert_eq!(editor.id(), vst_id);
+				if let Err(e) = state.event_loop.send_event(UserEvent::OpenVstWindow(vst_id)) {
+					log_error!("{e}");
+				}
+			} else {
+				log_error!("VST id {} not found!", vst_id);
+			}
+
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"vst_get_state",
+		lua.create_function(|lua, index: usize| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			if let Some(ctx) = &mut state.audio {
+				let mut render = ctx.render.lock();
+				let vst_state = render.vst_get_state(index - 1);
+				Ok(Some(vst_state))
+			} else {
+				Ok(None)
+			}
+		})?,
+	)?;
+
+	audio.set(
+		"vst_set_state",
+		lua.create_function(|lua, (index, vst_id, state_base64): (usize, usize, String)| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+			if let Some(ctx) = &mut state.audio {
+				if let Ok(vst_state) = Vst3State::from_string(state_base64) {
+					let mut render = ctx.render.lock();
+					render.vst_set_state(index - 1, &vst_state);
+
+					if let Some(editor) = state.vst_editors.get(&vst_id) {
+						editor.set_state(&vst_state).unwrap();
+					} else {
+						log_error!("VST id {} not found!", vst_id);
+					}
+				} else {
+					log_error!("Failed to decode vst state");
+				}
+			}
+			Ok(())
+		})?,
+	)?;
+
+	audio.set(
+		"poll_vst_destroyed",
+		lua.create_function(|lua, ()| {
+			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			while let Ok(dead_id) = state.vst_cleanup_rx.try_recv() {
+				// Processor is already dropped since it triggered this
+				state.vst_windows.retain(|_, (id, _)| *id != dead_id);
+				state.vst_editors.remove(&dead_id);
+			}
+			Ok(())
 		})?,
 	)?;
 
