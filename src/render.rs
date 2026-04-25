@@ -7,6 +7,7 @@ use crate::log::*;
 use crate::meters::MeterHandle;
 use crate::metronome::Metronome;
 use crate::voice_manager::VoiceManager;
+use crate::vst3::{Vst3Processor, Vst3State};
 use crate::worker::{Request, Response};
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd};
@@ -73,6 +74,24 @@ impl Render {
 
 		let ch = &mut self.channels[channel_index];
 		ch.instrument = Some(voice_manager);
+	}
+
+	pub fn vst_set_processor(&mut self, channel_index: usize, processor: Vst3Processor) {
+		let channel = &mut self.channels[channel_index];
+		let instrument = &mut channel.instrument.as_mut().unwrap();
+		instrument.instrument.as_vst().set_processor(processor);
+	}
+
+	pub fn vst_set_state(&mut self, channel_index: usize, state: &Vst3State) {
+		let channel = &mut self.channels[channel_index];
+		let instrument = &mut channel.instrument.as_mut().unwrap();
+		instrument.instrument.as_vst().set_state(state);
+	}
+
+	pub fn vst_get_state(&mut self, channel_index: usize) -> Option<String> {
+		let channel = &mut self.channels[channel_index];
+		let instrument = &mut channel.instrument.as_mut().unwrap();
+		instrument.instrument.as_vst().get_state()
 	}
 
 	pub fn remove_channel(&mut self, index: usize) {

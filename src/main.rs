@@ -4,6 +4,7 @@ use femtovg::Color;
 use mlua::prelude::*;
 use std::error::Error;
 use std::fs;
+use std::sync::Arc;
 use std::sync::atomic;
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc;
@@ -13,7 +14,8 @@ use winit::event::DeviceId;
 use winit::event::{DeviceEvent, ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
 use winit::keyboard::{Key, KeyCode, NamedKey, PhysicalKey};
-use winit::window::WindowId;
+use winit::window::{Window, WindowId};
+use winit::window::{WindowButtons, WindowLevel};
 
 use tessera::api::Hooks;
 use tessera::api::create_lua;
@@ -103,12 +105,13 @@ fn run() -> Result<(), Box<dyn Error>> {
 	init_logging(lua_tx.clone());
 
 	let (canvas, event_loop, surface, window) = setup_window();
+	let proxy = event_loop.create_proxy();
 
 	// We check scale factor before loading lua, and assume it doesn't change for simplicity
 	let scale_factor = window.scale_factor() * 1.0;
 
 	let lua = create_lua(scale_factor)?;
-	let state = State::new(canvas, window, lua_tx, lua_rx, scale_factor as f32);
+	let state = State::new(canvas, window, lua_tx, lua_rx, proxy, scale_factor as f32);
 
 	lua.set_app_data(state);
 
@@ -180,13 +183,43 @@ impl ApplicationHandler<UserEvent> for App {
 	fn window_event(
 		&mut self,
 		event_loop: &ActiveEventLoop,
-		_window_id: WindowId,
+		window_id: WindowId,
 		event: WindowEvent,
 	) {
+		// Check for events that belong to child VST windows
+		{
+			let state = &mut *self.lua.app_data_mut::<State>().unwrap();
+			if let Some((vst_id, _)) = state.vst_windows.get(&window_id) {
+				match event {
+					WindowEvent::CloseRequested => {
+						if let Some(editor) = state.vst_editors.get_mut(vst_id) {
+							editor.close_window();
+						} else {
+							log_error!("Editor for id {} not found!", vst_id)
+						}
+						state.vst_windows.remove(&window_id);
+						return;
+					},
+					// pass through
+					WindowEvent::KeyboardInput { .. } => {},
+					_ => {
+						return;
+					},
+				}
+			}
+		}
+
+		// Main handler
 		match event {
 			WindowEvent::RedrawRequested => {
 				let now = Instant::now();
 				self.next_draw = now + Duration::from_micros(16_000);
+
+				// Make sure OpenGL context is current
+				if let Err(e) = self.surface.make_current() {
+					log_warn!("Failed to make GL context current: {e:?}");
+				}
+
 				render_start(&self.lua);
 				match &self.status {
 					Status::Running => {
@@ -318,7 +351,7 @@ impl ApplicationHandler<UserEvent> for App {
 		}
 	}
 
-	fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: UserEvent) {
+	fn user_event(&mut self, event_loop: &ActiveEventLoop, event: UserEvent) {
 		match event {
 			UserEvent::Update => {
 				self.lua.app_data_mut::<State>().unwrap().check_audio_status();
@@ -335,6 +368,43 @@ impl ApplicationHandler<UserEvent> for App {
 
 				wrap_call(&mut self.status, &self.hooks.update, dt);
 				BUSY.store(false, atomic::Ordering::Relaxed);
+			},
+			UserEvent::OpenVstWindow(vst_id) => {
+				let state = &mut *self.lua.app_data_mut::<State>().unwrap();
+
+				if let Some(editor) = state.vst_editors.get_mut(&vst_id) {
+					if let Some(window_id) = editor.window_id() {
+						// Focus
+						if let Some((_, window)) = state.vst_windows.get(&window_id) {
+							window.set_minimized(false);
+							window.focus_window();
+						}
+					} else {
+						let window = Arc::new(
+							event_loop
+								.create_window(
+									Window::default_attributes()
+										.with_title(editor.name())
+										.with_window_level(WindowLevel::AlwaysOnTop)
+										.with_resizable(false)
+										.with_visible(false)
+										.with_enabled_buttons(
+											WindowButtons::CLOSE | WindowButtons::MINIMIZE,
+										),
+								)
+								.unwrap(),
+						);
+
+						// TODO: do this on a worker thread
+						if let Err(e) = editor.open_window(Arc::clone(&window)) {
+							log_error!("Failed to open VST window: {e:?}");
+						} else {
+							state.vst_windows.insert(window.id(), (vst_id, window));
+						}
+					}
+				} else {
+					log_error!("VST editor not found");
+				}
 			},
 		}
 	}

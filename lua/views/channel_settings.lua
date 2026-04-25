@@ -12,15 +12,15 @@ function ChannelSettings.new()
 
 	self.ui = Ui.new(self)
 
-	-- make list of effect (name, key) and sort them
+	-- make list of effects and sort them
 	self.effect_list = {}
-	for key, v in pairs(device_list.effects) do
-		if not v.hide or not release then
-			table.insert(self.effect_list, { v.name, key })
+	for _, options in pairs(device_list.effects) do
+		if not options.hide or not release then
+			table.insert(self.effect_list, options)
 		end
 	end
 	table.sort(self.effect_list, function(a, b)
-		return a[1] < b[1]
+		return a.display_name < b.display_name
 	end)
 
 	self.dropdown = widgets.Button.new("Add effect")
@@ -52,8 +52,8 @@ function ChannelSettings:update()
 		end
 
 		if self.add_effect_index then
-			local key = self.effect_list[self.add_effect_index][2]
-			command.run_and_register(command.NewEffect.new(selection.ch_index, key))
+			local options = self.effect_list[self.add_effect_index]
+			command.run_and_register(command.NewEffect.new(selection.ch_index, options))
 			self.add_effect_index = nil
 		end
 	end
@@ -72,7 +72,7 @@ function ChannelSettings:menu()
 	local items = {}
 	for i, v in ipairs(self.effect_list) do
 		table.insert(items, {
-			widget = widgets.Button.new(v[1], options),
+			widget = widgets.Button.new(v.display_name, options),
 			action = function()
 				self.add_effect_index = i
 			end,

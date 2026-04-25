@@ -38,6 +38,13 @@ function Device.new(data, options, meter_id)
 
 	local index = 1
 
+	if data.plugin then
+		assert(options.vst_id)
+		assert(data.plugin.descriptor)
+		self.vst = true
+		self.vst_id = options.vst_id
+	end
+
 	for _, v in ipairs(options.parameters) do
 		local w_name = v[1]
 		local w_type = v[2] or w_name
@@ -78,6 +85,12 @@ function Device.new(data, options, meter_id)
 				element.widget =
 					widgets.Toggle.new(self.state, index, { label = w_name, style = "checkbox", default = default })
 				element.label = nil
+			elseif w_type == "button" then
+				-- button only used for vst window
+				self.state[index] = false
+				element.widget = widgets.Button.new(w_name)
+				element.label = nil
+				element.vst_open = true
 			else
 				error(w_type .. " not supported!")
 			end
@@ -119,7 +132,13 @@ function Device:update(ui, index, w)
 					ui:label(v.label, { align = tessera.graphics.ALIGN_RIGHT })
 				end
 				ui.layout:col(w - w_label)
-				v.widget:update(ui)
+				local hit = v.widget:update(ui)
+
+				-- Open VST window
+				if hit and v.vst_open then
+					assert(self.vst)
+					tessera.audio.open_vst_window(self.vst_id)
+				end
 				ui.layout:new_row()
 			end
 		end

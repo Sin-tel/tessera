@@ -5,15 +5,17 @@ mod pluck;
 mod polysine;
 mod sampler;
 mod sine;
+pub mod vst_instrument;
 mod wavetable;
 
 use crate::instrument::{
 	analog::Analog, epiano::Epiano, fm::Fm, pluck::Pluck, polysine::Polysine, sampler::Sampler,
-	sine::Sine, wavetable::Wavetable,
+	sine::Sine, vst_instrument::VstInstrument, wavetable::Wavetable,
 };
 use crate::log::log_warn;
 use crate::worker::RequestData;
 use crate::worker::ResponseData;
+use std::any::Any;
 
 // list of instruments
 pub fn new(sample_rate: f32, name: &str) -> Box<dyn Instrument + Send> {
@@ -25,6 +27,7 @@ pub fn new(sample_rate: f32, name: &str) -> Box<dyn Instrument + Send> {
 		"polysine" => Box::new(Polysine::new(sample_rate)),
 		"sampler" => Box::new(Sampler::new(sample_rate)),
 		"sine" => Box::new(Sine::new(sample_rate)),
+		"vst_instrument" => Box::new(VstInstrument::new(sample_rate)),
 		"wavetable" => Box::new(Wavetable::new(sample_rate)),
 		_ => {
 			log_warn!("Instrument with name \"{name}\" not found. Returning default.");
@@ -46,8 +49,11 @@ pub trait Instrument {
 	fn flush(&mut self);
 	fn voice_count(&self) -> usize;
 	#[must_use]
-	fn receive_data(&mut self, _data: ResponseData) -> Option<Box<dyn std::any::Any + Send>> {
-		log_warn!("Effect received data with no handler");
+	fn receive_data(&mut self, _data: ResponseData) -> Option<Box<dyn Any + Send>> {
+		log_warn!("Instrument received data with no handler");
 		None
+	}
+	fn as_vst(&mut self) -> &mut VstInstrument {
+		unimplemented!();
 	}
 }

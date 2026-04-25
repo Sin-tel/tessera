@@ -23,6 +23,13 @@ end
 function save.write(filename)
 	log.info('saving project "' .. filename .. '"')
 
+	-- ensure all VST state is serialized to project
+	for ch_index, channel in ipairs(project.channels) do
+		if channel.instrument and channel.instrument.plugin then
+			channel.instrument.plugin.state = tessera.audio.vst_get_state(ch_index)
+		end
+	end
+
 	local content = serialize(project, "project")
 	util.writefile(filename, content)
 	save.set_save_location(filename)
@@ -146,6 +153,27 @@ function save.init_setup()
 
 	if not setup.host then
 		setup.host = tessera.audio.get_default_host()
+	end
+end
+
+function save.read_plugins()
+	if not setup.plugin_list then
+		save.scan_plugins()
+	end
+	return setup.plugin_list
+end
+
+local whitelist = { "pianoteq", "surge xt" }
+
+function save.scan_plugins()
+	setup.plugin_list = tessera.scan_plugins()
+
+	for _, plugin in ipairs(setup.plugin_list) do
+		for _, w in ipairs(whitelist) do
+			if string.find(string.lower(plugin.name), w) then
+				plugin.enabled = true
+			end
+		end
 	end
 end
 

@@ -3,16 +3,21 @@ use crate::audio::AUDIO_PANIC;
 use crate::context::{AudioContext, LuaMessage};
 use crate::log::*;
 use crate::midi;
-use crate::opengl::Renderer;
+use crate::opengl::{Renderer, UserEvent};
 use crate::text::{Font, TextEngine};
 use crate::voice_manager::Token;
+use crate::vst3::Vst3Editor;
 use femtovg::{Canvas, Color, ImageId, Path};
 use semver::Version;
+use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::sync::{LazyLock, OnceLock, RwLock, atomic::Ordering, mpsc};
 use std::time::Instant;
+use winit::event_loop::EventLoopProxy;
 use winit::window::Window;
+use winit::window::WindowId;
 
 pub const INIT_WIDTH: u32 = 1280;
 pub const INIT_HEIGHT: u32 = 720;
@@ -42,6 +47,11 @@ pub struct State {
 	pub dialog_rx: Option<mpsc::Receiver<Option<PathBuf>>>,
 	pub midi_session: Option<midir::MidiInput>,
 	pub midi_connections: Vec<midi::Connection>,
+	pub vst_editors: HashMap<usize, Vst3Editor>,
+	pub vst_windows: HashMap<WindowId, (usize, Arc<Window>)>,
+	pub vst_cleanup_tx: mpsc::SyncSender<usize>,
+	pub vst_cleanup_rx: mpsc::Receiver<usize>,
+	pub event_loop: EventLoopProxy<UserEvent>,
 	pub lua_tx: SyncSender<LuaMessage>,
 	pub lua_rx: Receiver<LuaMessage>,
 	token: Token,
@@ -53,8 +63,10 @@ impl State {
 		window: Window,
 		lua_tx: SyncSender<LuaMessage>,
 		lua_rx: Receiver<LuaMessage>,
+		event_loop: EventLoopProxy<UserEvent>,
 		scale_factor: f32,
 	) -> Self {
+		let (vst_cleanup_tx, vst_cleanup_rx) = mpsc::sync_channel::<usize>(32);
 		State {
 			current_color: Color::white(),
 			mouse_position: (0., 0.),
@@ -78,6 +90,11 @@ impl State {
 			dialog_rx: None,
 			midi_session: None,
 			midi_connections: Vec::new(),
+			vst_editors: HashMap::new(),
+			vst_windows: HashMap::new(),
+			vst_cleanup_tx,
+			vst_cleanup_rx,
+			event_loop,
 			lua_tx,
 			lua_rx,
 		}

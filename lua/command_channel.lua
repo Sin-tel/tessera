@@ -1,11 +1,10 @@
 local build = require("build")
-local device_list = require("device_list")
 
 local function remove_channel(ch_index)
+    tessera.audio.remove_channel(ch_index)
     table.remove(project.channels, ch_index)
     table.remove(ui_channels, ch_index)
     build.refresh_channels()
-    tessera.audio.remove_channel(ch_index)
     if selection.ch_index == ch_index then
         selection.select_default_channel()
     end
@@ -47,10 +46,10 @@ end
 local NewChannel = {}
 NewChannel.__index = NewChannel
 
-function NewChannel.new(name)
+function NewChannel.new(options)
     local self = setmetatable({}, NewChannel)
 
-    self.name = name
+    self.options = options
     self.ch_index = #project.channels + 1
 
     assert(self.ch_index)
@@ -58,11 +57,8 @@ function NewChannel.new(name)
 end
 
 function NewChannel:run()
-    local options = device_list.instruments[self.name]
-    assert(options)
     -- build state
-    options.instrument_key = self.name
-    local channel = build.new_channel_data(options)
+    local channel = build.new_channel_data(self.options)
     table.insert(project.channels, channel)
 
     build.channel(self.ch_index, channel)
@@ -86,6 +82,13 @@ function RemoveChannel.new(ch_index)
     local self = setmetatable({}, RemoveChannel)
 
     self.ch_index = ch_index
+
+    -- if plugin, then sync state to latest
+    if project.channels[ch_index].instrument and project.channels[ch_index].instrument.plugin then
+        local plugin = project.channels[ch_index].instrument.plugin
+        plugin.state = tessera.audio.vst_get_state(ch_index)
+    end
+
     self.channel = util.clone(project.channels[ch_index])
     return self
 end
@@ -104,21 +107,19 @@ end
 local NewEffect = {}
 NewEffect.__index = NewEffect
 
-function NewEffect.new(ch_index, name)
+function NewEffect.new(ch_index, options)
     local self = setmetatable({}, NewEffect)
 
     self.ch_index = ch_index
     self.effect_index = #project.channels[ch_index].effects + 1
-    self.name = name
-    self.display_name = name
+
+    assert(options)
+    self.options = options
     return self
 end
 
 function NewEffect:run()
-    local options = device_list.effects[self.name]
-    assert(options)
-
-    local effect = build.new_device_data(self.name, options)
+    local effect = build.new_device_data(self.options)
     table.insert(project.channels[self.ch_index].effects, effect)
 
     build.effect(self.ch_index, self.effect_index, effect)
