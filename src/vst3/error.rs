@@ -26,7 +26,7 @@ impl fmt::Display for Vst3Error {
 			Vst3Error::OutOfMemory => write!(f, "Out of memory (kOutOfMemory)"),
 			Vst3Error::NoInterface => write!(f, "No interface (kNoInterface)"),
 			Vst3Error::NotInitialized => write!(f, "Not initialized (kNotInitialized)"),
-			Vst3Error::Unknown(code) => write!(f, "Unknown VST3 error code ({})", code),
+			Vst3Error::Unknown(code) => write!(f, "Unknown VST3 error code ({code})"),
 		}
 	}
 }

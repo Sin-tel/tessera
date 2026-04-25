@@ -14,15 +14,12 @@ use std::mem::MaybeUninit;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::mpsc::SyncSender;
-use vst3::Steinberg::Vst::MediaTypes_::kAudio;
+use vst3::Steinberg::Vst;
 use vst3::Steinberg::Vst::ProcessContext_::StatesAndFlags_;
 use vst3::Steinberg::kInvalidArgument;
 use winit::window::WindowId;
 
-use vst3::Steinberg::Vst::BusDirections_::kOutput;
 use vst3::Steinberg::Vst::BusInfo_::BusFlags_;
-use vst3::Steinberg::Vst::ProcessModes_::kRealtime;
-use vst3::Steinberg::Vst::SymbolicSampleSizes_::kSample32;
 use vst3::Steinberg::Vst::{
 	AudioBusBuffers, AudioBusBuffers__type0, BusInfo, Chord, FrameRate, IAudioProcessor,
 	IAudioProcessorTrait, IComponent, IComponentTrait, IConnectionPoint, IConnectionPointTrait,
@@ -39,6 +36,12 @@ use vst3::Steinberg::{kPlatformTypeHWND, kPlatformTypeNSView, kPlatformTypeX11Em
 use vst3::com_scrape_types::{Class, ComRef, ComWrapper};
 use vst3::{ComPtr, Interface};
 use winit::window::Window;
+
+pub type EnumType = i32;
+const AUDIO: EnumType = Vst::MediaTypes_::kAudio as EnumType;
+const OUTPUT: EnumType = Vst::BusDirections_::kOutput as EnumType;
+const REALTIME: EnumType = Vst::ProcessModes_::kRealtime as EnumType;
+const SAMPLE_32: EnumType = Vst::SymbolicSampleSizes_::kSample32 as EnumType;
 
 struct PluginHost;
 
@@ -204,8 +207,8 @@ pub fn load(
 
 	// Tell it about audio engine settings
 	let mut setup = ProcessSetup {
-		processMode: kRealtime,
-		symbolicSampleSize: kSample32,
+		processMode: REALTIME,
+		symbolicSampleSize: SAMPLE_32,
 		maxSamplesPerBlock: MAX_BUF_SIZE as i32,
 		sampleRate: f64::from(sample_rate),
 	};
@@ -226,14 +229,13 @@ pub fn load(
 	};
 	if res != kResultOk {
 		println!("Default stereo bus arrangement not accepted.");
-		let bus_count = unsafe { component.getBusCount(kAudio, kOutput) };
+		let bus_count = unsafe { component.getBusCount(AUDIO, OUTPUT) };
 
 		println!("Output bus count: {bus_count:?}");
 
 		for i in 0..bus_count {
 			let mut bus_info = MaybeUninit::<BusInfo>::uninit();
-			unsafe { component.getBusInfo(kAudio, kOutput, i, bus_info.as_mut_ptr()) }
-				.as_result()?;
+			unsafe { component.getBusInfo(AUDIO, OUTPUT, i, bus_info.as_mut_ptr()) }.as_result()?;
 			let bus_info = unsafe { bus_info.assume_init() };
 
 			println!(
@@ -246,7 +248,7 @@ pub fn load(
 	}
 
 	// Activate bus 0
-	unsafe { component.activateBus(kAudio, kOutput, 0, 1) }
+	unsafe { component.activateBus(AUDIO, OUTPUT, 0, 1) }
 		.as_result()
 		.context("Failed to activate audio output bus")?;
 	unsafe { component.setActive(1) }
@@ -471,8 +473,8 @@ impl Vst3Processor {
 
 		// Populate buffer process data
 		let mut process_data = ProcessData {
-			processMode: kRealtime,
-			symbolicSampleSize: kSample32,
+			processMode: REALTIME,
+			symbolicSampleSize: SAMPLE_32,
 			numSamples: buf_size as i32,
 
 			// Audio input

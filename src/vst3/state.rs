@@ -1,3 +1,4 @@
+use crate::vst3::EnumType;
 use crate::vst3::error::ToResultExt;
 use anyhow::Result;
 use base64::{Engine, engine::general_purpose::STANDARD};
@@ -10,9 +11,9 @@ use vst3::Steinberg::{
 };
 use vst3::{Class, ComPtr, ComWrapper};
 
-const SEEK_START: i32 = IStreamSeekMode_::kIBSeekSet;
-const SEEK_CURRENT: i32 = IStreamSeekMode_::kIBSeekCur;
-const SEEK_END: i32 = IStreamSeekMode_::kIBSeekEnd;
+const SEEK_START: EnumType = IStreamSeekMode_::kIBSeekSet as EnumType;
+const SEEK_CURRENT: EnumType = IStreamSeekMode_::kIBSeekCur as EnumType;
+const SEEK_END: EnumType = IStreamSeekMode_::kIBSeekEnd as EnumType;
 
 struct Stream {
 	buffer: Arc<Mutex<Cursor<Vec<u8>>>>,

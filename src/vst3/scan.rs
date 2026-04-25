@@ -16,7 +16,7 @@ use std::fmt::Write;
 
 pub fn guid_to_hex(guid: &[i8; 16]) -> String {
 	let mut s = String::with_capacity(32);
-	for &byte in guid.iter() {
+	for &byte in guid {
 		write!(s, "{:02x}", byte as u8).unwrap();
 	}
 	s
