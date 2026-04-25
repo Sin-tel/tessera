@@ -5,6 +5,7 @@ use crate::vst3::parameter::Parameters;
 use crate::vst3::scan::PluginDescriptor;
 use crate::vst3::state::Vst3State;
 use crate::vst3::util::extract_cstring_utf16;
+use anyhow::{Context, Result, anyhow};
 use libloading::{Library, Symbol};
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
 use std::ffi::c_void;
@@ -101,8 +102,8 @@ pub struct Vst3Library {
 }
 
 impl Vst3Library {
-	pub fn new(path: &Path) -> Result<Arc<Self>, String> {
-		let lib = unsafe { Library::new(path).map_err(|e| e.to_string())? };
+	pub fn new(path: &Path) -> Result<Arc<Self>> {
+		let lib = unsafe { Library::new(path)? };
 
 		unsafe {
 			if let Ok(init_dll) = lib.get::<unsafe extern "system" fn() -> bool>(c"InitDll") {
@@ -113,9 +114,9 @@ impl Vst3Library {
 		Ok(Arc::new(Self { lib }))
 	}
 
-	pub fn get_factory(&self) -> Result<*mut vst3::Steinberg::FUnknown, String> {
+	pub fn get_factory(&self) -> Result<*mut vst3::Steinberg::FUnknown> {
 		let get_factory: Symbol<GetPluginFactoryFunc> =
-			unsafe { self.lib.get(c"GetPluginFactory").map_err(|e| e.to_string())? };
+			unsafe { self.lib.get(c"GetPluginFactory")? };
 		let factory_ptr = unsafe { get_factory() };
 		assert!(!factory_ptr.is_null());
 		Ok(factory_ptr)
@@ -166,7 +167,7 @@ pub fn load(
 	sample_rate: f32,
 	id: usize,
 	cleanup_tx: SyncSender<usize>,
-) -> Result<(Vst3Editor, Vst3Processor), String> {
+) -> Result<(Vst3Editor, Vst3Processor)> {
 	let lib = Vst3Library::new(&plugin.library_path)?;
 
 	// Get the factory
@@ -190,7 +191,8 @@ pub fn load(
 
 	// Initialize the plugin in host context
 	unsafe { component.initialize(host_ptr.as_ptr() as *mut vst3::Steinberg::FUnknown) }
-		.as_result()?;
+		.as_result()
+		.context("Failed to initialize component")?;
 
 	// Query the IAudioProcessor interface
 	let audio_processor = component
@@ -205,7 +207,9 @@ pub fn load(
 		sampleRate: f64::from(sample_rate),
 	};
 
-	unsafe { audio_processor.setupProcessing(&mut setup) }.as_result()?;
+	unsafe { audio_processor.setupProcessing(&mut setup) }
+		.as_result()
+		.context("Failed to setup processing")?;
 
 	let res = unsafe {
 		audio_processor.setBusArrangements(
@@ -239,9 +243,15 @@ pub fn load(
 	}
 
 	// Activate bus 0
-	unsafe { component.activateBus(kAudio, kOutput, 0, 1) }.as_result()?;
-	unsafe { component.setActive(1) }.as_result()?;
-	unsafe { audio_processor.setProcessing(1) }.as_result()?;
+	unsafe { component.activateBus(kAudio, kOutput, 0, 1) }
+		.as_result()
+		.context("Failed to activate audio output bus")?;
+	unsafe { component.setActive(1) }
+		.as_result()
+		.context("Failed to set component active")?;
+	unsafe { audio_processor.setProcessing(1) }
+		.as_result()
+		.context("Failed to set audio processing state")?;
 
 	// Setup editor
 	let edit_controller = if let Some(editor) = component.cast::<IEditController>() {
@@ -250,7 +260,9 @@ pub fn load(
 	} else {
 		// Multiple components, query for controller class
 		let mut editor_cid = [0i8; 16];
-		unsafe { component.getControllerClassId(&mut editor_cid) }.as_result()?;
+		unsafe { component.getControllerClassId(&mut editor_cid) }
+			.as_result()
+			.context("Failed to get controller class ID")?;
 
 		// Create the editor instance
 		let mut editor_ptr: *mut c_void = std::ptr::null_mut();
@@ -261,14 +273,16 @@ pub fn load(
 				&mut editor_ptr,
 			)
 		}
-		.as_result()?;
+		.as_result()
+		.context("Failed to create IEditController instance")?;
 
 		let edit_controller =
 			unsafe { ComPtr::from_raw(editor_ptr as *mut IEditController).unwrap() };
 
 		// Initialize editor in host context
 		unsafe { edit_controller.initialize(host_ptr.as_ptr() as *mut vst3::Steinberg::FUnknown) }
-			.as_result()?;
+			.as_result()
+			.context("Failed to initialize controller")?;
 
 		// Wire them up using IConnectionPoint
 		let audio_connection = audio_processor.cast::<IConnectionPoint>();
@@ -276,11 +290,11 @@ pub fn load(
 
 		if let (Some(c1), Some(c2)) = (audio_connection, edit_connection) {
 			unsafe {
-				c1.connect(c2.as_ptr()).as_result()?;
-				c2.connect(c1.as_ptr()).as_result()?;
+				c1.connect(c2.as_ptr()).as_result().unwrap();
+				c2.connect(c1.as_ptr()).as_result().unwrap();
 			}
 		} else {
-			return Err("Plugin does not support IConnectionPoint".into());
+			return Err(anyhow!("Plugin does not support IConnectionPoint"));
 		}
 
 		edit_controller
@@ -288,7 +302,7 @@ pub fn load(
 
 	let midi_mapping = edit_controller
 		.cast::<IMidiMapping>()
-		.ok_or("Plugin doesn't support IMidiMapping.")?;
+		.ok_or_else(|| anyhow!("Plugin doesn't support IMidiMapping."))?;
 
 	let parameters = Parameters::new(midi_mapping.as_com_ref())?;
 
@@ -328,19 +342,19 @@ impl Vst3Editor {
 		self.window.as_ref().map(|w| w.id)
 	}
 
-	pub fn set_state(&self, state: &Vst3State) -> Result<(), String> {
+	pub fn set_state(&self, state: &Vst3State) -> Result<()> {
 		state.rewind()?;
 		#[allow(non_upper_case_globals)]
 		match unsafe { self.edit_controller.setComponentState(state.as_ptr()) } {
 			kResultOk | kNotImplemented => Ok(()),
-			other => other.as_result(),
+			other => Ok(other.as_result()?),
 		}
 	}
 
-	pub fn open_window(&mut self, window: Arc<Window>) -> Result<(), String> {
+	pub fn open_window(&mut self, window: Arc<Window>) -> Result<()> {
 		let view_ptr = unsafe { self.edit_controller.createView(ViewType::kEditor) };
 		if view_ptr.is_null() {
-			return Err("Plugin does not have a GUI!".into());
+			return Err(anyhow!("Plugin does not have a GUI!"));
 		}
 
 		let raw_window_handle = window.window_handle().ok().map(|wh| wh.as_raw()).unwrap();
@@ -353,18 +367,22 @@ impl Vst3Editor {
 			RawWindowHandle::AppKit(handle) => (handle.ns_view.as_ptr() as *mut c_void, kPlatformTypeNSView),
 			#[cfg(target_os = "linux")]
 			RawWindowHandle::Xlib(handle) => (handle.window as *mut c_void, kPlatformTypeX11EmbedWindowID),
-			_ => return Err("Unsupported platform.".into()),
+			_ => return Err(anyhow!("Unsupported platform.")),
 		};
 
 		// Attach handle
 		let plug_view = unsafe { ComPtr::from_raw(view_ptr).unwrap() };
-		unsafe { plug_view.attached(system_window_handle, platform_type) }.as_result()?;
+		unsafe { plug_view.attached(system_window_handle, platform_type) }
+			.as_result()
+			.context("Failed to attach view")?;
 
 		// Setup frame
 		let frame = ComWrapper::new(PluginFrame { window: Arc::clone(&window) })
 			.to_com_ptr::<IPlugFrame>()
 			.unwrap();
-		unsafe { plug_view.setFrame(frame.as_ptr()) }.as_result()?;
+		unsafe { plug_view.setFrame(frame.as_ptr()) }
+			.as_result()
+			.context("Failed to set frame")?;
 
 		// Set window to initial size
 		let mut view_rect = vst3::Steinberg::ViewRect { left: 0, top: 0, right: 0, bottom: 0 };
@@ -394,15 +412,15 @@ impl Vst3Processor {
 		self.id
 	}
 
-	pub fn get_state(&self) -> Result<Vst3State, String> {
+	pub fn get_state(&self) -> Result<Vst3State> {
 		let state = Vst3State::new();
 		unsafe { self.component.getState(state.as_ptr()) }.as_result()?;
 		Ok(state)
 	}
 
-	pub fn set_state(&self, state: &Vst3State) -> Result<(), String> {
+	pub fn set_state(&self, state: &Vst3State) -> Result<()> {
 		state.rewind()?;
-		unsafe { self.component.setState(state.as_ptr()) }.as_result()
+		Ok(unsafe { self.component.setState(state.as_ptr()) }.as_result()?)
 	}
 
 	pub fn process(&mut self, left_buf: &mut [f32], right_buf: &mut [f32]) {
@@ -487,7 +505,7 @@ impl Vst3Processor {
 		self.parameters.clear();
 	}
 
-	pub fn flush(&self) -> Result<(), String> {
+	pub fn flush(&self) -> Result<()> {
 		unsafe { self.audio_processor.setProcessing(0) }.as_result()?;
 		unsafe { self.audio_processor.setProcessing(1) }.as_result()?;
 		Ok(())
