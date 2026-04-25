@@ -8,13 +8,10 @@ local widgets = require("ui/widgets")
 local Channels = View.derive("Channels")
 Channels.__index = Channels
 
-function Channels.new()
-	local self = setmetatable({}, Channels)
-
-	self.ui = Ui.new(self)
-
+local intrument_list = {}
+function Channels.update_list()
 	-- make list of instruments and sort them
-	self.intrument_list = {}
+	intrument_list = {}
 	for key, v in pairs(device_list.instruments) do
 		if (not v.hide or not release) and key ~= "vst_instrument" then
 			local instrument = util.clone(v)
@@ -22,7 +19,7 @@ function Channels.new()
 				name = instrument.display_name,
 				instrument = instrument,
 			}
-			table.insert(self.intrument_list, options)
+			table.insert(intrument_list, options)
 		end
 	end
 
@@ -40,13 +37,21 @@ function Channels.new()
 				name = instrument.display_name,
 				instrument = instrument,
 			}
-			table.insert(self.intrument_list, options)
+			table.insert(intrument_list, options)
 		end
 	end
 
-	table.sort(self.intrument_list, function(a, b)
+	table.sort(intrument_list, function(a, b)
 		return a.name < b.name
 	end)
+end
+
+function Channels.new()
+	local self = setmetatable({}, Channels)
+
+	self.ui = Ui.new(self)
+
+	Channels.update_list()
 
 	self.dropdown = widgets.Button.new("Add channel")
 
@@ -62,7 +67,7 @@ function Channels:update()
 	end
 
 	if self.add_instrument_index then
-		local options = self.intrument_list[self.add_instrument_index]
+		local options = intrument_list[self.add_instrument_index]
 		command.run_and_register(command.NewChannel.new(options))
 		self.add_instrument_index = nil
 	end
@@ -98,7 +103,7 @@ function Channels:menu()
 		align = tessera.graphics.ALIGN_LEFT,
 	}
 	local items = {}
-	for i, v in ipairs(self.intrument_list) do
+	for i, v in ipairs(intrument_list) do
 		table.insert(items, {
 			widget = widgets.Button.new(v.name, options),
 			action = function()
@@ -106,7 +111,6 @@ function Channels:menu()
 			end,
 		})
 	end
-
 	return Menu.new(items)
 end
 

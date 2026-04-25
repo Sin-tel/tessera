@@ -339,28 +339,32 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		lua.create_function(|lua, (index, vst_id, plugin): (usize, usize, PluginDescriptor)| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 			if let Some(ctx) = &mut state.audio {
+				let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
+				{
+					let mut render = ctx.render.lock();
+					render.insert_instrument(index - 1, "vst_instrument", meter_handle_instrument);
+				}
 				// TODO: do this on a worker thread
-				let (editor, processor) = vst3::load(
+				match vst3::load(
 					&plugin,
 					ctx.sample_rate as f32,
 					vst_id,
 					state.vst_cleanup_tx.clone(),
-				)
-				.unwrap();
+				) {
+					Ok((editor, processor)) => {
+						log_info!("Plugin '{}' loaded succesfully", plugin.name);
 
-				state.vst_editors.insert(vst_id, editor);
-
-				log_info!("Plugin '{}' loaded succesfully", plugin.name);
-
-				let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
-				let mut render = ctx.render.lock();
-				render.insert_instrument(index - 1, "vst_instrument", meter_handle_instrument);
-				render.vst_set_processor(index - 1, processor);
-
-				Ok(Some(meter_id_instrument + 1))
-			} else {
-				Ok(None)
+						state.vst_editors.insert(vst_id, editor);
+						{
+							let mut render = ctx.render.lock();
+							render.vst_set_processor(index - 1, processor);
+						}
+					},
+					Err(e) => log_error!("Error loading VST: {e}"),
+				}
+				return Ok(Some(meter_id_instrument + 1));
 			}
+			Ok(None)
 		})?,
 	)?;
 
