@@ -1,4 +1,5 @@
 use crate::vst3::error::ToResultExt;
+use anyhow::Result;
 use base64::{Engine, engine::general_purpose::STANDARD};
 use parking_lot::Mutex;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -127,8 +128,8 @@ impl Vst3State {
 		Self::from_bytes(Vec::new())
 	}
 
-	pub fn from_string(state_base64: String) -> Result<Self, String> {
-		let bytes = STANDARD.decode(state_base64).map_err(|e| e.to_string())?;
+	pub fn from_string(state_base64: String) -> Result<Self> {
+		let bytes = STANDARD.decode(state_base64)?;
 		Ok(Self::from_bytes(bytes))
 	}
 
@@ -136,8 +137,8 @@ impl Vst3State {
 		self.stream.as_ptr()
 	}
 
-	pub fn rewind(&self) -> Result<(), String> {
-		unsafe { self.stream.seek(0, SEEK_START, std::ptr::null_mut()) }.as_result()
+	pub fn rewind(&self) -> Result<()> {
+		Ok(unsafe { self.stream.seek(0, SEEK_START, std::ptr::null_mut()) }.as_result()?)
 	}
 
 	pub fn into_string(self) -> String {

@@ -2,6 +2,7 @@ use crate::api::lua_serde;
 use crate::vst3::error::ToResultExt;
 use crate::vst3::util::extract_cstring;
 use crate::vst3::vst::Vst3Library;
+use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::mem::MaybeUninit;
@@ -24,7 +25,7 @@ pub struct PluginDescriptor {
 lua_serde!(PluginDescriptor);
 
 /// Load a VST3 dynamic library to extract its plugin descriptors.
-pub fn probe_vst3(library_path: &Path) -> Result<Vec<PluginDescriptor>, String> {
+pub fn probe_vst3(library_path: &Path) -> Result<Vec<PluginDescriptor>> {
 	let mut descriptors = Vec::new();
 
 	let lib = Vst3Library::new(library_path)?;
@@ -36,7 +37,7 @@ pub fn probe_vst3(library_path: &Path) -> Result<Vec<PluginDescriptor>, String> 
 	// For now, we just fail if it doesn't exist, but better to implement some fallback.
 	let factory = factory
 		.cast::<IPluginFactory2>()
-		.ok_or("Plugin doesn't support factory2.")?;
+		.ok_or_else(|| anyhow!("Plugin doesn't support factory2."))?;
 
 	let class_count = unsafe { factory.countClasses() };
 

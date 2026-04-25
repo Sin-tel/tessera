@@ -1,4 +1,5 @@
 use crate::vst3::error::ToResultExt;
+use crate::vst3::error::Vst3Error;
 use std::cell::UnsafeCell;
 use vst3::Steinberg::Vst::ControllerNumbers_;
 use vst3::Steinberg::Vst::{
@@ -118,7 +119,7 @@ pub struct Parameters {
 }
 
 impl Parameters {
-	pub fn new(midi_mapping: ComRef<IMidiMapping>) -> Result<Self, String> {
+	pub fn new(midi_mapping: ComRef<IMidiMapping>) -> Result<Self, Vst3Error> {
 		let mut parameters = Vec::with_capacity(16);
 
 		let mut add_channel = |id: u32| {

@@ -360,7 +360,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 							render.vst_set_processor(index - 1, processor);
 						}
 					},
-					Err(e) => log_error!("Error loading VST: {e}"),
+					Err(e) => log_error!("Error loading VST: {e:?}"),
 				}
 				return Ok(Some(meter_id_instrument + 1));
 			}
