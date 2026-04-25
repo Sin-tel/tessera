@@ -88,10 +88,10 @@ impl Render {
 		instrument.instrument.as_vst().set_state(state);
 	}
 
-	pub fn vst_get_state(&mut self, channel_index: usize) -> String {
+	pub fn vst_get_state(&mut self, channel_index: usize) -> Option<String> {
 		let channel = &mut self.channels[channel_index];
 		let instrument = &mut channel.instrument.as_mut().unwrap();
-		instrument.instrument.as_vst().get_state().unwrap()
+		instrument.instrument.as_vst().get_state()
 	}
 
 	pub fn remove_channel(&mut self, index: usize) {

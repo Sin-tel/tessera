@@ -91,7 +91,7 @@ function build.channel(ch_index, channel_data)
 				local state = channel_data.instrument.plugin.state
 				tessera.audio.vst_set_state(ch_index, options.vst_id, state)
 			else
-				print("No state in plugin save, polling initial")
+				-- query for initial state if missing
 				local state = tessera.audio.vst_get_state(ch_index)
 				channel_data.instrument.plugin.state = state
 			end

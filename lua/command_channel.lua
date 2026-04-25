@@ -1,5 +1,4 @@
 local build = require("build")
-local device_list = require("device_list")
 
 local function remove_channel(ch_index)
     tessera.audio.remove_channel(ch_index)
@@ -83,6 +82,13 @@ function RemoveChannel.new(ch_index)
     local self = setmetatable({}, RemoveChannel)
 
     self.ch_index = ch_index
+
+    -- if plugin, then sync state to latest
+    if project.channels[ch_index].instrument and project.channels[ch_index].instrument.plugin then
+        local plugin = project.channels[ch_index].instrument.plugin
+        plugin.state = tessera.audio.vst_get_state(ch_index)
+    end
+
     self.channel = util.clone(project.channels[ch_index])
     return self
 end
