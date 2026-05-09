@@ -118,9 +118,9 @@ pub struct Vst3State {
 impl Vst3State {
 	fn from_bytes(bytes: Vec<u8>) -> Self {
 		let buffer = Arc::new(Mutex::new(Cursor::new(bytes)));
-		let mem_stream = Stream { buffer: Arc::clone(&buffer) };
-		let stream_obj = ComWrapper::new(mem_stream);
-		let stream = stream_obj.to_com_ptr::<IBStream>().unwrap();
+		let stream = ComWrapper::new(Stream { buffer: Arc::clone(&buffer) })
+			.to_com_ptr::<IBStream>()
+			.unwrap();
 
 		Self { buffer, stream }
 	}
@@ -138,8 +138,13 @@ impl Vst3State {
 		self.stream.as_ptr()
 	}
 
-	pub fn rewind(&self) -> Result<()> {
-		Ok(unsafe { self.stream.seek(0, SEEK_START, std::ptr::null_mut()) }.as_result()?)
+	pub fn rewind(&self) {
+		unsafe {
+			self.stream
+				.seek(0, SEEK_START, std::ptr::null_mut())
+				.as_result()
+				.unwrap();
+		}
 	}
 
 	pub fn into_string(self) -> String {
