@@ -22,9 +22,10 @@ use winit::window::WindowId;
 use vst3::Steinberg::Vst::BusInfo_::BusFlags_;
 use vst3::Steinberg::Vst::{
 	AudioBusBuffers, AudioBusBuffers__type0, BusInfo, Chord, FrameRate, IAudioProcessor,
-	IAudioProcessorTrait, IComponent, IComponentTrait, IConnectionPoint, IConnectionPointTrait,
-	IEditController, IEditControllerTrait, IHostApplication, IHostApplicationTrait, IMidiMapping,
-	ProcessContext, ProcessData, ProcessSetup, SpeakerArr, ViewType,
+	IAudioProcessorTrait, IComponent, IComponentHandler, IComponentHandlerTrait, IComponentTrait,
+	IConnectionPoint, IConnectionPointTrait, IEditController, IEditControllerTrait,
+	IHostApplication, IHostApplicationTrait, IMidiMapping, ProcessContext, ProcessData,
+	ProcessSetup, SpeakerArr, ViewType,
 };
 use vst3::Steinberg::{
 	IPlugFrame, IPlugFrameTrait, IPlugView, IPlugViewTrait, IPluginBaseTrait, IPluginFactory,
@@ -63,6 +64,31 @@ impl IHostApplicationTrait for PluginHost {
 	) -> tresult {
 		// TODO
 		kNotImplemented
+	}
+}
+
+// Stub implementation for IComponentHandler
+pub struct ComponentHandler;
+
+impl Class for ComponentHandler {
+	type Interfaces = (IComponentHandler,);
+}
+
+impl IComponentHandlerTrait for ComponentHandler {
+	unsafe fn beginEdit(&self, _id: u32) -> tresult {
+		kResultOk
+	}
+
+	unsafe fn performEdit(&self, _id: u32, _value_normalized: f64) -> tresult {
+		kResultOk
+	}
+
+	unsafe fn endEdit(&self, _id: u32) -> tresult {
+		kResultOk
+	}
+
+	unsafe fn restartComponent(&self, _flags: i32) -> tresult {
+		kResultOk
 	}
 }
 
@@ -151,6 +177,7 @@ pub struct Vst3Editor {
 	window: Option<Vst3Window>,
 	edit_controller: ComPtr<IEditController>,
 	host_context: ComWrapper<PluginHost>,
+	component_handler: ComWrapper<ComponentHandler>,
 	lib: Arc<Vst3Library>,
 }
 
@@ -205,6 +232,64 @@ pub fn load(
 		.cast::<IAudioProcessor>()
 		.expect("Component does not implement IAudioProcessor");
 
+	let component_handler = ComWrapper::new(ComponentHandler);
+	let handler_ptr = component_handler.to_com_ptr::<IComponentHandler>().unwrap();
+
+	// Setup editor
+	let edit_controller = if let Some(editor) = component.cast::<IEditController>() {
+		// Single component: processor implements IEditController directly
+		unsafe { editor.setComponentHandler(handler_ptr.as_ptr()) }
+			.as_result()
+			.context("Failed to set Component Handler")?;
+
+		editor
+	} else {
+		// Multiple components, query for controller class
+		let mut editor_cid = [0i8; 16];
+		unsafe { component.getControllerClassId(&mut editor_cid) }
+			.as_result()
+			.context("Failed to get controller class ID")?;
+
+		// Create the editor instance
+		let mut editor_ptr: *mut c_void = std::ptr::null_mut();
+		unsafe {
+			factory.createInstance(
+				editor_cid.as_ptr(),
+				IEditController::IID.as_ptr() as *const i8,
+				&mut editor_ptr,
+			)
+		}
+		.as_result()
+		.context("Failed to create IEditController instance")?;
+
+		let edit_controller =
+			unsafe { ComPtr::from_raw(editor_ptr as *mut IEditController).unwrap() };
+
+		// Initialize editor in host context
+		unsafe { edit_controller.initialize(host_ptr.as_ptr() as *mut vst3::Steinberg::FUnknown) }
+			.as_result()
+			.context("Failed to initialize controller")?;
+
+		unsafe { edit_controller.setComponentHandler(handler_ptr.as_ptr()) }
+			.as_result()
+			.context("Failed to set Component Handler")?;
+
+		// Wire them up using IConnectionPoint
+		let audio_connection = audio_processor.cast::<IConnectionPoint>();
+		let edit_connection = edit_controller.cast::<IConnectionPoint>();
+
+		if let (Some(c1), Some(c2)) = (audio_connection, edit_connection) {
+			unsafe {
+				c1.connect(c2.as_ptr()).as_result().unwrap();
+				c2.connect(c1.as_ptr()).as_result().unwrap();
+			}
+		} else {
+			return Err(anyhow!("Plugin does not support IConnectionPoint"));
+		}
+
+		edit_controller
+	};
+
 	// Tell it about audio engine settings
 	let mut setup = ProcessSetup {
 		processMode: REALTIME,
@@ -258,53 +343,6 @@ pub fn load(
 		.as_result()
 		.context("Failed to set audio processing state")?;
 
-	// Setup editor
-	let edit_controller = if let Some(editor) = component.cast::<IEditController>() {
-		// Single component: processor implements IEditController directly
-		editor
-	} else {
-		// Multiple components, query for controller class
-		let mut editor_cid = [0i8; 16];
-		unsafe { component.getControllerClassId(&mut editor_cid) }
-			.as_result()
-			.context("Failed to get controller class ID")?;
-
-		// Create the editor instance
-		let mut editor_ptr: *mut c_void = std::ptr::null_mut();
-		unsafe {
-			factory.createInstance(
-				editor_cid.as_ptr(),
-				IEditController::IID.as_ptr() as *const i8,
-				&mut editor_ptr,
-			)
-		}
-		.as_result()
-		.context("Failed to create IEditController instance")?;
-
-		let edit_controller =
-			unsafe { ComPtr::from_raw(editor_ptr as *mut IEditController).unwrap() };
-
-		// Initialize editor in host context
-		unsafe { edit_controller.initialize(host_ptr.as_ptr() as *mut vst3::Steinberg::FUnknown) }
-			.as_result()
-			.context("Failed to initialize controller")?;
-
-		// Wire them up using IConnectionPoint
-		let audio_connection = audio_processor.cast::<IConnectionPoint>();
-		let edit_connection = edit_controller.cast::<IConnectionPoint>();
-
-		if let (Some(c1), Some(c2)) = (audio_connection, edit_connection) {
-			unsafe {
-				c1.connect(c2.as_ptr()).as_result().unwrap();
-				c2.connect(c1.as_ptr()).as_result().unwrap();
-			}
-		} else {
-			return Err(anyhow!("Plugin does not support IConnectionPoint"));
-		}
-
-		edit_controller
-	};
-
 	let midi_mapping = edit_controller
 		.cast::<IMidiMapping>()
 		.ok_or_else(|| anyhow!("Plugin doesn't support IMidiMapping."))?;
@@ -317,6 +355,7 @@ pub fn load(
 		window: None,
 		edit_controller,
 		host_context,
+		component_handler,
 		lib: Arc::clone(&lib),
 	};
 
@@ -348,12 +387,13 @@ impl Vst3Editor {
 	}
 
 	pub fn set_state(&self, state: &Vst3State) -> Result<()> {
-		state.rewind()?;
+		state.rewind();
 		#[allow(non_upper_case_globals)]
 		match unsafe { self.edit_controller.setComponentState(state.as_ptr()) } {
-			kResultOk | kNotImplemented => Ok(()),
-			other => Ok(other.as_result()?),
-		}
+			kResultOk | kNotImplemented => (),
+			other => other.as_result()?,
+		};
+		Ok(())
 	}
 
 	pub fn open_window(&mut self, window: Arc<Window>) -> Result<()> {
@@ -408,12 +448,19 @@ impl Vst3Editor {
 	}
 
 	pub fn close_window(&mut self) {
+		if let Some(window) = &self.window {
+			unsafe {
+				let _ = window.plug_view.removed();
+			}
+		}
 		self.window = None;
 	}
 }
 
 impl Drop for Vst3Editor {
 	fn drop(&mut self) {
+		// Need to drop window before terminating
+		self.close_window();
 		unsafe {
 			let _ = self.edit_controller.terminate();
 		}
@@ -432,8 +479,9 @@ impl Vst3Processor {
 	}
 
 	pub fn set_state(&self, state: &Vst3State) -> Result<()> {
-		state.rewind()?;
-		Ok(unsafe { self.component.setState(state.as_ptr()) }.as_result()?)
+		state.rewind();
+		unsafe { self.component.setState(state.as_ptr()) }.as_result()?;
+		Ok(())
 	}
 
 	pub fn process(&mut self, left_buf: &mut [f32], right_buf: &mut [f32]) {
