@@ -1,8 +1,8 @@
 use anyhow::{Result, anyhow, bail};
 use assert_no_alloc::*;
 use cpal::{
-	BackendSpecificError, BufferSize, Device, DeviceId, HostId, SampleFormat, Stream, StreamConfig,
-	StreamError, SupportedBufferSize, SupportedStreamConfigRange,
+	BufferSize, Device, DeviceId, ErrorKind, HostId, SampleFormat, Stream, StreamConfig,
+	SupportedBufferSize, SupportedStreamConfigRange,
 	traits::{DeviceTrait, HostTrait, StreamTrait},
 };
 use no_denormals::no_denormals;
@@ -359,25 +359,21 @@ pub fn die() {
 	AUDIO_PANIC.store(true, atomic::Ordering::Relaxed);
 }
 
-fn error_closure(mut error_tx: HeapProd<ErrorMessage>) -> impl FnMut(StreamError) + Send + 'static {
-	move |error| match error {
-		StreamError::DeviceNotAvailable => {
+fn error_closure(mut error_tx: HeapProd<ErrorMessage>) -> impl FnMut(cpal::Error) + Send + 'static {
+	move |error| match error.kind() {
+		ErrorKind::DeviceNotAvailable => {
 			log_error!("Stream error: device not available.");
 			error_tx
 				.try_push(ErrorMessage::DeviceNotAvailable)
 				.expect("Could not send message.");
 		},
-		StreamError::StreamInvalidated => {
+		ErrorKind::StreamInvalidated => {
 			log_info!("Stream reset request");
 			error_tx
 				.try_push(ErrorMessage::ResetRequest)
 				.expect("Could not send message.");
 		},
-		StreamError::BufferUnderrun => {}, // Do nothing
-		StreamError::BackendSpecific { err: BackendSpecificError { ref description } } => {
-			log_error!("Device error: {description}");
-			// TODO should we handle these?
-		},
+		ErrorKind::Xrun => {}, // Do nothing
 		err => log_error!("Unhandled stream error {:?}", err),
 	}
 }
