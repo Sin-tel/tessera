@@ -271,7 +271,7 @@ impl TextEngine {
 		// let mut font_system = FontSystem::new_with_locale_and_db("en-US".into(), db);
 
 		let mut scratch_buffer = Buffer::new(&mut font_system, Metrics::new(14.0, 20.0));
-		scratch_buffer.set_wrap(&mut font_system, Wrap::None);
+		scratch_buffer.set_wrap(Wrap::None);
 
 		Self { font_system, glyph_cache: RenderCache::new(), scratch_buffer }
 	}
