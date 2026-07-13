@@ -44,7 +44,7 @@ simplelog = "0.12"
 # log-panics = { version = "2", features = ["with-backtrace"]}
 log-panics = { version = "2"}
 
-mlua = { version = "0.11", features = ["luajit", "vendored", "serde"] }
+mlua = { version = "0.12", features = ["luajit", "vendored", "serde"] }
 
 winit = "0.30"
 femtovg = {version="0.25", default-features = false, features=["image-loading"] }
