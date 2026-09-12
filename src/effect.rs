@@ -29,7 +29,7 @@ use crate::worker::{RequestData, ResponseData};
 
 // list of effects
 pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
-	match name {
+	let mut new: Box<dyn Effect + Send> = match name {
 		"chorus" => Box::new(Chorus::new(sample_rate)),
 		"compressor" => Box::new(Compressor::new(sample_rate)),
 		"convolve" => Box::new(Convolve::new(sample_rate)),
@@ -50,7 +50,9 @@ pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
 			log_warn!("Effect with name \"{name}\" not found. Returning default.");
 			Box::new(Gain::new(sample_rate))
 		},
-	}
+	};
+	new.flush();
+	new
 }
 
 pub trait Effect {

@@ -159,7 +159,36 @@ impl Effect for Drive {
 			track.dc_killer.process_block(buf);
 		}
 	}
-	fn flush(&mut self) {}
+	fn flush(&mut self) {
+		self.gain.immediate();
+		self.post_gain.immediate();
+		self.bias.immediate();
+		self.balance.immediate();
+
+		let bias = self.bias.target();
+		let shaped = if self.hard { clip_hard(bias) } else { clip_soft(bias) };
+		let offset = shaped - bias;
+		let post_gain = self.post_gain.target();
+		let balance = self.balance.target();
+
+		for track in &mut self.tracks {
+			track.upsampler.clear();
+			track.downsampler.clear();
+			track.delayline.flush();
+			track.dry_buffer = [0.; MAX_BUF_SIZE];
+
+			track.pre_filter.immediate();
+			track.pre_filter.reset_state();
+			track.post_filter.immediate();
+			track.post_filter.prime(offset);
+
+			track.prev = bias;
+
+			// block DC bias
+			let dc = balance * post_gain * track.post_filter.dc_gain() * offset;
+			track.dc_killer.prime(dc);
+		}
+	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
