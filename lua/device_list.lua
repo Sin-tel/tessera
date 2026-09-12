@@ -301,6 +301,18 @@ device_list.effects.reverb = {
 	},
 }
 
+device_list.effects.reverb_room = {
+	display_name = "Reverb Room",
+	parameters = {
+		{ "Dry/Wet", "slider", { default = 0.33 } },
+		{ "Size", "slider", { default = 0.5 } },
+		{ "Diffusion", "slider", { default = 0.7 } },
+		{ "Decay", "slider", { default = 0.8, min = 0.1, max = 10.0, t = "log", fmt = "s" } },
+		{ "Late Level", "slider", { default = 0.4 } },
+		{ "Dark", "slider", { default = 0.15 } },
+	},
+}
+
 device_list.effects.testfilter = {
 	display_name = "Test Filter",
 	hide = true,
