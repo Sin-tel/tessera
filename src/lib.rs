@@ -26,17 +26,17 @@
 pub mod audio;
 mod channel;
 pub mod context;
-mod effect;
+pub mod effect;
 pub mod embed;
 mod instrument;
-mod meters;
+pub mod meters;
 mod metronome;
 pub mod midi;
 mod render;
 mod scope;
 mod voice_manager;
 pub mod vst3;
-mod worker;
+pub mod worker;
 
 #[allow(dead_code)]
 pub mod dsp;

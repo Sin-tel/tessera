@@ -146,7 +146,30 @@ impl Effect for Decimate {
 		}
 	}
 
-	fn flush(&mut self) {}
+	fn flush(&mut self) {
+		let filter = self.filter;
+		for track in &mut self.tracks {
+			track.upsampler.clear();
+			track.downsampler.clear();
+
+			track.accum = 0.;
+			track.y = 0.;
+			track.prev_x = 0.;
+			track.jitter_val = 1.;
+			track.rate.immediate();
+
+			// Match what process does at the top of a block, then snap.
+			track.update_filters(track.rate.target(), filter);
+			for f in &mut track.pre_filters {
+				f.reset_state();
+				f.immediate();
+			}
+			for f in &mut track.post_filters {
+				f.reset_state();
+				f.immediate();
+			}
+		}
+	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
