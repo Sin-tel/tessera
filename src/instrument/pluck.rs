@@ -113,7 +113,7 @@ impl Instrument for Pluck {
 		Pluck {
 			voices,
 			// dc_killer: DcKiller::new(sample_rate),
-			rng: Rng::new(),
+			rng: Rng::with_seed(0),
 			sample_rate,
 
 			decay: 0.0,
@@ -271,15 +271,29 @@ impl Instrument for Pluck {
 	}
 
 	fn flush(&mut self) {
+		// Reseed from the global generator, which Render::flush just reset.
+		self.rng.seed(fastrand::u64(..));
+		self.shelf.reset_state();
+		self.shelf.immediate();
+
 		for voice in &mut self.voices {
 			voice.delay_l.flush();
 			voice.delay_r.flush();
 			voice.hammer_x = 2.0;
 			voice.hammer_v = 0.0;
 
-			voice.lp_f.reset_state();
-			voice.ap.reset_state();
-			voice.lp.reset_state();
+			voice.lp_f.reset();
+			voice.lp.reset();
+			voice.ap.reset();
+			voice.noise_filter.reset();
+			voice.mute_filter.reset();
+
+			voice.active = false;
+			voice.note_on = false;
+			voice.prev = 0.;
+			voice.off_time = 0.;
+			voice.mute_state = 0.;
+			voice.freq.set_immediate(0.);
 		}
 	}
 

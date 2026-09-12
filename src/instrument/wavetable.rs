@@ -397,6 +397,21 @@ impl Instrument for Wavetable {
 		for v in &mut self.voices {
 			v.env.reset();
 			v.active = false;
+			v.note_on = false;
+
+			v.accum = 0.;
+			v.accum2 = 0.;
+			v.accum3 = 0.;
+			v.interpolate = 0.;
+			v.animate = 0.;
+			v.pos_start = 0.;
+			v.freq.immediate();
+			v.pres.set_immediate(0.);
+			v.lfo.reset();
+
+			v.buffer_a.fill(0.);
+			v.buffer_b.fill(0.);
+			v.spectrum.fill(Complex::new(0., 0.));
 		}
 	}
 

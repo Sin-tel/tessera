@@ -28,7 +28,7 @@ mod channel;
 pub mod context;
 pub mod effect;
 pub mod embed;
-mod instrument;
+pub mod instrument;
 pub mod meters;
 mod metronome;
 pub mod midi;

@@ -76,7 +76,7 @@ impl Instrument for Epiano {
 			sample_rate,
 			voices,
 			dc_killer: DcKiller::new(sample_rate),
-			rng: Rng::new(),
+			rng: Rng::with_seed(0),
 			x0: 0.5,
 			y0: 1.0,
 			gain: 1.,
@@ -188,10 +188,20 @@ impl Instrument for Epiano {
 	}
 
 	fn flush(&mut self) {
+		// Reseed from the global generator, which Render::flush just reset.
+		self.rng.seed(fastrand::u64(..));
+		self.dc_killer.reset();
+
 		for voice in &mut self.voices {
 			voice.filter.iter_mut().for_each(Filter::reset_state);
+			voice.filter.iter_mut().for_each(Filter::immediate);
 			voice.hammer_phase = 2.;
 			voice.prev = (self.x0 * self.x0 + self.y0 * self.y0).sqrt().recip();
+
+			voice.active = false;
+			voice.note_on = false;
+			voice.timer = 0;
+			voice.vel = 0.;
 		}
 	}
 

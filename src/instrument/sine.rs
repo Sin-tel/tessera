@@ -24,7 +24,7 @@ impl Instrument for Sine {
 			sample_rate,
 			freq: Smooth::new(0., 50.0, sample_rate),
 			vel: Smooth::new(0., 25., sample_rate),
-			rng: Rng::new(),
+			rng: Rng::with_seed(0),
 			fixed: false,
 			accum: 0.,
 			fixed_freq: 0.01,
@@ -91,7 +91,13 @@ impl Instrument for Sine {
 			self.vel.set(0.0);
 		}
 	}
-	fn flush(&mut self) {}
+	fn flush(&mut self) {
+		// Reseed from the global generator, which Render::flush just reset.
+		self.rng.seed(fastrand::u64(..));
+		self.accum = 0.;
+		self.freq.set_immediate(0.);
+		self.vel.set_immediate(0.);
+	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {

@@ -19,7 +19,7 @@ use std::any::Any;
 
 // list of instruments
 pub fn new(sample_rate: f32, name: &str) -> Box<dyn Instrument + Send> {
-	match name {
+	let mut new: Box<dyn Instrument + Send> = match name {
 		"analog" => Box::new(Analog::new(sample_rate)),
 		"epiano" => Box::new(Epiano::new(sample_rate)),
 		"fm" => Box::new(Fm::new(sample_rate)),
@@ -33,7 +33,9 @@ pub fn new(sample_rate: f32, name: &str) -> Box<dyn Instrument + Send> {
 			log_warn!("Instrument with name \"{name}\" not found. Returning default.");
 			Box::new(Sine::new(sample_rate))
 		},
-	}
+	};
+	new.flush();
+	new
 }
 
 pub trait Instrument {

@@ -1,4 +1,4 @@
-use crate::audio::MAX_BUF_SIZE;
+use crate::audio::{MAX_BUF_SIZE, RNG_SEED};
 use crate::channel::Channel;
 use crate::context::{AudioMessage, LuaMessage};
 use crate::effect::*;
@@ -262,6 +262,9 @@ impl Render {
 	}
 
 	pub fn flush(&mut self) {
+		// Seed is thread local, render_block runs on this thread.
+		fastrand::seed(RNG_SEED);
+
 		for ch in &mut self.channels {
 			if let Some(instrument) = &mut ch.instrument {
 				instrument.flush();
