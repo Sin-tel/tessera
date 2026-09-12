@@ -33,6 +33,10 @@ pub static CPU_LOAD: AtomicFloat = AtomicFloat::new();
 pub const MAX_BUF_SIZE: usize = 64;
 pub const SPECTRUM_SIZE: usize = 4096;
 
+// Global generator start. Seeded per thread: here for the stream, and in
+// Render::flush for offline rendering.
+pub const RNG_SEED: u64 = 42;
+
 pub fn check_architecture() -> Result<(), String> {
 	// not enabled for now
 
@@ -287,7 +291,7 @@ where
 
 							// init fastrand on this thread (allocates)
 							permit_alloc(|| {
-								fastrand::seed(42);
+								fastrand::seed(RNG_SEED);
 							});
 						}
 
