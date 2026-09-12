@@ -97,10 +97,17 @@ impl Effect for Phaser {
 
 	fn flush(&mut self) {
 		self.lfo_accum = 0.0;
+		let (depth, f_base) = (self.lfo_depth, self.f_base);
 		for t in &mut self.tracks {
+			// Match process at phase zero.
+			let lfo = 0.9 * depth * sin_cheap(t.lfo_phase_offset);
 			for f in &mut t.filters {
+				f.set_allpass(f_base * (1.0 + lfo), Q_FACTOR);
 				f.reset_state();
+				f.immediate();
 			}
+			t.balance.immediate();
+			t.feedback.immediate();
 		}
 	}
 

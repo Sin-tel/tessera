@@ -76,6 +76,8 @@ impl Effect for Limiter {
 
 	fn flush(&mut self) {
 		self.gain = [1.0, 1.0];
+		self.input_gain.immediate();
+		self.ceiling.immediate();
 	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {

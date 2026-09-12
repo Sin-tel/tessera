@@ -32,6 +32,18 @@ impl OnePole {
 		self.s = 0.;
 	}
 
+	// Set to DC response.
+	// Lowpass output equals its input:
+	// y = x, v = 0, s = x
+	pub fn prime(&mut self, x: f32) {
+		self.s = x;
+	}
+
+	#[must_use]
+	pub fn dc_gain(&self) -> f32 {
+		self.mx.target() + self.my.target()
+	}
+
 	pub fn immediate(&mut self) {
 		self.g.immediate();
 		self.my.immediate();

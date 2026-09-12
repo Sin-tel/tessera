@@ -84,8 +84,15 @@ impl Effect for Chorus {
 	}
 
 	fn flush(&mut self) {
-		self.tracks[0].delayline.flush();
-		self.tracks[1].delayline.flush();
+		for track in &mut self.tracks {
+			track.delayline.flush();
+			track.highpass.reset_state();
+			track.highpass.immediate();
+			track.balance.immediate();
+			track.lfo_freq.immediate();
+			track.lfo_mod.immediate();
+			track.lfo_accum = 0.;
+		}
 	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {

@@ -24,6 +24,20 @@ impl Track {
 	}
 }
 
+impl TestFilter {
+	fn update_filters(&mut self) {
+		for track in &mut self.tracks {
+			if self.onepole {
+				// track.filter1.set_lowpass(self.cutoff);
+				track.filter1.set_tilt(self.cutoff, self.gain);
+			} else {
+				track.filter2.set_lowpass(self.cutoff, self.q);
+				// track.filter2.set_tilt(self.cutoff, self.q, self.gain);
+			}
+		}
+	}
+}
+
 impl Effect for TestFilter {
 	fn new(sample_rate: f32) -> Self {
 		TestFilter {
@@ -40,25 +54,31 @@ impl Effect for TestFilter {
 		// dbg!(f.phase_delay(1000.));
 		// let a = f.phase_delay2(1000.) - f.phase_delay(1000.);
 
+		self.update_filters();
+
 		if self.onepole {
 			for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-				// track.filter1.set_lowpass(self.cutoff);
-				track.filter1.set_tilt(self.cutoff, self.gain);
 				for sample in buf.iter_mut() {
 					*sample = track.filter1.process(*sample);
 				}
 			}
 		} else {
 			for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-				track.filter2.set_lowpass(self.cutoff, self.q);
-				// track.filter2.set_tilt(self.cutoff, self.q, self.gain);
 				for sample in buf.iter_mut() {
 					*sample = track.filter2.process(*sample);
 				}
 			}
 		}
 	}
-	fn flush(&mut self) {}
+	fn flush(&mut self) {
+		self.update_filters();
+		for track in &mut self.tracks {
+			track.filter1.reset_state();
+			track.filter1.immediate();
+			track.filter2.reset_state();
+			track.filter2.immediate();
+		}
+	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {

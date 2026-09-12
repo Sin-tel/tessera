@@ -43,6 +43,27 @@ impl Track {
 	}
 }
 
+impl Equalizer {
+	fn update_filters(&mut self) {
+		for track in &mut self.tracks {
+			if self.low_cut {
+				track.low.set_highpass(self.low_cutoff, BUTTERWORTH_Q);
+			} else {
+				track.low.set_lowshelf(self.low_cutoff, BUTTERWORTH_Q, self.low_gain);
+			}
+			track.bell1.set_bell(self.bell1_cutoff, self.bell1_q, self.bell1_gain);
+			track.bell2.set_bell(self.bell2_cutoff, self.bell2_q, self.bell2_gain);
+			if self.high_cut {
+				track.high.set_lowpass(self.high_cutoff, BUTTERWORTH_Q);
+			} else {
+				track
+					.high
+					.set_highshelf(self.high_cutoff, BUTTERWORTH_Q, self.high_gain);
+			}
+		}
+	}
+}
+
 impl Effect for Equalizer {
 	fn new(sample_rate: f32) -> Self {
 		Equalizer {
@@ -66,22 +87,9 @@ impl Effect for Equalizer {
 	}
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
-		for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
-			if self.low_cut {
-				track.low.set_highpass(self.low_cutoff, BUTTERWORTH_Q);
-			} else {
-				track.low.set_lowshelf(self.low_cutoff, BUTTERWORTH_Q, self.low_gain);
-			}
-			track.bell1.set_bell(self.bell1_cutoff, self.bell1_q, self.bell1_gain);
-			track.bell2.set_bell(self.bell2_cutoff, self.bell2_q, self.bell2_gain);
-			if self.high_cut {
-				track.high.set_lowpass(self.high_cutoff, BUTTERWORTH_Q);
-			} else {
-				track
-					.high
-					.set_highshelf(self.high_cutoff, BUTTERWORTH_Q, self.high_gain);
-			}
+		self.update_filters();
 
+		for (buf, track) in buffer.iter_mut().zip(self.tracks.iter_mut()) {
 			for sample in buf.iter_mut() {
 				let mut s = *sample;
 				s = track.low.process(s);
@@ -93,7 +101,16 @@ impl Effect for Equalizer {
 			}
 		}
 	}
-	fn flush(&mut self) {}
+	fn flush(&mut self) {
+		// Set coefficients at target before snapping
+		self.update_filters();
+		for track in &mut self.tracks {
+			for f in [&mut track.low, &mut track.bell1, &mut track.bell2, &mut track.high] {
+				f.reset_state();
+				f.immediate();
+			}
+		}
+	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {

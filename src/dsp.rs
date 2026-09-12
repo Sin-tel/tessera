@@ -261,6 +261,15 @@ impl DcKiller {
 		}
 	}
 
+	pub fn reset(&mut self) {
+		self.z = 0.;
+	}
+
+	// Set to DC response
+	pub fn prime(&mut self, dc: f32) {
+		self.z = dc;
+	}
+
 	#[must_use]
 	pub fn process(&mut self, s: f32) -> f32 {
 		let y_hp = s - self.z;
