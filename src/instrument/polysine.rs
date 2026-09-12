@@ -113,8 +113,14 @@ impl Instrument for Polysine {
 		voice.note_on = false;
 	}
 	fn flush(&mut self) {
+		self.dc_killer.reset();
 		for v in &mut self.voices {
 			v.vel.set_immediate(0.);
+			v.accum = 0.;
+			v.prev = 0.;
+			v.note_on = false;
+			v.active = false;
+			v.freq.immediate();
 		}
 	}
 

@@ -64,7 +64,7 @@ impl Instrument for Analog {
 			downsampler,
 			buf_up: [0.0; MAX_BUF_SIZE * 2],
 			z: 0.,
-			rng: Rng::new(),
+			rng: Rng::with_seed(0),
 			note_on: false,
 
 			pulse_width: Smooth::new(0., 25.0, sample_rate),
@@ -191,8 +191,29 @@ impl Instrument for Analog {
 
 	fn flush(&mut self) {
 		self.envelope.reset();
-		self.gate.set(0.0);
 		self.note_on = false;
+		// Reseed from the global generator, which Render::flush just reset.
+		self.rng.seed(fastrand::u64(..));
+
+		self.accum = 0.;
+		self.z = 0.;
+		self.buf_up = [0.0; MAX_BUF_SIZE * 2];
+
+		self.freq.immediate();
+		self.gate.set_immediate(0.0);
+		self.pres.set_immediate(0.0);
+
+		self.filter.reset_state();
+		self.filter.immediate();
+		self.upsampler.clear();
+		self.downsampler.clear();
+		self.dc_killer.reset();
+
+		self.pulse_width.immediate();
+		self.mix_pulse.immediate();
+		self.mix_saw.immediate();
+		self.mix_sub.immediate();
+		self.mix_noise.immediate();
 	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {

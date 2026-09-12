@@ -44,6 +44,13 @@ impl OnePole {
 		self.mx.target() + self.my.target()
 	}
 
+	pub fn reset(&mut self) {
+		self.s = 0.;
+		self.g.set_immediate(0.);
+		self.my.set_immediate(0.);
+		self.mx.set_immediate(0.);
+	}
+
 	pub fn immediate(&mut self) {
 		self.g.immediate();
 		self.my.immediate();
