@@ -290,6 +290,24 @@ device_list.effects.delay = {
 	},
 }
 
+device_list.effects.delay_tape = {
+	display_name = "Delay Tape",
+	parameters = {
+		{ "Dry/Wet", "slider", { default = 0.5 } },
+		{ "Speed", "slider", { default = 1.0, min = 0.25, max = 1.5 } },
+		{ "Feedback", "slider", { default = 0.4, min = 0.0, max = 1.0 } },
+		{ "Drive", "slider", { default = 0, min = -12, max = 12, centered = true, fmt = "%0.1f dB" } },
+
+		{ "separator" },
+		{ "Wow", "slider", { default = 0.3, min = 0.0, max = 1.0 } },
+		{ "Flutter", "slider", { default = 0.3, min = 0.0, max = 1.0 } },
+		{ "Jitter", "slider", { default = 0.3, min = 0.0, max = 1.0 } },
+
+		{ "separator" },
+		{ "Mode", "selector", { list = { "1", "2", "3", "1+3", "2+3" }, default = 3 } },
+	},
+}
+
 device_list.effects.reverb = {
 	display_name = "Reverb",
 	parameters = {
