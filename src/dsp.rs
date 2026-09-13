@@ -16,6 +16,12 @@ pub const BUTTERWORTH_Q: f32 = FRAC_1_SQRT_2;
 pub const DECIBEL_FACTOR: f32 = LOG2_10 / 20.;
 pub const C5_HZ: f32 = 523.2511;
 
+// 4-pole butterworth Q, as a cascade of two 2-pole stages.
+//  1 / 2 * cos(  pi/8)
+//  1 / 2 * cos(3*pi/8)
+pub const BUTTERWORTH_4_Q1: f32 = 0.5411961;
+pub const BUTTERWORTH_4_Q2: f32 = 1.306563;
+
 // https://stackoverflow.com/questions/65554112/fast-double-exp2-function-in-c
 // -Inf evaluates to 0.0
 pub fn pow2_cheap(x: f32) -> f32 {
