@@ -3,6 +3,7 @@ mod compressor;
 mod convolve;
 mod decimate;
 mod delay;
+mod delay_tape;
 mod drive;
 mod equalizer;
 mod gain;
@@ -21,9 +22,9 @@ use crate::dsp::{MuteState, PeakMeter, time_constant};
 use crate::effect;
 use crate::effect::{
 	chorus::Chorus, compressor::Compressor, convolve::Convolve, decimate::Decimate, delay::Delay,
-	drive::Drive, equalizer::Equalizer, gain::Gain, limiter::Limiter, pan::Pan, phaser::Phaser,
-	reverb::Reverb, reverb_room::ReverbRoom, testfilter::TestFilter, tilt::Tilt, tremolo::Tremolo,
-	wide::Wide,
+	delay_tape::DelayTape, drive::Drive, equalizer::Equalizer, gain::Gain, limiter::Limiter,
+	pan::Pan, phaser::Phaser, reverb::Reverb, reverb_room::ReverbRoom, testfilter::TestFilter,
+	tilt::Tilt, tremolo::Tremolo, wide::Wide,
 };
 use crate::log::log_warn;
 use crate::meters::MeterHandle;
@@ -45,6 +46,7 @@ pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
 		"phaser" => Box::new(Phaser::new(sample_rate)),
 		"reverb" => Box::new(Reverb::new(sample_rate)),
 		"reverb_room" => Box::new(ReverbRoom::new(sample_rate)),
+		"delay_tape" => Box::new(DelayTape::new(sample_rate)),
 		"testfilter" => Box::new(TestFilter::new(sample_rate)),
 		"tilt" => Box::new(Tilt::new(sample_rate)),
 		"tremolo" => Box::new(Tremolo::new(sample_rate)),
