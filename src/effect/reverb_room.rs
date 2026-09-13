@@ -75,9 +75,6 @@ const FDN_LEN: f32 = 9000.;
 
 // input lowpass, a butterworth pair
 const INPUT_CUTOFF: f32 = 15_000.0;
-const BUTTERWORTH_Q1: f32 = 0.5412;
-const BUTTERWORTH_Q2: f32 = 1.3066;
-
 const SHELF_CUTOFF: f32 = 300.0;
 
 #[derive(Debug)]
@@ -170,10 +167,10 @@ impl Effect for ReverbRoom {
 		let mut lp1_r = Filter::new(sample_rate);
 		let mut lp2_l = Filter::new(sample_rate);
 		let mut lp2_r = Filter::new(sample_rate);
-		lp1_l.set_lowpass(INPUT_CUTOFF, BUTTERWORTH_Q1);
-		lp1_r.set_lowpass(INPUT_CUTOFF, BUTTERWORTH_Q1);
-		lp2_l.set_lowpass(INPUT_CUTOFF, BUTTERWORTH_Q2);
-		lp2_r.set_lowpass(INPUT_CUTOFF, BUTTERWORTH_Q2);
+		lp1_l.set_lowpass(INPUT_CUTOFF, BUTTERWORTH_4_Q1);
+		lp1_r.set_lowpass(INPUT_CUTOFF, BUTTERWORTH_4_Q1);
+		lp2_l.set_lowpass(INPUT_CUTOFF, BUTTERWORTH_4_Q2);
+		lp2_r.set_lowpass(INPUT_CUTOFF, BUTTERWORTH_4_Q2);
 
 		let mut new = ReverbRoom {
 			sample_rate,

@@ -1,16 +1,11 @@
 use crate::dsp::lerp;
 use crate::dsp::simper::Filter;
 use crate::dsp::smooth::Smooth;
+use crate::dsp::{BUTTERWORTH_4_Q1, BUTTERWORTH_4_Q2};
 use crate::effect::Effect;
 use crate::log::log_warn;
 use crate::worker::RequestData;
 use halfband::iir::{Downsampler8, Upsampler8}; // Assuming these structs exist
-
-// 4-pole butterworth Q
-//  1 / 2 * cos(  pi/8)
-//  1 / 2 * cos(3*pi/8)
-const Q1: f32 = 0.5411961;
-const Q2: f32 = 1.306563;
 
 #[derive(Debug)]
 struct Track {
@@ -44,10 +39,10 @@ impl Track {
 			pre_filter_enable: false,
 		};
 
-		t.pre_filters[0].set_lowpass(2000.0, Q1);
-		t.pre_filters[1].set_lowpass(2000.0, Q2);
-		t.post_filters[0].set_lowpass(2000.0, Q1);
-		t.post_filters[1].set_lowpass(2000.0, Q2);
+		t.pre_filters[0].set_lowpass(2000.0, BUTTERWORTH_4_Q1);
+		t.pre_filters[1].set_lowpass(2000.0, BUTTERWORTH_4_Q2);
+		t.post_filters[0].set_lowpass(2000.0, BUTTERWORTH_4_Q1);
+		t.post_filters[1].set_lowpass(2000.0, BUTTERWORTH_4_Q2);
 
 		t
 	}
@@ -90,12 +85,12 @@ impl Track {
 
 	fn update_filters(&mut self, rate: f32, filter: f32) {
 		let nyquist = rate * 0.5;
-		self.pre_filters[0].set_lowpass(rate * 0.5, Q1);
-		self.pre_filters[1].set_lowpass(rate * 0.5, Q2);
+		self.pre_filters[0].set_lowpass(rate * 0.5, BUTTERWORTH_4_Q1);
+		self.pre_filters[1].set_lowpass(rate * 0.5, BUTTERWORTH_4_Q2);
 
 		let cutoff = lerp(20_000.0, nyquist, filter);
-		self.post_filters[0].set_lowpass(cutoff, Q1);
-		self.post_filters[1].set_lowpass(cutoff, Q2);
+		self.post_filters[0].set_lowpass(cutoff, BUTTERWORTH_4_Q1);
+		self.post_filters[1].set_lowpass(cutoff, BUTTERWORTH_4_Q2);
 	}
 }
 
