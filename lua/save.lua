@@ -38,6 +38,7 @@ end
 local function do_patches(p)
 	-- patch any issues with save files from earlier versions
 	local default = require("default.empty_project")()
+
 	util.copy_defaults(p, default)
 
 	-- 0.1.1 -> 0.1.2
@@ -70,11 +71,13 @@ local function do_patches(p)
 		end
 	end
 
-	-- 0.1.2 -> 0.1.2
+	-- 0.1.2 -> 0.1.3
 	if #p.channels == 0 or not p.channels[1].master then
 		local master_ch = build.new_channel_data({ master = true, name = "Master" })
 		table.insert(p.channels, 1, master_ch)
 	end
+
+	-- TODO: fix up tuning here
 
 	-- after patches are done, file should be on new version
 	p.VERSION = VERSION

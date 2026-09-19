@@ -25,7 +25,7 @@ local function setup_project()
 		selection.device_index = nil
 	end
 
-	tuning.load(project.settings.tuning_key)
+	tuning.load_project()
 	engine.seek(project.transport.start_time)
 end
 

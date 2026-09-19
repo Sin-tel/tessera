@@ -1,3 +1,19 @@
+### Tuning rust integration
+move halfsharp split to rust info side
+half sharp rule: force if on 33/32
+accidentals: show on nominal and alternative
+current way of calculating tuning.comma is broken for 72et
+
+show 12et input map
+
+Things to do before we can merge to main:
+* make sure swtiching between tunings doesn't cause issues
+* fix up the old save files
+
+unrelated bugs:
+ switching tabs causes tool switch also
+ fix stylua global settings
+
 # VST
 need to fix voice alloc, some stuck notes when pedaling
 should plugin handle pedal itself? kind of annoying...
