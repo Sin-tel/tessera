@@ -78,7 +78,6 @@ local function audio_setup()
 			build.new_project()
 			load_default_project()
 		end
-		-- tuning.load("pele_7")
 		initial_setup = false
 	else
 		-- restore audio state
@@ -103,7 +102,7 @@ function tessera.load(test_run)
 	mouse:load()
 
 	-- load default tuning
-	tuning.load("meantone")
+	tuning.load_default()
 
 	if not test_run then
 		-- setup workspace

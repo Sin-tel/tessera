@@ -229,7 +229,7 @@ function Canvas:draw_pitch_grid(t)
 
 	local ti
 	if t ~= "octave" then
-		ti = tuning.get_index(#t, c)
+		ti = tuning.get_index(t, c)
 	end
 
 	local oct = tuning.get_relative_pitch(tuning.octave)
@@ -521,7 +521,7 @@ function Canvas:keypressed(key)
 
 			if base then
 				local diatonic = tuning.diatonic
-				local n = tuning.get_index(#diatonic, base.interval)
+				local n = tuning.get_index(diatonic, base.interval)
 				local p_origin = tuning.from_table(diatonic, n)
 				delta = tuning.from_table(diatonic, n + move_up)
 				delta = tuning.sub(delta, p_origin)

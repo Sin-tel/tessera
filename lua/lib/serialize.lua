@@ -90,7 +90,10 @@ local function write_table(t, depth)
 		else
 			if type(k) == "string" then
 				local write_value = get_writer(v)
-				local value = write_value(v)
+				local value = v
+				if write_value then
+					value = write_value(v)
+				end
 
 				indent(b, depth)
 				local s = ("%s = %s,\n"):format(key_str(k), value)
