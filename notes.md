@@ -1,12 +1,10 @@
 # VST
-add pressure queue too
-
 need to fix voice alloc, some stuck notes when pedaling
 should plugin handle pedal itself? kind of annoying...
 
-dump state and save preset
+better whitelist
 
-scanning and saving list
+fix key velocity curve!
 
 # tuning
  * make categories (ET / temp / JI)
@@ -21,6 +19,8 @@ rastmic / neutral
   some EDOs can also be notated like this (notably 31 and 41!)
 
 move 'flush_messages' to backend
+
+allow replacing / deleting instrument only
 
 be more consistent with levels.
 target should be ~ -18dB RMS
