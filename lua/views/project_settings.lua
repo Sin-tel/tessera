@@ -1,4 +1,5 @@
 local Notation = require("notation")
+local log = require("log")
 local Ui = require("ui/ui")
 local View = require("view")
 local tuning = require("tuning")
@@ -12,18 +13,16 @@ ProjectSettings.__index = ProjectSettings
 local NotationRow = {}
 NotationRow.__index = NotationRow
 
-local current_def
-local current_info
-
 -- Compare two Definition or NotationInfo's for equality,
 -- given they are derived from the same temperament.
 local function cmp_info(a, b)
 	return a.n_accidentals == b.n_accidentals and a.half_sharp == b.half_sharp
 end
 
-function NotationRow.new(info)
+function NotationRow.new(view, info)
 	local self = setmetatable({}, NotationRow)
 
+	self.view = view
 	self.info = info
 
 	local notation = Notation.new(info)
@@ -51,7 +50,7 @@ end
 
 -- The notation that is in use.
 function NotationRow:is_current()
-	return cmp_info(current_info, self.info)
+	return self.view.info ~= nil and cmp_info(self.view.info, self.info)
 end
 
 function NotationRow:update(ui)
@@ -97,79 +96,116 @@ function ProjectSettings.new()
 	self.ui.layout:padding(6)
 	self.indent = Ui.scale(32)
 
-	local name_list = {}
-	for i, k in ipairs(tuning.presets) do
-		local name = tuning_presets.tunings[k].name
-		assert(name)
-		name_list[i] = name
+	local category_names = {}
+	for i, c in ipairs(tuning_presets.categories) do
+		category_names[i] = c.name
 	end
 
 	self.tuning_mode = 1
-	self.select_tuning_mode = widgets.Selector.new(
-		self,
-		"tuning_mode",
-		{ list = { "Temperament", "Equal", "Just Intonation" }, no_undo = true }
-	)
+	self.select_tuning_mode = widgets.Selector.new(self, "tuning_mode", { list = category_names, no_undo = true })
 
 	self.preset_index = 1
-	self.select_preset = widgets.Dropdown.new(self, "preset_index", { list = name_list, arrows = true, no_undo = true })
+	self.preset_dropdown = widgets.Dropdown.new(self, "preset_index", { list = {}, arrows = true, no_undo = true })
 
 	self.apply = widgets.Button.new("Apply")
 
+	-- The project's definition we last synced with.
+	self.active = nil
+	-- Copy of a definition that is being edited, applied with the button.
+	self.def = nil
+	-- Selected notation for self.def.
+	self.info = nil
 	self.rows = {}
 
 	return self
 end
 
-local function set_current(info)
-	current_def.n_accidentals = info.n_accidentals
-	current_def.half_sharp = info.half_sharp
-	current_info = info
+-- Preset keys in the selected category.
+function ProjectSettings:preset_keys()
+	return tuning_presets.categories[self.tuning_mode].list
 end
 
--- Show the preset that is active, if there is one.
-function ProjectSettings:sync_preset()
-	if current_def then
+function ProjectSettings:set_category(index)
+	self.tuning_mode = index
+	local names = {}
+	for i, k in ipairs(self:preset_keys()) do
+		names[i] = tuning_presets.tunings[k].name
+	end
+	self.preset_dropdown.list = names
+end
+
+function ProjectSettings:select_notation(info)
+	self.info = info
+	self.def.n_accidentals = info.n_accidentals
+	self.def.half_sharp = info.half_sharp
+end
+
+-- Start editing a preset, with its recommended notation.
+function ProjectSettings:select_preset(key)
+	self.def = util.clone(tuning_presets.tunings[key])
+	self.preset_dropdown.title = nil
+	self:update_rows()
+end
+
+-- Show the active definition, if the project's changed since the last time.
+function ProjectSettings:sync()
+	local active = project.settings.tuning
+	assert(active)
+	if active == self.active then
 		return
 	end
+	self.active = active
+	self.def = util.clone(active)
 
-	current_def = project.settings.tuning
-	assert(current_def)
-	for i, k in ipairs(tuning.presets) do
-		if tuning_presets.tunings[k].name == current_def.name then
+	self:set_category(tuning_presets.category(active))
+
+	-- Definitions that aren't a preset only show their name.
+	self.preset_index = 1
+	self.preset_dropdown.title = active.name or active.subgroup
+	local key = tuning_presets.find(active)
+	for i, k in ipairs(self:preset_keys()) do
+		if k == key then
 			self.preset_index = i
+			self.preset_dropdown.title = nil
 		end
 	end
 
 	self:update_rows()
 
-	-- find right row
+	-- update_rows picked the recommended notation, prefer the one that's in use
 	for _, row in ipairs(self.rows) do
-		if cmp_info(current_def, row.info) then
-			set_current(row.info)
+		if cmp_info(active, row.info) then
+			self:select_notation(row.info)
 		end
 	end
 end
 
+-- Rebuild the notation options for self.def, and select the recommended one.
 function ProjectSettings:update_rows()
-	local def = current_def
-	if not def then
+	self.rows = {}
+	self.info = nil
+	self.error = nil
+
+	local ok, infos = pcall(tessera.tuning.notations, self.def)
+	if not ok then
+		log.error(infos)
+		self.error = infos
 		return
 	end
 
-	self.rows = {}
-	self.error = nil
-	local infos = tessera.tuning.notations(def)
-
-	local found_recommended = false
-
 	for _, info in ipairs(infos) do
-		-- set the first recommended one as current
-		if not found_recommended and info.recommended then
-			found_recommended = true
-			set_current(info)
+		table.insert(self.rows, NotationRow.new(self, info))
+	end
+
+	-- first recommended one, or else the first one
+	for _, row in ipairs(self.rows) do
+		if row.info.recommended then
+			self:select_notation(row.info)
+			return
 		end
-		table.insert(self.rows, NotationRow.new(info, false))
+	end
+	if self.rows[1] then
+		self:select_notation(self.rows[1].info)
 	end
 end
 
@@ -183,7 +219,7 @@ end
 -- end
 
 function ProjectSettings:update()
-	self:sync_preset()
+	self:sync()
 
 	tessera.graphics.set_font_main()
 
@@ -209,7 +245,15 @@ function ProjectSettings:update()
 	self.ui:label("Category")
 	self.ui.layout:col(c3)
 	if self.select_tuning_mode:update(self.ui) then
-		-- TODO
+		if self.tuning_mode == tuning_presets.category(self.active) then
+			-- back to the active one
+			self.active = nil
+			self:sync()
+		else
+			self:set_category(self.tuning_mode)
+			self.preset_index = 1
+			self:select_preset(self:preset_keys()[1])
+		end
 	end
 
 	self.ui.layout:new_row()
@@ -218,10 +262,8 @@ function ProjectSettings:update()
 	self.ui:label("Tuning")
 	self.ui.layout:col(c3)
 
-	if self.select_preset:update(self.ui) then
-		-- clicked on a preset, update definition and rows
-		current_def = tuning_presets.tunings[tuning.presets[self.preset_index]]
-		self:update_rows()
+	if self.preset_dropdown:update(self.ui) then
+		self:select_preset(self:preset_keys()[self.preset_index])
 	end
 
 	self.ui:background(theme.background)
@@ -237,8 +279,7 @@ function ProjectSettings:update()
 		self.ui.layout:col(c1)
 		self.ui.layout:col(lw - c1)
 		if row:update(self.ui) and not row:is_current() then
-			-- clicked on a notation, update definition and current info
-			set_current(row.info)
+			self:select_notation(row.info)
 		end
 		self.ui.layout:new_row()
 	end
@@ -247,9 +288,8 @@ function ProjectSettings:update()
 	self.ui.layout:col(c1 + c2 + c3 * 0.5)
 	self.ui:label("Currently active: " .. project.settings.tuning.name)
 	self.ui.layout:col(c3 * 0.5)
-	if self.apply:update(self.ui) then
-		-- print("HI")
-		tuning.set(current_def)
+	if self.apply:update(self.ui) and self.info then
+		tuning.set(self.def)
 	end
 
 	self.ui:end_frame()
