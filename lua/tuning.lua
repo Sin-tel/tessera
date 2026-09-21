@@ -1,5 +1,6 @@
 local Notation = require("notation")
 local log = require("log")
+local scales = require("default.scales")
 local tuning_presets = require("default.tuning_presets")
 
 local tuning = {}
@@ -17,7 +18,7 @@ end
 
 -- Load a tuning from a definition table
 function tuning.load(def)
-	local system = tessera.tuning.new(def)
+	local system = tessera.tuning.new(def, scales.candidates)
 
 	tuning.def = def
 	tuning.system = system
@@ -98,6 +99,15 @@ function tuning.load(def)
 	tuning.fine = system:scale(3)
 
 	tuning.tables = { tuning.diatonic, tuning.chromatic, tuning.fine }
+
+	-- Projections from notes to scale indices. Scales without one are looked up by pitch.
+	tuning.maps = {}
+	for i, t in ipairs(tuning.tables) do
+		tuning.maps[t] = system:scale_map(i)
+		if not tuning.maps[t] then
+			log.warn(tuning.snap_labels[i] .. " scale has no projection, using nearest pitch.")
+		end
+	end
 	tuning.center = tuning.conform(tuning.center or {})
 
 	return true
@@ -267,8 +277,17 @@ function tuning.from_midi(n)
 	return tuning.from_table(tuning.chromatic, n - 60)
 end
 
--- Index of the note in scale t that is closest to interval p.
+-- Index of interval p in scale t.
+-- With a projection this is exact, otherwise it is the note closest in pitch.
 function tuning.get_index(t, p)
+	local map = tuning.maps[t]
+	if map then
+		local index = 0
+		for i, v in ipairs(map) do
+			index = index + v * (p[i] or 0)
+		end
+		return index
+	end
 	return nearest_index(t, tuning.get_relative_pitch(p))
 end
 
