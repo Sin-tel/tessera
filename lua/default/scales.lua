@@ -1,5 +1,4 @@
--- scales
--- Currently unused
+-- Just intonation scales, as ratios above the unison up to the octave.
 
 local scales = {}
 
@@ -195,6 +194,15 @@ scales.mavila_12 = {
 	"16/9",
 	"243/128",
 	"2/1",
+}
+
+-- Scales to try for each snap setting, in order of preference.
+-- The first one that works in the tuning is used, see TuningSystem::new.
+-- If none work, it falls back on a chain of fifths.
+scales.candidates = {
+	diatonic = { scales.zarlino, scales.septal_7 },
+	chromatic = { scales.duodene, scales.septal_12 },
+	fine = { scales.ji_5_22, scales.septal_36 },
 }
 
 return scales
