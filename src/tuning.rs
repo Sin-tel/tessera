@@ -1,10 +1,14 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use xen_utils::{Notation, Subgroup, Temperament};
 
 // Number of fifths in the chain scales, and how far down from the root they start.
 const DIATONIC: (usize, i64) = (7, 1);
 const CHROMATIC: (usize, i64) = (12, 4);
-const FINE: (usize, i64) = (31, 13);
+// Range of sizes for the fine chain of fifths. The largest one that has a projection is used.
+const FINE_CHAIN: std::ops::RangeInclusive<usize> = 15..=31;
+// How many spellings of a scale note to look through for one that reads as the just ratio.
+const SPELLING_OPTIONS: usize = 8;
 
 // What gets serialized to save file.
 // Either give `commas` to temper out, or `et` for an equal temperament.
@@ -33,13 +37,35 @@ pub struct Definition {
 	pub half_sharp: Option<usize>,
 }
 
+// Just intonation scales to try for each kind of scale, in order of preference.
+// Each scale is a list of ratios above the unison, up to and including the octave.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ScaleCandidates {
+	#[serde(default)]
+	pub diatonic: Vec<Vec<String>>,
+	#[serde(default)]
+	pub chromatic: Vec<Vec<String>>,
+	#[serde(default)]
+	pub fine: Vec<Vec<String>>,
+}
+
+// Notes in one octave, sorted by pitch. The first one is always the unison.
+#[derive(Debug, Clone, Default)]
+pub struct Scale {
+	pub notes: Vec<Vec<i64>>,
+	// Linear map from notation coordinates to steps of the scale,
+	// that takes every note in the scale to its own index.
+	// None if there is no such map, then lookups have to go by pitch.
+	pub map: Option<Vec<i64>>,
+}
+
 #[derive(Debug)]
 pub struct TuningSystem {
 	notation: Notation,
 	// size of each notation coordinate in semitones.
 	pitches: Vec<f64>,
 	// diatonic, chromatic, fine
-	scales: [Vec<Vec<i64>>; 3],
+	scales: [Scale; 3],
 	half_sharp: Option<usize>,
 }
 
@@ -64,7 +90,7 @@ pub struct PrimeSpelling {
 }
 
 impl TuningSystem {
-	pub fn new(def: &Definition) -> Result<Self, String> {
+	pub fn new(def: &Definition, candidates: &ScaleCandidates) -> Result<Self, String> {
 		let temperament = temperament(def)?;
 		let notation = Notation::with_count(&temperament, def.n_accidentals).map_err(err)?;
 		let pitches = (0..notation.len())
@@ -78,9 +104,13 @@ impl TuningSystem {
 
 		let half_sharp = def.half_sharp;
 		let mut system = Self { notation, pitches, scales: Default::default(), half_sharp };
-		let diatonic = system.chain_scale(DIATONIC.0, DIATONIC.1);
-		let chromatic = system.chain_scale(CHROMATIC.0, CHROMATIC.1);
-		let fine = system.fine_scale(&chromatic)?;
+		let diatonic = system
+			.first_candidate(&candidates.diatonic)
+			.unwrap_or_else(|| system.chain_scale(DIATONIC.0, DIATONIC.1));
+		let chromatic = system
+			.first_candidate(&candidates.chromatic)
+			.unwrap_or_else(|| system.chain_scale(CHROMATIC.0, CHROMATIC.1));
+		let fine = system.fine_scale(&candidates.fine)?;
 		system.scales = [diatonic, chromatic, fine];
 
 		Ok(system)
@@ -111,9 +141,7 @@ impl TuningSystem {
 	}
 
 	// Scale by index (0 = diatonic, 1 = chromatic, 2 = fine).
-	//
-	// Notes in one octave, sorted by pitch. The first one is always the unison.
-	pub fn scale(&self, index: usize) -> &[Vec<i64>] {
+	pub fn scale(&self, index: usize) -> &Scale {
 		&self.scales[index]
 	}
 
@@ -148,66 +176,132 @@ impl TuningSystem {
 	//
 	// If the temperament closes the circle of fifths early (like 15et, where B is C),
 	// there would be duplicates. In that case the note closest to the root is kept.
-	fn chain_scale(&self, n: usize, offset: i64) -> Vec<Vec<i64>> {
+	fn chain_scale(&self, n: usize, offset: i64) -> Scale {
 		let mut fifths: Vec<i64> = (0..n as i64).map(|i| i - offset).collect();
 		fifths.sort_by_key(|&f| (f.abs(), -f));
 
-		let mut seen = std::collections::HashSet::new();
-		let mut scale = Vec::new();
+		let mut seen = HashSet::new();
+		let mut notes = Vec::new();
 		for f in fifths {
 			let mut note = vec![0; self.len()];
 			note[1] = f;
 			self.reduce(&mut note);
-			let image = self.notation.temper(&note).expect("note has the right length");
-			if seen.insert(image) {
-				scale.push(note);
+			if seen.insert(self.temper(&note)) {
+				notes.push(note);
 			}
 		}
-		scale.sort_by(|a, b| self.pitch(a).total_cmp(&self.pitch(b)));
-		scale
+		self.sort(&mut notes);
+		let map = self.projection(&notes);
+		Scale { notes, map }
 	}
 
-	fn fine_scale(&self, chromatic: &[Vec<i64>]) -> Result<Vec<Vec<i64>>, String> {
-		let rank = self.notation.temperament().rank();
-		if rank > 1 {
-			if self.len() == 2 {
-				// No accidentals, so the only way to go finer is a longer chain
-				return Ok(self.chain_scale(FINE.0, FINE.1));
-			}
+	// The first candidate that works in this tuning.
+	fn first_candidate(&self, candidates: &[Vec<String>]) -> Option<Scale> {
+		candidates.iter().find_map(|ratios| self.ji_scale(ratios))
+	}
 
-			// Chromatic scale with every accidental moved up and down once.
-			// Notes that are the same in the temperament are only kept once,
-			// the one with the fewest accidentals is found first.
-			let mut shifts = vec![vec![0; self.len()]];
-			for i in 2..self.len() {
-				for sign in [1, -1] {
-					let mut shift = vec![0; self.len()];
-					shift[i] = sign;
-					shifts.push(shift);
+	// Scale from a list of just ratios, spelled in the notation.
+	//
+	// None if some ratio isn't in the subgroup, if the temperament merges two notes,
+	// or if there is no projection.
+	fn ji_scale(&self, ratios: &[String]) -> Option<Scale> {
+		let subgroup = self.notation.subgroup();
+		let octave = basis_vec(0, subgroup.dim());
+
+		let unison = vec![0; self.len()];
+		let mut seen = HashSet::from([self.temper(&unison)]);
+		let mut notes = vec![unison];
+		for ratio in ratios {
+			let interval = subgroup.parse_ratio(ratio).ok()?;
+			if interval == octave {
+				continue;
+			}
+			let mut note = self.spell_literal(&interval)?;
+			self.reduce(&mut note);
+			if !seen.insert(self.temper(&note)) {
+				return None;
+			}
+			notes.push(note);
+		}
+		self.sort(&mut notes);
+		let map = self.projection(&notes)?;
+		Some(Scale { notes, map: Some(map) })
+	}
+
+	// Spell a just interval as it is written literally if possible, like ^Db for 16/15
+	// in 41et. Otherwise use the best spelling of its tempered image.
+	fn spell_literal(&self, interval: &[i64]) -> Option<Vec<i64>> {
+		let mut options = self.notation.spellings_interval(interval, SPELLING_OPTIONS).ok()?;
+		let literal = options
+			.iter()
+			.position(|s| self.notation.to_interval(s).is_ok_and(|i| i == interval));
+		Some(options.swap_remove(literal.unwrap_or(0)))
+	}
+
+	fn fine_scale(&self, candidates: &[Vec<String>]) -> Result<Scale, String> {
+		if self.notation.temperament().rank() > 1 {
+			if let Some(scale) = self.first_candidate(candidates) {
+				return Ok(scale);
+			}
+			// Largest chain of fifths that has a projection.
+			for n in FINE_CHAIN.rev() {
+				let scale = self.chain_scale(n, chain_offset(n));
+				if scale.map.is_some() {
+					return Ok(scale);
 				}
 			}
-
-			let mut seen = std::collections::HashSet::new();
-			let mut scale = Vec::new();
-			for shift in &shifts {
-				for note in chromatic {
-					let mut note: Vec<i64> = note.iter().zip(shift).map(|(a, b)| a + b).collect();
-					self.reduce(&mut note);
-					if seen.insert(self.notation.temper(&note).map_err(err)?) {
-						scale.push(note);
-					}
-				}
-			}
-			scale.sort_by(|a, b| self.pitch(a).total_cmp(&self.pitch(b)));
-			return Ok(scale);
+			let n = *FINE_CHAIN.end();
+			return Ok(self.chain_scale(n, chain_offset(n)));
 		}
 
 		// Equal temperament: every step, spelled by the notation.
-		let mut octave = vec![0; self.len()];
-		octave[0] = 1;
-		let steps = self.notation.temper(&octave).map_err(err)?[0].abs();
+		// The temperament mapping itself is the projection.
+		let mut map: Vec<i64> = (0..self.len())
+			.map(|i| self.temper(&basis_vec(i, self.len()))[0])
+			.collect();
+		let sign = map[0].signum();
+		map.iter_mut().for_each(|x| *x *= sign);
 
-		(0..steps).map(|k| self.notation.spell(&[k]).map_err(err)).collect()
+		let notes = (0..map[0])
+			.map(|k| self.notation.spell(&[k * sign]).map_err(err))
+			.collect::<Result<Vec<_>, _>>()?;
+		Ok(Scale { notes, map: Some(map) })
+	}
+
+	// Linear map that takes every note of the scale to its index, if there is one.
+	//
+	// This is the patent val for the size of the scale, applied to the just reading of
+	// each notation coordinate. It exists when the scale is a constant structure that
+	// the val agrees with.
+	fn projection(&self, notes: &[Vec<i64>]) -> Option<Vec<i64>> {
+		let n = notes.len() as f64;
+		let val: Vec<i64> = self
+			.notation
+			.subgroup()
+			.log_primes()
+			.iter()
+			.map(|l| (n * l).round() as i64)
+			.collect();
+		let map: Vec<i64> = (0..self.len())
+			.map(|i| {
+				let interval = self
+					.notation
+					.to_interval(&basis_vec(i, self.len()))
+					.expect("right length");
+				dot(&interval, &val)
+			})
+			.collect();
+
+		let consistent = notes.iter().enumerate().all(|(i, note)| dot(&map, note) == i as i64);
+		consistent.then_some(map)
+	}
+
+	fn temper(&self, note: &[i64]) -> Vec<i64> {
+		self.notation.temper(note).expect("note has the right length")
+	}
+
+	fn sort(&self, notes: &mut [Vec<i64>]) {
+		notes.sort_by(|a, b| self.pitch(a).total_cmp(&self.pitch(b)));
 	}
 }
 
@@ -321,6 +415,15 @@ fn generator_ratios(notation: &Notation) -> Vec<(u64, u64)> {
 		);
 	}
 	generators
+}
+
+// Fifths down from the root for a chain of n, so that it is centered around D.
+fn chain_offset(n: usize) -> i64 {
+	n as i64 / 2 - 2
+}
+
+fn dot(a: &[i64], b: &[i64]) -> i64 {
+	a.iter().zip(b).map(|(x, y)| x * y).sum()
 }
 
 fn basis_vec(i: usize, n: usize) -> Vec<i64> {

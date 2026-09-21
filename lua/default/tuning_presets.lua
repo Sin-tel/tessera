@@ -11,6 +11,8 @@ presets.categories = {
 	{
 		name = "Equal",
 		list = {
+			"et_5",
+			"et_7",
 			"et_12",
 			"et_15",
 			"et_17",
@@ -57,6 +59,8 @@ local function et(n, subgroup)
 	return { name = n .. " equal", subgroup = subgroup, et = n }
 end
 
+presets.tunings.et_5 = et(5, "2.3.5.7")
+presets.tunings.et_7 = et(7, "2.3.5.7")
 presets.tunings.et_12 = et(12, "2.3.5")
 presets.tunings.et_15 = et(15, "2.3.5")
 presets.tunings.et_17 = et(17, "2.3.5")
@@ -104,6 +108,23 @@ function presets.default()
 	local def = util.clone(presets.tunings.meantone)
 	def.n_accidentals = 0
 	return def
+end
+
+-- Every preset is listed exactly once, in the category it belongs to.
+do
+	local listed = {}
+	for i, c in ipairs(presets.categories) do
+		for _, k in ipairs(c.list) do
+			local def = presets.tunings[k]
+			assert(def, "Unknown preset in " .. c.name .. ": " .. k)
+			assert(not listed[k], "Preset listed twice: " .. k)
+			assert(presets.category(def) == i, "Preset in the wrong category: " .. k)
+			listed[k] = true
+		end
+	end
+	for k in pairs(presets.tunings) do
+		assert(listed[k], "Preset not in any category: " .. k)
+	end
 end
 
 return presets
