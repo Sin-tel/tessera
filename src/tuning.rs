@@ -117,6 +117,19 @@ impl TuningSystem {
 		&self.scales[index]
 	}
 
+	// One step up of an equal temperament, spelled in the notation.
+	// None for higher rank temperaments, or if the notation can't write it.
+	pub fn step(&self) -> Option<Vec<i64>> {
+		if self.notation.temperament().rank() != 1 {
+			return None;
+		}
+		let step = self.notation.spell(&[1]).ok()?;
+		if self.pitch(&step) < 0.0 {
+			return Some(step.iter().map(|x| -x).collect());
+		}
+		Some(step)
+	}
+
 	fn octave(&self) -> f64 {
 		self.pitches[0]
 	}

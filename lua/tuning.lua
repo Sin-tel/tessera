@@ -6,9 +6,6 @@ local tuning = {}
 
 tuning.snap_labels = { "Diatonic", "Chromatic", "Fine" }
 
--- Ordered list of preset keys.
-tuning.presets = tuning_presets.list
-
 -- Half an apotome in semitones, the same bound that xen_utils uses for accidentals.
 -- local MAX_ACCIDENTAL = 0.56842503
 
@@ -46,6 +43,7 @@ function tuning.load(def)
 
 	-- Small steps for fine editing.
 	-- If there are accidentals, they take precedence.
+	-- Otherwise in an equal temperament, one step.
 	-- Otherwise we use the first chain of fifths that closes up to an octave stack (pythagorean comma)
 	tuning.comma = nil
 	tuning.comma_alt = nil
@@ -67,6 +65,8 @@ function tuning.load(def)
 		-- 	tuning.chroma_alt = util.clone(tuning.chroma)
 		-- 	tuning.chroma_alt = tuning.add(tuning.chroma_alt, tuning.mul(unit(i5), -2))
 		-- end
+	elseif system:step() then
+		tuning.comma = tuning.conform(system:step())
 	else
 		-- TODO: useful to keep?
 
@@ -87,8 +87,7 @@ function tuning.load(def)
 		-- end
 
 		-- pythagorean comma C - Dbb
-		tuning.comma = tuning.new_interval()
-		tuning.comma = { 7, -12 }
+		tuning.comma = tuning.conform({ 7, -12 })
 		if tuning.get_relative_pitch(tuning.comma) < 0 then
 			tuning.comma = tuning.mul(tuning.comma, -1)
 		end

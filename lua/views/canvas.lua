@@ -505,6 +505,9 @@ function Canvas:keypressed(key)
 		elseif modifier_keys.ctrl then
 			delta = tuning.mul(tuning.chroma, move_up)
 		elseif modifier_keys.alt then
+			if not tuning.comma then
+				return true
+			end
 			delta = tuning.mul(tuning.comma, move_up)
 		else
 			-- we use the lowest note as the base.
