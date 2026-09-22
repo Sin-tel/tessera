@@ -1,16 +1,25 @@
 use crate::api::lua_serde;
-use crate::tuning::{Definition, NotationInfo, ScaleCandidates, TuningSystem, notations};
+use crate::tuning::{
+	NotationChoice, NotationOption, NotationStyle, ScaleCandidates, TemperamentDef, TuningSystem,
+	notations,
+};
 use mlua::prelude::*;
 
-lua_serde!(Definition);
-lua_serde!(NotationInfo);
+lua_serde!(TemperamentDef);
+lua_serde!(NotationChoice);
+lua_serde!(NotationStyle);
+lua_serde!(NotationOption);
 lua_serde!(ScaleCandidates);
 
 impl LuaUserData for TuningSystem {
 	fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
 		methods.add_method("len", |_, this, ()| Ok(this.len()));
 
-		methods.add_method("get_notation_info", |_, this, ()| Ok(this.get_notation_info()));
+		// the notation that is used, resolved if none was given
+		methods.add_method("choice", |_, this, ()| Ok(this.choice()));
+
+		// how to draw notes, for notation.lua
+		methods.add_method("style", |_, this, ()| Ok(this.style().clone()));
 
 		// size in semitones for each coordinate
 		methods.add_method("pitches", |_, this, ()| Ok(this.pitches().to_vec()));
@@ -33,22 +42,28 @@ impl LuaUserData for TuningSystem {
 pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	let tuning = lua.create_table()?;
 
-	// tessera.tuning.new(definition, scale_candidates)
+	// tessera.tuning.new(temperament, notation_choice, scale_candidates)
+	// The temperament is a tuning definition, notation_choice can be nil for the recommended one.
 	tuning.set(
 		"new",
 		lua.create_function(
-			|_, (definition, candidates): (Definition, Option<ScaleCandidates>)| {
-				TuningSystem::new(&definition, &candidates.unwrap_or_default())
+			|_,
+			 (def, choice, candidates): (
+				TemperamentDef,
+				Option<NotationChoice>,
+				Option<ScaleCandidates>,
+			)| {
+				TuningSystem::new(&def, choice, &candidates.unwrap_or_default())
 					.map_err(LuaError::RuntimeError)
 			},
 		)?,
 	)?;
 
-	// tessera.tuning.notations(definition)
+	// tessera.tuning.notations(temperament)
 	tuning.set(
 		"notations",
-		lua.create_function(|_, definition: Definition| {
-			notations(&definition).map_err(LuaError::RuntimeError)
+		lua.create_function(|_, def: TemperamentDef| {
+			notations(&def).map_err(LuaError::RuntimeError)
 		})?,
 	)?;
 

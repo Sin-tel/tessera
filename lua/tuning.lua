@@ -16,11 +16,16 @@ local function unit(index)
 	return v
 end
 
--- Load a tuning from a definition table
+-- Load a tuning from a definition table: { name, subgroup, commas or et, notation }.
+-- Without a notation the recommended one is used, and it gets filled in on def.
 function tuning.load(def)
-	local system = tessera.tuning.new(def, scales.candidates)
+	local ok, system = pcall(tessera.tuning.new, def, def.notation, scales.candidates)
+	if not ok then
+		log.error(system)
+		return false
+	end
 
-	tuning.def = def
+	def.notation = system:choice()
 	tuning.system = system
 
 	-- number of coordinates in a note
@@ -29,9 +34,7 @@ function tuning.load(def)
 	-- size in semitones of each coordinate
 	tuning.generators = system:pitches()
 
-	-- build notation
-	local info = tuning.system:get_notation_info()
-	tuning.notation = Notation.new(info)
+	tuning.notation = Notation.new(system:style())
 
 	-- interval definitions
 	tuning.octave = { 1 }
@@ -115,15 +118,12 @@ end
 
 -- Set the tuning for the current project.
 function tuning.set(def)
-	-- local n_accidentals_old = tuning.n_accidentals
 	if not tuning.load(def) then
 		return false
 	end
 
-	local n_accidentals = def.n_accidentals
-
 	local name = def.name or def.subgroup
-	log.info("Loading tuning: " .. name .. " (" .. n_accidentals .. " accidentals)")
+	log.info("Loading tuning: " .. name .. " (" .. def.notation.accidentals .. " accidentals)")
 	project.settings.tuning = util.clone(def)
 
 	-- TODO: fixme
