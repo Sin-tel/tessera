@@ -103,10 +103,11 @@ function presets.find(def)
 	end
 end
 
--- TODO: default recommended is ups/downs
+-- Meantone with plain sharps and flats.
+-- Not the recommended notation (ups and downs) on purpose: new users should be able to read it.
 function presets.default()
 	local def = util.clone(presets.tunings.meantone)
-	def.n_accidentals = 0
+	def.notation = { accidentals = 0, half_sharp = false }
 	return def
 end
 

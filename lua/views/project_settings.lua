@@ -13,35 +13,48 @@ ProjectSettings.__index = ProjectSettings
 local NotationRow = {}
 NotationRow.__index = NotationRow
 
--- Compare two Definition or NotationInfo's for equality,
--- given they are derived from the same temperament.
-local function cmp_info(a, b)
-	return a.n_accidentals == b.n_accidentals and a.half_sharp == b.half_sharp
+-- Compare two NotationChoice's, given they are for the same temperament.
+local function same_choice(a, b)
+	return a.accidentals == b.accidentals and a.half_sharp == b.half_sharp
 end
 
-function NotationRow.new(view, info)
+-- option is a NotationOption, see tuning.rs
+function NotationRow.new(view, option)
 	local self = setmetatable({}, NotationRow)
 
 	self.view = view
-	self.info = info
+	self.option = option
 
-	local notation = Notation.new(info)
+	local notation = Notation.new(option.style)
 
+	local n = option.choice.accidentals
 	self.title = "Plain"
-	if info.n_accidentals == 1 then
+	if n == 1 then
 		self.title = "Single"
-	elseif info.n_accidentals > 0 then
-		self.title = tostring(info.n_accidentals) .. " accidentals"
+	elseif n > 0 then
+		self.title = tostring(n) .. " accidentals"
 	end
-	if info.half_sharp then
+	if option.choice.half_sharp then
 		self.title = "Neutral"
 	end
 
+	-- how the prime is written on its nominal, and the alternative if there is one
 	self.primes = {}
-	for i, s in ipairs(info.spellings) do
+	for i, s in ipairs(option.spellings) do
+		local written = {}
+		if s.nominal then
+			table.insert(written, notation:name(s.nominal))
+		end
+		if s.alternative then
+			local name = notation:name(s.alternative)
+			-- half sharps can write both spellings the same way
+			if name ~= written[1] then
+				table.insert(written, name)
+			end
+		end
 		self.primes[i] = {
 			ratio = s.ratio[1] .. "/" .. s.ratio[2],
-			name = notation:name(s.note),
+			name = table.concat(written, "~"),
 		}
 	end
 
@@ -50,7 +63,7 @@ end
 
 -- The notation that is in use.
 function NotationRow:is_current()
-	return self.view.info ~= nil and cmp_info(self.view.info, self.info)
+	return self.view.option ~= nil and same_choice(self.view.option.choice, self.option.choice)
 end
 
 function NotationRow:update(ui)
@@ -113,8 +126,8 @@ function ProjectSettings.new()
 	self.active = nil
 	-- Copy of a definition that is being edited, applied with the button.
 	self.def = nil
-	-- Selected notation for self.def.
-	self.info = nil
+	-- Selected notation option for self.def.
+	self.option = nil
 	self.rows = {}
 
 	return self
@@ -134,10 +147,9 @@ function ProjectSettings:set_category(index)
 	self.preset_dropdown.list = names
 end
 
-function ProjectSettings:select_notation(info)
-	self.info = info
-	self.def.n_accidentals = info.n_accidentals
-	self.def.half_sharp = info.half_sharp
+function ProjectSettings:select_notation(option)
+	self.option = option
+	self.def.notation = util.clone(option.choice)
 end
 
 -- Start editing a preset, with its recommended notation.
@@ -174,8 +186,8 @@ function ProjectSettings:sync()
 
 	-- update_rows picked the recommended notation, prefer the one that's in use
 	for _, row in ipairs(self.rows) do
-		if cmp_info(active, row.info) then
-			self:select_notation(row.info)
+		if same_choice(active.notation, row.option.choice) then
+			self:select_notation(row.option)
 		end
 	end
 end
@@ -183,29 +195,29 @@ end
 -- Rebuild the notation options for self.def, and select the recommended one.
 function ProjectSettings:update_rows()
 	self.rows = {}
-	self.info = nil
+	self.option = nil
 	self.error = nil
 
-	local ok, infos = pcall(tessera.tuning.notations, self.def)
+	local ok, options = pcall(tessera.tuning.notations, self.def)
 	if not ok then
-		log.error(infos)
-		self.error = infos
+		log.error(options)
+		self.error = options
 		return
 	end
 
-	for _, info in ipairs(infos) do
-		table.insert(self.rows, NotationRow.new(self, info))
+	for _, option in ipairs(options) do
+		table.insert(self.rows, NotationRow.new(self, option))
 	end
 
 	-- first recommended one, or else the first one
 	for _, row in ipairs(self.rows) do
-		if row.info.recommended then
-			self:select_notation(row.info)
+		if row.option.recommended then
+			self:select_notation(row.option)
 			return
 		end
 	end
 	if self.rows[1] then
-		self:select_notation(self.rows[1].info)
+		self:select_notation(self.rows[1].option)
 	end
 end
 
@@ -279,7 +291,7 @@ function ProjectSettings:update()
 		self.ui.layout:col(c1)
 		self.ui.layout:col(lw - c1)
 		if row:update(self.ui) and not row:is_current() then
-			self:select_notation(row.info)
+			self:select_notation(row.option)
 		end
 		self.ui.layout:new_row()
 	end
@@ -288,7 +300,7 @@ function ProjectSettings:update()
 	self.ui.layout:col(c1 + c2 + c3 * 0.5)
 	self.ui:label("Currently active: " .. project.settings.tuning.name)
 	self.ui.layout:col(c3 * 0.5)
-	if self.apply:update(self.ui) and self.info then
+	if self.apply:update(self.ui) and self.option then
 		tuning.set(self.def)
 	end
 

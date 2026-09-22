@@ -10,31 +10,60 @@ const FINE_CHAIN: std::ops::RangeInclusive<usize> = 15..=31;
 // How many spellings of a scale note to look through for one that reads as the just ratio.
 const SPELLING_OPTIONS: usize = 8;
 
-// What gets serialized to save file.
+// Which temperament to use.
 // Either give `commas` to temper out, or `et` for an equal temperament.
 // If neither is present, it is just intonation.
 //
-// n_accidentals and half_sharp match fields in NotationInfo
-
-// TODO: why is 'skip_serializing_if' necessary on half_sharp but not other options?
+// This is part of the tuning definition in the save file, which also has a name and a NotationChoice.
+//
+// Note: mlua serializes None as a null value that is truthy in Lua,
+// so anything that goes to Lua needs `skip_serializing_if` on its options.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct Definition {
+pub struct TemperamentDef {
 	// Subgroup in shorthand, e.g. "2.3.5.7"
 	pub subgroup: String,
 	// Commas to temper out as "p/q" strings.
 	#[serde(default)]
 	pub commas: Vec<String>,
 	// Equal division of the octave.
-	#[serde(default)]
-	pub et: Option<i64>,
-	// missing in presets since it depends on notation chosen
-	// TODO: kind of bad
-	#[serde(default)]
-	pub n_accidentals: usize,
-	// Prime of an accidental that should be written as half a sharp.
-	// mlua turns None into a null value that is truthy in Lua, so leave it out.
 	#[serde(default, skip_serializing_if = "Option::is_none")]
-	pub half_sharp: Option<usize>,
+	pub et: Option<i64>,
+}
+
+// Which of the notation options of a temperament to use.
+//
+// An option is identified by its number of accidentals (see Notation::with_count),
+// and whether the one that is half an apotome is written as a half sharp.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NotationChoice {
+	pub accidentals: usize,
+	#[serde(default)]
+	pub half_sharp: bool,
+}
+
+// How to draw spellings, for notation.lua.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct NotationStyle {
+	// One for every coordinate after the octave and the fifth.
+	pub accidentals: Vec<AccidentalStyle>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AccidentalStyle {
+	// Just ratio of the accidental.
+	pub ratio: Ratio,
+	// Written as half a sharp, combined with the sharps and flats.
+	pub half_sharp: bool,
+}
+
+// A notation that can be picked in the settings.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotationOption {
+	pub choice: NotationChoice,
+	pub recommended: bool,
+	pub style: NotationStyle,
+	// How the primes beyond 3 are written.
+	pub spellings: Vec<PrimeSpelling>,
 }
 
 // Just intonation scales to try for each kind of scale, in order of preference.
@@ -62,37 +91,47 @@ pub struct Scale {
 #[derive(Debug)]
 pub struct TuningSystem {
 	notation: Notation,
+	choice: NotationChoice,
+	style: NotationStyle,
 	// size of each notation coordinate in semitones.
 	pitches: Vec<f64>,
 	// diatonic, chromatic, fine
 	scales: [Scale; 3],
-	half_sharp: Option<usize>,
-}
-
-// info necessary to display notation options in menu
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NotationInfo {
-	pub n_accidentals: usize,
-	pub generators: Vec<(u64, u64)>,
-	pub recommended: bool,
-	#[serde(default, skip_serializing_if = "Option::is_none")]
-	pub half_sharp: Option<usize>,
-	pub spellings: Vec<PrimeSpelling>,
 }
 
 type Ratio = (u64, u64);
 
+// How a notation writes one prime, reduced to an octave (5/4, 7/4, 11/8, ..).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrimeSpelling {
 	pub ratio: Ratio,
-	// notation coordinates
-	pub note: Vec<i64>,
+	// On the nominal just intonation gives it, in notation coordinates.
+	// None if the notation can't write it there.
+	#[serde(default, skip_serializing_if = "Option::is_none")]
+	pub nominal: Option<Vec<i64>>,
+	// The next best way to write it, if that is worth showing next to the nominal.
+	#[serde(default, skip_serializing_if = "Option::is_none")]
+	pub alternative: Option<Vec<i64>>,
 }
 
 impl TuningSystem {
-	pub fn new(def: &Definition, candidates: &ScaleCandidates) -> Result<Self, String> {
-		let temperament = temperament(def)?;
-		let notation = Notation::with_count(&temperament, def.n_accidentals).map_err(err)?;
+	// Without a notation choice, the recommended one is used.
+	pub fn new(
+		def: &TemperamentDef,
+		choice: Option<NotationChoice>,
+		candidates: &ScaleCandidates,
+	) -> Result<Self, String> {
+		let options = notation_options(&temperament(def)?)?;
+		let index = if let Some(choice) = choice {
+			options
+				.iter()
+				.position(|(_, c)| *c == choice)
+				.ok_or_else(|| format!("Notation {choice:?} is not available"))?
+		} else {
+			options.iter().position(|(n, _)| n.keeps_nominals()).unwrap_or(0)
+		};
+		let (notation, choice) = options.into_iter().nth(index).expect("index is in range");
+
 		let pitches = (0..notation.len())
 			.map(|i| {
 				notation
@@ -102,8 +141,8 @@ impl TuningSystem {
 			})
 			.collect::<Result<Vec<_>, _>>()?;
 
-		let half_sharp = def.half_sharp;
-		let mut system = Self { notation, pitches, scales: Default::default(), half_sharp };
+		let style = notation_style(&notation, choice.half_sharp);
+		let mut system = Self { notation, choice, style, pitches, scales: Default::default() };
 		let diatonic = system
 			.first_candidate(&candidates.diatonic)
 			.unwrap_or_else(|| system.chain_scale(DIATONIC.0, DIATONIC.1));
@@ -116,18 +155,12 @@ impl TuningSystem {
 		Ok(system)
 	}
 
-	pub fn get_notation_info(&self) -> NotationInfo {
-		let recommended = self.notation.keeps_nominals();
-		let generators = generator_ratios(&self.notation);
-		let n_accidentals = self.notation.len() - 2;
+	pub fn choice(&self) -> NotationChoice {
+		self.choice
+	}
 
-		NotationInfo {
-			n_accidentals,
-			generators,
-			recommended,
-			half_sharp: self.half_sharp,
-			spellings: prime_spellings(&self.notation),
-		}
+	pub fn style(&self) -> &NotationStyle {
+		&self.style
 	}
 
 	#[allow(clippy::len_without_is_empty)]
@@ -305,42 +338,52 @@ impl TuningSystem {
 	}
 }
 
-pub fn notations(def: &Definition) -> Result<Vec<NotationInfo>, String> {
-	let temperament = temperament(def)?;
-	let mut notations = Vec::new();
-
-	for notation in Notation::options(&temperament).map_err(err)?.into_iter() {
-		let recommended = notation.keeps_nominals();
-		let n_accidentals = notation.len() - 2;
-		let generators = generator_ratios(&notation);
-		let half_sharp = can_use_half_sharp(&notation);
-		let spellings = prime_spellings(&notation);
-
-		// If half sharp is available, but not on 33/32, add an extra notation without it.
-		if let Some(half_sharp) = half_sharp {
-			if generators[half_sharp - 1] != (33, 32) {
-				notations.push(NotationInfo {
-					n_accidentals,
-					generators: generators.clone(),
-					recommended,
-					half_sharp: None,
-					spellings: spellings.clone(),
-				});
-			}
-		}
-
-		notations.push(NotationInfo {
-			n_accidentals,
-			generators,
-			recommended,
-			half_sharp,
-			spellings,
-		});
-	}
-	Ok(notations)
+// Every notation that can be used for a temperament.
+pub fn notations(def: &TemperamentDef) -> Result<Vec<NotationOption>, String> {
+	let options = notation_options(&temperament(def)?)?;
+	Ok(options
+		.into_iter()
+		.map(|(notation, choice)| NotationOption {
+			choice,
+			recommended: notation.keeps_nominals(),
+			style: notation_style(&notation, choice.half_sharp),
+			spellings: prime_spellings(&notation),
+		})
+		.collect())
 }
 
-fn temperament(def: &Definition) -> Result<Temperament, String> {
+// The notations xen_utils offers, and for those that can use a half sharp, whether they do.
+fn notation_options(temperament: &Temperament) -> Result<Vec<(Notation, NotationChoice)>, String> {
+	let mut options = Vec::new();
+	for notation in Notation::options(temperament).map_err(err)? {
+		let accidentals = notation.len() - 2;
+		let plain = NotationChoice { accidentals, half_sharp: false };
+		match half_sharp_index(&notation) {
+			Some(i) => {
+				// 33/32 is always written as a half sharp, others get the choice.
+				if generator_ratios(&notation)[i] != (33, 32) {
+					options.push((notation.clone(), plain));
+				}
+				options.push((notation, NotationChoice { accidentals, half_sharp: true }));
+			},
+			None => options.push((notation, plain)),
+		}
+	}
+	Ok(options)
+}
+
+fn notation_style(notation: &Notation, half_sharp: bool) -> NotationStyle {
+	let half_sharp_index = if half_sharp { half_sharp_index(notation) } else { None };
+	let accidentals = generator_ratios(notation)
+		.into_iter()
+		.enumerate()
+		.skip(2)
+		.map(|(i, ratio)| AccidentalStyle { ratio, half_sharp: Some(i) == half_sharp_index })
+		.collect();
+	NotationStyle { accidentals }
+}
+
+fn temperament(def: &TemperamentDef) -> Result<Temperament, String> {
 	let subgroup: Subgroup = def.subgroup.parse().map_err(err)?;
 
 	match (&def.et, def.commas.is_empty()) {
@@ -362,45 +405,60 @@ fn err(e: xen_utils::Error) -> String {
 	e.to_string()
 }
 
-// If some accidental can be written as a half-sharp: two of them are the apotome
-// (7 fifths down 4 octaves) in the temperament.
+// Coordinate of the accidental that can be written as a half sharp, if there is one:
+// two of them are the apotome (7 fifths down 4 octaves) in the temperament.
 // By construction this can only appear at one accidental.
-// Returns coordinate index
-fn can_use_half_sharp(notation: &Notation) -> Option<usize> {
+fn half_sharp_index(notation: &Notation) -> Option<usize> {
 	let mut apotome = vec![0; notation.len()];
 	(apotome[0], apotome[1]) = (-4, 7);
-	let Ok(apotome) = notation.temper(&apotome) else {
-		return None;
-	};
+	let apotome = notation.temper(&apotome).ok()?;
 
-	for i in 2..notation.len() {
-		let image = notation.temper(&basis_vec(i, notation.len())).unwrap();
-		if image.iter().zip(&apotome).all(|(a, b)| 2 * a == *b) {
-			// only used by lua, so compensate for 1-indexing
-			return Some(i + 1);
-		}
-	}
-	None
+	(2..notation.len()).find(|&i| {
+		let image = notation.temper(&basis_vec(i, notation.len())).expect("right length");
+		image.iter().zip(&apotome).all(|(a, b)| 2 * a == *b)
+	})
 }
 
-// How every prime beyond 3 is written, reduced to an octave (5/4, 7/4, 11/8, ..).
+// How every prime beyond 3 is written, on its nominal and the way `spell` writes it.
 fn prime_spellings(notation: &Notation) -> Vec<PrimeSpelling> {
-	// TODO: this should be in xen_utils, use notation.nominal_spellings
 	let basis = notation.subgroup().basis();
 	(2..basis.len())
-		.map(|i| {
+		.zip(notation.nominal_spellings())
+		.map(|(i, nominal)| {
 			let prime = basis[i];
 			let octaves = i64::from(prime.ilog2());
 			let mut interval = vec![0; basis.len()];
 			(interval[0], interval[i]) = (-octaves, 1);
 
-			let ratio = (u64::from(prime), 1 << octaves);
-			PrimeSpelling {
-				ratio,
-				note: notation.spell_interval(&interval).expect("always a valid interval"),
-			}
+			// nominal_spellings writes the prime itself, so bring it down the same octaves.
+			let nominal = nominal.map(|mut note| {
+				note[0] -= octaves;
+				note
+			});
+			let cost = |note: &[i64]| notation.cost(note).expect("always a valid spelling");
+			// The cheapest spelling that isn't the one on the nominal.
+			// It earns a place next to the nominal by being easier to read: either it is
+			// cheaper, or it needs fewer accidentals, like A# next to vBb in meantone.
+			let alternative = notation
+				.spellings_interval(&interval, 2)
+				.expect("always a valid interval")
+				.into_iter()
+				.find(|spelled| Some(spelled) != nominal.as_ref())
+				.filter(|spelled| match nominal.as_deref() {
+					Some(nominal) => {
+						marks(spelled) < marks(nominal) || cost(spelled) < cost(nominal)
+					},
+					None => true,
+				});
+
+			PrimeSpelling { ratio: (u64::from(prime), 1 << octaves), nominal, alternative }
 		})
 		.collect()
+}
+
+// How many accidentals a spelling writes, not counting sharps and flats.
+fn marks(spelling: &[i64]) -> i64 {
+	spelling[2..].iter().map(|c| c.abs()).sum()
 }
 
 fn generator_ratios(notation: &Notation) -> Vec<(u64, u64)> {

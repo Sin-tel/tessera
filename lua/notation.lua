@@ -51,25 +51,37 @@ local function sharps_str(sharps)
 end
 
 Notation.__index = Notation
-function Notation.new(info)
+-- style is a NotationStyle, see tuning.rs
+function Notation.new(style)
 	local self = setmetatable({}, Notation)
 
+	-- pairs of { coordinate, glyphs }
 	self.accidentals = {}
-	self.half_sharp = info.half_sharp
+	-- coordinate of the half sharp
+	self.half_sharp = nil
 
-	if #info.generators == 3 and self.half_sharp ~= 3 then
+	-- accidentals start after the octave and fifth
+	local offset = 2
+
+	for i, acc in ipairs(style.accidentals) do
+		if acc.half_sharp then
+			self.half_sharp = i + offset
+		end
+	end
+
+	if #style.accidentals == 1 and not self.half_sharp then
 		-- single is up/down
-		table.insert(self.accidentals, { 3, Notation.ACC_UP })
+		table.insert(self.accidentals, { 1 + offset, Notation.ACC_UP })
 	else
-		for i, v in ipairs(info.generators) do
-			if i >= 3 and i ~= self.half_sharp then
-				local r = v[1] .. "/" .. v[2]
+		for i, acc in ipairs(style.accidentals) do
+			if not acc.half_sharp then
+				local r = acc.ratio[1] .. "/" .. acc.ratio[2]
 				if r == "81/80" then
-					table.insert(self.accidentals, { i, Notation.ACC_UP })
+					table.insert(self.accidentals, { i + offset, Notation.ACC_UP })
 				elseif r == "64/63" then
-					table.insert(self.accidentals, { i, Notation.ACC_SEPTIMAL })
+					table.insert(self.accidentals, { i + offset, Notation.ACC_SEPTIMAL })
 				elseif r == "33/32" then
-					table.insert(self.accidentals, { i, Notation.ACC_UNDECIMAL })
+					table.insert(self.accidentals, { i + offset, Notation.ACC_UNDECIMAL })
 				else
 					log.error("Unknown accidental: " .. r)
 				end
