@@ -180,22 +180,6 @@ scales.septal_36 = {
 	"2/1",
 }
 
--- Mavila fifth-chain (has negative steps when tempered)
-scales.mavila_12 = {
-	"2187/2048",
-	"9/8",
-	"32/27",
-	"81/64",
-	"4/3",
-	"729/512",
-	"3/2",
-	"128/81",
-	"27/16",
-	"16/9",
-	"243/128",
-	"2/1",
-}
-
 -- Scales to try for each snap setting, in order of preference.
 -- The first one that works in the tuning is used, see TuningSystem::new.
 -- If none work, it falls back on a chain of fifths.
