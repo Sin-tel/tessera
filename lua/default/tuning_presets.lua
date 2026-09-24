@@ -2,17 +2,30 @@ local presets = {}
 
 presets.tunings = {}
 
--- Categories and order in the settings menu.
+-- categories and order in the settings menu
 presets.categories = {
 	{
 		name = "Temperament",
-		list = { "meantone", "flattone", "archytas" },
+		list = {
+			"meantone",
+			"flattone",
+			"tetracot",
+			"porcupine",
+			"diaschismic",
+			"pajara",
+			"archytas",
+			"slendric",
+			"mothra",
+			"rodan",
+			"miracle",
+		},
 	},
 	{
+		-- TODO: 5 and 7 et kinda broken right now
 		name = "Equal",
 		list = {
-			"et_5",
-			"et_7",
+			-- "et_5",
+			-- "et_7",
 			"et_12",
 			"et_15",
 			"et_17",
@@ -29,7 +42,7 @@ presets.categories = {
 	},
 	{
 		name = "Just Intonation",
-		list = { "pythagorean", "ji_5", "ji_7", "ji_11", "septal" },
+		list = { "pythagorean", "ji_5", "ji_7", "ji_11", "ji_2_3_7" },
 	},
 }
 
@@ -47,10 +60,60 @@ presets.tunings.flattone = {
 	commas = { "81/80", "45/44" },
 }
 
+presets.tunings.porcupine = {
+	name = "Porcupine",
+	subgroup = "2.3.5.11",
+	commas = { "55/54", "100/99" },
+}
+
+presets.tunings.tetracot = {
+	name = "Tetracot",
+	subgroup = "2.3.5.11",
+	commas = { "100/99", "243/242" },
+}
+
+presets.tunings.diaschismic = {
+	name = "Diaschismic",
+	subgroup = "2.3.5.7",
+	commas = { "2048/2025", "126/125" },
+}
+
+presets.tunings.pajara = {
+	name = "Pajara",
+	subgroup = "2.3.5.7",
+	commas = { "50/49", "64/63" },
+}
+
 presets.tunings.archytas = {
 	name = "Archytas",
 	subgroup = "2.3.7",
 	commas = { "64/63" },
+}
+
+presets.tunings.slendric = {
+	name = "Slendric",
+	subgroup = "2.3.7",
+	commas = { "1029/1024" },
+}
+
+-- slendric + meantone
+presets.tunings.mothra = {
+	name = "Mothra",
+	subgroup = "2.3.5.7",
+	commas = { "1029/1024", "81/80" },
+}
+
+-- slendric + 5120/5103
+presets.tunings.rodan = {
+	name = "Rodan",
+	subgroup = "2.3.5.7",
+	commas = { "1029/1024", "245/243" },
+}
+
+presets.tunings.miracle = {
+	name = "Miracle",
+	subgroup = "2.3.5.7.11",
+	commas = { "225/224", "385/384", "441/440" },
 }
 
 -- equal temperaments
@@ -59,11 +122,11 @@ local function et(n, subgroup)
 	return { name = n .. " equal", subgroup = subgroup, et = n }
 end
 
-presets.tunings.et_5 = et(5, "2.3.5.7")
-presets.tunings.et_7 = et(7, "2.3.5.7")
+-- presets.tunings.et_5 = et(5, "2.3.5.7")
+-- presets.tunings.et_7 = et(7, "2.3.5.7")
 presets.tunings.et_12 = et(12, "2.3.5")
 presets.tunings.et_15 = et(15, "2.3.5")
-presets.tunings.et_17 = et(17, "2.3.5")
+presets.tunings.et_17 = et(17, "2.3.7")
 presets.tunings.et_19 = et(19, "2.3.5.7")
 presets.tunings.et_22 = et(22, "2.3.5.7")
 presets.tunings.et_24 = et(24, "2.3.5.11")
@@ -80,7 +143,7 @@ presets.tunings.pythagorean = { name = "Pythagorean", subgroup = "2.3" }
 presets.tunings.ji_5 = { name = "5-limit JI", subgroup = "2.3.5" }
 presets.tunings.ji_7 = { name = "7-limit JI", subgroup = "2.3.5.7" }
 presets.tunings.ji_11 = { name = "11-limit JI", subgroup = "2.3.5.7.11" }
-presets.tunings.septal = { name = "2.3.7 JI", subgroup = "2.3.7" }
+presets.tunings.ji_2_3_7 = { name = "2.3.7 JI", subgroup = "2.3.7" }
 
 -- Index into presets.categories that a definition belongs to.
 -- Works on any definition, not just the presets.
