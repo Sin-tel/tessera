@@ -48,9 +48,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 	// Make sure output folder exists before we do anything
 	fs::create_dir_all("./out")?;
 
-	if std::env::args().any(|arg| arg == "--test-run") {
-		test_run()?;
-		return Ok(());
+	let args: Vec<String> = std::env::args().collect();
+	if let Some(index) = args.iter().position(|arg| arg == "--test-run") {
+		return test_run(args.get(index + 1).map(String::as_str));
 	}
 
 	if let Err(e) = run() {
@@ -66,7 +66,7 @@ fn do_main(lua: &Lua) -> Result<(), Box<dyn Error>> {
 	Ok(())
 }
 
-fn test_run() -> Result<(), Box<dyn Error>> {
+fn test_run(script: Option<&str>) -> Result<(), Box<dyn Error>> {
 	// Basic checks for CI without initializing any graphics or audio
 
 	let (lua_tx, _lua_rx) = mpsc::sync_channel::<LuaMessage>(256);
@@ -96,6 +96,19 @@ fn test_run() -> Result<(), Box<dyn Error>> {
 	}
 
 	hooks.load.call::<()>(true)?;
+
+	// report any failures the script collected
+	if let Some(path) = script {
+		let failures = lua
+			.load(fs::read_to_string(path)?)
+			.set_name(format!("@{path}"))
+			.call::<Option<i64>>(())?
+			.unwrap_or(0);
+		if failures > 0 {
+			return Err(format!("{failures} checks failed in {path}").into());
+		}
+	}
+
 	hooks.quit.call::<()>(())?;
 	Ok(())
 }
