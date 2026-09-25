@@ -75,15 +75,14 @@ function Notation.new(style)
 	else
 		for i, acc in ipairs(style.accidentals) do
 			if not acc.half_sharp then
-				local r = acc.ratio[1] .. "/" .. acc.ratio[2]
-				if r == "81/80" then
+				if acc.ratio == "81/80" then
 					table.insert(self.accidentals, { i + offset, Notation.ACC_UP })
-				elseif r == "64/63" then
+				elseif acc.ratio == "64/63" then
 					table.insert(self.accidentals, { i + offset, Notation.ACC_SEPTIMAL })
-				elseif r == "33/32" then
+				elseif acc.ratio == "33/32" then
 					table.insert(self.accidentals, { i + offset, Notation.ACC_UNDECIMAL })
 				else
-					log.error("Unknown accidental: " .. r)
+					log.error("Unknown accidental: " .. acc.ratio)
 				end
 			end
 		end
@@ -179,7 +178,12 @@ function Notation:name(p)
 
 	for _, v in ipairs(self.accidentals) do
 		local index, accidental_pair = v[1], v[2]
-		acc_pre = acc_pre .. accidental(p[index], accidental_pair)
+		-- put ups/downs in front
+		if accidental_pair[1] == "w" then
+			acc_pre = acc_pre .. accidental(p[index], accidental_pair)
+		else
+			acc = acc .. accidental(p[index], accidental_pair)
+		end
 	end
 
 	return acc_pre .. nominal .. acc

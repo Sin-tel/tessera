@@ -277,6 +277,24 @@ function tuning.from_midi(n)
 	return tuning.from_table(tuning.chromatic, n - 60)
 end
 
+local BLACK_KEYS = { [1] = true, [3] = true, [6] = true, [8] = true, [10] = true }
+
+-- build midi note table
+function tuning.input_map()
+	local rows = {}
+	for i = 1, #tuning.chromatic + 1 do
+		local midi = 59 + i
+		local interval = tuning.from_midi(midi)
+		local ratios = tuning.system:simple_ratios(interval)
+		rows[i] = {
+			name = tuning.get_name(interval),
+			ratio = table.concat(ratios, " ~ "),
+			black = BLACK_KEYS[(midi - 60) % 12] or false,
+		}
+	end
+	return rows
+end
+
 -- Index of interval p in scale t.
 -- With a projection this is exact, otherwise it is the note closest in pitch.
 function tuning.get_index(t, p)

@@ -38,7 +38,7 @@ midir = "0.11"
 num-complex = "0.4"
 halfband = "0.3"
 windowfunctions = "0.1"
-xen_utils = { git = "https://github.com/Sin-tel/xen_utils.git", rev = "16bbdae" }
+xen_utils = { git = "https://github.com/Sin-tel/xen_utils.git", rev = "31e9c3b" }
 
 standard_log = { package = "log", version = "0.4" }
 simplelog = "0.12"

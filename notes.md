@@ -1,38 +1,42 @@
-### Tuning rust integration
-move halfsharp split to rust info side
-half sharp rule: force if on 33/32
-accidentals: show on nominal and alternative
-current way of calculating tuning.comma is broken for 72et
+## Tuning system
+rename tuning.generators to something sensible
 
-show 12et input map
+set default indices instead of first in settings
+
+xen_utils: add spell_literal?
+           fix octave reduction in nominal_spellings and return a list
+
+note map: align by note name so ups prefix is flush
+
+either fix Johnston or delete it
 
 Things to do before we can merge to main:
-* make sure swtiching between tunings doesn't cause issues
+* make sure switching between tunings doesn't cause issues
+if trivial (e.g. 5-limit JI -> 7-limit JI), just go ahead.
+if the temperaments are the same: should be lossless in terms of tempered pitches. Notation changes though.
+if they aren't, check if the accidentals match, do a naive transfer
+otherwise, clip
+warn user if data is lost
+
+Alternatively, detemper everything to JI, and retemper. This seems more error-prone though.
+
+add it to undo
+
 * fix up the old save files
 
 unrelated bugs:
  switching tabs causes tool switch also
- fix stylua global settings
+ need to tune feedback filter in delay_tape
 
-# VST
+## VST
+better whitelist
+
+
+## misc
 need to fix voice alloc, some stuck notes when pedaling
 should plugin handle pedal itself? kind of annoying...
 
-better whitelist
-
 fix key velocity curve!
-
-# tuning
- * make categories (ET / temp / JI)
- * adjust notation
-
-rastmic / neutral
-  notation should use half-sharps if 243/242 is tempered
-  rank 2 ~ 2.3.11 (33/32)
-  rank 3 ~ 2.3.5.11 (81/80, 33/32) also can temper out 5120/5103 (81/80~64/63, 33/32)
-  rank 4 ~ 11-limit
-
-  some EDOs can also be notated like this (notably 31 and 41!)
 
 move 'flush_messages' to backend
 
