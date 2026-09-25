@@ -24,6 +24,9 @@ impl LuaUserData for TuningSystem {
 		// size in semitones for each coordinate
 		methods.add_method("pitches", |_, this, ()| Ok(this.pitches().to_vec()));
 
+		methods
+			.add_method("simple_ratios", |_, this, note: Vec<i64>| Ok(this.simple_ratios(&note)));
+
 		// one step of an equal temperament, nil otherwise
 		methods.add_method("step", |_, this, ()| Ok(this.step()));
 

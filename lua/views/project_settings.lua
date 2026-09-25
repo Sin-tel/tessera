@@ -53,8 +53,8 @@ function NotationRow.new(view, option)
 			end
 		end
 		self.primes[i] = {
-			ratio = s.ratio[1] .. "/" .. s.ratio[2],
-			name = table.concat(written, "~"),
+			ratio = s.ratio,
+			name = table.concat(written, " = "),
 		}
 	end
 
@@ -74,21 +74,20 @@ function NotationRow:update(ui)
 end
 
 function NotationRow:draw(ui, x, y, w, h)
-	local indent = 16
 	local title_w = 0.32 * w
 	if self:is_current() then
 		tessera.graphics.set_color(theme.widget)
-		tessera.graphics.rectangle("fill", x + Ui.PAD, y, title_w - 2 * Ui.PAD, h, Ui.CORNER_RADIUS)
+		tessera.graphics.rectangle("fill", x - 2 * Ui.PAD, y, title_w - 4 * Ui.PAD, h, Ui.CORNER_RADIUS)
 	elseif ui.active == self then
 		tessera.graphics.set_color(theme.widget_press)
-		tessera.graphics.rectangle("fill", x + Ui.PAD, y, title_w - 2 * Ui.PAD, h, Ui.CORNER_RADIUS)
+		tessera.graphics.rectangle("fill", x - 2 * Ui.PAD, y, title_w - 4 * Ui.PAD, h, Ui.CORNER_RADIUS)
 	elseif ui.hover == self and ui.active ~= self then
 		tessera.graphics.set_color(theme.line_hover)
-		tessera.graphics.rectangle("line", x + Ui.PAD, y, title_w - 2 * Ui.PAD, h, Ui.CORNER_RADIUS)
+		tessera.graphics.rectangle("line", x - 2 * Ui.PAD, y, title_w - 4 * Ui.PAD, h, Ui.CORNER_RADIUS)
 	end
 
 	tessera.graphics.set_color(theme.ui_text)
-	tessera.graphics.label(self.title, x + indent, y, title_w, h, tessera.graphics.ALIGN_LEFT)
+	tessera.graphics.label(self.title, x, y, title_w, h, tessera.graphics.ALIGN_LEFT)
 
 	-- ratio of the prime, and how it is written
 	local col_w = (w - title_w) / math.max(1, #self.primes)
@@ -297,12 +296,33 @@ function ProjectSettings:update()
 	end
 
 	self.ui:background(theme.background)
-	self.ui.layout:col(c1 + c2 + c3 * 0.5)
-	self.ui:label("Currently active: " .. project.settings.tuning.name)
-	self.ui.layout:col(c3 * 0.5)
+	self.ui.layout:col(c1 + c2)
+
 	if self.apply:update(self.ui) and self.option then
 		tuning.set(self.def)
 	end
+	self.ui.layout:new_row()
+
+	self.ui:label("Currently active: " .. project.settings.tuning.name)
+
+	-- draw chromatic midi input map
+	-- TODO: show ET steps when applicable
+	-- TODO: draw actual black/white keyboard for clarity (maybe highlight currently playing notes?)
+	-- TODO: this interacts with current tuning center and relative_note_names, make sure ratio also does
+	self.ui:background(theme.background)
+	self.ui:label("Input map")
+	self.ui.layout.h = Ui.scale(24)
+	for _, key in ipairs(tuning.input_map()) do
+		self.ui:background(key.black and theme.background or theme.bg_highlight)
+		local color = theme.ui_text
+		self.ui.layout:col(c1)
+		self.ui.layout:col(c2)
+		self.ui:label(key.name, { color = color, font = "notes" })
+		self.ui.layout:col(c3)
+		self.ui:label(key.ratio, { color = color, font = "notes" })
+		self.ui.layout:new_row()
+	end
+	self.ui.layout.h = Ui.scale(32)
 
 	self.ui:end_frame()
 end

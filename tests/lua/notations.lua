@@ -29,6 +29,12 @@ for category, list in ipairs(presets.categories) do
 			assert(view.preset_dropdown.title == nil, "preset not found after loading " .. key)
 			assert(row:is_current(), "wrong notation after loading " .. key)
 
+			local map = tuning.input_map()
+			assert(#map == #tuning.chromatic, "input map size for " .. key)
+			for i, entry in ipairs(map) do
+				assert(entry.name ~= "", "no name for midi key " .. i .. " in " .. key)
+			end
+
 			local primes = {}
 			for _, p in ipairs(row.primes) do
 				table.insert(primes, p.ratio .. ": " .. p.name)

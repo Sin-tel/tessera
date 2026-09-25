@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use xen_utils::{Notation, Subgroup, Temperament};
+use xen_utils::simplify::sopfr;
+use xen_utils::{Notation, Simplifier, Subgroup, Temperament};
 
 // Number of fifths in the chain scales, and how far down from the root they start.
 const DIATONIC: (usize, i64) = (7, 1);
@@ -51,7 +52,7 @@ pub struct NotationStyle {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccidentalStyle {
 	// Just ratio of the accidental.
-	pub ratio: Ratio,
+	pub ratio: String,
 	// Written as half a sharp, combined with the sharps and flats.
 	pub half_sharp: bool,
 }
@@ -91,6 +92,7 @@ pub struct Scale {
 #[derive(Debug)]
 pub struct TuningSystem {
 	notation: Notation,
+	simplifier: Simplifier,
 	choice: NotationChoice,
 	style: NotationStyle,
 	// size of each notation coordinate in semitones.
@@ -99,12 +101,9 @@ pub struct TuningSystem {
 	scales: [Scale; 3],
 }
 
-type Ratio = (u64, u64);
-
-// How a notation writes one prime, reduced to an octave (5/4, 7/4, 11/8, ..).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrimeSpelling {
-	pub ratio: Ratio,
+	pub ratio: String,
 	// On the nominal just intonation gives it, in notation coordinates.
 	// None if the notation can't write it there.
 	#[serde(default, skip_serializing_if = "Option::is_none")]
@@ -121,7 +120,9 @@ impl TuningSystem {
 		choice: Option<NotationChoice>,
 		candidates: &ScaleCandidates,
 	) -> Result<Self, String> {
-		let options = notation_options(&temperament(def)?)?;
+		let temperament = temperament(def)?;
+		let simplifier = Simplifier::new(&temperament);
+		let options = notation_options(&temperament)?;
 		let index = if let Some(choice) = choice {
 			options
 				.iter()
@@ -142,7 +143,8 @@ impl TuningSystem {
 			.collect::<Result<Vec<_>, _>>()?;
 
 		let style = notation_style(&notation, choice.half_sharp);
-		let mut system = Self { notation, choice, style, pitches, scales: Default::default() };
+		let mut system =
+			Self { notation, simplifier, choice, style, pitches, scales: Default::default() };
 		let diatonic = system
 			.first_candidate(&candidates.diatonic)
 			.unwrap_or_else(|| system.chain_scale(DIATONIC.0, DIATONIC.1));
@@ -176,6 +178,28 @@ impl TuningSystem {
 	// Scale by index (0 = diatonic, 1 = chromatic, 2 = fine).
 	pub fn scale(&self, index: usize) -> &Scale {
 		&self.scales[index]
+	}
+
+	pub fn simple_ratios(&self, note: &[i64]) -> Vec<String> {
+		let subgroup = self.notation.subgroup();
+		let interval = self.notation.to_interval(note).unwrap();
+		let list = self.simplifier.simplifications_interval(&interval, 3).unwrap();
+
+		if list.is_empty() {
+			return Vec::new();
+		}
+
+		// some heuristics on what to display
+		let low = sopfr(&list[0], subgroup.basis());
+		let mut bound = low;
+		if low < 18 {
+			bound = (low + 7).min(18);
+		}
+
+		list.iter()
+			.filter(|k| sopfr(k, subgroup.basis()) <= bound)
+			.map(|k| interval_to_string(subgroup, k))
+			.collect()
 	}
 
 	// One step up of an equal temperament, spelled in the notation.
@@ -361,7 +385,7 @@ fn notation_options(temperament: &Temperament) -> Result<Vec<(Notation, Notation
 		match half_sharp_index(&notation) {
 			Some(i) => {
 				// 33/32 is always written as a half sharp, others get the choice.
-				if generator_ratios(&notation)[i] != (33, 32) {
+				if generator_ratios(&notation)[i] != "33/32" {
 					options.push((notation.clone(), plain));
 				}
 				options.push((notation, NotationChoice { accidentals, half_sharp: true }));
@@ -451,7 +475,11 @@ fn prime_spellings(notation: &Notation) -> Vec<PrimeSpelling> {
 					None => true,
 				});
 
-			PrimeSpelling { ratio: (u64::from(prime), 1 << octaves), nominal, alternative }
+			PrimeSpelling {
+				ratio: interval_to_string(notation.subgroup(), &interval),
+				nominal,
+				alternative,
+			}
 		})
 		.collect()
 }
@@ -461,16 +489,10 @@ fn marks(spelling: &[i64]) -> i64 {
 	spelling[2..].iter().map(|c| c.abs()).sum()
 }
 
-fn generator_ratios(notation: &Notation) -> Vec<(u64, u64)> {
+fn generator_ratios(notation: &Notation) -> Vec<String> {
 	let mut generators = Vec::new();
 	for g in notation.generators() {
-		generators.push(
-			notation
-				.temperament()
-				.subgroup()
-				.to_ratio(g)
-				.expect("always a valid ratio"),
-		);
+		generators.push(interval_to_string(notation.subgroup(), g));
 	}
 	generators
 }
@@ -488,4 +510,8 @@ fn basis_vec(i: usize, n: usize) -> Vec<i64> {
 	let mut unit = vec![0; n];
 	unit[i] = 1;
 	unit
+}
+
+fn interval_to_string(subgroup: &Subgroup, x: &[i64]) -> String {
+	if let Ok((p, q)) = subgroup.to_ratio(&x) { format!("{p}/{q}") } else { "<too large>".into() }
 }
