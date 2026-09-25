@@ -404,7 +404,7 @@ fn notation_options(temperament: &Temperament) -> Result<Vec<(Notation, Notation
 				options.push((
 					notation,
 					NotationChoice { accidentals, half_sharp: false, johnston: true },
-				))
+				));
 			}
 		} else {
 			// temperament
@@ -534,5 +534,5 @@ fn basis_vec(i: usize, n: usize) -> Vec<i64> {
 
 fn interval_to_string(subgroup: &Subgroup, x: &[i64]) -> String {
 	// overflow needs to render something, note font only display capital letters as text
-	if let Ok((p, q)) = subgroup.to_ratio(&x) { format!("{p}/{q}") } else { "<BIG NUMBER>".into() }
+	if let Ok((p, q)) = subgroup.to_ratio(x) { format!("{p}/{q}") } else { "<BIG NUMBER>".into() }
 }
