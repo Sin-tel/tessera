@@ -3,20 +3,20 @@ rename tuning.generators to something sensible
 
 set default indices instead of first in settings
 
+written: return list
 xen_utils: add spell_literal?
            fix octave reduction in nominal_spellings and return a list
 
 note map: align by note name so ups prefix is flush
 
-either fix Johnston or delete it
+fix chroma_alt
 
 Things to do before we can merge to main:
 * make sure switching between tunings doesn't cause issues
-if trivial (e.g. 5-limit JI -> 7-limit JI), just go ahead.
-if the temperaments are the same: should be lossless in terms of tempered pitches. Notation changes though.
-if they aren't, check if the accidentals match, do a naive transfer
-otherwise, clip
-warn user if data is lost
+if new accidentals are a superset of current: nothing to do.
+otherwise, if temperament matches, temper and back (notation gets re-written, but pitches preserved)
+otherwise, clip (both pitches and notation will change)
+warn user if data may get lost next to apply button
 
 Alternatively, detemper everything to JI, and retemper. This seems more error-prone though.
 

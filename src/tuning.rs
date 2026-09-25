@@ -40,6 +40,8 @@ pub struct NotationChoice {
 	pub accidentals: usize,
 	#[serde(default)]
 	pub half_sharp: bool,
+	#[serde(default)]
+	pub johnston: bool,
 }
 
 // How to draw spellings, for notation.lua.
@@ -47,6 +49,8 @@ pub struct NotationChoice {
 pub struct NotationStyle {
 	// One for every coordinate after the octave and the fifth.
 	pub accidentals: Vec<AccidentalStyle>,
+	// Use Johnston style, ignores accidentals
+	pub johnston: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -142,7 +146,7 @@ impl TuningSystem {
 			})
 			.collect::<Result<Vec<_>, _>>()?;
 
-		let style = notation_style(&notation, choice.half_sharp);
+		let style = notation_style(&notation, choice);
 		let mut system =
 			Self { notation, simplifier, choice, style, pitches, scales: Default::default() };
 		let diatonic = system
@@ -370,7 +374,7 @@ pub fn notations(def: &TemperamentDef) -> Result<Vec<NotationOption>, String> {
 		.map(|(notation, choice)| NotationOption {
 			choice,
 			recommended: notation.keeps_nominals(),
-			style: notation_style(&notation, choice.half_sharp),
+			style: notation_style(&notation, choice),
 			spellings: prime_spellings(&notation),
 		})
 		.collect())
@@ -381,30 +385,46 @@ fn notation_options(temperament: &Temperament) -> Result<Vec<(Notation, Notation
 	let mut options = Vec::new();
 	for notation in Notation::options(temperament).map_err(err)? {
 		let accidentals = notation.len() - 2;
-		let plain = NotationChoice { accidentals, half_sharp: false };
-		match half_sharp_index(&notation) {
-			Some(i) => {
-				// 33/32 is always written as a half sharp, others get the choice.
-				if generator_ratios(&notation)[i] != "33/32" {
-					options.push((notation.clone(), plain));
-				}
-				options.push((notation, NotationChoice { accidentals, half_sharp: true }));
-			},
-			None => options.push((notation, plain)),
+		let plain = NotationChoice { accidentals, half_sharp: false, johnston: false };
+		if temperament.rank() == temperament.dim() {
+			// JI
+			options.push((notation.clone(), plain));
+			// nothing to do for pythagorean
+			if temperament.rank() > 2 {
+				options.push((
+					notation,
+					NotationChoice { accidentals, half_sharp: false, johnston: true },
+				))
+			}
+		} else {
+			// temperament
+			match half_sharp_index(&notation) {
+				Some(i) => {
+					// 33/32 is always written as a half sharp, others get the choice.
+					if generator_ratios(&notation)[i] != "33/32" {
+						options.push((notation.clone(), plain));
+					}
+					options.push((
+						notation,
+						NotationChoice { accidentals, half_sharp: true, johnston: false },
+					));
+				},
+				None => options.push((notation, plain)),
+			}
 		}
 	}
 	Ok(options)
 }
 
-fn notation_style(notation: &Notation, half_sharp: bool) -> NotationStyle {
-	let half_sharp_index = if half_sharp { half_sharp_index(notation) } else { None };
+fn notation_style(notation: &Notation, choice: NotationChoice) -> NotationStyle {
+	let half_sharp_index = if choice.half_sharp { half_sharp_index(notation) } else { None };
 	let accidentals = generator_ratios(notation)
 		.into_iter()
 		.enumerate()
 		.skip(2)
 		.map(|(i, ratio)| AccidentalStyle { ratio, half_sharp: Some(i) == half_sharp_index })
 		.collect();
-	NotationStyle { accidentals }
+	NotationStyle { accidentals, johnston: choice.johnston }
 }
 
 fn temperament(def: &TemperamentDef) -> Result<Temperament, String> {
