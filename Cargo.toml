@@ -24,6 +24,9 @@ cpal = { version = "0.18", git = "https://github.com/sin-tel/cpal.git", rev = "d
 [target.'cfg(target_os = "linux")'.dependencies]
 cpal = { version = "0.18", features = ["jack", "pipewire"], git = "https://github.com/sin-tel/cpal.git", rev = "dd1cc0f64b55530fd46f7732fdddd7d9f2f0edcd" }
 
+[workspace]
+members = ["xen_utils"]
+
 [dependencies]
 assert_no_alloc = {version = "1.1", features = ["warn_debug"]}
 no_denormals = "0.3"
@@ -38,7 +41,7 @@ midir = "0.11"
 num-complex = "0.4"
 halfband = "0.3"
 windowfunctions = "0.1"
-xen_utils = { git = "https://github.com/Sin-tel/xen_utils.git", rev = "31e9c3b" }
+xen_utils = { path = "xen_utils" }
 
 standard_log = { package = "log", version = "0.4" }
 simplelog = "0.12"
