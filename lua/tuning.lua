@@ -137,7 +137,7 @@ function tuning.load_project()
 	end
 
 	-- fallback to default if nothing works
-	project.settings = tuning.load_default()
+	project.settings.tuning = tuning.load_default()
 end
 
 function tuning.load_default()
