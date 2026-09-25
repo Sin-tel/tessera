@@ -21,6 +21,18 @@ function util.map(list, fn)
 	return new
 end
 
+function util.dedup(list)
+	local new = {}
+	local seen = {}
+	for _, v in ipairs(list) do
+		if not seen[v] then
+			seen[v] = true
+			table.insert(new, v)
+		end
+	end
+	return new
+end
+
 function util.lerp(a, b, t)
 	return a + (b - a) * util.clamp(t, 0, 1)
 end

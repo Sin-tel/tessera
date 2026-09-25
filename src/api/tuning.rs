@@ -14,18 +14,16 @@ lua_serde!(ScaleCandidates);
 impl LuaUserData for TuningSystem {
 	fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
 		methods.add_method("len", |_, this, ()| Ok(this.len()));
-
-		// the notation that is used, resolved if none was given
 		methods.add_method("choice", |_, this, ()| Ok(this.choice()));
-
-		// how to draw notes, for notation.lua
 		methods.add_method("style", |_, this, ()| Ok(this.style().clone()));
-
-		// size in semitones for each coordinate
-		methods.add_method("pitches", |_, this, ()| Ok(this.pitches().to_vec()));
-
+		methods
+			.add_method("generator_pitches", |_, this, ()| Ok(this.generator_pitches().to_vec()));
 		methods
 			.add_method("simple_ratios", |_, this, note: Vec<i64>| Ok(this.simple_ratios(&note)));
+
+		methods.add_method("simple_spellings", |_, this, note: Vec<i64>| {
+			Ok(this.simple_spellings(&note))
+		});
 
 		// one step of an equal temperament, nil otherwise
 		methods.add_method("step", |_, this, ()| Ok(this.step()));
@@ -46,14 +44,13 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	let tuning = lua.create_table()?;
 
 	// tessera.tuning.new(temperament, notation_choice, scale_candidates)
-	// The temperament is a tuning definition, notation_choice can be nil for the recommended one.
 	tuning.set(
 		"new",
 		lua.create_function(
 			|_,
 			 (def, choice, candidates): (
 				TemperamentDef,
-				Option<NotationChoice>,
+				NotationChoice,
 				Option<ScaleCandidates>,
 			)| {
 				TuningSystem::new(&def, choice, &candidates.unwrap_or_default())

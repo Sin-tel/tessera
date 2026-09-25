@@ -8,8 +8,6 @@ const DIATONIC: (usize, i64) = (7, 1);
 const CHROMATIC: (usize, i64) = (12, 4);
 // Range of sizes for the fine chain of fifths. The largest one that has a projection is used.
 const FINE_CHAIN: std::ops::RangeInclusive<usize> = 15..=31;
-// How many spellings of a scale note to look through for one that reads as the just ratio.
-const SPELLING_OPTIONS: usize = 8;
 
 // Which temperament to use.
 // Either give `commas` to temper out, or `et` for an equal temperament.
@@ -100,7 +98,7 @@ pub struct TuningSystem {
 	choice: NotationChoice,
 	style: NotationStyle,
 	// size of each notation coordinate in semitones.
-	pitches: Vec<f64>,
+	generator_pitches: Vec<f64>,
 	// diatonic, chromatic, fine
 	scales: [Scale; 3],
 }
@@ -108,36 +106,26 @@ pub struct TuningSystem {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrimeSpelling {
 	pub ratio: String,
-	// On the nominal just intonation gives it, in notation coordinates.
-	// None if the notation can't write it there.
-	#[serde(default, skip_serializing_if = "Option::is_none")]
-	pub nominal: Option<Vec<i64>>,
-	// The next best way to write it, if that is worth showing next to the nominal.
-	#[serde(default, skip_serializing_if = "Option::is_none")]
-	pub alternative: Option<Vec<i64>>,
+	// may contain duplicates, deduped in lua side
+	pub intervals: Vec<Vec<i64>>,
 }
 
 impl TuningSystem {
-	// Without a notation choice, the recommended one is used.
 	pub fn new(
 		def: &TemperamentDef,
-		choice: Option<NotationChoice>,
+		choice: NotationChoice,
 		candidates: &ScaleCandidates,
 	) -> Result<Self, String> {
 		let temperament = temperament(def)?;
 		let simplifier = Simplifier::new(&temperament);
 		let options = notation_options(&temperament)?;
-		let index = if let Some(choice) = choice {
-			options
-				.iter()
-				.position(|(_, c)| *c == choice)
-				.ok_or_else(|| format!("Notation {choice:?} is not available"))?
-		} else {
-			options.iter().position(|(n, _)| n.keeps_nominals()).unwrap_or(0)
-		};
+		let index = options
+			.iter()
+			.position(|(_, c)| *c == choice)
+			.ok_or_else(|| format!("Notation {choice:?} is not available"))?;
 		let (notation, choice) = options.into_iter().nth(index).expect("index is in range");
 
-		let pitches = (0..notation.len())
+		let generator_pitches = (0..notation.len())
 			.map(|i| {
 				notation
 					.pitch(&basis_vec(i, notation.len()))
@@ -147,8 +135,14 @@ impl TuningSystem {
 			.collect::<Result<Vec<_>, _>>()?;
 
 		let style = notation_style(&notation, choice);
-		let mut system =
-			Self { notation, simplifier, choice, style, pitches, scales: Default::default() };
+		let mut system = Self {
+			notation,
+			simplifier,
+			choice,
+			style,
+			generator_pitches,
+			scales: Default::default(),
+		};
 		let diatonic = system
 			.first_candidate(&candidates.diatonic)
 			.unwrap_or_else(|| system.chain_scale(DIATONIC.0, DIATONIC.1));
@@ -175,8 +169,8 @@ impl TuningSystem {
 	}
 
 	// size of each notation generator, semitones
-	pub fn pitches(&self) -> &[f64] {
-		&self.pitches
+	pub fn generator_pitches(&self) -> &[f64] {
+		&self.generator_pitches
 	}
 
 	// Scale by index (0 = diatonic, 1 = chromatic, 2 = fine).
@@ -206,8 +200,20 @@ impl TuningSystem {
 			.collect()
 	}
 
-	// One step up of an equal temperament, spelled in the notation.
-	// None for higher rank temperaments, or if the notation can't write it.
+	pub fn simple_spellings(&self, note: &[i64]) -> Vec<Vec<i64>> {
+		// TODO: apply spell_literal logic here.
+		let interval = self.notation.to_interval(note).unwrap();
+		let spellings = self.notation.spellings_interval(&interval, 3).unwrap();
+
+		// TODO: cost does not depend on notation
+		let cost = |note: &[i64]| self.notation.cost(note).expect("valid spelling");
+
+		let max_cost = cost(&spellings[0]) + 2;
+		spellings.into_iter().filter(|s| cost(s) <= max_cost).collect()
+	}
+
+	// One step of an equal temperament, spelled in the notation.
+	// None if not available.
 	pub fn step(&self) -> Option<Vec<i64>> {
 		if self.notation.temperament().rank() != 1 {
 			return None;
@@ -220,11 +226,14 @@ impl TuningSystem {
 	}
 
 	fn octave(&self) -> f64 {
-		self.pitches[0]
+		self.generator_pitches[0]
 	}
 
 	fn pitch(&self, note: &[i64]) -> f64 {
-		note.iter().zip(&self.pitches).map(|(&n, p)| n as f64 * p).sum()
+		note.iter()
+			.zip(&self.generator_pitches)
+			.map(|(&n, p)| n as f64 * p)
+			.sum()
 	}
 
 	// Move a note into the octave above the unison.
@@ -278,6 +287,7 @@ impl TuningSystem {
 				continue;
 			}
 			let mut note = self.spell_literal(&interval)?;
+			// let mut note = self.notation.spell_interval(&interval).ok()?;
 			self.reduce(&mut note);
 			if !seen.insert(self.temper(&note)) {
 				return None;
@@ -289,10 +299,10 @@ impl TuningSystem {
 		Some(Scale { notes, map: Some(map) })
 	}
 
-	// Spell a just interval as it is written literally if possible, like ^Db for 16/15
-	// in 41et. Otherwise use the best spelling of its tempered image.
+	// Spell a just interval as it is written literally if possible.
+	// Ex. picks ^Eb for 6/5 instead of D# in 41et.
 	fn spell_literal(&self, interval: &[i64]) -> Option<Vec<i64>> {
-		let mut options = self.notation.spellings_interval(interval, SPELLING_OPTIONS).ok()?;
+		let mut options = self.notation.spellings_interval(interval, 4).ok()?;
 		let literal = options
 			.iter()
 			.position(|s| self.notation.to_interval(s).is_ok_and(|i| i == interval));
@@ -479,34 +489,24 @@ fn prime_spellings(notation: &Notation) -> Vec<PrimeSpelling> {
 				note[0] -= octaves;
 				note
 			});
-			let cost = |note: &[i64]| notation.cost(note).expect("always a valid spelling");
-			// The cheapest spelling that isn't the one on the nominal.
-			// It earns a place next to the nominal by being easier to read: either it is
-			// cheaper, or it needs fewer accidentals, like A# next to vBb in meantone.
-			let alternative = notation
-				.spellings_interval(&interval, 2)
-				.expect("always a valid interval")
-				.into_iter()
-				.find(|spelled| Some(spelled) != nominal.as_ref())
-				.filter(|spelled| match nominal.as_deref() {
-					Some(nominal) => {
-						marks(spelled) < marks(nominal) || cost(spelled) < cost(nominal)
-					},
-					None => true,
-				});
+			let cost = |note: &[i64]| notation.cost(note).expect("valid spelling");
 
-			PrimeSpelling {
-				ratio: interval_to_string(notation.subgroup(), &interval),
-				nominal,
-				alternative,
+			let mut intervals = Vec::new();
+			if let Some(s) = nominal {
+				intervals.push(s);
 			}
+
+			for s in notation.spellings_interval(&interval, 4).expect("valid interval") {
+				intervals.push(s);
+			}
+
+			let max_cost = cost(&intervals[0]) + 2;
+
+			let intervals = intervals.into_iter().filter(|s| cost(s) <= max_cost).collect();
+
+			PrimeSpelling { ratio: interval_to_string(notation.subgroup(), &interval), intervals }
 		})
 		.collect()
-}
-
-// How many accidentals a spelling writes, not counting sharps and flats.
-fn marks(spelling: &[i64]) -> i64 {
-	spelling[2..].iter().map(|c| c.abs()).sum()
 }
 
 fn generator_ratios(notation: &Notation) -> Vec<String> {
@@ -533,5 +533,6 @@ fn basis_vec(i: usize, n: usize) -> Vec<i64> {
 }
 
 fn interval_to_string(subgroup: &Subgroup, x: &[i64]) -> String {
-	if let Ok((p, q)) = subgroup.to_ratio(&x) { format!("{p}/{q}") } else { "<too large>".into() }
+	// overflow needs to render something, note font only display capital letters as text
+	if let Ok((p, q)) = subgroup.to_ratio(&x) { format!("{p}/{q}") } else { "<BIG NUMBER>".into() }
 }

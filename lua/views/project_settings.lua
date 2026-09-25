@@ -41,20 +41,13 @@ function NotationRow.new(view, option)
 		self.title = "Johnston"
 	end
 
-	-- how the prime is written on its nominal, and the alternative if there is one
 	self.primes = {}
 	for i, s in ipairs(option.spellings) do
 		local written = {}
-		if s.nominal then
-			table.insert(written, notation:name(s.nominal))
+		for _, v in ipairs(s.intervals) do
+			table.insert(written, notation:name(v))
 		end
-		if s.alternative then
-			local name = notation:name(s.alternative)
-			-- half sharps can write both spellings the same way
-			if name ~= written[1] then
-				table.insert(written, name)
-			end
-		end
+		written = util.dedup(written)
 		self.primes[i] = {
 			ratio = s.ratio,
 			name = table.concat(written, " = "),
@@ -238,7 +231,7 @@ function ProjectSettings:update()
 	tessera.graphics.set_font_main()
 
 	local x = Ui.scale(64)
-	local lw = math.min(Ui.scale(600), self.w - 2 * x)
+	local lw = math.min(Ui.scale(800), self.w - 2 * x)
 	local y = Ui.scale(24)
 
 	local c1 = self.indent
