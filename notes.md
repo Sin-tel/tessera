@@ -1,15 +1,15 @@
 ## Tuning system
-rename tuning.generators to something sensible
-
 set default indices instead of first in settings
 
 written: return list
-xen_utils: add spell_literal?
-           fix octave reduction in nominal_spellings and return a list
+xen_utils:
+  add spell_literal? => replaces just nominal, also add primes_reduced or something
+  fix octave reduction in nominal_spellings and return a list
+  change API so it works with notes (ie spellings)
 
 note map: align by note name so ups prefix is flush
 
-fix chroma_alt
+spell_literal in scale now no longer used
 
 Things to do before we can merge to main:
 * make sure switching between tunings doesn't cause issues

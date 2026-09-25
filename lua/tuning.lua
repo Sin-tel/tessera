@@ -7,17 +7,21 @@ local tuning = {}
 
 tuning.snap_labels = { "Diatonic", "Chromatic", "Fine" }
 
--- Half an apotome in semitones, the same bound that xen_utils uses for accidentals.
--- local MAX_ACCIDENTAL = 0.56842503
-
 local function unit(index)
 	local v = tuning.new_interval()
 	v[index] = 1
 	return v
 end
 
--- Load a tuning from a definition table: { name, subgroup, commas or et, notation }.
--- Without a notation the recommended one is used, and it gets filled in on def.
+local function pad(p)
+	local new = {}
+	for i = 1, tuning.rank do
+		new[i] = p[i] or 0
+	end
+	return new
+end
+
+-- Load a tuning from definition table
 function tuning.load(def)
 	local ok, system = pcall(tessera.tuning.new, def, def.notation, scales.candidates)
 	if not ok then
@@ -32,23 +36,24 @@ function tuning.load(def)
 	tuning.rank = system:len()
 
 	-- size in semitones of each coordinate
-	tuning.generators = system:pitches()
+	tuning.generator_pitches = system:generator_pitches()
 
 	tuning.notation = Notation.new(system:style())
 
 	-- interval definitions
-	tuning.octave = { 1 }
-	tuning.tone = { -1, 2 } -- whole tone
-	tuning.semitone = { 3, -5 } -- diatonic semitone
-	tuning.chroma = { -4, 7 } -- apotome, chromatic semitone
+	tuning.octave = pad({ 1 })
+	tuning.tone = pad({ -1, 2 }) -- whole tone
+	tuning.semitone = pad({ 3, -5 }) -- diatonic semitone
+	tuning.chroma = pad({ -4, 7 }) -- apotome, chromatic semitone
 	if tuning.get_relative_pitch(tuning.chroma) < 0 then
 		tuning.chroma = tuning.mul(tuning.chroma, -1)
 	end
 
+	local accidentals = system:style().accidentals
+
 	-- Small steps for fine editing.
 	-- If there are accidentals, they take precedence.
 	-- Otherwise in an equal temperament, one step.
-	-- Otherwise we use the first chain of fifths that closes up to an octave stack (pythagorean comma)
 	tuning.comma = nil
 	tuning.comma_alt = nil
 	tuning.comma_alt2 = nil
@@ -62,36 +67,19 @@ function tuning.load(def)
 			tuning.comma_alt2 = unit(5)
 		end
 
-		-- TODO: fixme
-		-- for an accidental of 81/80 the chromatic semitone is 25/24
-		-- local i5 = tuning.accidental_index[5]
-		-- if i5 then
-		-- 	tuning.chroma_alt = util.clone(tuning.chroma)
-		-- 	tuning.chroma_alt = tuning.add(tuning.chroma_alt, tuning.mul(unit(i5), -2))
-		-- end
+		if #accidentals >= 1 and accidentals[1].ratio == "81/80" then
+			-- 25/24 just chromatic semitone (6/5 - 5/4)
+			tuning.chroma_alt = pad({ -4, 7, -2 })
+		end
+		if #accidentals >= 1 and accidentals[1].ratio == "64/63" then
+			-- 28/27 septimal minor second (9/8 - 7/6)
+			tuning.chroma_alt = pad({ 3, -5, -1 })
+		end
 	elseif system:step() then
-		tuning.comma = tuning.conform(system:step())
+		tuning.comma = pad(system:step())
 	else
-		-- TODO: useful to keep?
-
-		-- local o, f = tuning.generators[1], tuning.generators[2]
-		-- for n = 2, 60 do
-		-- 	local k = math.floor(n * f / o + 0.5)
-		-- 	local d = k * o - n * f
-		-- 	if math.abs(d) < MAX_ACCIDENTAL then
-		-- 		local c = tuning.new_interval()
-		-- 		c[1] = k
-		-- 		c[2] = -n
-		-- 		if d < 0 then
-		-- 			c = tuning.mul(c, -1)
-		-- 		end
-		-- 		tuning.comma = c
-		-- 		break
-		-- 	end
-		-- end
-
 		-- pythagorean comma C - Dbb
-		tuning.comma = tuning.conform({ 7, -12 })
+		tuning.comma = pad({ 7, -12 })
 		if tuning.get_relative_pitch(tuning.comma) < 0 then
 			tuning.comma = tuning.mul(tuning.comma, -1)
 		end
@@ -111,7 +99,7 @@ function tuning.load(def)
 			log.warn(tuning.snap_labels[i] .. " scale has no projection, using nearest pitch.")
 		end
 	end
-	tuning.center = tuning.conform(tuning.center or {})
+	tuning.center = pad(tuning.center or {})
 
 	return true
 end
@@ -126,62 +114,42 @@ function tuning.set(def)
 	log.info("Loading tuning: " .. name .. " (" .. def.notation.accidentals .. " accidentals)")
 	project.settings.tuning = util.clone(def)
 
-	-- TODO: fixme
-	-- do a proper conversion here
+	-- TODO: do a proper conversion here
 
 	-- fix up the number of coordinates
 	for _, ch in ipairs(project.channels) do
 		if ch.notes then
 			for _, note in ipairs(ch.notes) do
-				note.interval = tuning.conform(note.interval)
+				note.interval = pad(note.interval)
 			end
 		end
 	end
-
-	-- if n_changed > 0 then
-	-- 	log.warn("Some information was lost by the conversion")
-	-- end
 	return true
 end
 
 -- Load the tuning from a project that was just loaded or created.
 function tuning.load_project()
-	local settings = project.settings
-
-	if settings.tuning_legacy then
-		-- Save file from before tuning definitions. We can't tell what it meant,
-		-- so it stays on the default until a new tuning is picked.
-		log.warn('Project was saved with tuning "' .. settings.tuning_legacy .. '". Please pick a new tuning.')
-	end
-
-	if settings.tuning then
-		if tuning.load(settings.tuning) then
+	if project.settings.tuning then
+		if tuning.load(project.settings.tuning) then
 			return
 		end
 		log.error("Failed to load tuning from project, using default.")
 	end
 
-	settings.tuning = tuning_presets.default()
-	tuning.load(settings.tuning)
+	-- fallback to default if nothing works
+	project.settings = tuning.load_default()
 end
 
 function tuning.load_default()
-	tuning.load(tuning_presets.default())
+	local def = tuning_presets.default()
+	assert(tuning.load(def), "Failed to load default tuning")
+	return def
 end
 
 function tuning.new_interval()
 	local new = {}
 	for i = 1, tuning.rank do
 		new[i] = 0
-	end
-	return new
-end
-
--- Return a copy of the interval with exactly the right number of coordinates.
-function tuning.conform(p)
-	local new = {}
-	for i = 1, tuning.rank do
-		new[i] = p[i] or 0
 	end
 	return new
 end
@@ -211,7 +179,7 @@ end
 -- The scale repeats every octave and index 0 is the unison.
 local function nearest_index(t, r)
 	local sp = get_scale_pitches(t)
-	local o = tuning.generators[1]
+	local o = tuning.generator_pitches[1]
 	local n = #t
 
 	local oct = math.floor(r / o)
@@ -258,17 +226,11 @@ function tuning.from_table(t, i)
 	local s = #t
 	local oct = math.floor(i / s)
 	i = i - oct * s
-	local p = t[i + 1]
+	local p = util.clone(t[i + 1])
+	p[1] = p[1] + oct
+	p = tuning.add(p, tuning.center)
 
-	local new = tuning.new_interval()
-	for k = 1, tuning.rank do
-		new[k] = (p[k] or 0)
-	end
-	new[1] = new[1] + oct
-
-	new = tuning.add(new, tuning.center)
-
-	return new
+	return p
 end
 
 -- Indexed by midi number, middle C = midi note number 60.
@@ -285,9 +247,17 @@ function tuning.input_map()
 	for i = 1, #tuning.chromatic + 1 do
 		local midi = 59 + i
 		local interval = tuning.from_midi(midi)
+		local intervals = tuning.system:simple_spellings(interval)
+		local spellings = {}
+		for _, v in ipairs(intervals) do
+			table.insert(spellings, tuning.get_name(v))
+		end
+		spellings = util.dedup(spellings)
+
 		local ratios = tuning.system:simple_ratios(interval)
 		rows[i] = {
-			name = tuning.get_name(interval),
+			-- name = tuning.get_name(interval),
+			name = table.concat(spellings, " = "),
 			ratio = table.concat(ratios, " ~ "),
 			black = BLACK_KEYS[(midi - 60) % 12] or false,
 		}
@@ -315,10 +285,9 @@ function tuning.get_pitch(p)
 end
 
 function tuning.get_relative_pitch(p)
-	assert(p)
 	local f = 0
 	for i, v in ipairs(p) do
-		f = f + v * (tuning.generators[i] or 0)
+		f = f + v * tuning.generator_pitches[i]
 	end
 	return f
 end
@@ -332,7 +301,7 @@ function tuning.get_name(p)
 		local new = {}
 		for i = 1, tuning.rank do
 			if i > 2 then
-				new[i] = (p[i] or 0) - (tuning.center[i] or 0)
+				new[i] = p[i] - tuning.center[i]
 			else
 				new[i] = p[i]
 			end
@@ -349,7 +318,7 @@ function tuning.add(a, b)
 	-- add two pitches a and b
 	local new = {}
 	for i = 1, tuning.rank do
-		new[i] = (a[i] or 0) + (b[i] or 0)
+		new[i] = a[i] + b[i]
 	end
 	return new
 end
@@ -358,7 +327,7 @@ function tuning.sub(a, b)
 	-- subtract b from a
 	local new = {}
 	for i = 1, tuning.rank do
-		new[i] = (a[i] or 0) - (b[i] or 0)
+		new[i] = a[i] - b[i]
 	end
 	return new
 end
@@ -367,7 +336,7 @@ function tuning.mul(a, b)
 	-- multiply pitch a by scalar b
 	local new = {}
 	for i = 1, tuning.rank do
-		new[i] = (a[i] or 0) * b
+		new[i] = a[i] * b
 	end
 	return new
 end
@@ -375,7 +344,7 @@ end
 function tuning.eq(a, b)
 	-- check equality for a and b
 	for i = 1, tuning.rank do
-		if (a[i] or 0) ~= (b[i] or 0) then
+		if a[i] ~= b[i] then
 			return false
 		end
 	end
