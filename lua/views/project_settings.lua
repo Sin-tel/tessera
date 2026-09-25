@@ -15,7 +15,7 @@ NotationRow.__index = NotationRow
 
 -- Compare two NotationChoice's, given they are for the same temperament.
 local function same_choice(a, b)
-	return a.accidentals == b.accidentals and a.half_sharp == b.half_sharp
+	return a.accidentals == b.accidentals and a.half_sharp == b.half_sharp and a.johnston == b.johnston
 end
 
 -- option is a NotationOption, see tuning.rs
@@ -36,6 +36,9 @@ function NotationRow.new(view, option)
 	end
 	if option.choice.half_sharp then
 		self.title = "Neutral"
+	end
+	if option.style.johnston then
+		self.title = "Johnston"
 	end
 
 	-- how the prime is written on its nominal, and the alternative if there is one

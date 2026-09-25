@@ -23,7 +23,7 @@ local ACC_HALF_SHARP = "f"
 local ACC_SESQUI_FLAT = "g" -- one-and-a-half flat
 
 local ACC_JOHNSTON_PLUS = { "l", "m" }
-local ACC_JOHNSTON_SEPTIMAL = { "q", "p" }
+local ACC_JOHNSTON_SEPTIMAL = { "p", "q" }
 local ACC_JOHNSTON_UNDECIMAL = Notation.ACC_ARROWS
 
 local function accidental(n, acc)
@@ -55,7 +55,6 @@ Notation.__index = Notation
 function Notation.new(style)
 	local self = setmetatable({}, Notation)
 
-	-- pairs of { coordinate, glyphs }
 	self.accidentals = {}
 	-- coordinate of the half sharp
 	self.half_sharp = nil
@@ -68,27 +67,42 @@ function Notation.new(style)
 			self.half_sharp = i + offset
 		end
 	end
+	self.johnston = style.johnston
 
-	if #style.accidentals == 1 and not self.half_sharp then
-		-- single is up/down
-		table.insert(self.accidentals, { 1 + offset, Notation.ACC_UP })
-	else
+	if style.johnston then
 		for i, acc in ipairs(style.accidentals) do
 			if not acc.half_sharp then
 				if acc.ratio == "81/80" then
-					table.insert(self.accidentals, { i + offset, Notation.ACC_UP })
+					table.insert(self.accidentals, { i + offset, 5 })
 				elseif acc.ratio == "64/63" then
-					table.insert(self.accidentals, { i + offset, Notation.ACC_SEPTIMAL })
+					table.insert(self.accidentals, { i + offset, 7 })
 				elseif acc.ratio == "33/32" then
-					table.insert(self.accidentals, { i + offset, Notation.ACC_UNDECIMAL })
+					table.insert(self.accidentals, { i + offset, 11 })
 				else
 					log.error("Unknown accidental: " .. acc.ratio)
 				end
 			end
 		end
+	else
+		if #style.accidentals == 1 and not self.half_sharp then
+			-- single is up/down
+			table.insert(self.accidentals, { 1 + offset, Notation.ACC_UP })
+		else
+			for i, acc in ipairs(style.accidentals) do
+				if not acc.half_sharp then
+					if acc.ratio == "81/80" then
+						table.insert(self.accidentals, { i + offset, Notation.ACC_UP })
+					elseif acc.ratio == "64/63" then
+						table.insert(self.accidentals, { i + offset, Notation.ACC_SEPTIMAL })
+					elseif acc.ratio == "33/32" then
+						table.insert(self.accidentals, { i + offset, Notation.ACC_UNDECIMAL })
+					else
+						log.error("Unknown accidental: " .. acc.ratio)
+					end
+				end
+			end
+		end
 	end
-
-	self.use_johnston = false
 
 	return self
 end
@@ -107,7 +121,6 @@ function Notation:get_nominal(p)
 end
 
 function Notation:get_name_johnston(p)
-	-- TODO: broken and unused
 	local nominal, sharps, nominal_offset = self:get_nominal(p)
 
 	local acc = sharps_str(sharps)
@@ -120,29 +133,33 @@ function Notation:get_name_johnston(p)
 		plus = plus + 1
 	end
 
-	if p[4] then
-		-- 36/35 = ^7
-		acc = acc .. accidental(p[4], ACC_JOHNSTON_SEPTIMAL)
-		plus = plus - p[4]
-	end
-	if p[5] then
-		-- 33/32 works the same
-		-- re-uses arrows from HEJI
-		acc = acc .. accidental(p[5], ACC_JOHNSTON_UNDECIMAL)
+	for _, v in ipairs(self.accidentals) do
+		local index, prime = v[1], v[2]
+		if prime == 7 then
+			-- 36/35 = ^7
+			acc = acc .. accidental(p[index], ACC_JOHNSTON_SEPTIMAL)
+			plus = plus - p[index]
+		elseif prime == 11 then
+			-- 33/32 works the same
+			acc = acc .. accidental(p[index], ACC_JOHNSTON_UNDECIMAL)
+		end
 	end
 
-	-- add plus/minus last
-	if p[3] then
-		-- 81/80 = +
-		plus = plus + p[3]
-		acc = acc .. accidental(plus, ACC_JOHNSTON_PLUS)
+	-- need to handle +/- last since they get modified by ones above
+	for _, v in ipairs(self.accidentals) do
+		local index, prime = v[1], v[2]
+		if prime == 5 then
+			-- 81/80 = +
+			plus = plus + p[index]
+			acc = acc .. accidental(plus, ACC_JOHNSTON_PLUS)
+		end
 	end
 
 	return nominal .. acc
 end
 
 function Notation:name(p)
-	if self.use_johnston == "johnston" then
+	if self.johnston then
 		return self:get_name_johnston(p)
 	end
 
