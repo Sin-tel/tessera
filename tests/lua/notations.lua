@@ -30,7 +30,8 @@ for category, list in ipairs(presets.categories) do
 			assert(row:is_current(), "wrong notation after loading " .. key)
 
 			local map = tuning.input_map()
-			assert(#map == #tuning.chromatic, "input map size for " .. key)
+			-- one octave of keys, the octave above the root included
+			assert(#map == #tuning.chromatic + 1, "input map size for " .. key)
 			for i, entry in ipairs(map) do
 				assert(entry.name ~= "", "no name for midi key " .. i .. " in " .. key)
 			end
