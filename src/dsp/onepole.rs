@@ -1,34 +1,80 @@
-use crate::dsp::smooth::Smooth;
-use crate::dsp::{from_db, prewarp};
+use crate::dsp::{from_db, lerp, prewarp, time_constant};
 
-#[derive(Debug)]
-pub struct OnePole {
-	sample_rate: f32,
-	s: f32,
-
-	g: Smooth,
-	my: Smooth,
-	mx: Smooth,
+// Coefficients, can be shared between many states
+#[derive(Debug, Clone, Copy, Default)]
+pub struct OnePoleCoefs {
+	g: f32,
+	mx: f32,
+	my: f32,
 }
 
-impl OnePole {
-	pub fn new(sample_rate: f32) -> Self {
-		Self {
-			sample_rate,
-			g: Smooth::new(0., 25., sample_rate),
-			my: Smooth::new(0., 25., sample_rate),
-			mx: Smooth::new(0., 25., sample_rate),
+impl OnePoleCoefs {
+	fn new(f: f32, mx: f32, my: f32) -> Self {
+		Self { g: f / (1. + f), mx, my }
+	}
 
-			s: 0.,
+	pub fn lowpass(cutoff: f32, sample_rate: f32) -> Self {
+		let f = prewarp(cutoff / sample_rate);
+		Self::new(f, 0., 1.)
+	}
+
+	pub fn highpass(cutoff: f32, sample_rate: f32) -> Self {
+		let f = prewarp(cutoff / sample_rate);
+		Self::new(f, 1., -1.)
+	}
+
+	pub fn allpass(cutoff: f32, sample_rate: f32) -> Self {
+		let f = prewarp(cutoff / sample_rate);
+		Self::new(f, -1., 2.)
+	}
+
+	pub fn lowshelf(cutoff: f32, gain: f32, sample_rate: f32) -> Self {
+		let a = from_db(0.5 * gain);
+		let f = prewarp(cutoff / sample_rate) / a;
+		Self::new(f, 1., a * a - 1.)
+	}
+
+	pub fn highshelf(cutoff: f32, gain: f32, sample_rate: f32) -> Self {
+		let a = from_db(0.5 * gain);
+		let f = prewarp(cutoff / sample_rate) * a;
+		Self::new(f, a * a, 1. - a * a)
+	}
+
+	pub fn tilt(cutoff: f32, gain: f32, sample_rate: f32) -> Self {
+		let a = from_db(0.5 * gain);
+		let f = prewarp(cutoff / sample_rate) * a;
+		Self::new(f, a, 1. / a - a)
+	}
+
+	#[must_use]
+	pub fn dc_gain(&self) -> f32 {
+		self.mx + self.my
+	}
+
+	fn lerp(&self, other: &Self, a: f32) -> Self {
+		Self {
+			g: lerp(self.g, other.g, a),
+			mx: lerp(self.mx, other.mx, a),
+			my: lerp(self.my, other.my, a),
 		}
 	}
 
-	fn set_coef(&mut self, f: f32) {
-		let g = f / (1. + f);
-		self.g.set(g);
+	fn max_diff(&self, other: &Self) -> f32 {
+		(self.g - other.g)
+			.abs()
+			.max((self.mx - other.mx).abs())
+			.max((self.my - other.my).abs())
 	}
+}
 
-	pub fn reset_state(&mut self) {
+// Integrator state only
+#[derive(Debug, Clone, Copy, Default)]
+pub struct OnePoleState {
+	s: f32,
+}
+
+impl OnePoleState {
+	pub fn reset(&mut self) {
 		self.s = 0.;
 	}
 
@@ -40,79 +86,101 @@ impl OnePole {
 	}
 
 	#[must_use]
+	pub fn process(&mut self, c: &OnePoleCoefs, x: f32) -> f32 {
+		let v = (x - self.s) * c.g;
+		let y = v + self.s;
+		self.s = y + v;
+
+		c.mx * x + c.my * y
+	}
+}
+
+// Filter with smoothed coefficients
+#[derive(Debug)]
+pub struct OnePole {
+	sample_rate: f32,
+	state: OnePoleState,
+	coefs: OnePoleCoefs,
+	target: OnePoleCoefs,
+	f: f32,
+	done: bool,
+}
+
+impl OnePole {
+	pub fn new(sample_rate: f32) -> Self {
+		Self {
+			sample_rate,
+			state: OnePoleState::default(),
+			coefs: OnePoleCoefs::default(),
+			target: OnePoleCoefs::default(),
+			f: time_constant(25., sample_rate),
+			done: true,
+		}
+	}
+
+	fn set(&mut self, c: OnePoleCoefs) {
+		self.target = c;
+		self.done = false;
+	}
+
+	pub fn reset_state(&mut self) {
+		self.state.reset();
+	}
+
+	pub fn prime(&mut self, x: f32) {
+		self.state.prime(x);
+	}
+
+	#[must_use]
 	pub fn dc_gain(&self) -> f32 {
-		self.mx.target() + self.my.target()
+		self.target.dc_gain()
 	}
 
 	pub fn reset(&mut self) {
-		self.s = 0.;
-		self.g.set_immediate(0.);
-		self.my.set_immediate(0.);
-		self.mx.set_immediate(0.);
+		self.state.reset();
+		self.target = OnePoleCoefs::default();
+		self.immediate();
 	}
 
 	pub fn immediate(&mut self) {
-		self.g.immediate();
-		self.my.immediate();
-		self.mx.immediate();
+		self.coefs = self.target;
+		self.done = true;
 	}
 
 	pub fn set_lowpass(&mut self, cutoff: f32) {
-		let f = prewarp(cutoff / self.sample_rate);
-		self.set_coef(f);
-		self.my.set(1.);
-		self.mx.set(0.);
+		self.set(OnePoleCoefs::lowpass(cutoff, self.sample_rate));
 	}
 
 	pub fn set_highpass(&mut self, cutoff: f32) {
-		let f = prewarp(cutoff / self.sample_rate);
-		self.set_coef(f);
-		self.my.set(-1.);
-		self.mx.set(1.);
+		self.set(OnePoleCoefs::highpass(cutoff, self.sample_rate));
 	}
 
 	pub fn set_allpass(&mut self, cutoff: f32) {
-		let f = prewarp(cutoff / self.sample_rate);
-		self.set_coef(f);
-		self.my.set(2.);
-		self.mx.set(-1.);
+		self.set(OnePoleCoefs::allpass(cutoff, self.sample_rate));
 	}
 
 	pub fn set_lowshelf(&mut self, cutoff: f32, gain: f32) {
-		let a = from_db(0.5 * gain);
-		let f = prewarp(cutoff / self.sample_rate) / a;
-		self.set_coef(f);
-		self.my.set(a * a - 1.);
-		self.mx.set(1.);
+		self.set(OnePoleCoefs::lowshelf(cutoff, gain, self.sample_rate));
 	}
 
 	pub fn set_highshelf(&mut self, cutoff: f32, gain: f32) {
-		let a = from_db(0.5 * gain);
-		let f = prewarp(cutoff / self.sample_rate) * a;
-		self.set_coef(f);
-		self.my.set(1. - a * a);
-		self.mx.set(a * a);
+		self.set(OnePoleCoefs::highshelf(cutoff, gain, self.sample_rate));
 	}
 
 	pub fn set_tilt(&mut self, cutoff: f32, gain: f32) {
-		let a = from_db(0.5 * gain);
-		let f = prewarp(cutoff / self.sample_rate) * a;
-		self.set_coef(f);
-		self.my.set(1. / a - a);
-		self.mx.set(a);
+		self.set(OnePoleCoefs::tilt(cutoff, gain, self.sample_rate));
 	}
 
 	#[must_use]
 	pub fn process(&mut self, x: f32) -> f32 {
-		let g = self.g.process();
-		let my = self.my.process();
-		let mx = self.mx.process();
-
-		let v = (x - self.s) * g;
-		let y = v + self.s;
-		self.s = y + v;
-
-		mx * x + my * y
+		if !self.done {
+			self.coefs = self.coefs.lerp(&self.target, self.f);
+			if self.coefs.max_diff(&self.target) < 1e-6 {
+				self.coefs = self.target;
+				self.done = true;
+			}
+		}
+		self.state.process(&self.coefs, x)
 	}
 
 	// Process block in-place
