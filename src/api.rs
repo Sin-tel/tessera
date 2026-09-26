@@ -6,6 +6,7 @@ pub mod keycodes;
 mod midi;
 mod mouse;
 pub mod project;
+mod tuning;
 
 use crate::app::{State, get_version};
 use crate::embed::setup_lua_loader;
@@ -40,6 +41,9 @@ pub fn create_lua(scale_factor: f64) -> LuaResult<Lua> {
 
 	// tessera.project
 	tessera.set("project", project::create(&lua)?)?;
+
+	// tessera.tuning
+	tessera.set("tuning", tuning::create(&lua)?)?;
 
 	// tessera.os_name ("windows", "macos", "linux")
 	let os_name = std::env::consts::OS;
