@@ -1,3 +1,13 @@
+move useful tests to test (skip block size).
+
+is there an easy way to avoid having to duplicate the list of instruments everywhere?
+
+reverb profiling... issue is filters.
+should make an autovectorized onepole, but this would also require autovec smooth
+We should try to make a 4x struct
+
+strobe tuner
+
 ## Tuning system
 set default indices instead of first in settings
 
@@ -30,6 +40,7 @@ unrelated bugs:
 
 ## VST
 better whitelist
+add pressure queue too
 
 
 ## misc
