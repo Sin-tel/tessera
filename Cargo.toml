@@ -24,6 +24,9 @@ cpal = { version = "0.18", git = "https://github.com/sin-tel/cpal.git", rev = "d
 [target.'cfg(target_os = "linux")'.dependencies]
 cpal = { version = "0.18", features = ["jack", "pipewire"], git = "https://github.com/sin-tel/cpal.git", rev = "dd1cc0f64b55530fd46f7732fdddd7d9f2f0edcd" }
 
+[workspace]
+members = ["xen_utils"]
+
 [dependencies]
 assert_no_alloc = {version = "1.1", features = ["warn_debug"]}
 no_denormals = "0.3"
@@ -36,8 +39,9 @@ fft_convolution = {version = "0.1", git = "https://github.com/Sin-tel/fft-convol
 hound = "3.5"
 midir = "0.11"
 num-complex = "0.4"
-halfband = "0.2"
+halfband = "0.3"
 windowfunctions = "0.1"
+xen_utils = { path = "xen_utils" }
 
 standard_log = { package = "log", version = "0.4" }
 simplelog = "0.12"
@@ -47,7 +51,7 @@ log-panics = { version = "2"}
 mlua = { version = "0.12", features = ["luajit", "vendored", "serde"] }
 
 winit = "0.30"
-femtovg = {version="0.25", default-features = false, features=["image-loading"] }
+femtovg = {version="0.26", default-features = false, features=["image-loading"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
 glutin =  "0.32.0"
 glutin-winit = "0.5"
@@ -71,7 +75,7 @@ open = "5.3"
 ureq = {version = "3.1", features = ["json"]}
 serde_json = "1.0"
 anyhow = "1.0"
-base64 = "0.22"
+base64 = "0.23"
 
 [[bench]]
 name = "bench"

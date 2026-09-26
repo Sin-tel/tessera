@@ -1,26 +1,46 @@
-# VST
-add pressure queue too
+## Tuning system
+set default indices instead of first in settings
 
+written: return list
+xen_utils:
+  add spell_literal? => replaces just nominal, also add primes_reduced or something
+  fix octave reduction in nominal_spellings and return a list
+  change API so it works with notes (ie spellings)
+
+note map: align by note name so ups prefix is flush
+
+spell_literal in scale now no longer used
+
+Things to do before we can merge to main:
+* make sure switching between tunings doesn't cause issues
+if new accidentals are a superset of current: nothing to do.
+otherwise, if temperament matches, temper and back (notation gets re-written, but pitches preserved)
+otherwise, clip (both pitches and notation will change)
+warn user if data may get lost next to apply button
+
+Alternatively, detemper everything to JI, and retemper. This seems more error-prone though.
+
+add it to undo
+
+* fix up the old save files
+
+unrelated bugs:
+ switching tabs causes tool switch also
+ need to tune feedback filter in delay_tape
+
+## VST
+better whitelist
+
+
+## misc
 need to fix voice alloc, some stuck notes when pedaling
 should plugin handle pedal itself? kind of annoying...
 
-dump state and save preset
-
-scanning and saving list
-
-# tuning
- * make categories (ET / temp / JI)
- * adjust notation
-
-rastmic / neutral
-  notation should use half-sharps if 243/242 is tempered
-  rank 2 ~ 2.3.11 (33/32)
-  rank 3 ~ 2.3.5.11 (81/80, 33/32) also can temper out 5120/5103 (81/80~64/63, 33/32)
-  rank 4 ~ 11-limit
-
-  some EDOs can also be notated like this (notably 31 and 41!)
+fix key velocity curve!
 
 move 'flush_messages' to backend
+
+allow replacing / deleting instrument only
 
 be more consistent with levels.
 target should be ~ -18dB RMS
