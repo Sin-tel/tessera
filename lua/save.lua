@@ -1,6 +1,7 @@
 local build = require("build")
 local log = require("log")
 local serialize = require("lib/serialize")
+local tuning = require("tuning")
 
 local save = {}
 
@@ -59,6 +60,7 @@ local function do_patches(p)
 	end
 
 	-- fix projects with low rank
+	-- TODO: remove this?
 	for _, ch in ipairs(p.channels) do
 		if ch.notes then
 			for _, note in ipairs(ch.notes) do
@@ -78,6 +80,15 @@ local function do_patches(p)
 	end
 
 	-- TODO: fix up tuning here
+
+	-- quick hack to get my own files working, should not go in release
+	for _, ch in ipairs(p.channels) do
+		if ch.notes then
+			for _, note in ipairs(ch.notes) do
+				note.interval = tuning.pad(note.interval)
+			end
+		end
+	end
 
 	-- after patches are done, file should be on new version
 	p.VERSION = VERSION
