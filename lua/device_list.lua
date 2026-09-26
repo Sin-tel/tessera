@@ -189,6 +189,21 @@ device_list.instruments.pluck = {
 	},
 }
 
+device_list.instruments.organ = {
+	display_name = "Organ",
+	parameters = {
+		{ "16'", "slider", { default = 2, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "5 1/3'", "slider", { default = 5, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "8'", "slider", { default = 8, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "4'", "slider", { default = 6, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "2 2/3'", "slider", { default = 5, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "2'", "slider", { default = 0, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "1 3/5'", "slider", { default = 0, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "1 1/3'", "slider", { default = 5, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "1'", "slider", { default = 0, min = 0, max = 8, step = 1, fmt = "%d" } },
+	},
+}
+
 device_list.instruments.epiano = {
 	display_name = "Epiano",
 	parameters = {

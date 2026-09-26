@@ -1,6 +1,7 @@
 mod analog;
 mod epiano;
 mod fm;
+mod organ;
 mod pluck;
 mod polysine;
 mod sampler;
@@ -9,8 +10,8 @@ pub mod vst_instrument;
 mod wavetable;
 
 use crate::instrument::{
-	analog::Analog, epiano::Epiano, fm::Fm, pluck::Pluck, polysine::Polysine, sampler::Sampler,
-	sine::Sine, vst_instrument::VstInstrument, wavetable::Wavetable,
+	analog::Analog, epiano::Epiano, fm::Fm, organ::Organ, pluck::Pluck, polysine::Polysine,
+	sampler::Sampler, sine::Sine, vst_instrument::VstInstrument, wavetable::Wavetable,
 };
 use crate::log::log_warn;
 use crate::worker::RequestData;
@@ -23,6 +24,7 @@ pub fn new(sample_rate: f32, name: &str) -> Box<dyn Instrument + Send> {
 		"analog" => Box::new(Analog::new(sample_rate)),
 		"epiano" => Box::new(Epiano::new(sample_rate)),
 		"fm" => Box::new(Fm::new(sample_rate)),
+		"organ" => Box::new(Organ::new(sample_rate)),
 		"pluck" => Box::new(Pluck::new(sample_rate)),
 		"polysine" => Box::new(Polysine::new(sample_rate)),
 		"sampler" => Box::new(Sampler::new(sample_rate)),
