@@ -21,6 +21,8 @@ local function pad(p)
 	return new
 end
 
+tuning.pad = pad
+
 -- Load a tuning from definition table
 function tuning.load(def)
 	local ok, system = pcall(tessera.tuning.new, def, def.notation, scales.candidates)
