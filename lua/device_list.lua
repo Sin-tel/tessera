@@ -201,6 +201,8 @@ device_list.instruments.organ = {
 		{ "1 3/5'", "slider", { default = 0, min = 0, max = 8, step = 1, fmt = "%d" } },
 		{ "1 1/3'", "slider", { default = 5, min = 0, max = 8, step = 1, fmt = "%d" } },
 		{ "1'", "slider", { default = 0, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "Percussion", "toggle", { default = true } },
+		{ "Click", "slider", { default = 0.5 } },
 	},
 }
 
