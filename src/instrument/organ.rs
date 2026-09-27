@@ -3,6 +3,7 @@ use crate::dsp::onepole::{OnePoleCoefs, OnePoleState};
 use crate::dsp::smooth::*;
 use crate::dsp::*;
 use crate::instrument::*;
+use fastrand::Rng;
 
 const N_VOICES: usize = 32;
 const N_BARS: usize = 9;
@@ -52,6 +53,7 @@ pub struct Organ {
 	click_depth: f32,
 	// global clock so phases are free-running, like tonewheels
 	time: u64,
+	rng: Rng,
 }
 
 #[derive(Debug)]
@@ -86,23 +88,29 @@ struct Contact {
 }
 
 impl Contact {
-	fn close(&mut self, window: u32, burst: (u32, u32)) {
+	fn close(&mut self, window: u32, burst: (u32, u32), rng: &mut Rng) {
 		self.closed = true;
-		self.burst = fastrand::u32(burst.0..=burst.1);
-		self.delay = fastrand::u32(0..=window.saturating_sub(self.burst));
+		self.burst = rng.u32(burst.0..=burst.1);
+		self.delay = rng.u32(0..=window.saturating_sub(self.burst));
 	}
 
 	fn open(&mut self) {
 		self.closed = false;
 	}
 
-	fn process(&mut self, release_step: f32, smooth: &OnePoleCoefs, depth: f32) -> f32 {
+	fn process(
+		&mut self,
+		release_step: f32,
+		smooth: &OnePoleCoefs,
+		depth: f32,
+		rng: &mut Rng,
+	) -> f32 {
 		if self.closed {
 			if self.delay > 0 {
 				self.delay -= 1;
 			} else if self.burst > 0 {
 				self.burst -= 1;
-				self.raw = 1. - depth * fastrand::f32();
+				self.raw = 1. - depth * rng.f32();
 			} else {
 				self.raw = 1.;
 			}
@@ -158,6 +166,7 @@ impl Instrument for Organ {
 			contact_smooth: OnePoleCoefs::default(),
 			click_depth: 0.,
 			time: 0,
+			rng: Rng::with_seed(0),
 		};
 		organ.set_click(0.5);
 		organ
@@ -193,6 +202,7 @@ impl Instrument for Organ {
 						self.release_step,
 						&self.contact_smooth,
 						self.click_depth,
+						&mut self.rng,
 					);
 					out += bars[k] * env * sin_cheap(*a);
 				}
@@ -234,7 +244,7 @@ impl Instrument for Organ {
 			}
 		}
 		for c in &mut voice.contacts {
-			c.close(self.click_window, self.click_burst);
+			c.close(self.click_window, self.click_burst, &mut self.rng);
 		}
 		voice.note_on = true;
 		voice.active = true;
@@ -250,6 +260,8 @@ impl Instrument for Organ {
 
 	fn flush(&mut self) {
 		self.time = 0;
+		// Reseed from the global generator, which Render::flush just reset.
+		self.rng.seed(fastrand::u64(..));
 		self.perc_env = 0.;
 		for d in &mut self.drawbars {
 			d.immediate();

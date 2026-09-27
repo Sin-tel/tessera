@@ -3,6 +3,7 @@ use crate::dsp::smooth::Smooth;
 use crate::dsp::*;
 use crate::effect::*;
 use crate::worker::RequestData;
+use fastrand::Rng;
 use halfband::iir::{Downsampler8, Upsampler8};
 
 const REF_RATE: f32 = 44_100.0;
@@ -184,19 +185,19 @@ impl Track {
 		}
 	}
 
-	fn process_sample(&mut self, sample: &mut f32, shared: &Shared) {
+	fn process_sample(&mut self, sample: &mut f32, shared: &Shared, rng: &mut Rng) {
 		let in_s = *sample;
 		let s0 = in_s + self.prev * shared.feedback;
 		let mut s = s0 * TRIM_GAIN;
 
 		s = self.fb_filter.process(s);
 		s = self.fb_filter2.process(s);
-		s *= 1.0 + fastrand::f32() * NOISE_AMT;
+		s *= 1.0 + rng.f32() * NOISE_AMT;
 		s += BIAS;
 
 		let [u1, u2] = self.upsampler.process(s);
 
-		let jitter_noise = self.noise_filter.process(fastrand::f32() - 0.5);
+		let jitter_noise = self.noise_filter.process(rng.f32() - 0.5);
 		let speed =
 			shared.base_speed * (1.0 + 0.5 * shared.jitter * jitter_noise + shared.flutter_term);
 
@@ -287,6 +288,7 @@ pub struct DelayTape {
 	next_rate: f32,
 	sweep: f32,
 	flutter_trim: f32,
+	rng: Rng,
 }
 
 impl DelayTape {
@@ -299,7 +301,7 @@ impl DelayTape {
 
 		if self.sweep >= 1.0 {
 			self.sweep = 0.0;
-			self.next_rate = 0.02 + fastrand::f32() * 0.98;
+			self.next_rate = 0.02 + self.rng.f32() * 0.98;
 			self.flutter_rate.set(self.next_rate);
 		}
 
@@ -346,6 +348,7 @@ impl Effect for DelayTape {
 			next_rate: 0.5,
 			sweep: 0.0,
 			flutter_trim: FLUTTER_TRIM_REF * inv_sr_scale,
+			rng: Rng::with_seed(0),
 		}
 	}
 
@@ -381,8 +384,8 @@ impl Effect for DelayTape {
 				head_mod_depth: self.head_mod_depth,
 			};
 
-			self.tracks[0].process_sample(&mut bl[i], &shared);
-			self.tracks[1].process_sample(&mut br[i], &shared);
+			self.tracks[0].process_sample(&mut bl[i], &shared, &mut self.rng);
+			self.tracks[1].process_sample(&mut br[i], &shared, &mut self.rng);
 		}
 	}
 
@@ -394,6 +397,9 @@ impl Effect for DelayTape {
 		self.h2_gain.immediate();
 		self.h3_gain.immediate();
 		self.wow.immediate();
+
+		// Reseed from the global generator, which Render::flush just reset.
+		self.rng.seed(fastrand::u64(..));
 
 		self.sweep = 0.0;
 		self.next_rate = 0.5;

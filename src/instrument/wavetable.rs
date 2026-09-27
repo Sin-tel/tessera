@@ -10,6 +10,7 @@ use crate::dsp::smooth::*;
 use crate::dsp::*;
 use crate::instrument::*;
 use crate::worker::RequestData;
+use fastrand::Rng;
 use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
@@ -50,6 +51,7 @@ struct Lfo {
 	random: f32,
 	switch: bool,
 	sample_rate: f32,
+	rng: Rng,
 }
 
 impl Lfo {
@@ -63,6 +65,7 @@ impl Lfo {
 			random: 0.,
 			switch: false,
 			sample_rate,
+			rng: Rng::with_seed(0),
 		}
 	}
 
@@ -70,7 +73,7 @@ impl Lfo {
 		self.switch = !self.switch;
 
 		let mut v_new = if self.switch { -1.0 } else { 1.0 };
-		v_new = lerp(v_new, fastrand::f32() * 2.0 - 1.0, self.random);
+		v_new = lerp(v_new, self.rng.f32() * 2.0 - 1.0, self.random);
 
 		self.v_prev = self.v;
 		self.v = v_new;
@@ -407,6 +410,8 @@ impl Instrument for Wavetable {
 			v.pos_start = 0.;
 			v.freq.immediate();
 			v.pres.set_immediate(0.);
+			// Reseed from the global generator, which Render::flush just reset.
+			v.lfo.rng.seed(fastrand::u64(..));
 			v.lfo.reset();
 
 			v.buffer_a.fill(0.);
