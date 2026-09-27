@@ -148,6 +148,32 @@ fn tap(len: f32, sr_scale: f32) -> isize {
 	(len * sr_scale + 0.5) as isize
 }
 
+// Delay taps in samples
+struct Taps {
+	early_l: [isize; N],
+	early_r: [isize; N],
+	diffuse_l: [isize; N],
+	diffuse_r: [isize; N],
+	fdn: [isize; N],
+}
+
+impl Taps {
+	fn new(size: f32, sr_scale: f32) -> Self {
+		let early = 0.4 + 1.6 * size;
+		let diffuse = 0.5 + 0.5 * size;
+		let fdn = fdn_stretch(size);
+		let t =
+			|len: &[f32; N], i: usize, stretch: f32| tap((len[i] - 1.) * stretch + 1., sr_scale);
+		Self {
+			early_l: std::array::from_fn(|i| t(&LEN1_L, i, early)),
+			early_r: std::array::from_fn(|i| t(&LEN1_R, i, early)),
+			diffuse_l: std::array::from_fn(|i| t(&LEN2_L, i, diffuse)),
+			diffuse_r: std::array::from_fn(|i| t(&LEN2_R, i, diffuse)),
+			fdn: std::array::from_fn(|i| tap(LEN3[i] * fdn, sr_scale)),
+		}
+	}
+}
+
 // In place fast Walsh-Hadamard, normalized so the matrix is orthonormal.
 fn hadamard(x: &mut [f32; N]) {
 	let mut h = 1;
@@ -249,14 +275,17 @@ impl Effect for ReverbRoom {
 		// skip the lerp once settled
 		let interpolate = self.coefs_prev.max_diff(&self.coefs_next) > 0.;
 
+		// taps only need updating per sample while size is moving
+		let size_moving = !self.size.is_done();
+		let mut taps = Taps::new(self.size.get(), self.sr_scale);
+
 		for (k, (out_l, out_r)) in bl.iter_mut().zip(br.iter_mut()).enumerate() {
 			let input_l = *out_l;
 			let input_r = *out_r;
 
-			let size = self.size.process();
-			let early_stretch = 0.4 + 1.6 * size;
-			let diffuse_stretch = 0.5 + 0.5 * size;
-			let fdn_stretch = fdn_stretch(size);
+			if size_moving {
+				taps = Taps::new(self.size.process(), self.sr_scale);
+			}
 
 			let balance = self.balance.process();
 			let mix_early = self.mix_early.process();
@@ -273,10 +302,8 @@ impl Effect for ReverbRoom {
 			let mut early_l = 0.;
 			let mut early_r = 0.;
 			for i in 0..N {
-				let tl = (LEN1_L[i] - 1.) * early_stretch + 1.;
-				let tr = (LEN1_R[i] - 1.) * early_stretch + 1.;
-				let l = self.line_l.go_back_int_s(tap(tl, self.sr_scale)) * AMP_L[i];
-				let r = self.line_r.go_back_int_s(tap(tr, self.sr_scale)) * AMP_R[i];
+				let l = self.line_l.go_back_int_s(taps.early_l[i]) * AMP_L[i];
+				let r = self.line_r.go_back_int_s(taps.early_r[i]) * AMP_R[i];
 
 				early_l += l;
 				early_r += r;
@@ -289,10 +316,8 @@ impl Effect for ReverbRoom {
 			let mut diffuse_r = 0.;
 			for i in 0..N {
 				self.diffuse[i].push(self.s[i]);
-				let tl = (LEN2_L[i] - 1.) * diffuse_stretch + 1.;
-				let tr = (LEN2_R[i] - 1.) * diffuse_stretch + 1.;
-				diffuse_l += SIGN_L[i] * self.diffuse[i].go_back_int_s(tap(tl, self.sr_scale));
-				diffuse_r += SIGN_R[i] * self.diffuse[i].go_back_int_s(tap(tr, self.sr_scale));
+				diffuse_l += SIGN_L[i] * self.diffuse[i].go_back_int_s(taps.diffuse_l[i]);
+				diffuse_r += SIGN_R[i] * self.diffuse[i].go_back_int_s(taps.diffuse_r[i]);
 			}
 
 			// feedback delay network
@@ -302,7 +327,7 @@ impl Effect for ReverbRoom {
 				&self.coefs_next
 			};
 			for i in 0..N {
-				self.s2[i] = self.fdn[i].go_back_int_s(tap(LEN3[i] * fdn_stretch, self.sr_scale));
+				self.s2[i] = self.fdn[i].go_back_int_s(taps.fdn[i]);
 			}
 			for i in 0..N {
 				let v = self.damp[i].process(&coefs.damp, self.s2[i]);
