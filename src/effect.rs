@@ -20,7 +20,6 @@ mod wide;
 
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::{MuteState, PeakMeter, time_constant};
-use crate::effect;
 use crate::effect::{
 	chorus::Chorus, compressor::Compressor, convolve::Convolve, decimate::Decimate, delay::Delay,
 	delay_tape::DelayTape, drive::Drive, equalizer::Equalizer, gain::Gain, limiter::Limiter,
@@ -32,7 +31,12 @@ use crate::meters::MeterHandle;
 use crate::worker::{RequestData, ResponseData};
 
 // list of effects
-pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
+// Sets the initial parameters before flushing, returns any data the worker needs to load.
+pub fn new(
+	sample_rate: f32,
+	name: &str,
+	params: &[f32],
+) -> (Box<dyn Effect + Send>, Vec<RequestData>) {
 	let mut new: Box<dyn Effect + Send> = match name {
 		"chorus" => Box::new(Chorus::new(sample_rate)),
 		"compressor" => Box::new(Compressor::new(sample_rate)),
@@ -58,8 +62,13 @@ pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
 			Box::new(Gain::new(sample_rate))
 		},
 	};
+	let requests = params
+		.iter()
+		.enumerate()
+		.filter_map(|(i, &v)| new.set_parameter(i, v))
+		.collect();
 	new.flush();
-	new
+	(new, requests)
 }
 
 pub trait Effect {
@@ -92,9 +101,13 @@ pub struct Bypass {
 }
 
 impl Bypass {
-	pub fn new(sample_rate: f32, name: &str, meter_handle: MeterHandle) -> Self {
+	pub fn new(
+		sample_rate: f32,
+		effect: Box<dyn Effect + Send>,
+		meter_handle: MeterHandle,
+	) -> Self {
 		Bypass {
-			effect: effect::new(sample_rate, name),
+			effect,
 
 			peak: PeakMeter::new(sample_rate),
 			meter_handle,

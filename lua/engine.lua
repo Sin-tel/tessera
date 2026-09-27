@@ -310,14 +310,6 @@ function engine.update_meters()
 	end
 end
 
-local function to_float(x)
-	if type(x) == "boolean" then
-		return x and 1 or 0
-	else
-		return x
-	end
-end
-
 function engine.send_parameters()
 	for ch_index, ch in ipairs(ui_channels) do
 		send_channel_parameters(ch, ch_index)
@@ -330,7 +322,7 @@ function engine.send_parameters()
 				local old_value = ch.instrument.state_old[l]
 				if old_value ~= new_value then
 					local value = new_value
-					tessera.audio.send_parameter(ch_index, 0, l, to_float(value))
+					tessera.audio.send_parameter(ch_index, 0, l, util.to_float(value))
 					ch.instrument.state_old[l] = new_value
 				end
 			end
@@ -344,7 +336,7 @@ function engine.send_parameters()
 				local old_value = fx.state_old[l]
 				if old_value ~= new_value then
 					local value = new_value
-					tessera.audio.send_parameter(ch_index, fx_index, l, to_float(value))
+					tessera.audio.send_parameter(ch_index, fx_index, l, util.to_float(value))
 					fx.state_old[l] = new_value
 				end
 			end

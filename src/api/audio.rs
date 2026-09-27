@@ -320,13 +320,18 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 
 	audio.set(
 		"insert_instrument",
-		lua.create_function(|lua, (index, instrument_name): (usize, String)| {
+		lua.create_function(|lua, (index, instrument_name, params): (usize, String, Vec<f32>)| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 			if let Some(ctx) = &mut state.audio {
 				assert!(instrument_name != "vst_instrument");
 				let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
 				let mut render = ctx.render.lock();
-				render.insert_instrument(index - 1, &instrument_name, meter_handle_instrument);
+				render.insert_instrument(
+					index - 1,
+					&instrument_name,
+					&params,
+					meter_handle_instrument,
+				);
 				Ok(Some(meter_id_instrument + 1))
 			} else {
 				Ok(None)
@@ -342,7 +347,12 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				let (meter_handle_instrument, meter_id_instrument) = ctx.meters.register();
 				{
 					let mut render = ctx.render.lock();
-					render.insert_instrument(index - 1, "vst_instrument", meter_handle_instrument);
+					render.insert_instrument(
+						index - 1,
+						"vst_instrument",
+						&[],
+						meter_handle_instrument,
+					);
 				}
 				// TODO: do this on a worker thread
 				match vst3::load(
@@ -449,16 +459,24 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 
 	audio.set(
 		"insert_effect",
-		lua.create_function(|lua, (channel_index, effect_index, name): (usize, usize, String)| {
-			if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
-				let (meter_handle, meter_id) = ctx.meters.register();
-				let mut render = ctx.render.lock();
-				render.insert_effect(channel_index - 1, effect_index - 1, &name, meter_handle);
-				Ok(Some(meter_id + 1))
-			} else {
-				Ok(None)
-			}
-		})?,
+		lua.create_function(
+			|lua, (channel_index, effect_index, name, params): (usize, usize, String, Vec<f32>)| {
+				if let Some(ctx) = &mut lua.app_data_mut::<State>().unwrap().audio {
+					let (meter_handle, meter_id) = ctx.meters.register();
+					let mut render = ctx.render.lock();
+					render.insert_effect(
+						channel_index - 1,
+						effect_index - 1,
+						&name,
+						&params,
+						meter_handle,
+					);
+					Ok(Some(meter_id + 1))
+				} else {
+					Ok(None)
+				}
+			},
+		)?,
 	)?;
 
 	audio.set(
