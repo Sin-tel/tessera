@@ -15,19 +15,16 @@ pub(crate) struct NotationOptions<'a> {
 impl<'a> NotationOptions<'a> {
     /// Keeps the accidentals that can be of any use: not tempered out, and not
     /// worth what an earlier one is worth, up to direction.
-    pub(crate) fn new(
-        temperament: &'a Temperament,
-        accidentals: &[Vec<i64>],
-    ) -> Result<Self, Error> {
+    pub(crate) fn new(temperament: &'a Temperament, accidentals: &[Vec<i64>]) -> Self {
         let vectors: Matrix<i64> = accidentals.to_vec();
-        let images = temperament.temper_all(&vectors)?;
+        let images = temperament.temper_all(&vectors);
         let mut useful: Vec<usize> = Vec::new();
 
         // sharp
         let mut apotome = vec![0; temperament.dim()];
         apotome[0] = -11;
         apotome[1] = 7;
-        apotome = temperament.temper(&apotome)?;
+        apotome = temperament.temper(&apotome);
 
         for index in 0..images.len() {
             // skip if tempered
@@ -48,11 +45,11 @@ impl<'a> NotationOptions<'a> {
             useful.push(index);
         }
 
-        Ok(NotationOptions {
+        NotationOptions {
             temperament,
             accidentals: useful.iter().map(|&i| accidentals[i].clone()).collect(),
             images: select(&images, &useful),
-        })
+        }
     }
 
     /// The best notation of each size, smallest first.
@@ -87,7 +84,7 @@ impl<'a> NotationOptions<'a> {
     fn best_of_size(&self, size: usize) -> Result<Option<Notation>, Error> {
         let mut best: Option<(Score, Notation)> = None;
         for subset in subsets(&(0..self.accidentals.len()).collect::<Vec<_>>(), size) {
-            if !self.valid(&subset)? {
+            if !self.valid(&subset) {
                 continue;
             }
             let kept: Vec<Vec<i64>> = subset
@@ -108,17 +105,17 @@ impl<'a> NotationOptions<'a> {
     /// They must reach every tempered interval together with the octave and the
     /// fifth. If an equal temperment keeps any accidental, one of them must
     /// map to a single step.
-    fn valid(&self, keep: &[usize]) -> Result<bool, Error> {
+    fn valid(&self, keep: &[usize]) -> bool {
         if self.temperament.rank() == 1
             && !keep.is_empty()
             && !keep.iter().any(|&i| self.images[i][0].abs() == 1)
         {
-            return Ok(false);
+            return false;
         }
         let mut generators = fifth_chain(self.temperament.dim());
         generators.extend(keep.iter().map(|&i| self.accidentals[i].clone()));
-        let images = self.temperament.temper_all(&generators)?;
-        Ok(spans(&images, self.temperament.rank()))
+        let images = self.temperament.temper_all(&generators);
+        spans(&images, self.temperament.rank())
     }
 
     /// Why no subset of the accidentals reaches every tempered interval.

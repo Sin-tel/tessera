@@ -13,7 +13,8 @@ pub mod error;
 pub mod notation;
 mod notation_options;
 pub mod primes;
-pub mod simplify;
+#[cfg(test)]
+mod simplify;
 pub mod temperament;
 pub mod tuning;
 mod util;
@@ -22,7 +23,5 @@ pub use diophantine::Matrix;
 pub use error::Error;
 pub use notation::Notation;
 pub use primes::Subgroup;
-pub use simplify::Simplifier;
 pub use temperament::Temperament;
 pub use tuning::Tuning;
-pub use util::MAX_SEARCH_NODES;

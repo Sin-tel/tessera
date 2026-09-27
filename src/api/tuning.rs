@@ -18,10 +18,13 @@ impl LuaUserData for TuningSystem {
 		methods.add_method("style", |_, this, ()| Ok(this.style().clone()));
 		methods
 			.add_method("generator_pitches", |_, this, ()| Ok(this.generator_pitches().to_vec()));
-		methods
-			.add_method("simple_ratios", |_, this, note: Vec<i64>| Ok(this.simple_ratios(&note)));
+		methods.add_method("simple_ratios", |_, this, note: Vec<i64>| {
+			check_note(this, &note)?;
+			Ok(this.simple_ratios(&note))
+		});
 
 		methods.add_method("simple_spellings", |_, this, note: Vec<i64>| {
+			check_note(this, &note)?;
 			Ok(this.simple_spellings(&note))
 		});
 
@@ -68,6 +71,18 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	)?;
 
 	Ok(tuning)
+}
+
+// xen_utils panics on a note of the wrong length, so check what comes from Lua.
+fn check_note(system: &TuningSystem, note: &[i64]) -> LuaResult<()> {
+	if note.len() != system.len() {
+		return Err(LuaError::RuntimeError(format!(
+			"Note has {} coordinates, expected {}",
+			note.len(),
+			system.len()
+		)));
+	}
+	Ok(())
 }
 
 // Lua scale index (1 = diatonic, 2 = chromatic, 3 = fine) to 0-based index.

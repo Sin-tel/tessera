@@ -1,4 +1,4 @@
-//! Tunings: sizes in cents for the generators of a temperament.
+//! Tunings: sizes in semitones for the generators of a temperament.
 
 use diophantine::Matrix;
 
@@ -32,7 +32,7 @@ impl Tuning {
     pub fn weil_euclidean(temperament: &Temperament) -> Self {
         let subgroup = temperament.subgroup();
         let metric = weil_euclidean(subgroup);
-        let just: Vec<f64> = subgroup.log_primes().iter().map(|l| 1200.0 * l).collect();
+        let just: Vec<f64> = subgroup.log_primes().iter().map(|l| 12.0 * l).collect();
         let mapping = temperament.mapping();
 
         // M G, rank x dim.
@@ -65,28 +65,34 @@ impl Tuning {
         &self.temperament
     }
 
-    /// Cents per generator of the temperament.
+    /// Semitones per generator of the temperament.
     pub fn generators(&self) -> &[f64] {
         &self.generators
     }
 
-    pub fn pitch(&self, tempered: &[i64]) -> Result<f64, Error> {
-        if tempered.len() != self.generators.len() {
-            return Err(Error::InvalidDimensions(format!(
-                "tempered interval has {} entries, expected {}",
-                tempered.len(),
-                self.generators.len()
-            )));
-        }
-        Ok(tempered
+    /// The size in semitones of a tempered interval.
+    ///
+    /// # Panics
+    /// Panics if `tempered` does not have one entry per generator.
+    pub fn pitch(&self, tempered: &[i64]) -> f64 {
+        assert_eq!(
+            tempered.len(),
+            self.generators.len(),
+            "tempered interval must have one entry per generator"
+        );
+        tempered
             .iter()
             .zip(&self.generators)
             .map(|(&t, g)| t as f64 * g)
-            .sum())
+            .sum()
     }
 
-    pub fn pitch_interval(&self, interval: &[i64]) -> Result<f64, Error> {
-        self.pitch(&self.temperament.temper(interval)?)
+    /// The size in semitones of a just interval, once tempered.
+    ///
+    /// # Panics
+    /// Panics if `interval` does not have one entry per basis element.
+    pub fn pitch_interval(&self, interval: &[i64]) -> f64 {
+        self.pitch(&self.temperament.temper(interval))
     }
 }
 
@@ -175,7 +181,7 @@ mod tests {
         let s = Subgroup::p_limit(11);
         let t = Tuning::weil_euclidean(&Temperament::from_ji(&s).unwrap());
         for (g, l) in t.generators().iter().zip(s.log_primes()) {
-            assert!(close(*g, 1200.0 * l));
+            assert!(close(*g, 12.0 * l));
         }
     }
 
@@ -184,8 +190,8 @@ mod tests {
         let s = Subgroup::p_limit(5);
         let t = Temperament::from_commas(&[vec![-4, 4, -1]], &s).unwrap();
         let tuning = Tuning::weil_euclidean(&t);
-        assert!(close(tuning.pitch_interval(&[-4, 4, -1]).unwrap(), 0.0));
-        let fifth = tuning.pitch_interval(&[-1, 1, 0]).unwrap();
-        assert!(fifth > 695.0 && fifth < 698.0, "{fifth}");
+        assert!(close(tuning.pitch_interval(&[-4, 4, -1]), 0.0));
+        let fifth = tuning.pitch_interval(&[-1, 1, 0]);
+        assert!(fifth > 6.95 && fifth < 6.98, "{fifth}");
     }
 }

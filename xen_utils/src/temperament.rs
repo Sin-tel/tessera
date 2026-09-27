@@ -1,12 +1,9 @@
 //! Regular temperaments as integer linear maps.
 
-use diophantine::{
-    Matrix, eye, hnf, kernel_left, kernel_right, lll, saturation, solve_diophantine, transpose,
-};
+use diophantine::{Matrix, eye, hnf, kernel_left, kernel_right, lll, saturation, transpose};
 
 use crate::Error;
 use crate::primes::Subgroup;
-use crate::util::{column, first_column};
 
 /// A regular temperament: a linear map from the interval vectors of a just
 /// intonation subgroup to a free abelian group of lower rank.
@@ -158,10 +155,10 @@ impl Temperament {
 
     /// Applies the mapping to each of `intervals`, one row per interval.
     ///
-    /// # Errors
-    /// Returns [`Error::InvalidDimensions`] if any of them does not have one
-    /// entry per basis element of the subgroup.
-    pub fn temper_all(&self, intervals: &Matrix<i64>) -> Result<Matrix<i64>, Error> {
+    /// # Panics
+    /// Panics if any of them does not have one entry per basis element of the
+    /// subgroup.
+    pub fn temper_all(&self, intervals: &Matrix<i64>) -> Matrix<i64> {
         intervals
             .iter()
             .map(|interval| self.temper(interval))
@@ -171,41 +168,19 @@ impl Temperament {
     /// The tempered interval a just interval maps to: how many of each
     /// generator it is.
     ///
-    /// # Errors
-    /// Returns [`Error::InvalidDimensions`] if `interval` does not have one
-    /// entry per basis element of the subgroup.
-    pub fn temper(&self, interval: &[i64]) -> Result<Vec<i64>, Error> {
-        if interval.len() != self.dim() {
-            return Err(Error::InvalidDimensions(format!(
-                "interval has {} entries, expected {}",
-                interval.len(),
-                self.dim()
-            )));
-        }
-        Ok(self
-            .mapping
+    /// # Panics
+    /// Panics if `interval` does not have one entry per basis element of the
+    /// subgroup.
+    pub fn temper(&self, interval: &[i64]) -> Vec<i64> {
+        assert_eq!(
+            interval.len(),
+            self.dim(),
+            "interval must have one entry per basis element"
+        );
+        self.mapping
             .iter()
             .map(|row| row.iter().zip(interval).map(|(a, b)| a * b).sum())
-            .collect())
-    }
-
-    /// Some just interval that tempers to `tempered`: an arbitrary one of the
-    /// many, not simplified. [`Simplifier`](crate::Simplifier) finds the
-    /// simplest.
-    ///
-    /// # Errors
-    /// Returns [`Error::InvalidDimensions`] if `tempered` does not have one
-    /// entry per generator.
-    pub fn preimage(&self, tempered: &[i64]) -> Result<Vec<i64>, Error> {
-        if tempered.len() != self.rank() {
-            return Err(Error::InvalidDimensions(format!(
-                "tempered interval has {} entries, expected {}",
-                tempered.len(),
-                self.rank()
-            )));
-        }
-        let solution = solve_diophantine(&self.mapping, &column(tempered))?;
-        Ok(first_column(&solution))
+            .collect()
     }
 }
 
@@ -257,10 +232,10 @@ mod tests {
         assert_eq!(commas.len(), 2);
         for comma in &commas {
             // Every returned comma is tempered out, and is an ascending interval.
-            assert_eq!(t.temper(comma).unwrap(), vec![0]);
-            assert!(s.to_cents(comma) > 0.0);
+            assert_eq!(t.temper(comma), vec![0]);
+            assert!(s.to_semitones(comma) > 0.0);
             // Reduction should find commas far smaller than an octave.
-            assert!(s.to_cents(comma) < 100.0);
+            assert!(s.to_semitones(comma) < 1.0);
         }
     }
 
@@ -291,7 +266,7 @@ mod tests {
         // Tempering out 81/80 leaves rank 2 meantone.
         let t = Temperament::from_commas(&[vec![-4, 4, -1]], &s).unwrap();
         assert_eq!(t.rank(), 2);
-        assert_eq!(t.temper(&[-4, 4, -1]).unwrap(), vec![0, 0]);
+        assert_eq!(t.temper(&[-4, 4, -1]), vec![0, 0]);
     }
 
     #[test]
