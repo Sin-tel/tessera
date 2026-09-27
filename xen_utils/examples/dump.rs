@@ -70,10 +70,8 @@ fn show(name: &str, t: &Temperament) {
             .collect();
         let spelling: Vec<String> = (2..subgroup.dim())
             .map(|index| {
-                let mut harmonic = vec![0i64; subgroup.dim()];
-                harmonic[index] = 1;
-                harmonic[0] = -(subgroup.to_cents(&harmonic) / 1200.0).floor() as i64;
-                let coordinates = n.spell_interval(&harmonic).unwrap();
+                let harmonic = subgroup.reduced_prime(index);
+                let coordinates = n.from_tempered(&t.temper(&harmonic));
                 let marks: i64 = coordinates[2..].iter().map(|c| c.abs()).sum();
                 format!(
                     "{}={} ({marks})",

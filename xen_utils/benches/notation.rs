@@ -8,7 +8,7 @@
 use std::hint::black_box;
 
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
-use xen_utils::{Notation, Simplifier, Subgroup, Temperament};
+use xen_utils::{Notation, Subgroup, Temperament};
 
 const CASES: [(i64, &str); 3] = [
     (41, "2.3.5.7.11"),
@@ -20,7 +20,6 @@ struct Case {
     name: String,
     temperament: Temperament,
     notation: Notation,
-    simplifier: Simplifier,
     /// Every step of the temperament.
     tempered: Vec<Vec<i64>>,
     /// The best spelling of each step.
@@ -36,21 +35,14 @@ fn cases() -> Vec<Case> {
             let subgroup: Subgroup = subgroup.parse().unwrap();
             let temperament = Temperament::equal(divisions, &subgroup).unwrap();
             let notation = Notation::from_temperament(&temperament).unwrap();
-            let simplifier = Simplifier::new(&temperament);
             let tempered: Vec<Vec<i64>> = (0..divisions).map(|step| vec![step]).collect();
-            let spellings: Vec<Vec<i64>> = tempered
-                .iter()
-                .map(|t| notation.spell(t).unwrap())
-                .collect();
-            let intervals = spellings
-                .iter()
-                .map(|s| notation.to_interval(s).unwrap())
-                .collect();
+            let spellings: Vec<Vec<i64>> =
+                tempered.iter().map(|t| notation.from_tempered(t)).collect();
+            let intervals = spellings.iter().map(|s| notation.to_interval(s)).collect();
             Case {
                 name: format!("{divisions}et {subgroup}"),
                 temperament,
                 notation,
-                simplifier,
                 tempered,
                 spellings,
                 intervals,
@@ -62,13 +54,13 @@ fn cases() -> Vec<Case> {
 fn bench(c: &mut Criterion) {
     let cases = cases();
 
-    let mut group = c.benchmark_group("Notation::spell");
+    let mut group = c.benchmark_group("Notation::from_tempered");
     for case in &cases {
         group.throughput(Throughput::Elements(case.tempered.len() as u64));
         group.bench_with_input(BenchmarkId::from_parameter(&case.name), case, |b, case| {
             b.iter(|| {
                 for t in &case.tempered {
-                    black_box(case.notation.spell(black_box(t)).unwrap());
+                    black_box(case.notation.from_tempered(black_box(t)));
                 }
             });
         });
@@ -77,24 +69,24 @@ fn bench(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("Notation::spellings(4)");
     for case in &cases {
-        group.throughput(Throughput::Elements(case.tempered.len() as u64));
+        group.throughput(Throughput::Elements(case.spellings.len() as u64));
         group.bench_with_input(BenchmarkId::from_parameter(&case.name), case, |b, case| {
             b.iter(|| {
-                for t in &case.tempered {
-                    black_box(case.notation.spellings(black_box(t), 4).unwrap());
+                for s in &case.spellings {
+                    black_box(case.notation.spellings(black_box(s), 4));
                 }
             });
         });
     }
     group.finish();
 
-    let mut group = c.benchmark_group("Notation::spell_interval");
+    let mut group = c.benchmark_group("Notation::from_interval");
     for case in &cases {
         group.throughput(Throughput::Elements(case.intervals.len() as u64));
         group.bench_with_input(BenchmarkId::from_parameter(&case.name), case, |b, case| {
             b.iter(|| {
                 for i in &case.intervals {
-                    black_box(case.notation.spell_interval(black_box(i)).unwrap());
+                    black_box(case.notation.from_interval(black_box(i)));
                 }
             });
         });
@@ -107,7 +99,7 @@ fn bench(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(&case.name), case, |b, case| {
             b.iter(|| {
                 for s in &case.spellings {
-                    black_box(case.notation.to_interval(black_box(s)).unwrap());
+                    black_box(case.notation.to_interval(black_box(s)));
                 }
             });
         });
@@ -120,33 +112,33 @@ fn bench(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(&case.name), case, |b, case| {
             b.iter(|| {
                 for s in &case.spellings {
-                    black_box(case.notation.temper(black_box(s)).unwrap());
+                    black_box(case.notation.to_tempered(black_box(s)));
                 }
             });
         });
     }
     group.finish();
 
-    let mut group = c.benchmark_group("Simplifier::simplify");
+    let mut group = c.benchmark_group("Notation::simplify");
     for case in &cases {
-        group.throughput(Throughput::Elements(case.tempered.len() as u64));
+        group.throughput(Throughput::Elements(case.spellings.len() as u64));
         group.bench_with_input(BenchmarkId::from_parameter(&case.name), case, |b, case| {
             b.iter(|| {
-                for t in &case.tempered {
-                    black_box(case.simplifier.simplify(black_box(t)).unwrap());
+                for s in &case.spellings {
+                    black_box(case.notation.simplify(black_box(s)));
                 }
             });
         });
     }
     group.finish();
 
-    let mut group = c.benchmark_group("Simplifier::simplifications(8)");
+    let mut group = c.benchmark_group("Notation::simplifications(8)");
     for case in &cases {
-        group.throughput(Throughput::Elements(case.tempered.len() as u64));
+        group.throughput(Throughput::Elements(case.spellings.len() as u64));
         group.bench_with_input(BenchmarkId::from_parameter(&case.name), case, |b, case| {
             b.iter(|| {
-                for t in &case.tempered {
-                    black_box(case.simplifier.simplifications(black_box(t), 8).unwrap());
+                for s in &case.spellings {
+                    black_box(case.notation.simplifications(black_box(s), 8));
                 }
             });
         });
