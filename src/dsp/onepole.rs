@@ -59,7 +59,7 @@ impl OnePoleCoefs {
 		}
 	}
 
-	fn max_diff(&self, other: &Self) -> f32 {
+	pub fn max_diff(&self, other: &Self) -> f32 {
 		(self.g - other.g)
 			.abs()
 			.max((self.mx - other.mx).abs())

@@ -1,5 +1,5 @@
 use crate::dsp::delayline::DelayLine;
-use crate::dsp::onepole::OnePole;
+use crate::dsp::onepole::{OnePoleCoefs, OnePoleState};
 use crate::dsp::simper::Filter;
 use crate::dsp::smooth::Smooth;
 use crate::dsp::*;
@@ -77,6 +77,33 @@ const FDN_LEN: f32 = 9000.;
 const INPUT_CUTOFF: f32 = 15_000.0;
 const SHELF_CUTOFF: f32 = 300.0;
 
+// FDN loop coefficients, interpolated per sample across a block
+#[derive(Debug, Clone, Copy, Default)]
+struct FdnCoefs {
+	gain: [f32; N],
+	damp: OnePoleCoefs,
+	shelf: [OnePoleCoefs; N],
+}
+
+impl FdnCoefs {
+	fn lerp(&self, other: &Self, a: f32) -> Self {
+		Self {
+			gain: std::array::from_fn(|i| lerp(self.gain[i], other.gain[i], a)),
+			damp: self.damp.lerp(&other.damp, a),
+			shelf: std::array::from_fn(|i| self.shelf[i].lerp(&other.shelf[i], a)),
+		}
+	}
+
+	fn max_diff(&self, other: &Self) -> f32 {
+		let mut d = self.damp.max_diff(&other.damp);
+		for i in 0..N {
+			d = d.max((self.gain[i] - other.gain[i]).abs());
+			d = d.max(self.shelf[i].max_diff(&other.shelf[i]));
+		}
+		d
+	}
+}
+
 #[derive(Debug)]
 pub struct ReverbRoom {
 	sample_rate: f32,
@@ -93,9 +120,11 @@ pub struct ReverbRoom {
 	lp2_l: Filter,
 	lp2_r: Filter,
 
-	damp: [OnePole; N],
-	shelf: [OnePole; N],
-	fb_gain: [f32; N],
+	damp: [OnePoleState; N],
+	shelf: [OnePoleState; N],
+	coefs_prev: FdnCoefs,
+	coefs_next: FdnCoefs,
+	coefs_target: FdnCoefs,
 
 	s: [f32; N],
 	s2: [f32; N],
@@ -147,13 +176,13 @@ impl ReverbRoom {
 	// has to be recomputed whenever either changes.
 	fn update_feedback(&mut self) {
 		let stretch = fdn_stretch(self.size.target());
+		let t = &mut self.coefs_target;
+		t.damp = OnePoleCoefs::lowpass(INPUT_CUTOFF - 10_000.0 * self.dark, self.sample_rate);
 		for i in 0..N {
 			let len = LEN3[i] * stretch * self.sr_scale;
 			let gain = (-60.0 * len) / (self.decay * self.sample_rate);
-			self.fb_gain[i] = from_db(gain);
-
-			self.damp[i].set_lowpass(INPUT_CUTOFF - 10_000.0 * self.dark);
-			self.shelf[i].set_lowshelf(SHELF_CUTOFF, gain * 0.5);
+			t.gain[i] = from_db(gain);
+			t.shelf[i] = OnePoleCoefs::lowshelf(SHELF_CUTOFF, gain * 0.5, self.sample_rate);
 		}
 	}
 }
@@ -188,9 +217,11 @@ impl Effect for ReverbRoom {
 			lp2_l,
 			lp2_r,
 
-			damp: std::array::from_fn(|_| OnePole::new(sample_rate)),
-			shelf: std::array::from_fn(|_| OnePole::new(sample_rate)),
-			fb_gain: [0.5; N],
+			damp: [OnePoleState::default(); N],
+			shelf: [OnePoleState::default(); N],
+			coefs_prev: FdnCoefs::default(),
+			coefs_next: FdnCoefs::default(),
+			coefs_target: FdnCoefs::default(),
 
 			s: [0.; N],
 			s2: [0.; N],
@@ -210,8 +241,15 @@ impl Effect for ReverbRoom {
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
+		let len = bl.len();
 
-		for (out_l, out_r) in bl.iter_mut().zip(br.iter_mut()) {
+		// ramp to the new coefficients over one block
+		self.coefs_prev = self.coefs_next;
+		self.coefs_next = self.coefs_target;
+		// skip the lerp once settled
+		let interpolate = self.coefs_prev.max_diff(&self.coefs_next) > 0.;
+
+		for (k, (out_l, out_r)) in bl.iter_mut().zip(br.iter_mut()).enumerate() {
 			let input_l = *out_l;
 			let input_r = *out_r;
 
@@ -258,11 +296,18 @@ impl Effect for ReverbRoom {
 			}
 
 			// feedback delay network
+			let coefs = if interpolate {
+				&self.coefs_prev.lerp(&self.coefs_next, (k + 1) as f32 / len as f32)
+			} else {
+				&self.coefs_next
+			};
 			for i in 0..N {
-				let mut v = self.fdn[i].go_back_int_s(tap(LEN3[i] * fdn_stretch, self.sr_scale));
-				v = self.damp[i].process(v);
-				v = self.shelf[i].process(v);
-				self.s2[i] = self.fb_gain[i] * v;
+				self.s2[i] = self.fdn[i].go_back_int_s(tap(LEN3[i] * fdn_stretch, self.sr_scale));
+			}
+			for i in 0..N {
+				let v = self.damp[i].process(&coefs.damp, self.s2[i]);
+				let v = self.shelf[i].process(&coefs.shelf[i], v);
+				self.s2[i] = coefs.gain[i] * v;
 			}
 			hadamard(&mut self.s2);
 
@@ -298,14 +343,10 @@ impl Effect for ReverbRoom {
 			f.reset_state();
 			f.immediate();
 		}
-		for f in &mut self.damp {
-			f.reset_state();
-			f.immediate();
-		}
-		for f in &mut self.shelf {
-			f.reset_state();
-			f.immediate();
-		}
+		self.damp = [OnePoleState::default(); N];
+		self.shelf = [OnePoleState::default(); N];
+		self.coefs_next = self.coefs_target;
+		self.coefs_prev = self.coefs_target;
 
 		self.s = [0.; N];
 		self.s2 = [0.; N];
