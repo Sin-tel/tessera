@@ -12,6 +12,7 @@ mod pan;
 mod phaser;
 mod reverb;
 mod reverb_room;
+mod rotary;
 mod testfilter;
 mod tilt;
 mod tremolo;
@@ -23,8 +24,8 @@ use crate::effect;
 use crate::effect::{
 	chorus::Chorus, compressor::Compressor, convolve::Convolve, decimate::Decimate, delay::Delay,
 	delay_tape::DelayTape, drive::Drive, equalizer::Equalizer, gain::Gain, limiter::Limiter,
-	pan::Pan, phaser::Phaser, reverb::Reverb, reverb_room::ReverbRoom, testfilter::TestFilter,
-	tilt::Tilt, tremolo::Tremolo, wide::Wide,
+	pan::Pan, phaser::Phaser, reverb::Reverb, reverb_room::ReverbRoom, rotary::Rotary,
+	testfilter::TestFilter, tilt::Tilt, tremolo::Tremolo, wide::Wide,
 };
 use crate::log::log_warn;
 use crate::meters::MeterHandle;
@@ -46,6 +47,7 @@ pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
 		"phaser" => Box::new(Phaser::new(sample_rate)),
 		"reverb" => Box::new(Reverb::new(sample_rate)),
 		"reverb_room" => Box::new(ReverbRoom::new(sample_rate)),
+		"rotary" => Box::new(Rotary::new(sample_rate)),
 		"delay_tape" => Box::new(DelayTape::new(sample_rate)),
 		"testfilter" => Box::new(TestFilter::new(sample_rate)),
 		"tilt" => Box::new(Tilt::new(sample_rate)),
