@@ -5,6 +5,7 @@ use crate::dsp::{BUTTERWORTH_4_Q1, BUTTERWORTH_4_Q2};
 use crate::effect::Effect;
 use crate::log::log_warn;
 use crate::worker::RequestData;
+use fastrand::Rng;
 use halfband::iir::{Downsampler8, Upsampler8}; // Assuming these structs exist
 
 #[derive(Debug)]
@@ -50,7 +51,14 @@ impl Track {
 	// Resampling logic
 	// Instead of doing a naive S&H, do linear interpolation when an integer boundary is crossed
 	#[inline]
-	fn tick(&mut self, x: f32, target_rate: f32, jitter_amount: f32, inv_2sr: f32) -> f32 {
+	fn tick(
+		&mut self,
+		x: f32,
+		target_rate: f32,
+		jitter_amount: f32,
+		inv_2sr: f32,
+		rng: &mut Rng,
+	) -> f32 {
 		let step = target_rate * inv_2sr * self.jitter_val;
 
 		self.accum += step;
@@ -72,7 +80,7 @@ impl Track {
 			self.y = next_y;
 
 			if jitter_amount > 0.0 {
-				let noise = fastrand::f32() - 0.5;
+				let noise = rng.f32() - 0.5;
 				self.jitter_val = 1.0 + (noise * jitter_amount);
 			} else {
 				self.jitter_val = 1.0;
@@ -101,6 +109,8 @@ pub struct Decimate {
 	// parameters
 	jitter: f32,
 	filter: f32,
+
+	rng: Rng,
 }
 
 impl Effect for Decimate {
@@ -110,6 +120,7 @@ impl Effect for Decimate {
 			inv_2sr: 1.0 / (2.0 * sample_rate),
 			jitter: 0.0,
 			filter: 0.0,
+			rng: Rng::with_seed(0),
 		}
 	}
 
@@ -129,8 +140,8 @@ impl Effect for Decimate {
 				}
 
 				let [u1, u2] = track.upsampler.process(s);
-				let t1 = track.tick(u1, rate, self.jitter, self.inv_2sr);
-				let t2 = track.tick(u2, rate, self.jitter, self.inv_2sr);
+				let t1 = track.tick(u1, rate, self.jitter, self.inv_2sr, &mut self.rng);
+				let t2 = track.tick(u2, rate, self.jitter, self.inv_2sr, &mut self.rng);
 				let mut out = track.downsampler.process(t1, t2);
 
 				out = track.post_filters[0].process(out);
@@ -142,6 +153,9 @@ impl Effect for Decimate {
 	}
 
 	fn flush(&mut self) {
+		// Reseed from the global generator, which Render::flush just reset.
+		self.rng.seed(fastrand::u64(..));
+
 		let filter = self.filter;
 		for track in &mut self.tracks {
 			track.upsampler.clear();
