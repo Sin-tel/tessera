@@ -19,7 +19,12 @@ use crate::worker::ResponseData;
 use std::any::Any;
 
 // list of instruments
-pub fn new(sample_rate: f32, name: &str) -> Box<dyn Instrument + Send> {
+// Sets the initial parameters before flushing, returns any data the worker needs to load.
+pub fn new(
+	sample_rate: f32,
+	name: &str,
+	params: &[f32],
+) -> (Box<dyn Instrument + Send>, Vec<RequestData>) {
 	let mut new: Box<dyn Instrument + Send> = match name {
 		"analog" => Box::new(Analog::new(sample_rate)),
 		"epiano" => Box::new(Epiano::new(sample_rate)),
@@ -36,8 +41,13 @@ pub fn new(sample_rate: f32, name: &str) -> Box<dyn Instrument + Send> {
 			Box::new(Sine::new(sample_rate))
 		},
 	};
+	let requests = params
+		.iter()
+		.enumerate()
+		.filter_map(|(i, &v)| new.set_parameter(i, v))
+		.collect();
 	new.flush();
-	new
+	(new, requests)
 }
 
 pub trait Instrument {

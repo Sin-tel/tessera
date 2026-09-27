@@ -115,6 +115,15 @@ function util.length(x, y)
 	return math.sqrt(x ^ 2 + y ^ 2)
 end
 
+-- parameter value as sent to the backend
+function util.to_float(x)
+	if type(x) == "boolean" then
+		return x and 1 or 0
+	else
+		return x
+	end
+end
+
 function util.from_dB(x)
 	return 10.0 ^ (x / 20.0)
 end

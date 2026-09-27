@@ -1,14 +1,14 @@
 use crate::audio::{MAX_BUF_SIZE, RNG_SEED};
 use crate::channel::Channel;
 use crate::context::{AudioMessage, LuaMessage};
-use crate::effect::*;
+use crate::effect::{self, *};
 use crate::instrument;
 use crate::log::*;
 use crate::meters::MeterHandle;
 use crate::metronome::Metronome;
 use crate::voice_manager::VoiceManager;
 use crate::vst3::{Vst3Processor, Vst3State};
-use crate::worker::{Request, Response};
+use crate::worker::{Request, RequestData, Response};
 use ringbuf::traits::*;
 use ringbuf::{HeapCons, HeapProd};
 use std::sync::mpsc::{Receiver, SyncSender};
@@ -61,19 +61,30 @@ impl Render {
 		self.channels.insert(channel_index, channel);
 	}
 
+	fn send_request(&mut self, channel_index: usize, device_index: usize, data: RequestData) {
+		let request = Request::LoadRequest { channel_index, device_index, data };
+		if let Err(e) = self.worker_tx.try_send(request) {
+			log_error!("{e}");
+		}
+	}
+
 	pub fn insert_instrument(
 		&mut self,
 		channel_index: usize,
 		instrument_name: &str,
+		params: &[f32],
 		meter_handle_instrument: MeterHandle,
 	) {
 		assert!(channel_index > 0, "Trying to insert instrument on master channel");
-		let instrument = instrument::new(self.sample_rate, instrument_name);
+		let (instrument, requests) = instrument::new(self.sample_rate, instrument_name, params);
 		let voice_manager =
 			VoiceManager::new(self.sample_rate, instrument, meter_handle_instrument);
 
 		let ch = &mut self.channels[channel_index];
 		ch.instrument = Some(voice_manager);
+		for data in requests {
+			self.send_request(channel_index, 0, data);
+		}
 	}
 
 	pub fn vst_set_processor(&mut self, channel_index: usize, processor: Vst3Processor) {
@@ -103,11 +114,16 @@ impl Render {
 		channel_index: usize,
 		effect_index: usize,
 		name: &str,
+		params: &[f32],
 		meter_handle: MeterHandle,
 	) {
+		let (effect, requests) = effect::new(self.sample_rate, name, params);
 		let ch = &mut self.channels[channel_index];
 		ch.effects
-			.insert(effect_index, Bypass::new(self.sample_rate, name, meter_handle));
+			.insert(effect_index, Bypass::new(self.sample_rate, effect, meter_handle));
+		for data in requests {
+			self.send_request(channel_index, effect_index + 1, data);
+		}
 	}
 
 	pub fn remove_effect(&mut self, channel_index: usize, effect_index: usize) {
@@ -209,11 +225,7 @@ impl Render {
 					};
 
 					if let Some(data) = request_data {
-						let request = Request::LoadRequest { channel_index, device_index, data };
-						// Handle request
-						if let Err(e) = self.worker_tx.try_send(request) {
-							log_error!("{e}");
-						}
+						self.send_request(channel_index, device_index, data);
 					}
 				},
 				ChannelMute(ch_index, mute) => self.channels[ch_index].set_mute(mute),

@@ -15,7 +15,7 @@ local function valid_index(x, default)
 end
 
 -- options is a reference to an entry in device_list
-function Device.new(data, options, meter_id)
+function Device.new(data, options)
 	local self = setmetatable({}, Device)
 
 	self.number = options.number
@@ -24,7 +24,7 @@ function Device.new(data, options, meter_id)
 	self.data = data
 	self.state = data.state
 
-	self.meter_id = meter_id
+	self.meter_id = nil
 	self.meter_l = 0.0
 	self.meter_r = 0.0
 
@@ -148,6 +148,16 @@ function Device:update(ui, index, w)
 	-- detect hit anywhere inside of the device
 	local end_y = ui.layout.y
 	return ui:hit_area(start_x, start_y, w, end_y - start_y) and mouse.button_released
+end
+
+-- values for inserting the device in the backend, marked as sent
+function Device:initial_parameters()
+	local params = {}
+	for i = 1, self.n_parameters do
+		params[i] = util.to_float(self.state[i])
+		self.state_old[i] = self.state[i]
+	end
+	return params
 end
 
 function Device:reset()
