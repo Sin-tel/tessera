@@ -178,17 +178,6 @@ impl TuningSystem {
 			.collect()
 	}
 
-	pub fn simple_spellings(&self, note: &[i64]) -> Vec<Vec<i64>> {
-		// TODO: prefer the literal spelling, like Notation::from_interval.
-		let spellings = self.notation.spellings(note, 3);
-
-		let max_cost = spelling_cost(&spellings[0]) + 2;
-		spellings
-			.into_iter()
-			.filter(|s| spelling_cost(s) <= max_cost)
-			.collect()
-	}
-
 	// One step of an equal temperament, spelled in the notation.
 	// None if not available.
 	pub fn step(&self) -> Option<Vec<i64>> {
@@ -301,12 +290,13 @@ impl TuningSystem {
 
 	// Linear map that takes every note of the scale to its index, if there is one.
 	//
-	// This is the patent val for the size of the scale, applied to the just reading of
-	// each notation coordinate. It exists when the scale is a constant structure that
-	// the val agrees with.
+	// Each prime is rounded to the nearest step of the equal division of the octave with
+	// as many steps as the scale has notes, and each notation coordinate is read through
+	// that as its just interval. It exists when the scale is a constant structure that
+	// this rounding agrees with.
 	fn projection(&self, notes: &[Vec<i64>]) -> Option<Vec<i64>> {
 		let n = notes.len() as f64;
-		let val: Vec<i64> = self
+		let steps: Vec<i64> = self
 			.notation
 			.subgroup()
 			.log_primes()
@@ -317,7 +307,7 @@ impl TuningSystem {
 			.notation
 			.generators()
 			.iter()
-			.map(|generator| dot(generator, &val))
+			.map(|generator| dot(generator, &steps))
 			.collect();
 
 		let consistent = notes.iter().enumerate().all(|(i, note)| dot(&map, note) == i as i64);
