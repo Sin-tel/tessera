@@ -13,18 +13,18 @@ pub const LLL_DELTA: f64 = 0.99;
 /// answers with the best it has found.
 pub const MAX_SEARCH_NODES: u64 = 100_000;
 
-/// The combination of `generators` given by `counts`, as a vector of `dim`
-/// entries.
-pub fn combination(counts: &[i64], generators: &Matrix<i64>, dim: usize) -> Vec<i64> {
-    (0..dim)
-        .map(|entry| {
-            counts
-                .iter()
-                .zip(generators)
-                .map(|(count, generator)| count * generator[entry])
-                .sum()
-        })
+/// The row vector `vector` times `matrix`, which has `cols` columns: the sum
+/// of the rows of `matrix`, each counted `vector` times. `cols` is given
+/// since `matrix` may have no rows.
+pub fn vec_mat(vector: &[i64], matrix: &Matrix<i64>, cols: usize) -> Vec<i64> {
+    (0..cols)
+        .map(|col| vector.iter().zip(matrix).map(|(v, row)| v * row[col]).sum())
         .collect()
+}
+
+/// The dot product of `one` and `other`.
+pub fn dot(one: &[i64], other: &[i64]) -> i64 {
+    one.iter().zip(other).map(|(a, b)| a * b).sum()
 }
 
 /// `one` less `other`, entry by entry.
@@ -58,11 +58,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn combinations_and_subtraction() {
+    fn products_and_subtraction() {
         let generators = vec![vec![1, 0, 0], vec![-1, 1, 0]];
         // Two octaves and three fifths.
-        assert_eq!(combination(&[2, 3], &generators, 3), vec![-1, 3, 0]);
-        assert_eq!(combination(&[0, 0], &generators, 3), vec![0, 0, 0]);
+        assert_eq!(vec_mat(&[2, 3], &generators, 3), vec![-1, 3, 0]);
+        assert_eq!(vec_mat(&[0, 0], &generators, 3), vec![0, 0, 0]);
         assert_eq!(subtract(&[1, 2, 3], &[1, 0, -3]), vec![0, 2, 6]);
     }
 
