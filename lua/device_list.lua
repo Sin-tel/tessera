@@ -271,6 +271,16 @@ device_list.effects.tremolo = {
 	},
 }
 
+device_list.effects.rotary = {
+	display_name = "Rotary",
+	parameters = {
+		{ "Dry/Wet", "slider", { default = 1.0 } },
+		{ "Rate", "slider", { default = 1.0, min = 0.40, max = 8.0, t = "log" } },
+		{ "Depth", "slider", { default = 0.5 } },
+		{ "Width", "slider", { default = 0.8 } },
+	},
+}
+
 device_list.effects.phaser = {
 	display_name = "Phaser",
 	parameters = {

@@ -51,7 +51,7 @@ impl OnePoleCoefs {
 		self.mx + self.my
 	}
 
-	fn lerp(&self, other: &Self, a: f32) -> Self {
+	pub fn lerp(&self, other: &Self, a: f32) -> Self {
 		Self {
 			g: lerp(self.g, other.g, a),
 			mx: lerp(self.mx, other.mx, a),
