@@ -139,17 +139,9 @@ fn spelling(notation: &Notation) -> String {
     let nominal = notation.nominal_spellings();
     let mut cell = format!("[{}]", notation.len());
     for (index, on_nominal) in (2..subgroup.dim()).zip(nominal) {
-        let harmonic = octave_reduce(subgroup, index);
+        let harmonic = subgroup.reduced_prime(index);
         let (num, den) = subgroup.to_ratio(&harmonic).expect("a single prime fits");
-        let spelled = notation
-            .spell_interval(&harmonic)
-            .expect("built over subgroup");
-        // The nominal spelling is of the prime itself, so bring it down by the
-        // same octaves the harmonic was.
-        let on_nominal = on_nominal.map(|mut coordinates| {
-            coordinates[0] += harmonic[0];
-            coordinates
-        });
+        let spelled = notation.from_tempered(&notation.temperament().temper(&harmonic));
         let written = match &on_nominal {
             Some(coordinates) => notation.note(coordinates),
             None => "-".to_string(),
@@ -160,14 +152,6 @@ fn spelling(notation: &Notation) -> String {
         }
     }
     cell
-}
-
-/// The prime at `index`, brought into the octave above the unison.
-fn octave_reduce(subgroup: &Subgroup, index: usize) -> Vec<i64> {
-    let mut interval = vec![0i64; subgroup.dim()];
-    interval[index] = 1;
-    interval[0] = -(subgroup.to_cents(&interval) / 1200.0).floor() as i64;
-    interval
 }
 
 /// Prints rows padded to a common width, with a rule under the header.

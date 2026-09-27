@@ -103,7 +103,7 @@ fn check(name: &str, t: &Temperament) -> usize {
             ));
         }
         for enharmonic in n.enharmonics() {
-            if n.temper(enharmonic).unwrap().iter().any(|&x| x != 0) {
+            if n.to_tempered(enharmonic).iter().any(|&x| x != 0) {
                 fail(format!(
                     "option {index}: the enharmonic {enharmonic:?} is not worth nothing"
                 ));
@@ -121,8 +121,8 @@ fn check(name: &str, t: &Temperament) -> usize {
         for prime in 0..n.dim() {
             let mut interval = vec![0i64; n.dim()];
             interval[prime] = 1;
-            let spelling = n.spell_interval(&interval).unwrap();
-            if n.temper(&spelling).unwrap() != t.temper(&interval).unwrap() {
+            let spelling = n.from_tempered(&t.temper(&interval));
+            if n.to_tempered(&spelling) != t.temper(&interval) {
                 fail(format!(
                     "option {index}: prime {prime} is spelled as another tempered interval"
                 ));

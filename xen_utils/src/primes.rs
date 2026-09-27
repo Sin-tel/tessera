@@ -135,25 +135,36 @@ impl Subgroup {
         self.basis.iter().map(|&p| f64::from(p).log2()).collect()
     }
 
-    /// The size of `interval` in cents, i.e. `1200 * log2(prod(b_i ^ e_i))`.
+    /// The prime at `index` of the basis, brought down by octaves to lie in
+    /// `[1/1, 2/1)`: `7/4` for 7, and the unison for 2 itself.
+    ///
+    /// # Panics
+    /// Panics if `index` is out of range.
+    pub fn reduced_prime(&self, index: usize) -> Vec<i64> {
+        let mut interval = vec![0i64; self.dim()];
+        interval[index] = 1;
+        interval[0] -= i64::from(self.basis[index].ilog2());
+        interval
+    }
+
+    /// The size of `interval` in semitones, i.e. `12 * log2(prod(b_i ^ e_i))`.
     ///
     /// A negative result means the interval is descending (the rational it
     /// denotes is less than 1).
     ///
     /// # Panics
     /// Panics if `interval` does not have one entry per basis element.
-    pub fn to_cents(&self, interval: &[i64]) -> f64 {
+    pub fn to_semitones(&self, interval: &[i64]) -> f64 {
         assert_eq!(
             interval.len(),
             self.dim(),
             "interval must have one entry per basis element"
         );
-        1200.0
-            * interval
-                .iter()
-                .zip(&self.basis)
-                .map(|(&e, &p)| e as f64 * f64::from(p).log2())
-                .sum::<f64>()
+        12.0 * interval
+            .iter()
+            .zip(&self.basis)
+            .map(|(&e, &p)| e as f64 * f64::from(p).log2())
+            .sum::<f64>()
     }
 
     /// `interval` if it is ascending and its inverse if it is descending, so
@@ -162,11 +173,29 @@ impl Subgroup {
     /// # Panics
     /// Panics if `interval` does not have one entry per basis element.
     pub fn ascending(&self, interval: &[i64]) -> Vec<i64> {
-        if self.to_cents(interval) < 0.0 {
+        if self.to_semitones(interval) < 0.0 {
             interval.iter().map(|exponent| -exponent).collect()
         } else {
             interval.to_vec()
         }
+    }
+
+    /// The Wilson norm of an interval: the sum of the prime factors of its
+    /// numerator and denominator, with repetition. `81/80` is `3*4 + 2*4 + 5 = 25`.
+    ///
+    /// # Panics
+    /// Panics if `interval` does not have one entry per basis element.
+    pub fn sopfr(&self, interval: &[i64]) -> i64 {
+        assert_eq!(
+            interval.len(),
+            self.dim(),
+            "interval must have one entry per basis element"
+        );
+        interval
+            .iter()
+            .zip(&self.basis)
+            .map(|(&exponent, &prime)| i64::from(prime) * exponent.abs())
+            .sum()
     }
 
     /// The diagonal weight matrix on interval-vector coordinates, under
@@ -331,21 +360,21 @@ mod tests {
     }
 
     #[test]
-    fn cents_basic() {
+    fn semitones_basic() {
         let s = Subgroup::p_limit(5);
         // Unison.
-        assert_eq!(s.to_cents(&[0, 0, 0]), 0.0);
+        assert_eq!(s.to_semitones(&[0, 0, 0]), 0.0);
         // Octave, 2/1.
-        assert_eq!(s.to_cents(&[1, 0, 0]), 1200.0);
+        assert_eq!(s.to_semitones(&[1, 0, 0]), 12.0);
         // Two octaves down, 1/4.
-        assert_eq!(s.to_cents(&[-2, 0, 0]), -2400.0);
+        assert_eq!(s.to_semitones(&[-2, 0, 0]), -24.0);
         // Just fifth, 3/2.
-        assert!((s.to_cents(&[-1, 1, 0]) - 701.955).abs() < 1e-3);
+        assert!((s.to_semitones(&[-1, 1, 0]) - 7.01955).abs() < 1e-5);
         // Syntonic comma, 81/80.
-        assert!((s.to_cents(&[-4, 4, -1]) - 21.506).abs() < 1e-3);
+        assert!((s.to_semitones(&[-4, 4, -1]) - 0.21506).abs() < 1e-5);
         // 7/4 over 2.3.7, where the basis is not a prime limit.
         let s = Subgroup::new(vec![2, 3, 7]).unwrap();
-        assert!((s.to_cents(&[-2, 0, 1]) - 968.826).abs() < 1e-3);
+        assert!((s.to_semitones(&[-2, 0, 1]) - 9.68826).abs() < 1e-5);
     }
 
     #[test]
@@ -378,6 +407,15 @@ mod tests {
             );
         }
         assert!(matches!(s.parse_ratio("7/4"), Err(Error::NotInSubgroup(_))));
+    }
+
+    #[test]
+    fn reduced_primes() {
+        let s: Subgroup = "2.3.7.11".parse().unwrap();
+        assert_eq!(s.to_ratio(&s.reduced_prime(0)).unwrap(), (1, 1));
+        assert_eq!(s.to_ratio(&s.reduced_prime(1)).unwrap(), (3, 2));
+        assert_eq!(s.to_ratio(&s.reduced_prime(2)).unwrap(), (7, 4));
+        assert_eq!(s.to_ratio(&s.reduced_prime(3)).unwrap(), (11, 8));
     }
 
     #[test]
