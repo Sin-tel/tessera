@@ -9,7 +9,7 @@ use crate::notation_options::NotationOptions;
 use crate::primes::Subgroup;
 use crate::temperament::Temperament;
 use crate::tuning::Tuning;
-use crate::util::{LLL_DELTA, MAX_SEARCH_NODES, column, combination, first_column, subtract};
+use crate::util::{LLL_DELTA, MAX_SEARCH_NODES, column, dot, first_column, subtract, vec_mat};
 
 /// The nominals, in order of the fifth chain.
 /// Nominals for note at `f` fifths spells `NOMINALS[(f + 1) mod 7]`.
@@ -41,9 +41,6 @@ const ACCIDENTAL_SYMBOLS: [(char, char); 11] = [
 /// 12*log2(sqrt(2187/2048))
 const MAX_ACCIDENTAL: f64 = 0.568_425_030_288_555_2;
 
-/// How far down the ranking [`Notation::from_interval`] looks for a literal spelling.
-pub const LITERAL_RANK: usize = 4;
-
 /// A notation system: a set of symbols, and what each one maps to in the temperament.
 ///
 /// Notation coordinates are counts of notational generators. The first two are
@@ -69,6 +66,38 @@ pub struct Notation {
     pitches: Vec<f64>,
     /// The reduced comma basis, see [`Notation::commas`]. Built on first use.
     commas: OnceLock<Matrix<i64>>,
+    /// Spelling on the degree just intonation gives, see [`Structure`].
+    /// Built on first use.
+    diatonic: OnceLock<Structure>,
+    /// Spelling on the letter and with the sharps just intonation gives, see
+    /// [`Structure`]. Built on first use.
+    diatonic_chromatic: OnceLock<Structure>,
+}
+
+/// The diatonic degree of the octave and fifth coordinates: how many letters
+/// up they go. Every accidental has degree zero.
+const DIATONIC: (i64, i64) = (7, 4);
+
+/// The octave and fifth coordinates in steps of 12 equal: the chromatic
+/// semitones they span. Alone this cannot tell `D#` from `Eb`, but together
+/// with [`DIATONIC`] it fixes both coordinates, since `7 * 7 - 4 * 12 = 1`.
+const CHROMATIC: (i64, i64) = (12, 7);
+
+/// A search for the cheapest spelling of a just interval that keeps some
+/// structure of how just intonation writes it: the value of each of a few
+/// linear maps on the octave and fifth coordinates, such as [`DIATONIC`].
+/// Only what the maps forget is free.
+#[derive(Debug, Clone)]
+struct Structure {
+    /// Each map read on just intervals, one row per map: its value on how just
+    /// intonation writes the interval.
+    just: Matrix<i64>,
+    /// The images with each map appended, so that one solve finds a spelling
+    /// of the right tempered interval with the right values. Transposed, as
+    /// the solver takes it.
+    augmented: Matrix<i64>,
+    /// The enharmonics every map sends to zero, reduced for the search.
+    enharmonics: Matrix<i64>,
 }
 
 impl Notation {
@@ -227,6 +256,8 @@ impl Notation {
             tuning,
             pitches,
             commas: OnceLock::new(),
+            diatonic: OnceLock::new(),
+            diatonic_chromatic: OnceLock::new(),
         })
     }
 
@@ -329,7 +360,7 @@ impl Notation {
     /// Panics if `spelling` does not have one entry per notation coordinate.
     pub fn to_tempered(&self, spelling: &[i64]) -> Vec<i64> {
         self.check(spelling);
-        combination(spelling, &self.images, self.temperament.rank())
+        vec_mat(spelling, &self.images, self.temperament.rank())
     }
 
     /// The just interval a spelling reads as, taking each accidental as the
@@ -343,7 +374,7 @@ impl Notation {
     /// Panics if `spelling` does not have one entry per notation coordinate.
     pub fn to_interval(&self, spelling: &[i64]) -> Vec<i64> {
         self.check(spelling);
-        combination(spelling, &self.generators, self.dim())
+        vec_mat(spelling, &self.generators, self.dim())
     }
 
     /// The best way to write the note `spelling` stands for: the first of
@@ -393,23 +424,100 @@ impl Notation {
             .swap_remove(0)
     }
 
-    /// A spelling of a just interval: the literal one, where the notation has
-    /// one among the [`LITERAL_RANK`] best, and otherwise the best spelling of
-    /// the tempered interval it maps to.
+    /// How a notation writes a just interval, as close to how just intonation
+    /// writes it as the notation allows:
     ///
-    /// The literal spelling reads back as `interval` itself, so this picks
-    /// `^Eb` for `6/5` in 41et rather than `D#`.
+    /// 1. literally, where the notation has every accidental it needs;
+    /// 2. on the letter and with the sharps just intonation gives it, with the
+    ///    cheapest accidentals, so that a major third stays a major third;
+    /// 3. on the degree just intonation gives it;
+    /// 4. the best spelling of the tempered interval.
+    ///
+    /// This picks `^Eb` for `6/5` in 41et, where [`spell`](Self::spell) would
+    /// choose `D#`, and `Db` for `16/15` in 12et rather than `C#`.
     ///
     /// # Panics
     /// Panics if `interval` does not have one entry per basis element of the
     /// subgroup.
     pub fn from_interval(&self, interval: &[i64]) -> Vec<i64> {
-        let seed = self.any_spelling(&self.temperament.temper(interval));
-        let mut options = cheapest(&seed, &self.enharmonics, LITERAL_RANK).0;
-        let literal = options
+        self.literal(interval)
+            .or_else(|| self.spell_keeping(self.diatonic_chromatic(), interval))
+            .or_else(|| self.spell_keeping(self.diatonic(), interval))
+            .unwrap_or_else(|| self.from_tempered(&self.temperament.temper(interval)))
+    }
+
+    /// The spelling that reads back as `interval` itself, if the notation has
+    /// the accidentals for it. There is at most one, since the generators are
+    /// independent.
+    fn literal(&self, interval: &[i64]) -> Option<Vec<i64>> {
+        let solution = solve_diophantine(&transpose(&self.generators), &column(interval)).ok()?;
+        Some(first_column(&solution))
+    }
+
+    /// Keeps the degree only: the letter, not the sharps.
+    ///
+    /// The degree is exact rather than modulo the seven nominals: a note ten
+    /// sharps up an octave lower is not on the nominal, though its letter is.
+    fn diatonic(&self) -> &Structure {
+        self.diatonic.get_or_init(|| self.structure(&[DIATONIC]))
+    }
+
+    /// Keeps the letter and the sharps, so only the accidentals are free.
+    fn diatonic_chromatic(&self) -> &Structure {
+        self.diatonic_chromatic
+            .get_or_init(|| self.structure(&[DIATONIC, CHROMATIC]))
+    }
+
+    /// The search keeping `maps`, each a pair of weights on the octave and
+    /// fifth coordinates.
+    fn structure(&self, maps: &[(i64, i64)]) -> Structure {
+        // Where just intonation writes each prime, on the octave and the fifth.
+        let chain: Vec<(i64, i64)> = [(1, 0), (1, 1)]
+            .into_iter()
+            .chain(
+                just_nominals(self.subgroup())
+                    .iter()
+                    .map(|n| (n.octave, n.fifth)),
+            )
+            .collect();
+        let just = maps
             .iter()
-            .position(|s| combination(s, &self.generators, self.dim()) == interval);
-        options.swap_remove(literal.unwrap_or(0))
+            .map(|&(a, b)| chain.iter().map(|&(o, f)| a * o + b * f).collect())
+            .collect();
+        let augmented: Matrix<i64> = self
+            .images
+            .iter()
+            .enumerate()
+            .map(|(index, image)| {
+                let mut row = image.clone();
+                row.extend(maps.iter().map(|&(a, b)| match index {
+                    0 => a,
+                    1 => b,
+                    _ => 0,
+                }));
+                row
+            })
+            .collect();
+        let enharmonics = kernel_left(&augmented).expect("the kernel is always valid");
+        let enharmonics = lll(&enharmonics, LLL_DELTA, &self.weights).unwrap_or(enharmonics);
+        Structure {
+            just,
+            augmented: transpose(&augmented),
+            enharmonics,
+        }
+    }
+
+    /// The cheapest spelling of a just interval that keeps `structure`, or
+    /// `None` where no spelling of the tempered interval does.
+    fn spell_keeping(&self, structure: &Structure, interval: &[i64]) -> Option<Vec<i64>> {
+        let mut target = self.temperament.temper(interval);
+        target.extend(structure.just.iter().map(|row| dot(row, interval)));
+        let solution = solve_diophantine(&structure.augmented, &column(&target)).ok()?;
+        Some(
+            cheapest(&first_column(&solution), &structure.enharmonics, 1)
+                .0
+                .remove(0),
+        )
     }
 
     /// Some spelling of a tempered interval, not the best.
@@ -487,53 +595,21 @@ impl Notation {
         (simplifications, complete)
     }
 
-    /// The cheapest way to write each prime beyond 3 on its just nominal, in the
-    /// octave above the unison (see [`Subgroup::reduced_prime`]): at the degree
-    /// just intonation gives it, or `None` where no spelling of the tempered
-    /// prime has that degree.
+    /// The cheapest way to write each prime beyond 3 on its just nominal, in
+    /// the octave above the unison (see [`Subgroup::reduced_prime`]): at the
+    /// degree just intonation gives it, or `None` where no spelling of the
+    /// tempered prime has that degree.
     ///
-    /// The degree is exact rather than modulo the seven nominals: a note ten
-    /// sharps up an octave lower is not on the nominal, though its letter is.
-    ///
-    /// This asks for the prime on its letter, whatever [`spell`](Self::spell)
-    /// would choose: 41et's largest notation spells `7/4` as `tA`, but writes
-    /// it on its nominal as `vBb`.
+    /// Only the letter counts here, not the sharps, unlike in
+    /// [`from_interval`](Self::from_interval): flattone writes 11 as `F#`,
+    /// which is on `F`. This asks for the prime on its letter, whatever
+    /// [`spell`](Self::spell) would choose: 41et's largest notation spells
+    /// `7/4` as `>A`, but writes it on its nominal as `vBb`.
     pub fn nominal_spellings(&self) -> Vec<Option<Vec<i64>>> {
-        // The notation coordinates and their degree side by side, so that one
-        // solve finds a spelling of the right tempered interval at the right degree.
-        let with_degree: Matrix<i64> = self
-            .images
-            .iter()
-            .enumerate()
-            .map(|(index, image)| {
-                let mut row = image.clone();
-                row.push(GENERATOR_DEGREES.get(index).copied().unwrap_or(0));
-                row
-            })
-            .collect();
-        // The enharmonics that keep the degree, reduced for the search.
-        let level = kernel_left(&with_degree).expect("the kernel is always valid");
-        let level = lll(&level, LLL_DELTA, &self.weights).unwrap_or(level);
-
-        let mut spellings = Vec::new();
-        for (index, nominal) in (2..self.dim()).zip(just_nominals(self.subgroup())) {
-            let mut prime = vec![0i64; self.dim()];
-            prime[index] = 1;
-            let mut target = self.temperament.temper(&prime);
-            target.push(nominal.degree);
-            // Searched for the prime itself, then brought down by octaves, which
-            // cost nothing and so leave the ranking alone.
-            let octaves = self.subgroup().reduced_prime(index)[0];
-            let spelling = solve_diophantine(&transpose(&with_degree), &column(&target))
-                .ok()
-                .map(|solution| {
-                    let mut spelling = cheapest(&first_column(&solution), &level, 1).0.remove(0);
-                    spelling[0] += octaves;
-                    spelling
-                });
-            spellings.push(spelling);
-        }
-        spellings
+        let subgroup = self.subgroup();
+        (2..self.dim())
+            .map(|index| self.spell_keeping(self.diatonic(), &subgroup.reduced_prime(index)))
+            .collect()
     }
 
     /// What [`nominal_spellings`](Self::nominal_spellings) cost to read.
@@ -640,25 +716,14 @@ pub(crate) struct NominalVerdict {
     pub(crate) failures: usize,
 }
 
-/// Where just intonation writes a prime: its degree, and what that costs.
+/// Where just intonation writes a prime: its octave and fifth coordinates,
+/// and what that costs.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct JustNominal {
-    /// Letters up from the unison, seven to the octave.
-    pub(crate) degree: i64,
+    pub(crate) octave: i64,
+    pub(crate) fifth: i64,
     /// [`spelling_cost`] of the just spelling.
     pub(crate) cost: i64,
-}
-
-/// The degree of the octave and the fifth. Every accidental has degree zero.
-const GENERATOR_DEGREES: [i64; 2] = [7, 4];
-
-/// The degree of notation coordinates: how many letters up they sit.
-pub(crate) fn degree(coordinates: &[i64]) -> i64 {
-    GENERATOR_DEGREES
-        .iter()
-        .zip(coordinates)
-        .map(|(d, c)| d * c)
-        .sum()
 }
 
 /// Where just intonation writes each prime beyond 3.
@@ -677,7 +742,8 @@ pub(crate) fn just_nominals(subgroup: &Subgroup) -> Vec<JustNominal> {
             let s = a[index];
             let spelling = [-s * (a[0] + a[1]), -s * a[1], 1];
             JustNominal {
-                degree: degree(&spelling),
+                octave: spelling[0],
+                fifth: spelling[1],
                 cost: spelling_cost(&spelling),
             }
         })
@@ -1478,6 +1544,42 @@ mod tests {
     }
 
     #[test]
+    fn diatonic_and_chromatic_together_are_the_letter_and_sharps() {
+        // Degree and 12 equal steps determine the octave and fifth coordinates,
+        // so keeping both keeps exactly what keeping the coordinates would.
+        let coordinates = [(1, 0), (0, 1)];
+        for n in et_options(41, "2.3.5.7.11")
+            .into_iter()
+            .chain(et_options(22, "2.3.5.7"))
+            .chain(options_of("2.3.5.11", &[(100, 99), (243, 242)]))
+        {
+            let both = n.structure(&[DIATONIC, CHROMATIC]);
+            let direct = n.structure(&coordinates);
+            for interval in small_intervals(n.dim()) {
+                let kept = n.spell_keeping(&both, &interval);
+                assert_eq!(kept, n.spell_keeping(&direct, &interval), "{interval:?}");
+                if let Some(s) = kept {
+                    let just = n.from_interval(&interval);
+                    assert_eq!(s[..2], just[..2], "{interval:?}");
+                }
+            }
+        }
+
+        // Either alone forgets something: 41et writes 6/5 as ^Eb keeping both,
+        // but D# is as many chromatic steps up and cheaper.
+        let n = et_options(41, "2.3.5.7.11").remove(1);
+        let minor_third = n.subgroup().factorize(6, 5).unwrap();
+        let note = |structure: &[(i64, i64)]| {
+            n.note(
+                &n.spell_keeping(&n.structure(structure), &minor_third)
+                    .unwrap(),
+            )
+        };
+        assert_eq!(note(&[DIATONIC, CHROMATIC]), "^Eb5");
+        assert_eq!(note(&[CHROMATIC]), "D#5");
+    }
+
+    #[test]
     fn register_does_not_change_the_spelling() {
         // Octaves cost nothing to write, so moving an interval by octaves moves
         // only its octave coordinate. The seed once charged for them and got
@@ -1541,7 +1643,11 @@ mod tests {
         // intonation writes them, one mark each on vE, <Bb, tF and *Ab.
         let subgroup: Subgroup = "2.3.5.7.11.13".parse().unwrap();
         let nominals = just_nominals(&subgroup);
-        let degrees: Vec<i64> = nominals.iter().map(|n| n.degree).collect();
+        let (octave, fifth) = DIATONIC;
+        let degrees: Vec<i64> = nominals
+            .iter()
+            .map(|n| octave * n.octave + fifth * n.fifth)
+            .collect();
         let costs: Vec<i64> = nominals.iter().map(|n| n.cost).collect();
         assert_eq!(degrees, vec![16, 20, 24, 26]);
         assert_eq!(costs, vec![11, 15, 13, 19]);
@@ -1564,10 +1670,16 @@ mod tests {
         let options = options_of("2.3.5.11", &[(45, 44), (81, 80)]);
         assert_eq!(options[0].nominal_costs(), vec![Some(4), Some(8)]);
 
-        // 41et's largest notation writes 7/4 as tA, but vBb is there too, at
+        // 41et's largest notation writes 7/4 as >A, but vBb is there too, at
         // what just intonation spends on it, so the nominals are kept.
         let options = et_options(41, "2.3.5.7.11");
-        assert_eq!(note_of(&options[2], 7, 4), ">A5");
+        let n = &options[2];
+        let seven = n.subgroup().factorize(7, 4).unwrap();
+        assert_eq!(
+            n.note(&n.from_tempered(&n.temperament().temper(&seven))),
+            ">A5"
+        );
+        assert_eq!(note_of(n, 7, 4), "vBb5");
         assert_eq!(options[2].nominal_costs()[1], Some(15));
         assert!(options[2].keeps_nominals());
     }

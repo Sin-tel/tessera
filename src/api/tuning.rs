@@ -23,11 +23,6 @@ impl LuaUserData for TuningSystem {
 			Ok(this.simple_ratios(&note))
 		});
 
-		methods.add_method("simple_spellings", |_, this, note: Vec<i64>| {
-			check_note(this, &note)?;
-			Ok(this.simple_spellings(&note))
-		});
-
 		// one step of an equal temperament, nil otherwise
 		methods.add_method("step", |_, this, ()| Ok(this.step()));
 

@@ -249,17 +249,9 @@ function tuning.input_map()
 	for i = 1, #tuning.chromatic + 1 do
 		local midi = 59 + i
 		local interval = tuning.from_midi(midi)
-		local intervals = tuning.system:simple_spellings(interval)
-		local spellings = {}
-		for _, v in ipairs(intervals) do
-			table.insert(spellings, tuning.get_name(v))
-		end
-		spellings = util.dedup(spellings)
-
 		local ratios = tuning.system:simple_ratios(interval)
 		rows[i] = {
-			-- name = tuning.get_name(interval),
-			name = table.concat(spellings, " = "),
+			name = tuning.get_name(interval),
 			ratio = table.concat(ratios, " ~ "),
 			black = BLACK_KEYS[(midi - 60) % 12] or false,
 		}
