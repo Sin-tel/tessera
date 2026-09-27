@@ -391,17 +391,18 @@ pub fn write_wav(filename: &str, samples: &[f32], sample_rate: u32) -> Result<()
 	};
 
 	let mut writer = hound::WavWriter::create(filename, spec)?;
+	let mut rng = fastrand::Rng::with_seed(RNG_SEED);
 	for s in samples {
-		writer.write_sample(convert_sample_wav(*s))?;
+		writer.write_sample(convert_sample_wav(*s, &mut rng))?;
 	}
 	writer.finalize()?;
 
 	Ok(())
 }
 
-fn convert_sample_wav(x: f32) -> i16 {
+fn convert_sample_wav(x: f32, rng: &mut fastrand::Rng) -> i16 {
 	// TPDF dither in range [-1, 1] quantization levels
-	let dither = (fastrand::f32() - fastrand::f32()) / f32::from(u16::MAX);
+	let dither = (rng.f32() - rng.f32()) / f32::from(u16::MAX);
 	let x = (x + dither).clamp(-1.0, 1.0);
 	(if x >= 0.0 { x * f32::from(i16::MAX) } else { -x * f32::from(i16::MIN) }) as i16
 }
