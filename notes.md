@@ -1,25 +1,17 @@
+fix scale Db -> C#
+
+expose tuning slider
+
 move useful tests to test (skip block size).
 
+the big filter refactor
+
 is there an easy way to avoid having to duplicate the list of instruments everywhere?
-
-reverb profiling... issue is filters.
-should make an autovectorized onepole, but this would also require autovec smooth
-We should try to make a 4x struct
-
-strobe tuner
 
 ## Tuning system
 set default indices instead of first in settings
 
-written: return list
-xen_utils:
-  add spell_literal? => replaces just nominal, also add primes_reduced or something
-  fix octave reduction in nominal_spellings and return a list
-  change API so it works with notes (ie spellings)
-
 note map: align by note name so ups prefix is flush
-
-spell_literal in scale now no longer used
 
 Things to do before we can merge to main:
 * make sure switching between tunings doesn't cause issues
@@ -37,6 +29,13 @@ add it to undo
 unrelated bugs:
  switching tabs causes tool switch also
  need to tune feedback filter in delay_tape
+ epiano equalization curve
+ fix key velocity curve!
+
+
+scale projections:
+for a notation system that is isomorphic to 5-limit ji (2, 3/2, 81/80), the check should pass trivially on duodene, since duodene is a constant structure on 5-limit.
+so, if it fails it's only because we chose some bad spelling?
 
 ## VST
 better whitelist
@@ -47,7 +46,6 @@ add pressure queue too
 need to fix voice alloc, some stuck notes when pedaling
 should plugin handle pedal itself? kind of annoying...
 
-fix key velocity curve!
 
 move 'flush_messages' to backend
 
@@ -167,6 +165,7 @@ Analog delay
   - mode switch
   BBD / bode shifter / pitch
 
+strobe tuner
 
 ## visuals
 
