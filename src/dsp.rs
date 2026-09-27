@@ -139,6 +139,16 @@ pub fn softclip_cubic(x: f32) -> f32 {
 	s * (1.0 - (4. / 27.) * s * s)
 }
 
+// deterministic hash to uniform in [0, 1)
+pub fn hash_uniform(x: i64) -> f32 {
+	// splitmix64 finalizer
+	let mut z = (x as u64).wrapping_add(0x9e37_79b9_7f4a_7c15);
+	z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+	z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+	z ^= z >> 31;
+	(z >> 40) as f32 / (1u64 << 24) as f32
+}
+
 // branchless approximation of sin(2*pi*x)
 pub fn sin_cheap(x: f32) -> f32 {
 	// (TWO_PI * x).sin()

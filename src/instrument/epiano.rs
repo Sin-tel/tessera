@@ -1,7 +1,6 @@
 use crate::dsp::simper::Filter;
 use crate::dsp::*;
 use crate::instrument::*;
-use fastrand::Rng;
 
 // TODO: replace differentiation with more gentle filter to reduce register difference
 // TODO: same note retrigger logic
@@ -11,7 +10,6 @@ pub struct Epiano {
 	voices: Vec<Voice>,
 	sample_rate: f32,
 	dc_killer: DcKiller,
-	rng: Rng,
 	x0: f32,
 	y0: f32,
 	gain: f32,
@@ -20,6 +18,8 @@ pub struct Epiano {
 }
 
 const N_VOICES: usize = 24;
+// seconds after note off until the voice is cut
+const RELEASE_TIME: f32 = 1.0;
 
 #[derive(Debug)]
 struct Voice {
@@ -76,7 +76,6 @@ impl Instrument for Epiano {
 			sample_rate,
 			voices,
 			dc_killer: DcKiller::new(sample_rate),
-			rng: Rng::with_seed(0),
 			x0: 0.5,
 			y0: 1.0,
 			gain: 1.,
@@ -91,6 +90,7 @@ impl Instrument for Epiano {
 
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
+		let release_samples = (RELEASE_TIME * self.sample_rate) as usize;
 
 		for voice in self.voices.iter_mut().filter(|v| v.active) {
 			for sample in bl.iter_mut() {
@@ -127,8 +127,8 @@ impl Instrument for Epiano {
 			}
 
 			if !voice.note_on {
-				voice.timer += 1;
-				if voice.timer > 1000 {
+				voice.timer += bl.len();
+				if voice.timer > release_samples {
 					voice.active = false;
 				}
 			}
@@ -152,9 +152,11 @@ impl Instrument for Epiano {
 		voice.hammer_freq *= 1. + vel;
 
 		voice.freq[0] = f;
-		voice.freq[1] = f + 0.4 + 0.4 * self.rng.f32();
-		voice.freq[2] = f * 4. + 1200. * self.rng.f32();
-		voice.freq[3] = f * 6. + 1600. * self.rng.f32();
+		// pitch rounded to 10 cents, so the detuning is the same every time a key is played
+		let key = 4 * (10. * pitch).round() as i64;
+		voice.freq[1] = f + 0.4 + 0.4 * hash_uniform(key + 1);
+		voice.freq[2] = f * 4. + 1200. * hash_uniform(key + 2);
+		voice.freq[3] = f * 6. + 1600. * hash_uniform(key + 3);
 
 		voice.filter[0].set_bandpass(voice.freq[0], voice.freq[0] * 6.0);
 		voice.filter[1].set_bandpass(voice.freq[1], voice.freq[1] * 4.0);
@@ -188,8 +190,6 @@ impl Instrument for Epiano {
 	}
 
 	fn flush(&mut self) {
-		// Reseed from the global generator, which Render::flush just reset.
-		self.rng.seed(fastrand::u64(..));
 		self.dc_killer.reset();
 
 		for voice in &mut self.voices {

@@ -10,8 +10,8 @@ const N_BARS: usize = 9;
 // drawbar footages 16' 5⅓' 8' 4' 2⅔' 2' 1⅗' 1⅓' 1', relative to 8'
 const RATIOS: [f32; N_BARS] = [0.5, 1.5, 1., 2., 3., 4., 5., 6., 8.];
 
-// uniform spread in cents
-const DETUNE: f32 = 2.0;
+// tonewheels per semitone, 5 cents
+const WHEEL_STEPS: f32 = 20.;
 
 const GAIN: f32 = 0.05;
 
@@ -127,16 +127,6 @@ fn drawbar_gain(value: f32) -> f32 {
 	if i == 0 { 0. } else { from_db(DRAWBAR_DB[i.min(8) - 1]) }
 }
 
-// uniform in [-1, 1)
-fn hash_uniform(x: i64) -> f32 {
-	// splitmix64 finalizer
-	let mut z = (x as u64).wrapping_add(0x9e37_79b9_7f4a_7c15);
-	z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
-	z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
-	z ^= z >> 31;
-	(z >> 40) as f32 / (1u64 << 23) as f32 - 1.
-}
-
 impl Organ {
 	fn set_click(&mut self, value: f32) {
 		self.click_depth = value;
@@ -228,15 +218,13 @@ impl Instrument for Organ {
 		}
 
 		let voice = &mut self.voices[id];
-		let f0 = pitch_to_hz(pitch) / self.sample_rate;
 
 		for k in 0..N_BARS {
-			let r = RATIOS[k];
-			// the partial's own pitch rounded to 10 cents, so coinciding partials of different keys match
-			let key = (10. * (pitch + 12. * r.log2())).round() as i64;
-			let detune = (DETUNE / 1200. * hash_uniform(key)).exp2();
+			// each partial is taken from the nearest tonewheel, shared between keys
+			let p = pitch + 12. * RATIOS[k].log2();
+			let wheel = (p * WHEEL_STEPS).round() / WHEEL_STEPS;
 
-			let f = f0 * r * detune;
+			let f = pitch_to_hz(wheel) / self.sample_rate;
 			if f < 0.45 {
 				voice.freq[k] = f;
 				voice.accum[k] = (f64::from(f) * self.time as f64).fract() as f32;
