@@ -189,6 +189,23 @@ device_list.instruments.pluck = {
 	},
 }
 
+device_list.instruments.organ = {
+	display_name = "Organ",
+	parameters = {
+		{ "16'", "slider", { default = 2, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "5 1/3'", "slider", { default = 5, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "8'", "slider", { default = 8, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "4'", "slider", { default = 6, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "2 2/3'", "slider", { default = 5, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "2'", "slider", { default = 0, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "1 3/5'", "slider", { default = 0, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "1 1/3'", "slider", { default = 5, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "1'", "slider", { default = 0, min = 0, max = 8, step = 1, fmt = "%d" } },
+		{ "Percussion", "toggle", { default = true } },
+		{ "Click", "slider", { default = 0.5 } },
+	},
+}
+
 device_list.instruments.epiano = {
 	display_name = "Epiano",
 	parameters = {
@@ -254,6 +271,16 @@ device_list.effects.tremolo = {
 	},
 }
 
+device_list.effects.rotary = {
+	display_name = "Rotary",
+	parameters = {
+		{ "Dry/Wet", "slider", { default = 1.0 } },
+		{ "Rate", "slider", { default = 1.0, min = 0.40, max = 8.0, t = "log" } },
+		{ "Depth", "slider", { default = 0.5 } },
+		{ "Width", "slider", { default = 0.8 } },
+	},
+}
+
 device_list.effects.phaser = {
 	display_name = "Phaser",
 	parameters = {
@@ -290,6 +317,24 @@ device_list.effects.delay = {
 	},
 }
 
+device_list.effects.delay_tape = {
+	display_name = "Delay Tape",
+	parameters = {
+		{ "Dry/Wet", "slider", { default = 0.5 } },
+		{ "Speed", "slider", { default = 1.0, min = 0.25, max = 1.5 } },
+		{ "Feedback", "slider", { default = 0.4, min = 0.0, max = 1.0 } },
+		{ "Drive", "slider", { default = 0, min = -12, max = 12, centered = true, fmt = "%0.1f dB" } },
+
+		{ "separator" },
+		{ "Wow", "slider", { default = 0.3, min = 0.0, max = 1.0 } },
+		{ "Flutter", "slider", { default = 0.3, min = 0.0, max = 1.0 } },
+		{ "Jitter", "slider", { default = 0.3, min = 0.0, max = 1.0 } },
+
+		{ "separator" },
+		{ "Mode", "selector", { list = { "1", "2", "3", "1+3", "2+3" }, default = 3 } },
+	},
+}
+
 device_list.effects.reverb = {
 	display_name = "Reverb",
 	parameters = {
@@ -298,6 +343,18 @@ device_list.effects.reverb = {
 		{ "Decay", "slider", { default = 1.3, min = 0.5, max = 20.0, t = "log", fmt = "s" } },
 		{ "Modulation", "slider", { default = 0.5 } },
 		{ "Pre-delay", "slider", { default = 0.02, min = 0.0, max = 0.20, fmt = "s" } },
+	},
+}
+
+device_list.effects.reverb_room = {
+	display_name = "Reverb Room",
+	parameters = {
+		{ "Dry/Wet", "slider", { default = 0.33 } },
+		{ "Size", "slider", { default = 0.5 } },
+		{ "Diffusion", "slider", { default = 0.7 } },
+		{ "Decay", "slider", { default = 0.8, min = 0.1, max = 10.0, t = "log", fmt = "s" } },
+		{ "Late Level", "slider", { default = 0.4 } },
+		{ "Dark", "slider", { default = 0.15 } },
 	},
 }
 

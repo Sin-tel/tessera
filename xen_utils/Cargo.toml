@@ -1,0 +1,14 @@
+[package]
+name = "xen_utils"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+diophantine = { git = "https://github.com/Sin-tel/diophantine", rev = "0fa367b" }
+
+[dev-dependencies]
+criterion = "0.8"
+
+[[bench]]
+name = "notation"
+harness = false

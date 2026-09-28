@@ -5,3 +5,6 @@ settings/workspace.lua
 *.sublime-project
 *.sublime-workspace
 /out
+examples/lab.rs
+code_map.md
+/scratch

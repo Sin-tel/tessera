@@ -43,6 +43,13 @@ impl Effect for Tremolo {
 		}
 	}
 
+	fn flush(&mut self) {
+		self.accum = 0.;
+		self.amount.immediate();
+		self.lfo_rate.immediate();
+		self.phase.immediate();
+	}
+
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
 			0 => self.amount.set(value),

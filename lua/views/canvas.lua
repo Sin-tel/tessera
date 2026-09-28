@@ -229,7 +229,7 @@ function Canvas:draw_pitch_grid(t)
 
 	local ti
 	if t ~= "octave" then
-		ti = tuning.get_index(#t, c)
+		ti = tuning.get_index(t, c)
 	end
 
 	local oct = tuning.get_relative_pitch(tuning.octave)
@@ -500,12 +500,15 @@ function Canvas:keypressed(key)
 			delta = tuning.mul(tuning.comma_alt, move_up)
 		elseif modifier_keys.shift and modifier_keys.alt and tuning.comma_alt2 then
 			delta = tuning.mul(tuning.comma_alt2, move_up)
-		elseif modifier_keys.shift then
-			delta = tuning.mul(tuning.octave, move_up)
 		elseif modifier_keys.ctrl then
 			delta = tuning.mul(tuning.chroma, move_up)
 		elseif modifier_keys.alt then
+			if not tuning.comma then
+				return true
+			end
 			delta = tuning.mul(tuning.comma, move_up)
+		elseif modifier_keys.shift then
+			delta = tuning.mul(tuning.octave, move_up)
 		else
 			-- we use the lowest note as the base.
 			-- TODO: once there's a more sophisticated key system, query that
@@ -521,7 +524,7 @@ function Canvas:keypressed(key)
 
 			if base then
 				local diatonic = tuning.diatonic
-				local n = tuning.get_index(#diatonic, base.interval)
+				local n = tuning.get_index(diatonic, base.interval)
 				local p_origin = tuning.from_table(diatonic, n)
 				delta = tuning.from_table(diatonic, n + move_up)
 				delta = tuning.sub(delta, p_origin)

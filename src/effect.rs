@@ -3,6 +3,7 @@ mod compressor;
 mod convolve;
 mod decimate;
 mod delay;
+mod delay_tape;
 mod drive;
 mod equalizer;
 mod gain;
@@ -10,6 +11,8 @@ mod limiter;
 mod pan;
 mod phaser;
 mod reverb;
+mod reverb_room;
+mod rotary;
 mod testfilter;
 mod tilt;
 mod tremolo;
@@ -17,19 +20,24 @@ mod wide;
 
 use crate::audio::MAX_BUF_SIZE;
 use crate::dsp::{MuteState, PeakMeter, time_constant};
-use crate::effect;
 use crate::effect::{
 	chorus::Chorus, compressor::Compressor, convolve::Convolve, decimate::Decimate, delay::Delay,
-	drive::Drive, equalizer::Equalizer, gain::Gain, limiter::Limiter, pan::Pan, phaser::Phaser,
-	reverb::Reverb, testfilter::TestFilter, tilt::Tilt, tremolo::Tremolo, wide::Wide,
+	delay_tape::DelayTape, drive::Drive, equalizer::Equalizer, gain::Gain, limiter::Limiter,
+	pan::Pan, phaser::Phaser, reverb::Reverb, reverb_room::ReverbRoom, rotary::Rotary,
+	testfilter::TestFilter, tilt::Tilt, tremolo::Tremolo, wide::Wide,
 };
 use crate::log::log_warn;
 use crate::meters::MeterHandle;
 use crate::worker::{RequestData, ResponseData};
 
 // list of effects
-pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
-	match name {
+// Sets the initial parameters before flushing, returns any data the worker needs to load.
+pub fn new(
+	sample_rate: f32,
+	name: &str,
+	params: &[f32],
+) -> (Box<dyn Effect + Send>, Vec<RequestData>) {
+	let mut new: Box<dyn Effect + Send> = match name {
 		"chorus" => Box::new(Chorus::new(sample_rate)),
 		"compressor" => Box::new(Compressor::new(sample_rate)),
 		"convolve" => Box::new(Convolve::new(sample_rate)),
@@ -42,6 +50,9 @@ pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
 		"pan" => Box::new(Pan::new(sample_rate)),
 		"phaser" => Box::new(Phaser::new(sample_rate)),
 		"reverb" => Box::new(Reverb::new(sample_rate)),
+		"reverb_room" => Box::new(ReverbRoom::new(sample_rate)),
+		"rotary" => Box::new(Rotary::new(sample_rate)),
+		"delay_tape" => Box::new(DelayTape::new(sample_rate)),
 		"testfilter" => Box::new(TestFilter::new(sample_rate)),
 		"tilt" => Box::new(Tilt::new(sample_rate)),
 		"tremolo" => Box::new(Tremolo::new(sample_rate)),
@@ -50,7 +61,14 @@ pub fn new(sample_rate: f32, name: &str) -> Box<dyn Effect + Send> {
 			log_warn!("Effect with name \"{name}\" not found. Returning default.");
 			Box::new(Gain::new(sample_rate))
 		},
-	}
+	};
+	let requests = params
+		.iter()
+		.enumerate()
+		.filter_map(|(i, &v)| new.set_parameter(i, v))
+		.collect();
+	new.flush();
+	(new, requests)
 }
 
 pub trait Effect {
@@ -83,9 +101,13 @@ pub struct Bypass {
 }
 
 impl Bypass {
-	pub fn new(sample_rate: f32, name: &str, meter_handle: MeterHandle) -> Self {
+	pub fn new(
+		sample_rate: f32,
+		effect: Box<dyn Effect + Send>,
+		meter_handle: MeterHandle,
+	) -> Self {
 		Bypass {
-			effect: effect::new(sample_rate, name),
+			effect,
 
 			peak: PeakMeter::new(sample_rate),
 			meter_handle,

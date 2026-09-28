@@ -52,6 +52,11 @@ impl Smooth {
 	pub fn target(&self) -> f32 {
 		self.target
 	}
+
+	#[must_use]
+	pub fn is_done(&self) -> bool {
+		self.done
+	}
 }
 
 #[derive(Debug)]

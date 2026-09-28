@@ -233,9 +233,20 @@ impl Instrument for Sampler {
 	}
 
 	fn flush(&mut self) {
+		for d in &mut self.downsampler {
+			d.clear();
+		}
+		self.buffer_l = [0.; 2 * MAX_BUF_SIZE];
+		self.buffer_r = [0.; 2 * MAX_BUF_SIZE];
+
 		for v in &mut self.voices {
 			v.active = false;
+			v.note_on = false;
 			v.amp_env.set_immediate(0.0);
+			v.position = 0.;
+			v.f = 0.;
+			v.vel = 0.;
+			v.gain.immediate();
 		}
 	}
 	fn receive_data(&mut self, data: ResponseData) -> Option<Box<dyn Any + Send>> {

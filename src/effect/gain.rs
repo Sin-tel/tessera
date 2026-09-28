@@ -24,7 +24,9 @@ impl Effect for Gain {
 			*r *= gain;
 		}
 	}
-	fn flush(&mut self) {}
+	fn flush(&mut self) {
+		self.gain.immediate();
+	}
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		#[allow(clippy::single_match_else)]
 		match index {

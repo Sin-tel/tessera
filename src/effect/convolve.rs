@@ -86,6 +86,13 @@ impl Effect for Convolve {
 		if let Some(convolver) = &mut self.convolver {
 			convolver.iter_mut().for_each(|c| c.reset());
 		}
+		for d in &mut self.pre_delay {
+			d.flush();
+		}
+		self.balance.immediate();
+		self.pre_delay_len.immediate();
+		self.width.immediate();
+		self.buffer = [[0.; MAX_BUF_SIZE]; 2];
 	}
 
 	fn receive_data(&mut self, data: ResponseData) -> Option<Box<dyn Any + Send>> {

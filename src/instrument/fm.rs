@@ -166,9 +166,19 @@ impl Instrument for Fm {
 		voice.env.note_off();
 	}
 	fn flush(&mut self) {
+		self.dc_killer.reset();
 		for v in &mut self.voices {
 			v.env.reset();
 			v.active = false;
+
+			v.accum = 0.;
+			v.accum2 = 0.;
+			v.prev = 0.;
+			v.pitch_env = 0.;
+			v.bright = 0.;
+			v.freq.immediate();
+			v.freq2.immediate();
+			v.pres.set_immediate(0.);
 		}
 	}
 

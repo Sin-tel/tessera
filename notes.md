@@ -1,26 +1,55 @@
-# VST
+fix scale Db -> C#
+
+expose tuning slider
+
+move useful tests to test (skip block size).
+
+the big filter refactor
+
+is there an easy way to avoid having to duplicate the list of instruments everywhere?
+
+## Tuning system
+set default indices instead of first in settings
+
+note map: align by note name so ups prefix is flush
+
+Things to do before we can merge to main:
+* make sure switching between tunings doesn't cause issues
+if new accidentals are a superset of current: nothing to do.
+otherwise, if temperament matches, temper and back (notation gets re-written, but pitches preserved)
+otherwise, clip (both pitches and notation will change)
+warn user if data may get lost next to apply button
+
+Alternatively, detemper everything to JI, and retemper. This seems more error-prone though.
+
+add it to undo
+
+* fix up the old save files
+
+unrelated bugs:
+ switching tabs causes tool switch also
+ need to tune feedback filter in delay_tape
+ epiano equalization curve
+ fix key velocity curve!
+
+
+scale projections:
+for a notation system that is isomorphic to 5-limit ji (2, 3/2, 81/80), the check should pass trivially on duodene, since duodene is a constant structure on 5-limit.
+so, if it fails it's only because we chose some bad spelling?
+
+## VST
+better whitelist
 add pressure queue too
 
+
+## misc
 need to fix voice alloc, some stuck notes when pedaling
 should plugin handle pedal itself? kind of annoying...
 
-dump state and save preset
-
-scanning and saving list
-
-# tuning
- * make categories (ET / temp / JI)
- * adjust notation
-
-rastmic / neutral
-  notation should use half-sharps if 243/242 is tempered
-  rank 2 ~ 2.3.11 (33/32)
-  rank 3 ~ 2.3.5.11 (81/80, 33/32) also can temper out 5120/5103 (81/80~64/63, 33/32)
-  rank 4 ~ 11-limit
-
-  some EDOs can also be notated like this (notably 31 and 41!)
 
 move 'flush_messages' to backend
+
+allow replacing / deleting instrument only
 
 be more consistent with levels.
 target should be ~ -18dB RMS
@@ -136,6 +165,7 @@ Analog delay
   - mode switch
   BBD / bode shifter / pitch
 
+strobe tuner
 
 ## visuals
 

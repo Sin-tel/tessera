@@ -30,38 +30,58 @@ pub fn spawn_worker(sample_rate: u32) -> (mpsc::SyncSender<Request>, mpsc::Recei
 }
 
 struct Worker {
-	sample_rate: u32,
 	tx: mpsc::SyncSender<Response>,
-
-	wavetables: HashMap<String, Arc<Vec<f32>>>,
-	samples: HashMap<String, Arc<[Vec<f32>; 2]>>,
+	loader: Loader,
 }
 
 impl Worker {
 	fn new(sample_rate: u32, tx: mpsc::SyncSender<Response>) -> Self {
-		Self { sample_rate, tx, wavetables: HashMap::new(), samples: HashMap::new() }
+		Self { tx, loader: Loader::new(sample_rate) }
 	}
 
 	fn handle_request(&mut self, req: Request) {
 		match req {
 			Request::Garbage(_) => {}, // drop
 			Request::LoadRequest { channel_index, device_index, data } => {
-				if let Err(e) = match data {
-					RequestData::Wavetable(path) => {
-						self.handle_wavetable(channel_index, device_index, path)
+				match self.loader.load(data) {
+					Ok(data) => {
+						if let Err(e) = self.send(channel_index, device_index, data) {
+							log_error!("Worker Error: {e}");
+						}
 					},
-					RequestData::Sample(path) => {
-						self.handle_sample(channel_index, device_index, path)
-					},
-					RequestData::IR(path) => self.handle_ir(channel_index, device_index, path),
-				} {
-					log_error!("Worker Error: {e}");
+					Err(e) => log_error!("Worker Error: {e}"),
 				}
 			},
 		}
 	}
 
-	fn handle_wavetable(&mut self, ch: usize, dev: usize, path: &'static str) -> Result<()> {
+	fn send(&self, ch: usize, dev: usize, data: ResponseData) -> anyhow::Result<()> {
+		self.tx
+			.send(Response { channel_index: ch, device_index: dev, data })
+			.map_err(|_| anyhow!("Failed to send response"))
+	}
+}
+
+pub struct Loader {
+	sample_rate: u32,
+	wavetables: HashMap<String, Arc<Vec<f32>>>,
+	samples: HashMap<String, Arc<[Vec<f32>; 2]>>,
+}
+
+impl Loader {
+	pub fn new(sample_rate: u32) -> Self {
+		Self { sample_rate, wavetables: HashMap::new(), samples: HashMap::new() }
+	}
+
+	pub fn load(&mut self, data: RequestData) -> Result<ResponseData> {
+		match data {
+			RequestData::Wavetable(path) => self.load_wavetable(path),
+			RequestData::Sample(path) => self.load_sample(path),
+			RequestData::IR(path) => self.load_ir(path),
+		}
+	}
+
+	fn load_wavetable(&mut self, path: &'static str) -> Result<ResponseData> {
 		let data = match self.wavetables.entry(path.to_string()) {
 			Entry::Occupied(e) => e.get().clone(),
 			Entry::Vacant(e) => {
@@ -69,10 +89,10 @@ impl Worker {
 				e.insert(Arc::new(table)).clone()
 			},
 		};
-		self.send(ch, dev, ResponseData::Wavetable(data))
+		Ok(ResponseData::Wavetable(data))
 	}
 
-	fn handle_sample(&mut self, ch: usize, dev: usize, path: &'static str) -> Result<()> {
+	fn load_sample(&mut self, path: &'static str) -> Result<ResponseData> {
 		let data = match self.samples.entry(path.to_string()) {
 			Entry::Occupied(e) => e.get().clone(),
 			Entry::Vacant(e) => {
@@ -85,10 +105,10 @@ impl Worker {
 				e.insert(Arc::new(sample)).clone()
 			},
 		};
-		self.send(ch, dev, ResponseData::Sample(data))
+		Ok(ResponseData::Sample(data))
 	}
 
-	fn handle_ir(&mut self, ch: usize, dev: usize, path: &'static str) -> Result<()> {
+	fn load_ir(&mut self, path: &'static str) -> Result<ResponseData> {
 		let sample = match self.samples.entry(path.to_string()) {
 			Entry::Occupied(e) => e.get().clone(),
 			Entry::Vacant(e) => {
@@ -108,14 +128,7 @@ impl Worker {
 			TwoStageFFTConvolver::init(&sample[1], MAX_BUF_SIZE, sample[1].len()),
 		];
 
-		self.send(ch, dev, ResponseData::IR(Box::new(convolvers)))?;
-		Ok(())
-	}
-
-	fn send(&self, ch: usize, dev: usize, data: ResponseData) -> anyhow::Result<()> {
-		self.tx
-			.send(Response { channel_index: ch, device_index: dev, data })
-			.map_err(|_| anyhow!("Failed to send response"))
+		Ok(ResponseData::IR(Box::new(convolvers)))
 	}
 }
 
@@ -169,8 +182,8 @@ pub fn load_sample(path: &str) -> Result<([Vec<f32>; 2], u32)> {
 		let (chunks, remainder) = samples.as_chunks::<2>();
 		assert!(remainder.is_empty());
 		for [l, r] in chunks {
-			right.push(*l);
-			left.push(*r);
+			left.push(*l);
+			right.push(*r);
 		}
 	}
 	Ok(([left, right], spec.sample_rate))

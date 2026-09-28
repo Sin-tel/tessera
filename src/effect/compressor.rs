@@ -114,7 +114,22 @@ impl Effect for Compressor {
 			*r = s_in[1] * g;
 		}
 	}
-	fn flush(&mut self) {}
+	fn flush(&mut self) {
+		self.balance.immediate();
+		self.make_up.immediate();
+
+		// envelope followers
+		self.gain_a = 0.;
+		self.gain_b = 0.;
+		self.gain_c = 0.;
+
+		for track in &mut self.tracks {
+			track.highpass.reset_state();
+			track.highpass.immediate();
+			track.shelf.reset_state();
+			track.shelf.immediate();
+		}
+	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {

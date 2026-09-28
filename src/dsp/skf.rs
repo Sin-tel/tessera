@@ -90,6 +90,11 @@ impl Skf {
 		self.r = 2.0 * res;
 	}
 
+	pub fn reset_state(&mut self) {
+		self.s1 = 0.;
+		self.s2 = 0.;
+	}
+
 	pub fn immediate(&mut self) {
 		self.f.immediate();
 	}

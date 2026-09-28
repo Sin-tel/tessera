@@ -91,8 +91,12 @@ impl Effect for Pan {
 	}
 	fn flush(&mut self) {
 		for track in &mut self.tracks {
-			track.delay_f.reset_state();
+			track.delay_f.immediate();
+			track.delay_f.prime(track.delay);
+			track.filter.reset_state();
+			track.filter.immediate();
 			track.delayline.flush();
+			track.gain.immediate();
 		}
 	}
 

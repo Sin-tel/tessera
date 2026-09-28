@@ -195,20 +195,19 @@ function Settings:update()
 
 	if audio_ok then
 		self.ui.layout:col(lw)
+		self.ui:label("Audio settings")
 	else
 		self.ui.layout:col(c1 + c2)
+		self.ui:label("Audio settings")
+		self.ui.layout:col(c3 + c4)
 		if self.reset_button:update(self.ui) then
 			engine.rebuild_stream()
 		end
 	end
 
 	self.ui.layout:new_row()
-	self.ui.layout:col(lw)
-	self.ui:label("Audio settings")
-
 	self.ui:background(theme.bg_nested)
 
-	self.ui.layout:new_row()
 	self.ui.layout:col(c1)
 	self.ui.layout:col(c2)
 	self.ui:label("Driver type")

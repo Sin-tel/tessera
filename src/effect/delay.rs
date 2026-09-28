@@ -101,8 +101,23 @@ impl Effect for Delay {
 	}
 
 	fn flush(&mut self) {
-		self.tracks[0].delayline.flush();
-		self.tracks[1].delayline.flush();
+		self.balance.immediate();
+		self.feedback.immediate();
+
+		let lfo_mod = 0.002 * self.lfo_mod / self.lfo_freq;
+
+		for track in &mut self.tracks {
+			track.delayline.flush();
+			track.dc_killer.reset();
+
+			track.delay_f.immediate();
+			track.delay_f.prime(track.delay);
+
+			// Match modulation at phase zero.
+			track.lfo_accum = 0.;
+			let phase = if track.left { 0. } else { 0.25 };
+			track.lfo.set_immediate(lfo_mod * sin_cheap(phase));
+		}
 	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {

@@ -160,7 +160,19 @@ impl Effect for Reverb {
 		self.pre_r.flush();
 
 		self.filter1.reset_state();
+		self.filter1.immediate();
 		self.filter2.reset_state();
+		self.filter2.immediate();
+
+		self.accum1 = 0.;
+		self.accum2 = 0.;
+		self.lfo1.immediate();
+		self.lfo2.immediate();
+
+		self.balance.immediate();
+		self.size.immediate();
+		self.pre_delay.immediate();
+		self.feedback.immediate();
 	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
