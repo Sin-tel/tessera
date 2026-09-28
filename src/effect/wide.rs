@@ -51,7 +51,14 @@ impl Effect for Wide {
 			*r -= amount * s;
 		}
 	}
-	fn flush(&mut self) {}
+	fn flush(&mut self) {
+		self.delay.flush();
+		self.ap_1.reset_state();
+		self.ap_1.immediate();
+		self.ap_2.reset_state();
+		self.ap_2.immediate();
+		self.amount.immediate();
+	}
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		#[allow(clippy::single_match_else)]
 		match index {

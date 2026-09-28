@@ -16,6 +16,12 @@ pub const BUTTERWORTH_Q: f32 = FRAC_1_SQRT_2;
 pub const DECIBEL_FACTOR: f32 = LOG2_10 / 20.;
 pub const C5_HZ: f32 = 523.2511;
 
+// 4-pole butterworth Q, as a cascade of two 2-pole stages.
+//  1 / 2 * cos(  pi/8)
+//  1 / 2 * cos(3*pi/8)
+pub const BUTTERWORTH_4_Q1: f32 = 0.5411961;
+pub const BUTTERWORTH_4_Q2: f32 = 1.306563;
+
 // https://stackoverflow.com/questions/65554112/fast-double-exp2-function-in-c
 // -Inf evaluates to 0.0
 pub fn pow2_cheap(x: f32) -> f32 {
@@ -131,6 +137,16 @@ pub fn softclip(x: f32) -> f32 {
 pub fn softclip_cubic(x: f32) -> f32 {
 	let s = x.clamp(-1.5, 1.5);
 	s * (1.0 - (4. / 27.) * s * s)
+}
+
+// deterministic hash to uniform in [0, 1)
+pub fn hash_uniform(x: i64) -> f32 {
+	// splitmix64 finalizer
+	let mut z = (x as u64).wrapping_add(0x9e37_79b9_7f4a_7c15);
+	z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+	z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+	z ^= z >> 31;
+	(z >> 40) as f32 / (1u64 << 24) as f32
 }
 
 // branchless approximation of sin(2*pi*x)
@@ -259,6 +275,15 @@ impl DcKiller {
 			// 1 - exp( -2*pi*10 / f_s) ~ 2*pi*10 / f_s
 			f: TWO_PI * 10. / sample_rate,
 		}
+	}
+
+	pub fn reset(&mut self) {
+		self.z = 0.;
+	}
+
+	// Set to DC response
+	pub fn prime(&mut self, dc: f32) {
+		self.z = dc;
 	}
 
 	#[must_use]

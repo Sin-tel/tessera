@@ -52,6 +52,28 @@ impl Filter {
 		self.s2 = 0.;
 	}
 
+	// Put the integrators where they would sit after a constant input x has
+	// bandpass output v1 = 0
+	// lowpass output v2 = x
+	// state constant:
+	// s1 = v1 = 0
+	// s2 = v2 = x
+	pub fn prime(&mut self, x: f32) {
+		self.s1 = 0.;
+		self.s2 = x;
+	}
+
+	pub fn reset(&mut self) {
+		self.reset_state();
+		self.k = 0.;
+		self.g = 0.;
+		for c in
+			[&mut self.a1, &mut self.a2, &mut self.a3, &mut self.m0, &mut self.m1, &mut self.m2]
+		{
+			c.set_immediate(0.);
+		}
+	}
+
 	pub fn immediate(&mut self) {
 		self.a1.immediate();
 		self.a2.immediate();

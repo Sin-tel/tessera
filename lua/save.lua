@@ -1,6 +1,7 @@
 local build = require("build")
 local log = require("log")
 local serialize = require("lib/serialize")
+local tuning = require("tuning")
 
 local save = {}
 
@@ -38,6 +39,7 @@ end
 local function do_patches(p)
 	-- patch any issues with save files from earlier versions
 	local default = require("default.empty_project")()
+
 	util.copy_defaults(p, default)
 
 	-- 0.1.1 -> 0.1.2
@@ -58,6 +60,7 @@ local function do_patches(p)
 	end
 
 	-- fix projects with low rank
+	-- TODO: remove this?
 	for _, ch in ipairs(p.channels) do
 		if ch.notes then
 			for _, note in ipairs(ch.notes) do
@@ -70,10 +73,21 @@ local function do_patches(p)
 		end
 	end
 
-	-- 0.1.2 -> 0.1.2
+	-- 0.1.2 -> 0.1.3
 	if #p.channels == 0 or not p.channels[1].master then
 		local master_ch = build.new_channel_data({ master = true, name = "Master" })
 		table.insert(p.channels, 1, master_ch)
+	end
+
+	-- TODO: fix up tuning here
+
+	-- quick hack to get my own files working, should not go in release
+	for _, ch in ipairs(p.channels) do
+		if ch.notes then
+			for _, note in ipairs(ch.notes) do
+				note.interval = tuning.pad(note.interval)
+			end
+		end
 	end
 
 	-- after patches are done, file should be on new version

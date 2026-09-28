@@ -26,7 +26,7 @@ jobs:
       run: cargo build --release
 
     - name: Tests
-      run: cargo test --release -- --nocapture
+      run: cargo test --workspace --release -- --nocapture
 
     - name: Test run
       run: cargo run --release -- --test-run
@@ -48,7 +48,7 @@ jobs:
     - name: Build and test
       run: |
         cargo build --release --target aarch64-apple-darwin
-        cargo test --release --target aarch64-apple-darwin -- --nocapture
+        cargo test --workspace --release --target aarch64-apple-darwin -- --nocapture
 
     - name: Test run
       run: cargo run --release --target aarch64-apple-darwin -- --test-run
@@ -91,7 +91,7 @@ jobs:
       run: cargo build --release
 
     - name: Tests
-      run: cargo test --release -- --nocapture
+      run: cargo test --workspace --release -- --nocapture
 
     - name: Test run
       run: cargo run --release -- --test-run

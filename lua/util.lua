@@ -21,6 +21,18 @@ function util.map(list, fn)
 	return new
 end
 
+function util.dedup(list)
+	local new = {}
+	local seen = {}
+	for _, v in ipairs(list) do
+		if not seen[v] then
+			seen[v] = true
+			table.insert(new, v)
+		end
+	end
+	return new
+end
+
 function util.lerp(a, b, t)
 	return a + (b - a) * util.clamp(t, 0, 1)
 end
@@ -101,6 +113,15 @@ end
 
 function util.length(x, y)
 	return math.sqrt(x ^ 2 + y ^ 2)
+end
+
+-- parameter value as sent to the backend
+function util.to_float(x)
+	if type(x) == "boolean" then
+		return x and 1 or 0
+	else
+		return x
+	end
 end
 
 function util.from_dB(x)

@@ -25,7 +25,7 @@ local function setup_project()
 		selection.device_index = nil
 	end
 
-	tuning.load(project.settings.tuning_key)
+	tuning.load_project()
 	engine.seek(project.transport.start_time)
 end
 
@@ -84,7 +84,8 @@ function build.channel(ch_index, channel_data)
 			options.vst_id = VST_ID
 			VST_ID = VST_ID + 1
 
-			local meter_id_instrument = tessera.audio.insert_instrument_vst(ch_index, options.vst_id, descriptor)
+			instrument = Device.new(channel_data.instrument, options)
+			instrument.meter_id = tessera.audio.insert_instrument_vst(ch_index, options.vst_id, descriptor)
 
 			if channel_data.instrument.plugin.state then
 				-- set initial state
@@ -95,11 +96,10 @@ function build.channel(ch_index, channel_data)
 				local state = tessera.audio.vst_get_state(ch_index)
 				channel_data.instrument.plugin.state = state
 			end
-
-			instrument = Device.new(channel_data.instrument, options, meter_id_instrument)
 		else
-			local meter_id_instrument = tessera.audio.insert_instrument(ch_index, channel_data.instrument.name)
-			instrument = Device.new(channel_data.instrument, options, meter_id_instrument)
+			instrument = Device.new(channel_data.instrument, options)
+			instrument.meter_id =
+				tessera.audio.insert_instrument(ch_index, channel_data.instrument.name, instrument:initial_parameters())
 		end
 	end
 
@@ -117,9 +117,9 @@ function build.effect(ch_index, effect_index, effect)
 	local options = device_list.effects[effect.name]
 	assert(options)
 
-	local meter_id = tessera.audio.insert_effect(ch_index, effect_index, effect.name)
-
-	local effect_ui = Device.new(effect, options, meter_id)
+	local effect_ui = Device.new(effect, options)
+	effect_ui.meter_id =
+		tessera.audio.insert_effect(ch_index, effect_index, effect.name, effect_ui:initial_parameters())
 	table.insert(ui_channels[ch_index].effects, effect_index, effect_ui)
 end
 

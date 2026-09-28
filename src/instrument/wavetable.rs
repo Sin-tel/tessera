@@ -10,6 +10,7 @@ use crate::dsp::smooth::*;
 use crate::dsp::*;
 use crate::instrument::*;
 use crate::worker::RequestData;
+use fastrand::Rng;
 use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
@@ -50,6 +51,7 @@ struct Lfo {
 	random: f32,
 	switch: bool,
 	sample_rate: f32,
+	rng: Rng,
 }
 
 impl Lfo {
@@ -63,6 +65,7 @@ impl Lfo {
 			random: 0.,
 			switch: false,
 			sample_rate,
+			rng: Rng::with_seed(0),
 		}
 	}
 
@@ -70,7 +73,7 @@ impl Lfo {
 		self.switch = !self.switch;
 
 		let mut v_new = if self.switch { -1.0 } else { 1.0 };
-		v_new = lerp(v_new, fastrand::f32() * 2.0 - 1.0, self.random);
+		v_new = lerp(v_new, self.rng.f32() * 2.0 - 1.0, self.random);
 
 		self.v_prev = self.v;
 		self.v = v_new;
@@ -397,6 +400,23 @@ impl Instrument for Wavetable {
 		for v in &mut self.voices {
 			v.env.reset();
 			v.active = false;
+			v.note_on = false;
+
+			v.accum = 0.;
+			v.accum2 = 0.;
+			v.accum3 = 0.;
+			v.interpolate = 0.;
+			v.animate = 0.;
+			v.pos_start = 0.;
+			v.freq.immediate();
+			v.pres.set_immediate(0.);
+			// Reseed from the global generator, which Render::flush just reset.
+			v.lfo.rng.seed(fastrand::u64(..));
+			v.lfo.reset();
+
+			v.buffer_a.fill(0.);
+			v.buffer_b.fill(0.);
+			v.spectrum.fill(Complex::new(0., 0.));
 		}
 	}
 

@@ -55,7 +55,17 @@ impl Effect for Tilt {
 			}
 		}
 	}
-	fn flush(&mut self) {}
+	fn flush(&mut self) {
+		for track in &mut self.tracks {
+			for f in
+				[&mut track.filter1, &mut track.filter2, &mut track.filter3, &mut track.filter4]
+			{
+				f.reset_state();
+				f.immediate();
+			}
+			track.gain.immediate();
+		}
+	}
 
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		#[allow(clippy::single_match_else)]
