@@ -17,6 +17,7 @@ local function format(level, message)
 end
 
 function log.write(level, message)
+	message = tostring(message)
 	log.append(level, message)
 
 	local message_fmt = format(level, message)

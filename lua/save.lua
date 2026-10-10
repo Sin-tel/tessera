@@ -59,20 +59,6 @@ local function do_patches(p)
 		end
 	end
 
-	-- fix projects with low rank
-	-- TODO: remove this?
-	for _, ch in ipairs(p.channels) do
-		if ch.notes then
-			for _, note in ipairs(ch.notes) do
-				for i = 1, 3 do
-					if not note.interval[i] then
-						note.interval[i] = 0
-					end
-				end
-			end
-		end
-	end
-
 	-- 0.1.2 -> 0.1.3
 	if #p.channels == 0 or not p.channels[1].master then
 		local master_ch = build.new_channel_data({ master = true, name = "Master" })
@@ -80,12 +66,20 @@ local function do_patches(p)
 	end
 
 	-- TODO: fix up tuning here
+	-- note: tuning isn't loaded yet, so we can't use it directly
 
 	-- quick hack to get my own files working, should not go in release
-	for _, ch in ipairs(p.channels) do
-		if ch.notes then
-			for _, note in ipairs(ch.notes) do
-				note.interval = tuning.pad(note.interval)
+	if p.settings.tuning then
+		local rank = p.settings.tuning.notation.accidentals + 2
+		for _, ch in ipairs(p.channels) do
+			if ch.notes then
+				for _, note in ipairs(ch.notes) do
+					for i = 1, rank do
+						if not note.interval[i] then
+							note.interval[i] = 0
+						end
+					end
+				end
 			end
 		end
 	end
