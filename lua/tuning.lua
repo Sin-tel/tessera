@@ -93,13 +93,10 @@ function tuning.load(def)
 
 	tuning.tables = { tuning.diatonic, tuning.chromatic, tuning.fine }
 
-	-- Projections from notes to scale indices. Scales without one are looked up by pitch.
+	-- Projections from notes to scale indices.
 	tuning.maps = {}
 	for i, t in ipairs(tuning.tables) do
 		tuning.maps[t] = system:scale_map(i)
-		if not tuning.maps[t] then
-			log.warn(tuning.snap_labels[i] .. " scale has no projection, using nearest pitch.")
-		end
 	end
 	tuning.center = pad(tuning.center or {})
 
@@ -179,6 +176,7 @@ end
 
 -- Index of the note in scale t that is closest to a pitch r, in semitones above the unison.
 -- The scale repeats every octave and index 0 is the unison.
+-- Notes are ordered by index, which need not be the order of their pitches, or even inside one octave.
 local function nearest_index(t, r)
 	local sp = get_scale_pitches(t)
 	local o = tuning.generator_pitches[1]
@@ -189,19 +187,14 @@ local function nearest_index(t, r)
 
 	local best = 0
 	local d_best = math.huge
-	for i = 1, n do
-		local d = math.abs(r - sp[i])
-		if d < d_best then
-			best = i - 1
-			d_best = d
-		elseif d > d_best then
-			-- sorted, so it only gets worse
-			break
+	for k = -1, 1 do
+		for i = 1, n do
+			local d = math.abs(r - sp[i] - k * o)
+			if d < d_best then
+				best = k * n + i - 1
+				d_best = d
+			end
 		end
-	end
-	-- the unison in the next octave
-	if math.abs(o - r) < d_best then
-		best = n
 	end
 	return oct * n + best
 end
@@ -259,18 +252,13 @@ function tuning.input_map()
 	return rows
 end
 
--- Index of interval p in scale t.
--- With a projection this is exact, otherwise it is the note closest in pitch.
+-- Index of interval p in scale t, by its projection.
 function tuning.get_index(t, p)
-	local map = tuning.maps[t]
-	if map then
-		local index = 0
-		for i, v in ipairs(map) do
-			index = index + v * (p[i] or 0)
-		end
-		return index
+	local index = 0
+	for i, v in ipairs(tuning.maps[t]) do
+		index = index + v * (p[i] or 0)
 	end
-	return nearest_index(t, tuning.get_relative_pitch(p))
+	return index
 end
 
 -- Convert interval to pitch.
