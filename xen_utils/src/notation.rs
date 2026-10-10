@@ -2,7 +2,9 @@
 
 use std::sync::OnceLock;
 
-use diophantine::{Matrix, cvp_l1_top_k, eye, kernel_left, lll, solve_diophantine, transpose};
+use diophantine::{
+    Matrix, cvp_l1_top_k, eye, kernel_left, kernel_right, lll, solve_diophantine, transpose,
+};
 
 use crate::Error;
 use crate::notation_options::NotationOptions;
@@ -534,6 +536,45 @@ impl Notation {
         first_column(&solution)
     }
 
+    /// The linear map from notation coordinates to steps of a scale that takes
+    /// the `i`th of `notes` to step `i` and the octave to step `n`, if there is one.
+    ///
+    /// This solves `N c = (0, 1, .., n)` over the integers, the rows of `N` being
+    /// the notes and the octave. Coordinates the notes don't pin down are left
+    /// free by that, and there the map is the one closest to `n` equal steps to
+    /// the octave under the notation's tuning.
+    ///
+    /// The map is on the spellings, not on the tempered intervals: 12et has no
+    /// seven step octave, but the diatonic scale still puts C# and Db on
+    /// different steps. And pitch plays no part otherwise, the notes need not be
+    /// in order of pitch.
+    ///
+    /// # Panics
+    /// Panics if a note does not have one entry per notation coordinate.
+    pub fn scale_map(&self, notes: &[Vec<i64>]) -> Option<Vec<i64>> {
+        notes.iter().for_each(|note| self.check(note));
+        let mut octave = vec![0; self.len()];
+        octave[0] = 1;
+        let rows: Matrix<i64> = notes.iter().cloned().chain([octave]).collect();
+        let steps: Vec<i64> = (0..=notes.len() as i64).collect();
+        let particular = first_column(&solve_diophantine(&rows, &column(&steps)).ok()?);
+
+        // kernel_right gives the free directions as columns.
+        let free = kernel_right(&rows).ok()?;
+        if free.iter().all(Vec::is_empty) {
+            return Some(particular);
+        }
+        let free = transpose(&free);
+        let free = lll(&free, LLL_DELTA, &eye(self.len())).unwrap_or(free);
+        let n = notes.len() as f64;
+        let equal: Vec<f64> = self
+            .pitches
+            .iter()
+            .map(|p| n * p / self.pitches[0])
+            .collect();
+        Some(nearest_translate(&particular, &free, &equal))
+    }
+
     /// The simplest just interval that `spelling` stands for: the first of
     /// [`simplifications`](Self::simplifications).
     ///
@@ -691,6 +732,43 @@ impl Notation {
 
         name
     }
+}
+
+/// `start` moved by the integer combination of the rows of `basis` that brings
+/// it closest to `target`, by Babai's nearest plane. Exact for a single row.
+fn nearest_translate(start: &[i64], basis: &Matrix<i64>, target: &[f64]) -> Vec<i64> {
+    let dot_f = |a: &[f64], b: &[f64]| -> f64 { a.iter().zip(b).map(|(x, y)| x * y).sum() };
+    let rows: Vec<Vec<f64>> = basis
+        .iter()
+        .map(|row| row.iter().map(|&x| x as f64).collect())
+        .collect();
+
+    // Gram-Schmidt directions of the rows.
+    let mut directions: Vec<Vec<f64>> = Vec::new();
+    for row in &rows {
+        let mut v = row.clone();
+        for d in &directions {
+            let mu = dot_f(&v, d) / dot_f(d, d);
+            v.iter_mut().zip(d).for_each(|(x, y)| *x -= mu * y);
+        }
+        directions.push(v);
+    }
+
+    let mut result = start.to_vec();
+    let mut rest: Vec<f64> = target
+        .iter()
+        .zip(start)
+        .map(|(t, &s)| t - s as f64)
+        .collect();
+    for i in (0..rows.len()).rev() {
+        let z = (dot_f(&rest, &directions[i]) / dot_f(&directions[i], &directions[i])).round();
+        rest.iter_mut().zip(&rows[i]).for_each(|(r, b)| *r -= z * b);
+        result
+            .iter_mut()
+            .zip(&basis[i])
+            .for_each(|(r, &b)| *r += z as i64 * b);
+    }
+    result
 }
 
 /// Semitones per notation coordinate, from what each maps to in the temperament.
@@ -928,6 +1006,72 @@ mod tests {
             .collect();
         let temperament = Temperament::from_commas(&commas, &subgroup).unwrap();
         Notation::options(&temperament).unwrap()
+    }
+
+    /// C to B by semitones, as octaves and fifths padded to `len` coordinates.
+    fn chromatic(len: usize) -> Vec<Vec<i64>> {
+        [(0, 0), (-4, 7), (-1, 2), (2, -3), (-2, 4), (1, -1)]
+            .into_iter()
+            .chain([(-3, 6), (0, 1), (-4, 8), (-1, 3), (2, -2), (-2, 5)])
+            .map(|(octaves, fifths)| {
+                let mut note = vec![0; len];
+                (note[0], note[1]) = (octaves, fifths);
+                note
+            })
+            .collect()
+    }
+
+    #[test]
+    fn scale_map_of_a_chain() {
+        let meantone = tempered("2.3.5", &[(81, 80)]);
+        let map = meantone.scale_map(&chromatic(meantone.len())).unwrap();
+        assert_eq!(map[..2], [12, 7]);
+    }
+
+    #[test]
+    fn scale_map_is_on_spellings() {
+        // 12et has no seven step octave, the diatonic scale still maps.
+        let subgroup: Subgroup = "2.3.5".parse().unwrap();
+        let et = Notation::from_temperament(&Temperament::equal(12, &subgroup).unwrap()).unwrap();
+        let diatonic: Vec<Vec<i64>> = [(0, 0), (-1, 2), (-2, 4), (1, -1), (0, 1), (-1, 3), (-2, 5)]
+            .into_iter()
+            .map(|(octaves, fifths)| {
+                let mut note = vec![0; et.len()];
+                (note[0], note[1]) = (octaves, fifths);
+                note
+            })
+            .collect();
+        assert_eq!(et.scale_map(&diatonic).unwrap()[..2], [7, 4]);
+    }
+
+    #[test]
+    fn scale_map_ignores_pitch() {
+        // Mavila's fifth is flat enough that E is below Eb, the scale still maps.
+        let mavila = tempered("2.3.5", &[(135, 128)]);
+        let notes = chromatic(mavila.len());
+        assert!(mavila.pitch(&notes[4]) < mavila.pitch(&notes[3]));
+        let map = mavila.scale_map(&notes).unwrap();
+        assert_eq!(map[..2], [12, 7]);
+    }
+
+    #[test]
+    fn scale_map_needs_the_octave_on_n() {
+        // [12, 7] takes C, C#, D to 0, 1, 2, but not the octave to 3.
+        let meantone = tempered("2.3.5", &[(81, 80)]);
+        let notes = chromatic(meantone.len());
+        assert_eq!(meantone.scale_map(&notes[..3]), None);
+    }
+
+    #[test]
+    fn scale_map_free_directions_follow_the_tuning() {
+        // Marvel is rank 3, a chain of fifths leaves the accidentals free.
+        let marvel = tempered("2.3.5.7", &[(225, 224)]);
+        let map = marvel.scale_map(&chromatic(marvel.len())).unwrap();
+        assert_eq!(map[..2], [12, 7]);
+        for i in 2..marvel.len() {
+            let equal = 12.0 * marvel.pitches()[i] / marvel.pitches()[0];
+            assert!((map[i] as f64 - equal).abs() <= 0.5, "{map:?} {equal}");
+        }
     }
 
     /// The ranks of a run of notations.

@@ -31,7 +31,7 @@ impl LuaUserData for TuningSystem {
 			Ok(this.scale(scale_index(index)?).notes.clone())
 		});
 
-		// Linear map from a note to its index in the scale, or nil if there is none.
+		// Linear map from a note to its index in the scale.
 		methods.add_method("scale_map", |_, this, index: usize| {
 			Ok(this.scale(scale_index(index)?).map.clone())
 		});
