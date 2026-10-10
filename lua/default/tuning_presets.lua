@@ -18,6 +18,7 @@ presets.categories = {
 			"mothra",
 			"rodan",
 			"miracle",
+			"orwell",
 			-- rank 3
 			"marvel",
 			"pele",
@@ -40,6 +41,7 @@ presets.categories = {
 			"et_34",
 			"et_36",
 			"et_41",
+			"et_46",
 			"et_53",
 			"et_72",
 		},
@@ -129,6 +131,11 @@ tunings.miracle = {
 	commas = { "225/224", "385/384", "441/440" },
 }
 
+tunings.orwell = {
+	name = "Orwell",
+	subgroup = "2.3.5.7.11",
+	commas = { "225/224", "176/175", "385/384" },
+}
 --- rank 3
 
 tunings.marvel = {
@@ -167,6 +174,7 @@ tunings.et_31 = et(31, "2.3.5.7")
 tunings.et_34 = et(34, "2.3.5")
 tunings.et_36 = et(36, "2.3.7")
 tunings.et_41 = et(41, "2.3.5.7.11")
+tunings.et_46 = et(46, "2.3.5.7.11")
 tunings.et_53 = et(53, "2.3.5")
 tunings.et_72 = et(72, "2.3.5.7.11")
 
