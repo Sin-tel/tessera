@@ -1,4 +1,5 @@
 use crate::api::lua_serde;
+use crate::log::log_error;
 use crate::tuning::{
 	Conversion, NotationChoice, NotationOption, NotationStyle, ScaleCandidates, TemperamentDef,
 	TuningSystem, notations,
@@ -60,6 +61,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	let tuning = lua.create_table()?;
 
 	// tessera.tuning.new(temperament, notation_choice, scale_candidates)
+	// nil if the tuning can't be built, the reason is logged
 	tuning.set(
 		"new",
 		lua.create_function(
@@ -69,17 +71,19 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				NotationChoice,
 				Option<ScaleCandidates>,
 			)| {
-				TuningSystem::new(&def, choice, &candidates.unwrap_or_default())
-					.map_err(LuaError::RuntimeError)
+				Ok(TuningSystem::new(&def, choice, &candidates.unwrap_or_default())
+					.inspect_err(|e| log_error!("{e}"))
+					.ok())
 			},
 		)?,
 	)?;
 
 	// tessera.tuning.notations(temperament)
+	// nil if the temperament is invalid, the reason is logged
 	tuning.set(
 		"notations",
 		lua.create_function(|_, def: TemperamentDef| {
-			notations(&def).map_err(LuaError::RuntimeError)
+			Ok(notations(&def).inspect_err(|e| log_error!("{e}")).ok())
 		})?,
 	)?;
 

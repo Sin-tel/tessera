@@ -1,7 +1,6 @@
 local Notation = require("notation")
 local Ui = require("ui/ui")
 local View = require("view")
-local log = require("log")
 local tuning = require("tuning")
 local tuning_presets = require("default.tuning_presets")
 local widgets = require("ui/widgets")
@@ -208,10 +207,9 @@ function ProjectSettings:update_rows()
 	self.option = nil
 	self.error = nil
 
-	local ok, options = pcall(tessera.tuning.notations, self.def)
-	if not ok then
-		log.error(options)
-		self.error = options
+	local options = tessera.tuning.notations(self.def)
+	if not options then
+		self.error = true
 		return
 	end
 

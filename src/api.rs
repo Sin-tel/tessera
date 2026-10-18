@@ -59,6 +59,12 @@ pub fn create_lua(scale_factor: f64) -> LuaResult<Lua> {
 		})?,
 	)?;
 
+	// tessera.panic()
+	tessera.set(
+		"panic",
+		lua.create_function(|_, ()| -> Result<(), _> { panic!("intentional panic") })?,
+	)?;
+
 	// tessera.version()
 	tessera.set(
 		"version",

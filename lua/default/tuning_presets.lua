@@ -216,7 +216,7 @@ function presets.default()
 end
 
 -- Every preset is listed exactly once, in the category it belongs to.
-if debug then
+if not release then
 	local listed = {}
 	for i, c in ipairs(presets.categories) do
 		for _, k in ipairs(c.list) do

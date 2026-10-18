@@ -1,4 +1,5 @@
 local build = require("build")
+local log = require("log")
 local save = require("save")
 
 local file = {}
@@ -7,6 +8,12 @@ local dialog_pending
 
 local load_last_save = true
 local overwrite_check = true
+
+-- This file exists while the app runs, deleted on clean exit.
+-- If it's still there on startup, the last session crashed.
+-- Contains the path of the recovery save if it was written.
+local running_marker = "out/running"
+local marker_written = false
 
 -- since file dialogs are spawned on new threads, we need to check the results here
 function file.poll_dialogs()
@@ -36,6 +43,33 @@ end
 function file.open()
 	if tessera.dialog_open() then
 		dialog_pending = "open"
+	end
+end
+
+-- Call once on startup, before load_last.
+function file.check_crash()
+	if util.file_exists(running_marker) then
+		log.warn("Last session did not exit cleanly, not loading the last save.")
+		local recovery = util.readfile(running_marker)
+		if recovery ~= "" then
+			log.warn('Recovered project saved to "' .. recovery .. '"')
+		end
+		load_last_save = false
+	end
+	util.writefile(running_marker, "")
+	marker_written = true
+end
+
+-- Save the project after a crash, and note it in the marker.
+function file.write_recovery()
+	if save.write_recovery() and marker_written then
+		util.writefile(running_marker, save.recovery_path)
+	end
+end
+
+function file.clean_exit()
+	if marker_written then
+		os.remove(running_marker)
 	end
 end
 
