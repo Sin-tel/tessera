@@ -31,6 +31,12 @@ impl LuaUserData for TuningSystem {
 			Ok(this.respellings(&note))
 		});
 
+		// How complex a spelling is, lower is simpler.
+		methods.add_method("spelling_cost", |_, this, note: Vec<i64>| {
+			check_note(this, &note)?;
+			Ok(this.spelling_cost(&note))
+		});
+
 		// what kind of conversion needs to happen
 		methods.add_method("conversion", |_, this, from: LuaUserDataRef<TuningSystem>| {
 			Ok(this.conversion(&from))

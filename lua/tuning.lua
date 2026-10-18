@@ -6,6 +6,7 @@ local tuning_presets = require("default.tuning_presets")
 local tuning = {}
 
 tuning.snap_labels = { "Diatonic", "Chromatic", "Fine" }
+tuning.auto_simplify_cost = 7
 
 local function unit(index)
 	local v = tuning.new_interval()
@@ -373,6 +374,22 @@ function tuning.respell(p)
 	return list[1]
 end
 
+-- Simplest way to write a note.
+function tuning.simplify(p)
+	return respellings(p)[1]
+end
+
+-- For notes that were moved: a simpler way to write them, if the auto simplify setting is on.
+function tuning.auto_simplify(p)
+	if project.settings.auto_simplify then
+		local s = tuning.simplify(p)
+		if tuning.system:spelling_cost(p) - tuning.system:spelling_cost(s) > tuning.auto_simplify_cost then
+			return s
+		end
+	end
+	return p
+end
+
 -- Respell notes in place.
 -- A single note cycles. Several notes are simplified, unless they all are already, then they cycle.
 -- That way, respelling a selection first cleans it up.
@@ -390,7 +407,7 @@ function tuning.respell_notes(notes)
 
 	for _, note in ipairs(notes) do
 		if simplify then
-			note.interval = respellings(note.interval)[1]
+			note.interval = tuning.simplify(note.interval)
 		else
 			note.interval = tuning.respell(note.interval)
 		end

@@ -18,6 +18,7 @@ local function empty_project()
 			snap_pitch = 1,
 			metronome = false,
 			relative_note_names = true,
+			auto_simplify = false,
 			-- settings.tuning is set by tuning.load_project
 		},
 
