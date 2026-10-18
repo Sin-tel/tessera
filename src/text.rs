@@ -532,3 +532,29 @@ fn blur(src: &[u8], width: usize, height: usize, size: usize, sigma: f32) -> Vec
 	// darken and convert to u8
 	out.iter_mut().map(|x| (*x * 1.7).clamp(0., 255.) as u8).collect()
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	// Empty strings still lay out as one empty run, so the unwraps on layout_runs are safe.
+	// (measure_width returns early anyway)
+	#[test]
+	fn empty_string_layout() {
+		let mut engine = TextEngine::new();
+		for font in [Font::Inter, Font::Notes] {
+			let attrs = Attrs::new().family(Family::Name(font.as_str()));
+			for align in [None, Some(Align::Left), Some(Align::Center), Some(Align::Right)] {
+				let mut buffer = engine.scratch_buffer.borrow_with(&mut engine.font_system);
+				buffer.set_metrics(Metrics::new(16.0, 16.0));
+				buffer.set_size(Some(100.0), Some(20.0));
+				buffer.set_text("", &attrs, SHAPING, align);
+				buffer.set_wrap(Wrap::None);
+				buffer.shape_until_scroll(false);
+				let run = buffer.layout_runs().next().expect("no layout run for empty string");
+				assert_eq!(run.line_w, 0.0);
+			}
+			assert_eq!(engine.measure_width("", font, 16.0), 0.0);
+		}
+	}
+}

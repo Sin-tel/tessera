@@ -41,7 +41,7 @@ function ToggleSmall:draw(ui, checked, x, y, w, h)
 	end
 	if self.label then
 		tessera.graphics.set_font_size(21)
-		local tw = tessera.graphics.measure_width(self.label)
+		local tw = tessera.graphics.measure_width(self.label, "main", 21)
 		local o = 0.5 * (w - tw)
 		tessera.graphics.text(self.label, x + o, y)
 		tessera.graphics.set_font_size()

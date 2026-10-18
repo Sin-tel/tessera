@@ -295,8 +295,10 @@ function tuning.input_map()
 		local midi = 59 + i
 		local interval = tuning.from_midi(midi)
 		local ratios = tuning.system:simple_ratios(interval)
+		local prefix, name = tuning.get_name_parts(interval)
 		rows[i] = {
-			name = tuning.get_name(interval),
+			prefix = prefix,
+			name = name,
 			ratio = table.concat(ratios, " ~ "),
 			black = BLACK_KEYS[(midi - 60) % 12] or false,
 		}
@@ -326,8 +328,8 @@ function tuning.get_relative_pitch(p)
 	return f
 end
 
--- Name of a note in the current tuning.
-function tuning.get_name(p)
+-- Coordinates for note name, relative to the center.
+local function name_coords(p)
 	if project.settings.relative_note_names then
 		p = tuning.sub(p, tuning.center)
 	elseif tuning.rank > 2 then
@@ -342,8 +344,17 @@ function tuning.get_name(p)
 		end
 		p = new
 	end
+	return p
+end
 
-	return tuning.notation:name(p)
+-- Name of a note in the current tuning.
+function tuning.get_name(p)
+	return tuning.notation:name(name_coords(p))
+end
+
+-- Name of a note, split in the part before the letter and the rest. See Notation:name_parts.
+function tuning.get_name_parts(p)
+	return tuning.notation:name_parts(name_coords(p))
 end
 
 -- basic arithmetic functions
