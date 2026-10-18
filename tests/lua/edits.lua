@@ -231,7 +231,7 @@ tests["auto simplify, threshold"] = function()
 	set_tuning("et_22")
 	project.settings.auto_simplify = true
 	local cost = function(p)
-		return tuning.system:spelling_cost(p)
+		return tuning.system:spelling_cost(tuning.to_centered(p))
 	end
 	local kept, simplified = 0, 0
 	for m = 60, 71 do
@@ -317,6 +317,36 @@ tests["center over timeline"] = function()
 	assert(tuning.eq(project.center[1].interval, before[1].interval), "first center not restored")
 	assert(tuning.eq(project.center[2].interval, before[2].interval), "second center not restored")
 	assert(project.center[2].time == 4.0)
+end
+
+tests["centered round trip"] = function()
+	set_tuning("et_31")
+	tuning.set_center(tuning.pad({ 2, -3, 1 }))
+	for _, relative in ipairs({ true, false }) do
+		project.settings.relative_note_names = relative
+		for f = -8, 8 do
+			for u = -2, 2 do
+				local p = tuning.pad({ 0, f, u })
+				assert(tuning.eq(tuning.from_centered(tuning.to_centered(p)), p), "round trip")
+			end
+		end
+	end
+end
+
+-- Spellings are simple as written relative to the center: in F# major, A# reads as E and stays.
+tests["simplify relative to center"] = function()
+	set_tuning("et_12")
+	project.settings.relative_note_names = true
+	local a_sharp = tuning.pad({ -5, 10 })
+	local b_flat = tuning.pad({ 2, -2 })
+	assert(math.abs(tuning.get_pitch(a_sharp) - tuning.get_pitch(b_flat)) < 1e-9)
+
+	assert(tuning.eq(tuning.simplify(a_sharp), b_flat), "A# not simplified to Bb around C")
+
+	tuning.set_center(tuning.pad({ -3, 6 }))
+	assert(tuning.eq(tuning.simplify(a_sharp), a_sharp), "A# respelled in F#")
+	assert(tuning.eq(tuning.simplify(b_flat), a_sharp), "Bb not simplified to A# in F#")
+	assert(tuning.get_name(a_sharp) == "E", "A# in F# is named " .. tuning.get_name(a_sharp))
 end
 
 local names = {}
