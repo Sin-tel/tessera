@@ -1,5 +1,4 @@
 ## misc
-switching tabs causes tool switch also (fix: check keyboard cancel return)
 need to tune feedback filter in delay_tape
 epiano equalization curve
 fix key velocity curve (add to all instruments on rust side)
@@ -12,14 +11,10 @@ add undo for change tuning center ('c')
 
 add simplify shortcut and auto-simplify option
 
-for ETs, don't optimize tuning but use the obvious one (step = 12./31. for 31et)
-
 bug: edit tool holds onto note state, causing crash when changing tuning
      pressing ctrl z to undo a tuning change while drawing a note reliably causes a crash
 
 ## Tuning system rewrite
-set default indices instead of first in settings
-
 add respelling shortcut, auto simplify setting
 
 note map: align by note name so ups prefix is flush

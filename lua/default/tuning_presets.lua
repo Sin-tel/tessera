@@ -1,9 +1,10 @@
 local presets = {}
 
--- categories and order in the settings menu
+-- categories and order in the settings menu, and which preset is picked when switching to one
 presets.categories = {
 	{
 		name = "Temperament",
+		default = "meantone",
 		list = {
 			-- rank 2
 			"meantone",
@@ -28,6 +29,7 @@ presets.categories = {
 	{
 		-- TODO: 5 and 7 et kinda broken right now
 		name = "Equal",
+		default = "et_31",
 		list = {
 			-- "et_5",
 			-- "et_7",
@@ -48,6 +50,7 @@ presets.categories = {
 	},
 	{
 		name = "Just Intonation",
+		default = "ji_5",
 		list = { "pythagorean", "ji_5", "ji_7", "ji_11", "ji_2_3_7" },
 	},
 }
@@ -226,6 +229,7 @@ if not release then
 			assert(presets.category(def) == i, "Preset in the wrong category: " .. k)
 			listed[k] = true
 		end
+		assert(util.find(c.list, c.default), "Default not in its category: " .. c.name)
 	end
 	for k in pairs(tunings) do
 		assert(listed[k], "Preset not in any category: " .. k)

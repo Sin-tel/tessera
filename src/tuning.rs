@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use xen_utils::notation::spelling_cost;
-use xen_utils::{Notation, Subgroup, Temperament};
+use xen_utils::{Notation, Subgroup, Temperament, Tuning};
 
 // Number of fifths in the chain scales, and how far down from the root they start.
 const DIATONIC: (usize, i64) = (7, 1);
@@ -127,8 +127,11 @@ impl TuningSystem {
 		candidates: &ScaleCandidates,
 	) -> Result<Self, String> {
 		let temperament = temperament(def)?;
-		let notation = Notation::with_count(&temperament, choice.accidentals)
+		let mut notation = Notation::with_count(&temperament, choice.accidentals)
 			.map_err(|e| format!("Notation {choice:?} is not available: {e}"))?;
+		if def.et.is_some() {
+			notation = notation.with_tuning(equal_tuning(&temperament)).map_err(err)?;
+		}
 		if !choices(&notation).contains(&choice) {
 			return Err(format!("Notation {choice:?} is not available"));
 		}
@@ -476,6 +479,13 @@ fn temperament(def: &TemperamentDef) -> Result<Temperament, String> {
 			Temperament::from_commas(&commas, &subgroup).map_err(err)
 		},
 	}
+}
+
+// Equal temperaments get pure octaves instead of the optimal tuning.
+fn equal_tuning(temperament: &Temperament) -> Tuning {
+	assert_eq!(temperament.subgroup().basis()[0], 2, "Subgroup must start with 2");
+	let steps = temperament.mapping()[0][0];
+	Tuning::new(temperament, vec![12.0 / steps as f64]).expect("rank 1 temperament")
 }
 
 fn err(e: xen_utils::Error) -> String {
