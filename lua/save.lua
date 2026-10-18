@@ -1,7 +1,7 @@
 local build = require("build")
 local log = require("log")
 local serialize = require("lib/serialize")
-local tuning = require("tuning")
+local tuning_presets = require("default.tuning_presets")
 
 local save = {}
 
@@ -36,8 +36,20 @@ function save.write(filename)
 	save.set_save_location(filename)
 end
 
-local function do_patches(p)
-	-- patch any issues with save files from earlier versions
+save.recovery_path = "out/crash_recovery.sav"
+
+-- Skips VST state (audio may be dead) and doesn't touch the save location.
+function save.write_recovery()
+	if not project or not project.channels then
+		return false
+	end
+	log.info('saving crash recovery to "' .. save.recovery_path .. '"')
+	util.writefile(save.recovery_path, serialize(project, "project"))
+	return true
+end
+
+-- Patch any issues with save files from earlier versions.
+function save.patch(p)
 	local default = require("default.empty_project")()
 
 	util.copy_defaults(p, default)
@@ -65,11 +77,14 @@ local function do_patches(p)
 		table.insert(p.channels, 1, master_ch)
 	end
 
-	-- TODO: fix up tuning here
-	-- note: tuning isn't loaded yet, so we can't use it directly
+	-- 0.1.2 had no tuning settings, everything was meantone without extra accidentals.
+	if not p.settings.tuning then
+		p.settings.tuning = util.clone(tuning_presets.tunings.meantone)
+		p.settings.tuning.notation = { accidentals = 0, half_sharp = false }
+	end
 
 	-- quick hack to get my own files working, should not go in release
-	if p.settings.tuning then
+	if not release and p.settings.tuning then
 		local rank = p.settings.tuning.notation.accidentals + 2
 		for _, ch in ipairs(p.channels) do
 			if ch.notes then
@@ -108,7 +123,7 @@ function save.read(filename)
 	end
 
 	-- if we can automatically upgrade save files to new version, do so here
-	do_patches(new_project)
+	save.patch(new_project)
 
 	build.load_project(new_project)
 

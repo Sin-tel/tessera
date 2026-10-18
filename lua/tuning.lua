@@ -25,12 +25,7 @@ tuning.pad = pad
 
 -- Build the tuning system for a definition, without loading it.
 local function new_system(def)
-	local ok, system = pcall(tessera.tuning.new, def, def.notation, scales.candidates)
-	if not ok then
-		log.error(system)
-		return nil
-	end
-	return system
+	return tessera.tuning.new(def, def.notation, scales.candidates)
 end
 
 -- Load a tuning from definition table

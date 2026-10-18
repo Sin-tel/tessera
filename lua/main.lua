@@ -105,6 +105,8 @@ function tessera.load(test_run)
 	tuning.load_default()
 
 	if not test_run then
+		file.check_crash()
+
 		-- setup workspace
 		workspace:load()
 
@@ -276,6 +278,7 @@ function tessera.keypressed(key, key_str, isrepeat)
 	elseif modifier_keys.ctrl and key == "w" then
 		-- for testing panic recovery
 		tessera.audio.panic()
+		-- tessera.panic()
 	elseif modifier_keys.ctrl and key == "p" then
 		if profile then
 			log.info(profile.report(20))
@@ -349,11 +352,18 @@ end
 
 function tessera.quit()
 	save.write_setup()
+	file.clean_exit()
 	log.info("Quitting")
 end
 
+local recovery_written = false
+
 function tessera.draw_error(msg)
-	-- TODO: we can save project here, and try to restore on next run
+	-- only try once, saving could fail too
+	if not recovery_written then
+		recovery_written = true
+		file.write_recovery()
+	end
 
 	tessera.graphics.set_color(theme.borders)
 	tessera.graphics.rectangle("fill", 0, 0, width, height)
