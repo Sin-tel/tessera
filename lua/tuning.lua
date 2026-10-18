@@ -352,38 +352,50 @@ function tuning.get_relative_pitch(p)
 	return f
 end
 
--- Coordinates for note name, relative to the center.
-local function name_coords(p)
+-- How far the center moves the written notes.
+-- With relative note names that's all of it, otherwise only the extra accidentals.
+local function center_offset()
+	local c = tuning.get_center()
 	if project.settings.relative_note_names then
-		p = tuning.sub(p, tuning.get_center())
-	elseif tuning.rank > 2 then
-		-- only move by extra accidentals
-		local new = {}
-		for i = 1, tuning.rank do
-			if i > 2 then
-				new[i] = p[i] - tuning.get_center()[i]
-			else
-				new[i] = p[i]
-			end
-		end
-		p = new
+		return c
 	end
-	return p
+	local offset = tuning.new_interval()
+	for i = 3, tuning.rank do
+		offset[i] = c[i]
+	end
+	return offset
+end
+
+-- Coordinates relative to the center: how a note is written. Names and spellings work on these.
+function tuning.to_centered(p)
+	return tuning.sub(p, center_offset())
+end
+
+-- Inverse of to_centered.
+function tuning.from_centered(p)
+	return tuning.add(p, center_offset())
 end
 
 -- The best few ways to write a note, best first, and the index of p in that list if it's one of them.
+-- Spelled as written, relative to the center.
 local function respellings(p)
+	local centered = tuning.to_centered(p)
 	-- Compared by how they're written, since different spellings can be drawn the same (half sharps).
 	local list = {}
 	local names = {}
-	for _, s in ipairs(tuning.system:respellings(p)) do
+	for _, s in ipairs(tuning.system:respellings(centered)) do
 		local name = tuning.notation:name(s)
 		if not util.find(names, name) then
-			table.insert(list, s)
+			table.insert(list, tuning.from_centered(s))
 			table.insert(names, name)
 		end
 	end
-	return list, util.find(names, tuning.notation:name(p))
+	return list, util.find(names, tuning.notation:name(centered))
+end
+
+-- How complex a note is to read, as written relative to the center.
+local function spelling_cost(p)
+	return tuning.system:spelling_cost(tuning.to_centered(p))
 end
 
 -- Next way to write the same note, cycling through the best few.
@@ -406,7 +418,7 @@ end
 function tuning.auto_simplify(p)
 	if project.settings.auto_simplify then
 		local s = tuning.simplify(p)
-		if tuning.system:spelling_cost(p) - tuning.system:spelling_cost(s) > tuning.auto_simplify_cost then
+		if spelling_cost(p) - spelling_cost(s) > tuning.auto_simplify_cost then
 			return s
 		end
 	end
@@ -439,12 +451,12 @@ end
 
 -- Name of a note in the current tuning.
 function tuning.get_name(p)
-	return tuning.notation:name(name_coords(p))
+	return tuning.notation:name(tuning.to_centered(p))
 end
 
 -- Name of a note, split in the part before the letter and the rest. See Notation:name_parts.
 function tuning.get_name_parts(p)
-	return tuning.notation:name_parts(name_coords(p))
+	return tuning.notation:name_parts(tuning.to_centered(p))
 end
 
 -- basic arithmetic functions
