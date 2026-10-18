@@ -47,12 +47,12 @@ function engine.stop()
 	command.end_edit(engine)
 end
 
-function engine.seek(time)
+function engine.seek(t)
 	if engine.playing then
 		log.warn("Engine was playing while seeking")
 		return
 	end
-	engine.time = time
+	engine.time = t
 end
 
 function engine.update(dt)
