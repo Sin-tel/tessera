@@ -2,7 +2,8 @@
 
 local time = {}
 
-local SNAP_TIMES = { 1, 1 / 4, 1 / 16 }
+-- in beats, labels are note values (4 beats to a bar)
+local SNAP_TIMES = { 4, 1, 1 / 4 }
 time.snap_labels = { "1", "1/4", "1/16", "Off" }
 
 function time.get_div(t)

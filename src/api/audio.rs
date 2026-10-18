@@ -6,7 +6,7 @@ use crate::audio::{
 	check_architecture, get_default_host, get_default_output_device, get_hosts, get_output_devices,
 	open_control_panel,
 };
-use crate::context::{AudioContext, AudioMessage};
+use crate::context::{AudioContext, AudioMessage, LuaMessage};
 use crate::log::{log_error, log_info};
 use crate::opengl::UserEvent;
 use crate::voice_manager::Token;
@@ -75,6 +75,15 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		"rebuild",
 		lua.create_function(|lua, (device_info, buffer_size): (DeviceInfo, Option<u32>)| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
+
+			// Drop stream settings of the old stream that weren't read yet, keep the log lines.
+			let pending: Vec<_> = state.lua_rx.try_iter().collect();
+			for m in pending {
+				if matches!(m, LuaMessage::Log { .. }) {
+					let _ = state.lua_tx.try_send(m);
+				}
+			}
+
 			#[allow(clippy::collapsible_if)]
 			if let Some(ctx) = &mut state.audio {
 				if let Err(e) = ctx.rebuild_stream(&device_info, buffer_size) {
