@@ -78,6 +78,11 @@ impl AudioContext {
 		self.stream = None;
 		self.device = None;
 
+		// errors from the old stream are no longer relevant
+		while let Some(e) = self.error_rx.try_pop() {
+			log_info!("Ignored error message: {e:?}");
+		}
+
 		let device = find_output_device(device_info)?;
 		let (config, format) = build_config(&device, buffer_size)?;
 
