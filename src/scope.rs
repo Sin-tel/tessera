@@ -10,6 +10,17 @@ use std::sync::Arc;
 use crate::audio::SPECTRUM_SIZE;
 use crate::dsp::TWO_PI;
 
+// Pixels per octave in a spectrum drawn `w` wide.
+// The x axis is log frequency, with Nyquist at the right edge.
+fn spectrum_scale_x(w: f32) -> f32 {
+	210.0 * w / ((SPECTRUM_SIZE / 2 + 1) as f32)
+}
+
+// Frequency in Hz at `x` in a spectrum drawn `w` wide, see Scope::draw_spectrum.
+pub fn spectrum_frequency(x: f32, w: f32, sample_rate: f32) -> f32 {
+	0.5 * sample_rate * ((x - w) / spectrum_scale_x(w)).exp2()
+}
+
 pub struct Scope {
 	buf: BitMaskRB<f32>,
 	pos: isize,
@@ -122,7 +133,7 @@ impl Scope {
 
 		let tx = w;
 		let ty = h * 0.1;
-		let scale_x = 210.0 * w / (spectrum.len() as f32);
+		let scale_x = spectrum_scale_x(w);
 		let scale_y = -h * 0.07;
 
 		// draw grid

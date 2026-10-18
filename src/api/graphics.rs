@@ -1,5 +1,6 @@
 use crate::app::State;
 use crate::app::{DEFAULT_FONT_SIZE, DEFAULT_LINE_WIDTH};
+use crate::scope::spectrum_frequency;
 use crate::text::Font;
 use crate::text::Rect;
 use cosmic_text::Align;
@@ -589,6 +590,16 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 				.scope
 				.draw_spectrum(w, h, sample_rate, color, &mut state.canvas);
 			Ok(())
+		})?,
+	)?;
+
+	graphics.set(
+		"spectrum_frequency",
+		// spectrum_frequency(x, w): frequency in Hz at x in a spectrum drawn w wide, nil without audio.
+		lua.create_function(|lua, (x, w): (f32, f32)| {
+			let state = lua.app_data_ref::<State>().unwrap();
+			let Some(audio_ctx) = &state.audio else { return Ok(None) };
+			Ok(Some(spectrum_frequency(x, w, audio_ctx.sample_rate as f32)))
 		})?,
 	)?;
 
