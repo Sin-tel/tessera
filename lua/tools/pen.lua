@@ -100,14 +100,6 @@ function pen:mousedown(canvas)
 	end
 end
 
-function pen:update(canvas)
-	local _, my = canvas:get_mouse()
-	if not self.active then
-		-- update for preview label
-		self.interval = get_interval(canvas, my)
-	end
-end
-
 function pen:mousereleased(canvas)
 	if not self.active then
 		return
@@ -151,11 +143,16 @@ end
 function pen:draw(canvas)
 	local mx, my = canvas:get_mouse()
 
-	if not self.interval then
-		return
+	-- While inactive, only the preview label. Not cached, the tuning may have changed since.
+	local interval = self.interval
+	if not self.active then
+		if not canvas:focus() then
+			return
+		end
+		interval = get_interval(canvas, my)
 	end
 
-	local p = tuning.get_pitch(self.interval)
+	local p = tuning.get_pitch(interval)
 	local y = canvas.transform:pitch(p)
 
 	local x1, y1 = mx, my
@@ -166,7 +163,7 @@ function pen:draw(canvas)
 
 	-- draw note label
 	tessera.graphics.set_color(theme.text_tip)
-	local note_name = tuning.get_name(self.interval)
+	local note_name = tuning.get_name(interval)
 	tessera.graphics.text(note_name, x1 + 5, y1 - 20)
 
 	-- draw note preview
