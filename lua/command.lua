@@ -1,5 +1,6 @@
 local build = require("build")
 local load_default_project = require("default.project")
+local tuning = require("tuning")
 
 local command = {}
 
@@ -247,6 +248,43 @@ function TimeUpdate:reverse()
 end
 
 command.TimeUpdate = TimeUpdate
+
+-- Change the project's tuning, which converts every note.
+local SetTuning = {}
+SetTuning.__index = SetTuning
+
+function SetTuning.new(def)
+	local self = setmetatable({}, SetTuning)
+
+	self.def = util.clone(def)
+	self.prev_def = util.clone(project.settings.tuning)
+	self.prev_center = util.clone(tuning.center)
+
+	-- keep refs to the notes, and copies of their intervals
+	self.notes = tuning.all_notes()
+	self.prev_intervals = {}
+	for i, note in ipairs(self.notes) do
+		self.prev_intervals[i] = util.clone(note.interval)
+	end
+
+	return self
+end
+
+function SetTuning:run()
+	return tuning.set(util.clone(self.def))
+end
+
+function SetTuning:reverse()
+	assert(tuning.load(util.clone(self.prev_def)))
+	project.settings.tuning = util.clone(self.prev_def)
+	for i, note in ipairs(self.notes) do
+		note.interval = util.clone(self.prev_intervals[i])
+	end
+	tuning.center = util.clone(self.prev_center)
+	clipboard.clear()
+end
+
+command.SetTuning = SetTuning
 
 command.NewChannel, command.RemoveChannel, command.NewEffect, command.RemoveEffect, command.ReorderEffect =
 	unpack(require("command_channel"))

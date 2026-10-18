@@ -1,7 +1,7 @@
 use crate::api::lua_serde;
 use crate::tuning::{
-	NotationChoice, NotationOption, NotationStyle, ScaleCandidates, TemperamentDef, TuningSystem,
-	notations,
+	Conversion, NotationChoice, NotationOption, NotationStyle, ScaleCandidates, TemperamentDef,
+	TuningSystem, notations,
 };
 use mlua::prelude::*;
 
@@ -10,6 +10,7 @@ lua_serde!(NotationChoice);
 lua_serde!(NotationStyle);
 lua_serde!(NotationOption);
 lua_serde!(ScaleCandidates);
+lua_serde!(Conversion);
 
 impl LuaUserData for TuningSystem {
 	fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
@@ -22,6 +23,23 @@ impl LuaUserData for TuningSystem {
 			check_note(this, &note)?;
 			Ok(this.simple_ratios(&note))
 		});
+
+		// what kind of conversion needs to happen
+		methods.add_method("conversion", |_, this, from: LuaUserDataRef<TuningSystem>| {
+			Ok(this.conversion(&from))
+		});
+
+		// Convert notes to new tuning system.
+		// Returns the new notes, and how many of them changed.
+		methods.add_method(
+			"convert",
+			|_, this, (from, notes): (LuaUserDataRef<TuningSystem>, Vec<Vec<i64>>)| {
+				for note in &notes {
+					check_note(&from, note)?;
+				}
+				Ok(this.convert(&from, &notes))
+			},
+		);
 
 		// one step of an equal temperament, nil otherwise
 		methods.add_method("step", |_, this, ()| Ok(this.step()));

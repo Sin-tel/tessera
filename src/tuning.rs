@@ -100,6 +100,19 @@ pub struct TuningSystem {
 	scales: [Scale; 3],
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Conversion {
+	// Same temperament, every accidental is still there: nothing changes.
+	Unchanged,
+	// Same accidentals: notes keep their spelling, the new temperament retunes them.
+	Retune,
+	// Same temperament: notes keep their pitch, but may be respelled.
+	Respell,
+	// Accidentals missing in the new notation are dropped: spelling and pitch may change.
+	Clip,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrimeSpelling {
 	pub ratio: String,
@@ -189,6 +202,69 @@ impl TuningSystem {
 		list.iter()
 			.filter(|k| subgroup.sopfr(k) <= bound)
 			.map(|k| interval_to_string(subgroup, k))
+			.collect()
+	}
+
+	// How notes from `from` need to be converted.
+	pub fn conversion(&self, from: &TuningSystem) -> Conversion {
+		let same_temperament = self.notation.temperament() == from.notation.temperament();
+		let keeps_all = self.coordinate_map(from).iter().all(Option::is_some);
+		match (keeps_all, same_temperament) {
+			(true, true) => Conversion::Unchanged,
+			(true, false) => Conversion::Retune,
+			(false, true) => Conversion::Respell,
+			(false, false) => Conversion::Clip,
+		}
+	}
+
+	// Notes from `from`, convert to this tuning (see `conversion`).
+	// Also returns how many of them changed.
+	pub fn convert(&self, from: &TuningSystem, notes: &[Vec<i64>]) -> (Vec<Vec<i64>>, usize) {
+		let kind = self.conversion(from);
+		let map = self.coordinate_map(from);
+
+		let mut changed = 0;
+		let converted = notes
+			.iter()
+			.map(|note| {
+				let new = if kind == Conversion::Respell {
+					// Same temperament, so the same subgroup.
+					self.notation.from_interval(&from.notation.to_interval(note))
+				} else {
+					let mut new = vec![0; self.len()];
+					for (x, &j) in note.iter().zip(&map) {
+						if let Some(j) = j {
+							new[j] += x;
+						}
+					}
+					new
+				};
+				let old_ji = factors(from.notation.subgroup(), &from.notation.to_interval(note));
+				let new_ji = factors(self.notation.subgroup(), &self.notation.to_interval(&new));
+				if old_ji != new_ji {
+					changed += 1;
+				}
+				new
+			})
+			.collect();
+		(converted, changed)
+	}
+
+	// For each coordinate of `from`, the coordinate here with the same generator, if there is one.
+	fn coordinate_map(&self, from: &TuningSystem) -> Vec<Option<usize>> {
+		let ours: Vec<_> = self
+			.notation
+			.generators()
+			.iter()
+			.map(|g| factors(self.notation.subgroup(), g))
+			.collect();
+		from.notation
+			.generators()
+			.iter()
+			.map(|g| {
+				let g = factors(from.notation.subgroup(), g);
+				ours.iter().position(|x| *x == g)
+			})
 			.collect()
 	}
 
@@ -455,6 +531,17 @@ fn generator_ratios(notation: &Notation) -> Vec<String> {
 // Fifths down from the root for a chain of n, so that it is centered around D.
 fn chain_offset(n: usize) -> i64 {
 	n as i64 / 2 - 2
+}
+
+// An interval as (prime, exponent) pairs, so intervals over different subgroups can be compared.
+fn factors(subgroup: &Subgroup, interval: &[i64]) -> Vec<(u32, i64)> {
+	subgroup
+		.basis()
+		.iter()
+		.copied()
+		.zip(interval.iter().copied())
+		.filter(|&(_, x)| x != 0)
+		.collect()
 }
 
 fn interval_to_string(subgroup: &Subgroup, x: &[i64]) -> String {

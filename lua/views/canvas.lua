@@ -624,7 +624,7 @@ function Canvas:set_pitch_center()
 		end
 
 		if base then
-			tuning.set_center(base.interval)
+			command.run_and_register(command.Change.new(tuning, "center", util.clone(base.interval)))
 		end
 	end
 end
