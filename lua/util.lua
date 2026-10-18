@@ -197,6 +197,24 @@ end
 
 util.clone = clone
 
+-- compare two simple data tables by value
+function util.deep_eq(a, b)
+	if type(a) ~= "table" or type(b) ~= "table" then
+		return a == b
+	end
+	for k, v in pairs(a) do
+		if not util.deep_eq(v, b[k]) then
+			return false
+		end
+	end
+	for k in pairs(b) do
+		if a[k] == nil then
+			return false
+		end
+	end
+	return true
+end
+
 local function copy_defaults(t, default)
 	if t == nil or type(t) ~= "table" then
 		return clone(default)
