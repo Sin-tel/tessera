@@ -62,7 +62,12 @@ end
 
 local function set_tuning(key)
 	local def = util.clone(presets.tunings[key])
-	def.notation = tessera.tuning.notations(def)[1].choice
+	for _, option in ipairs(tessera.tuning.notations(def)) do
+		if option.recommended then
+			def.notation = option.choice
+			break
+		end
+	end
 	local c = command.SetTuning.new(def)
 	assert(c:run())
 	command.register(c)
@@ -136,6 +141,45 @@ tests["tab while dragging"] = function()
 	release()
 	assert(command.stack[command.index].prev_state, "drag was not registered")
 	assert(canvas.current_tool == pen, "tool did not switch after the drag")
+end
+
+tests["respell cycles"] = function()
+	set_tuning("et_31")
+	local note = add_note()
+	local original = note.interval
+	local names = { tuning.get_name(original) }
+	selection.set({ [note] = true })
+	modifier_keys.shift = true
+	for i = 1, 3 do
+		assert(canvas:keypressed("r"), "shift+r not handled")
+		names[i + 1] = tuning.get_name(note.interval)
+		assert(math.abs(tuning.get_pitch(note.interval) - 60) < 1e-9, "respell changed pitch")
+	end
+	modifier_keys.shift = false
+	print("      " .. table.concat(names, " -> "))
+	assert(names[2] ~= names[1], "respell did nothing")
+	assert(tuning.eq(note.interval, original), "did not cycle back after 3")
+	undo()
+	undo()
+	assert(tuning.get_name(note.interval) == names[2], "undo did not step back")
+end
+
+tests["respell simplifies selection"] = function()
+	set_tuning("et_31")
+	local a = add_note()
+	local b = add_note()
+	local simplest = util.clone(a.interval)
+	local second = tuning.respell(simplest)
+	b.interval = util.clone(second)
+	selection.set({ [a] = true, [b] = true })
+	modifier_keys.shift = true
+	canvas:keypressed("r")
+	assert(tuning.eq(a.interval, simplest) and tuning.eq(b.interval, simplest), "mixed selection not simplified")
+	canvas:keypressed("r")
+	assert(tuning.eq(a.interval, second) and tuning.eq(b.interval, second), "simplest selection did not cycle")
+	canvas:keypressed("r")
+	assert(tuning.eq(a.interval, simplest) and tuning.eq(b.interval, simplest), "did not simplify again")
+	modifier_keys.shift = false
 end
 
 local names = {}

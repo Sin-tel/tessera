@@ -25,6 +25,12 @@ impl LuaUserData for TuningSystem {
 			Ok(this.simple_ratios(&note))
 		});
 
+		// The ways to write a note that respelling cycles through, the same list for every spelling of it.
+		methods.add_method("respellings", |_, this, note: Vec<i64>| {
+			check_note(this, &note)?;
+			Ok(this.respellings(&note))
+		});
+
 		// what kind of conversion needs to happen
 		methods.add_method("conversion", |_, this, from: LuaUserDataRef<TuningSystem>| {
 			Ok(this.conversion(&from))
