@@ -117,6 +117,20 @@ function tuning.all_notes()
 	return list
 end
 
+-- Check that every note and the center fit the current tuning.
+-- Notes from another tuning won't crash right away, but much later somewhere unrelated.
+function tuning.validate()
+	local function check(p, what)
+		if #p ~= tuning.rank then
+			error(what .. " has " .. #p .. " coordinates, tuning has " .. tuning.rank)
+		end
+	end
+	for _, note in ipairs(tuning.all_notes()) do
+		check(note.interval, "Note")
+	end
+	check(tuning.center, "Tuning center")
+end
+
 function tuning.preview(def)
 	local system = new_system(def)
 	if not system or not tuning.system then

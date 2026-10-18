@@ -31,6 +31,8 @@ end
 
 -- clear the project from a valid state
 function build.empty_project()
+	-- edits in progress hold on to the old project
+	command.finish_edits()
 	-- make sure there is no lingering state on the backend.
 	engine.stop()
 	tessera.audio.clear_messages()

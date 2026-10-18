@@ -44,6 +44,7 @@ function engine.stop()
 		local c = command.NoteAdd.new(added_notes)
 		command.register(c)
 	end
+	command.end_edit(engine)
 end
 
 function engine.seek(time)

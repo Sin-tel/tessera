@@ -11,9 +11,6 @@ add undo for change tuning center ('c')
 
 add simplify shortcut and auto-simplify option
 
-bug: edit tool holds onto note state, causing crash when changing tuning
-     pressing ctrl z to undo a tuning change while drawing a note reliably causes a crash
-
 ## Tuning system rewrite
 add respelling shortcut, auto simplify setting
 
