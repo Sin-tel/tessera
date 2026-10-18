@@ -1,18 +1,10 @@
 ## misc
-move useful tests to test (skip block size).
-
-the big filter refactor
-
-switching tabs causes tool switch also
+switching tabs causes tool switch also (fix: check keyboard cancel return)
 need to tune feedback filter in delay_tape
 epiano equalization curve
-fix key velocity curve!
+fix key velocity curve (add to all instruments on rust side)
 
-is there an easy way to avoid having to duplicate the list of instruments everywhere?
-
-do not use pcall
-
-if we crashed, don't load previous save automatically!
+organ: fletcher munson-esque normalization (look-up table)
 
 snap time is wrong, should be x4
 
@@ -20,46 +12,29 @@ add undo for change tuning center ('c')
 
 add simplify shortcut and auto-simplify option
 
-for ETs, don't optimize tuning but use the obvious one
+for ETs, don't optimize tuning but use the obvious one (step = 12./31. for 31et)
+
+bug: edit tool holds onto note state, causing crash when changing tuning
+     pressing ctrl z to undo a tuning change while drawing a note reliably causes a crash
 
 ## Tuning system rewrite
 set default indices instead of first in settings
 
-fix scale Db -> C#
-
-mavila: 12[+81/80] or 12[+5] = [12 19 27] works as a projection map.
-
-add respelling / auto simplify
-
-expose tuning sliders
+add respelling shortcut, auto simplify setting
 
 note map: align by note name so ups prefix is flush
 
-xen_utils: 11-limit orwell picks 33/32 for single notation, but 81/80 is preferable (probably, cf. 7-limit orwell)
-
-### Things to do before we can merge to main:
-* make sure switching between tunings doesn't cause issues
-if new accidentals are a superset of current: nothing to do.
-otherwise, if temperament matches, temper and back (notation gets re-written, but pitches preserved)
-otherwise, clip (both pitches and notation will change)
-warn user if data may get lost next to apply button
-
-Alternatively, detemper everything to JI, and retemper. This seems more error-prone though.
-
-* add it to undo
-
-* fix up the old save files
-
-scale projections:
-for a notation system that is isomorphic to 5-limit ji (2, 3/2, 81/80), the check should pass trivially on duodene, since duodene is a constant structure on 5-limit.
-so, if it fails it's only because we chose some bad spelling?
-
 ## VST
-better whitelist
+expose whitelist to user
 add pressure queue too
 
-
 ## misc (low priority)
+move useful tests to test (skip block size).
+
+the big filter refactor
+
+is there an easy way to avoid having to duplicate the list of instruments everywhere?
+
 need to fix voice alloc, some stuck notes when pedaling
 should plugin handle pedal itself? kind of annoying...
 
