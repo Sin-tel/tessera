@@ -404,6 +404,54 @@ impl Notation {
         self.spellings_within_budget(spelling, count).0
     }
 
+    /// The best way to write `notes` together: all moved by the same
+    /// enharmonic, so the intervals between them keep their spelling and a
+    /// chord stays the same chord, and of those the cheapest in total under the
+    /// spelling cost. The notes as given when no enharmonic makes them cheaper.
+    ///
+    /// The enharmonics tried are the ones to the best few spellings of the
+    /// rounded mean of the notes. That is not an exact search, but on chords
+    /// drifted by enharmonics it finds the best in every temperament of
+    /// `data/temperaments.txt`, where a box of enharmonics finds nothing better.
+    ///
+    /// # Panics
+    /// Panics if a note does not have one entry per notation coordinate.
+    pub fn spell_chord(&self, notes: &[Vec<i64>]) -> Matrix<i64> {
+        let Some(first) = notes.first() else {
+            return vec![];
+        };
+        for note in notes {
+            self.check(note);
+        }
+        let count = notes.len() as f64;
+        let mean: Vec<i64> = (0..first.len())
+            .map(|i| (notes.iter().map(|note| note[i] as f64).sum::<f64>() / count).round() as i64)
+            .collect();
+
+        let moved = |enharmonic: &[i64]| -> Matrix<i64> {
+            notes
+                .iter()
+                .map(|note| note.iter().zip(enharmonic).map(|(x, e)| x + e).collect())
+                .collect()
+        };
+        let total =
+            |spellings: &Matrix<i64>| -> i64 { spellings.iter().map(|s| spelling_cost(s)).sum() };
+
+        // Ties are broken relative to the input, so start from the same spelling every time.
+        let canonical = self.from_tempered(&self.to_tempered(&mean));
+        let mut best = notes.to_vec();
+        let mut best_cost = total(&best);
+        for spelling in self.spellings(&canonical, CHORD_CANDIDATES) {
+            let candidate = moved(&subtract(&spelling, &mean));
+            let cost = total(&candidate);
+            if cost < best_cost {
+                best = candidate;
+                best_cost = cost;
+            }
+        }
+        best
+    }
+
     /// [`spellings`](Self::spellings), and whether the search closed rather than
     /// running out of its search budget. Only a test reads the flag.
     pub(crate) fn spellings_within_budget(
@@ -877,6 +925,11 @@ pub(crate) fn derive_accidental_vector(subgroup: &Subgroup, index: usize) -> Vec
 /// `F C G D A E B` are the fifth coordinates `-1` to `5`, so `D` at `2` is the
 /// middle of them.
 const NOMINAL_CENTRE: i64 = 2;
+
+/// How many spellings of the mean [`Notation::spell_chord`] tries. Three
+/// misses the best now and then in 22et and 24et, five on chords spanning
+/// over a dozen fifths.
+const CHORD_CANDIDATES: usize = 8;
 
 /// A sharp is worth two accidental marks.
 const COST_FIFTH: i64 = 2;
@@ -2004,5 +2057,107 @@ mod tests {
             Notation::options_with_accidentals(&temperament, std::slice::from_ref(&acc_50_49))
                 .unwrap();
         assert_eq!(options_50_49.last().unwrap().len(), 3);
+    }
+
+    /// `notes` all moved by `times` of each enharmonic.
+    fn drifted(n: &Notation, notes: &[Vec<i64>], times: &[i64]) -> Vec<Vec<i64>> {
+        notes
+            .iter()
+            .map(|note| {
+                let mut moved = note.clone();
+                for (row, &t) in n.enharmonics().iter().zip(times) {
+                    for (c, &r) in moved.iter_mut().zip(row) {
+                        *c += t * r;
+                    }
+                }
+                moved
+            })
+            .collect()
+    }
+
+    fn padded(n: &Notation, coordinates: &[i64]) -> Vec<i64> {
+        let mut spelling = coordinates.to_vec();
+        spelling.resize(n.len(), 0);
+        spelling
+    }
+
+    #[test]
+    fn a_chord_is_respelled_as_a_whole() {
+        let subgroup: Subgroup = "2.3.5.7".parse().unwrap();
+        let n = Notation::from_temperament(&Temperament::equal(31, &subgroup).unwrap()).unwrap();
+        // C E G
+        let chord: Vec<Vec<i64>> = [[0, 0], [-2, 4], [-1, 1]]
+            .iter()
+            .map(|c| padded(&n, c))
+            .collect();
+        assert_eq!(n.spell_chord(&chord), chord);
+        for times in [1, -1, 2] {
+            let written = drifted(&n, &chord, &[times]);
+            assert_ne!(written, chord);
+            assert_eq!(n.spell_chord(&written), chord, "{times}");
+        }
+        assert!(n.spell_chord(&[]).is_empty());
+    }
+
+    #[test]
+    fn a_single_note_is_spelled_as_spell_would() {
+        for n in et_options(31, "2.3.5.7")
+            .into_iter()
+            .chain(options_of("2.3.5.7.11", &[(441, 440), (896, 891)]))
+        {
+            for interval in small_intervals(n.dim()) {
+                let note = n.from_interval(&interval);
+                for times in [-2, 1] {
+                    let written = drifted(&n, std::slice::from_ref(&note), &[times; 4]);
+                    let chord = n.spell_chord(&written);
+                    assert_eq!(n.to_tempered(&chord[0]), n.to_tempered(&note));
+                    assert_eq!(spelling_cost(&chord[0]), spelling_cost(&n.spell(&note)));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn nothing_near_the_chord_spelling_is_cheaper() {
+        // Chords of small intervals, drifted, against every enharmonic in a box
+        // around the answer. 22et is where the plain mean most often misses.
+        let pele = options_of("2.3.5.7.11", &[(441, 440), (896, 891)]);
+        let et = et_options(22, "2.3.5.7");
+        for (n, width) in [(&pele[1], 3i64), (et.last().unwrap(), 4)] {
+            let lattice = n.enharmonics();
+            let side = 2 * width + 1;
+            let intervals: Vec<Vec<i64>> = small_intervals(n.dim())
+                .iter()
+                .map(|i| n.from_interval(i))
+                .collect();
+            for (k, root) in intervals.iter().enumerate().step_by(7) {
+                let third = &intervals[(k * 5 + 3) % intervals.len()];
+                let fifth = &intervals[(k * 11 + 1) % intervals.len()];
+                let chord = [root.clone(), add(root, third), add(root, fifth)];
+                let times: Vec<i64> = (0..lattice.len()).map(|j| (k + j) as i64 % 3 - 1).collect();
+                let written = drifted(n, &chord, &times);
+                let found = n.spell_chord(&written);
+                for (f, w) in found.iter().zip(&written) {
+                    assert_eq!(n.to_tempered(f), n.to_tempered(w));
+                }
+                assert_eq!(
+                    subtract(&found[1], &found[0]),
+                    subtract(&written[1], &written[0])
+                );
+                let total =
+                    |notes: &[Vec<i64>]| -> i64 { notes.iter().map(|s| spelling_cost(s)).sum() };
+                let best = total(&found);
+                for code in 0..side.pow(lattice.len() as u32) {
+                    let box_times: Vec<i64> = (0..lattice.len())
+                        .map(|j| (code / side.pow(j as u32)) % side - width)
+                        .collect();
+                    assert!(total(&drifted(n, &found, &box_times)) >= best, "{chord:?}");
+                }
+            }
+        }
+    }
+
+    fn add(a: &[i64], b: &[i64]) -> Vec<i64> {
+        a.iter().zip(b).map(|(x, y)| x + y).collect()
     }
 }

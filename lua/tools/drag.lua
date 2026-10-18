@@ -82,11 +82,11 @@ function drag:mousedown(canvas)
 	for i, v in ipairs(selection.list) do
 		if changed then
 			v.interval = tuning.add(self.prev_state[i].interval, delta)
-			if moved then
-				v.interval = tuning.auto_simplify(v.interval)
-			end
 		end
 		v.time = self.prev_state[i].time + x
+	end
+	if changed and moved then
+		tuning.auto_simplify_notes(selection.list)
 	end
 end
 
