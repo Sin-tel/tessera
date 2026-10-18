@@ -1,0 +1,7 @@
+[INFO] Available hosts: ["asio", "wasapi"]
+[INFO] Available devices (asio): [DeviceInfo { name: "ASIO4ALL v2", id: "asio:ASIO4ALL v2" }, DeviceInfo { name: "FL Studio ASIO", id: "asio:FL Studio ASIO" }, DeviceInfo { name: "FlexASIO", id: "asio:FlexASIO" }]
+[INFO] Available devices (wasapi): [DeviceInfo { name: "Realtek HD Audio 2nd output (Realtek(R) Audio) (Realtek(R) Audio)", id: "wasapi:{0.0.0.00000000}.{1042e44e-5a15-49ac-8dbd-5e245d09b931}" }, DeviceInfo { name: "PHL 223V5 (NVIDIA High Definition Audio) (NVIDIA High Definition Audio)", id: "wasapi:{0.0.0.00000000}.{69721b05-a89c-4036-bab2-4587f7e1350b}" }, DeviceInfo { name: "Realtek Digital Output (Realtek(R) Audio) (Realtek(R) Audio)", id: "wasapi:{0.0.0.00000000}.{ec222ee6-9c0a-4d55-9e9e-0102d483947a}" }]
+[INFO] Available midi ports: ["SL STUDIO", "MIDIIN2 (SL STUDIO)"]
+[INFO] Tessera v0.1.3
+[INFO] Running in debug mode
+[INFO] No setup.lua found, generating default.

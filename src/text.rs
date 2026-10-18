@@ -149,14 +149,14 @@ impl RenderCache {
 					let mut src_buf = Vec::with_capacity(content_w * content_h);
 					match rendered.content {
 						Content::Mask => {
-							for chunk in rendered.data.chunks_exact(1) {
+							for &v in &rendered.data {
 								// Technically we only need to fill the red channel but this helps debugging the atlas
-								src_buf.push(RGBA8::new(chunk[0], chunk[0], chunk[0], 255));
+								src_buf.push(RGBA8::new(v, v, v, 255));
 							}
 						},
 						Content::Color => {
-							for chunk in rendered.data.chunks_exact(4) {
-								src_buf.push(RGBA8::new(chunk[0], chunk[1], chunk[2], chunk[3]));
+							for &[r, g, b, a] in rendered.data.as_chunks::<4>().0 {
+								src_buf.push(RGBA8::new(r, g, b, a));
 							}
 						},
 						Content::SubpixelMask => unreachable!(),
@@ -531,4 +531,30 @@ fn blur(src: &[u8], width: usize, height: usize, size: usize, sigma: f32) -> Vec
 
 	// darken and convert to u8
 	out.iter_mut().map(|x| (*x * 1.7).clamp(0., 255.) as u8).collect()
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	// Empty strings still lay out as one empty run, so the unwraps on layout_runs are safe.
+	// (measure_width returns early anyway)
+	#[test]
+	fn empty_string_layout() {
+		let mut engine = TextEngine::new();
+		for font in [Font::Inter, Font::Notes] {
+			let attrs = Attrs::new().family(Family::Name(font.as_str()));
+			for align in [None, Some(Align::Left), Some(Align::Center), Some(Align::Right)] {
+				let mut buffer = engine.scratch_buffer.borrow_with(&mut engine.font_system);
+				buffer.set_metrics(Metrics::new(16.0, 16.0));
+				buffer.set_size(Some(100.0), Some(20.0));
+				buffer.set_text("", &attrs, SHAPING, align);
+				buffer.set_wrap(Wrap::None);
+				buffer.shape_until_scroll(false);
+				let run = buffer.layout_runs().next().expect("no layout run for empty string");
+				assert_eq!(run.line_w, 0.0);
+			}
+			assert_eq!(engine.measure_width("", font, 16.0), 0.0);
+		}
+	}
 }

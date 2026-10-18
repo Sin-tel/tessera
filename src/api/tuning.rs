@@ -1,7 +1,8 @@
 use crate::api::lua_serde;
+use crate::log::log_error;
 use crate::tuning::{
-	NotationChoice, NotationOption, NotationStyle, ScaleCandidates, TemperamentDef, TuningSystem,
-	notations,
+	Conversion, NotationChoice, NotationOption, NotationStyle, ScaleCandidates, TemperamentDef,
+	TuningSystem, notations,
 };
 use mlua::prelude::*;
 
@@ -10,6 +11,7 @@ lua_serde!(NotationChoice);
 lua_serde!(NotationStyle);
 lua_serde!(NotationOption);
 lua_serde!(ScaleCandidates);
+lua_serde!(Conversion);
 
 impl LuaUserData for TuningSystem {
 	fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
@@ -23,6 +25,35 @@ impl LuaUserData for TuningSystem {
 			Ok(this.simple_ratios(&note))
 		});
 
+		// The ways to write a note that respelling cycles through, the same list for every spelling of it.
+		methods.add_method("respellings", |_, this, note: Vec<i64>| {
+			check_note(this, &note)?;
+			Ok(this.respellings(&note))
+		});
+
+		// How complex a spelling is, lower is simpler.
+		methods.add_method("spelling_cost", |_, this, note: Vec<i64>| {
+			check_note(this, &note)?;
+			Ok(this.spelling_cost(&note))
+		});
+
+		// what kind of conversion needs to happen
+		methods.add_method("conversion", |_, this, from: LuaUserDataRef<TuningSystem>| {
+			Ok(this.conversion(&from))
+		});
+
+		// Convert notes to new tuning system.
+		// Returns the new notes, and how many of them changed.
+		methods.add_method(
+			"convert",
+			|_, this, (from, notes): (LuaUserDataRef<TuningSystem>, Vec<Vec<i64>>)| {
+				for note in &notes {
+					check_note(&from, note)?;
+				}
+				Ok(this.convert(&from, &notes))
+			},
+		);
+
 		// one step of an equal temperament, nil otherwise
 		methods.add_method("step", |_, this, ()| Ok(this.step()));
 
@@ -31,7 +62,7 @@ impl LuaUserData for TuningSystem {
 			Ok(this.scale(scale_index(index)?).notes.clone())
 		});
 
-		// Linear map from a note to its index in the scale, or nil if there is none.
+		// Linear map from a note to its index in the scale.
 		methods.add_method("scale_map", |_, this, index: usize| {
 			Ok(this.scale(scale_index(index)?).map.clone())
 		});
@@ -42,6 +73,7 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 	let tuning = lua.create_table()?;
 
 	// tessera.tuning.new(temperament, notation_choice, scale_candidates)
+	// nil if the tuning can't be built, the reason is logged
 	tuning.set(
 		"new",
 		lua.create_function(
@@ -51,17 +83,19 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 				NotationChoice,
 				Option<ScaleCandidates>,
 			)| {
-				TuningSystem::new(&def, choice, &candidates.unwrap_or_default())
-					.map_err(LuaError::RuntimeError)
+				Ok(TuningSystem::new(&def, choice, &candidates.unwrap_or_default())
+					.inspect_err(|e| log_error!("{e}"))
+					.ok())
 			},
 		)?,
 	)?;
 
 	// tessera.tuning.notations(temperament)
+	// nil if the temperament is invalid, the reason is logged
 	tuning.set(
 		"notations",
 		lua.create_function(|_, def: TemperamentDef| {
-			notations(&def).map_err(LuaError::RuntimeError)
+			Ok(notations(&def).inspect_err(|e| log_error!("{e}")).ok())
 		})?,
 	)?;
 

@@ -1,9 +1,10 @@
 local presets = {}
 
--- categories and order in the settings menu
+-- categories and order in the settings menu, and which preset is picked when switching to one
 presets.categories = {
 	{
 		name = "Temperament",
+		default = "meantone",
 		list = {
 			-- rank 2
 			"meantone",
@@ -18,6 +19,7 @@ presets.categories = {
 			"mothra",
 			"rodan",
 			"miracle",
+			"orwell",
 			-- rank 3
 			"marvel",
 			"pele",
@@ -27,6 +29,7 @@ presets.categories = {
 	{
 		-- TODO: 5 and 7 et kinda broken right now
 		name = "Equal",
+		default = "et_31",
 		list = {
 			-- "et_5",
 			-- "et_7",
@@ -40,12 +43,14 @@ presets.categories = {
 			"et_34",
 			"et_36",
 			"et_41",
+			"et_46",
 			"et_53",
 			"et_72",
 		},
 	},
 	{
 		name = "Just Intonation",
+		default = "ji_5",
 		list = { "pythagorean", "ji_5", "ji_7", "ji_11", "ji_2_3_7" },
 	},
 }
@@ -129,6 +134,11 @@ tunings.miracle = {
 	commas = { "225/224", "385/384", "441/440" },
 }
 
+tunings.orwell = {
+	name = "Orwell",
+	subgroup = "2.3.5.7.11",
+	commas = { "225/224", "176/175", "385/384" },
+}
 --- rank 3
 
 tunings.marvel = {
@@ -167,6 +177,7 @@ tunings.et_31 = et(31, "2.3.5.7")
 tunings.et_34 = et(34, "2.3.5")
 tunings.et_36 = et(36, "2.3.7")
 tunings.et_41 = et(41, "2.3.5.7.11")
+tunings.et_46 = et(46, "2.3.5.7.11")
 tunings.et_53 = et(53, "2.3.5")
 tunings.et_72 = et(72, "2.3.5.7.11")
 
@@ -208,7 +219,7 @@ function presets.default()
 end
 
 -- Every preset is listed exactly once, in the category it belongs to.
-if debug then
+if not release then
 	local listed = {}
 	for i, c in ipairs(presets.categories) do
 		for _, k in ipairs(c.list) do
@@ -218,6 +229,7 @@ if debug then
 			assert(presets.category(def) == i, "Preset in the wrong category: " .. k)
 			listed[k] = true
 		end
+		assert(util.find(c.list, c.default), "Default not in its category: " .. c.name)
 	end
 	for k in pairs(tunings) do
 		assert(listed[k], "Preset not in any category: " .. k)

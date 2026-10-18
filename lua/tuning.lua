@@ -6,6 +6,7 @@ local tuning_presets = require("default.tuning_presets")
 local tuning = {}
 
 tuning.snap_labels = { "Diatonic", "Chromatic", "Fine" }
+tuning.auto_simplify_cost = 7
 
 local function unit(index)
 	local v = tuning.new_interval()
@@ -23,11 +24,15 @@ end
 
 tuning.pad = pad
 
+-- Build the tuning system for a definition, without loading it.
+local function new_system(def)
+	return tessera.tuning.new(def, def.notation, scales.candidates)
+end
+
 -- Load a tuning from definition table
 function tuning.load(def)
-	local ok, system = pcall(tessera.tuning.new, def, def.notation, scales.candidates)
-	if not ok then
-		log.error(system)
+	local system = new_system(def)
+	if not system then
 		return false
 	end
 
@@ -93,38 +98,83 @@ function tuning.load(def)
 
 	tuning.tables = { tuning.diatonic, tuning.chromatic, tuning.fine }
 
-	-- Projections from notes to scale indices. Scales without one are looked up by pitch.
+	-- Projections from notes to scale indices.
 	tuning.maps = {}
 	for i, t in ipairs(tuning.tables) do
 		tuning.maps[t] = system:scale_map(i)
-		if not tuning.maps[t] then
-			log.warn(tuning.snap_labels[i] .. " scale has no projection, using nearest pitch.")
-		end
 	end
 	tuning.center = pad(tuning.center or {})
 
 	return true
 end
 
--- Set the tuning for the current project.
+function tuning.all_notes()
+	local list = {}
+	for _, ch in ipairs(project.channels) do
+		for _, note in ipairs(ch.notes or {}) do
+			table.insert(list, note)
+		end
+	end
+	return list
+end
+
+-- Check that every note and the center fit the current tuning.
+-- Notes from another tuning won't crash right away, but much later somewhere unrelated.
+function tuning.validate()
+	local function check(p, what)
+		if #p ~= tuning.rank then
+			error(what .. " has " .. #p .. " coordinates, tuning has " .. tuning.rank)
+		end
+	end
+	for _, note in ipairs(tuning.all_notes()) do
+		check(note.interval, "Note")
+	end
+	check(tuning.center, "Tuning center")
+end
+
+function tuning.preview(def)
+	local system = new_system(def)
+	if not system or not tuning.system then
+		return nil
+	end
+	return system:conversion(tuning.system)
+end
+
+-- set the tuning for the current project, and convert all notes
 function tuning.set(def)
+	local old_system = tuning.system
+	local old_center = tuning.center
+
 	if not tuning.load(def) then
 		return false
 	end
+
+	clipboard.clear()
 
 	local name = def.name or def.subgroup
 	log.info("Loading tuning: " .. name .. " (" .. def.notation.accidentals .. " accidentals)")
 	project.settings.tuning = util.clone(def)
 
-	-- TODO: do a proper conversion here
+	if not old_system then
+		return true
+	end
 
-	-- fix up the number of coordinates
-	for _, ch in ipairs(project.channels) do
-		if ch.notes then
-			for _, note in ipairs(ch.notes) do
-				note.interval = pad(note.interval)
-			end
-		end
+	local notes = tuning.all_notes()
+	local intervals = {}
+	for i, note in ipairs(notes) do
+		intervals[i] = note.interval
+	end
+	table.insert(intervals, old_center)
+
+	local new, changed = tuning.system:convert(old_system, intervals)
+	for i, note in ipairs(notes) do
+		note.interval = new[i]
+	end
+	tuning.center = new[#new]
+
+	local kind = tuning.system:conversion(old_system)
+	if changed > 0 then
+		log.info("Converted notes (" .. kind .. "), " .. changed .. " changed spelling")
 	end
 	return true
 end
@@ -179,6 +229,7 @@ end
 
 -- Index of the note in scale t that is closest to a pitch r, in semitones above the unison.
 -- The scale repeats every octave and index 0 is the unison.
+-- Notes are ordered by index, which need not be the order of their pitches, or even inside one octave.
 local function nearest_index(t, r)
 	local sp = get_scale_pitches(t)
 	local o = tuning.generator_pitches[1]
@@ -189,19 +240,14 @@ local function nearest_index(t, r)
 
 	local best = 0
 	local d_best = math.huge
-	for i = 1, n do
-		local d = math.abs(r - sp[i])
-		if d < d_best then
-			best = i - 1
-			d_best = d
-		elseif d > d_best then
-			-- sorted, so it only gets worse
-			break
+	for k = -1, 1 do
+		for i = 1, n do
+			local d = math.abs(r - sp[i] - k * o)
+			if d < d_best then
+				best = k * n + i - 1
+				d_best = d
+			end
 		end
-	end
-	-- the unison in the next octave
-	if math.abs(o - r) < d_best then
-		best = n
 	end
 	return oct * n + best
 end
@@ -250,8 +296,10 @@ function tuning.input_map()
 		local midi = 59 + i
 		local interval = tuning.from_midi(midi)
 		local ratios = tuning.system:simple_ratios(interval)
+		local prefix, name = tuning.get_name_parts(interval)
 		rows[i] = {
-			name = tuning.get_name(interval),
+			prefix = prefix,
+			name = name,
 			ratio = table.concat(ratios, " ~ "),
 			black = BLACK_KEYS[(midi - 60) % 12] or false,
 		}
@@ -259,18 +307,13 @@ function tuning.input_map()
 	return rows
 end
 
--- Index of interval p in scale t.
--- With a projection this is exact, otherwise it is the note closest in pitch.
+-- Index of interval p in scale t, by its projection.
 function tuning.get_index(t, p)
-	local map = tuning.maps[t]
-	if map then
-		local index = 0
-		for i, v in ipairs(map) do
-			index = index + v * (p[i] or 0)
-		end
-		return index
+	local index = 0
+	for i, v in ipairs(tuning.maps[t]) do
+		index = index + v * (p[i] or 0)
 	end
-	return nearest_index(t, tuning.get_relative_pitch(p))
+	return index
 end
 
 -- Convert interval to pitch.
@@ -286,8 +329,8 @@ function tuning.get_relative_pitch(p)
 	return f
 end
 
--- Name of a note in the current tuning.
-function tuning.get_name(p)
+-- Coordinates for note name, relative to the center.
+local function name_coords(p)
 	if project.settings.relative_note_names then
 		p = tuning.sub(p, tuning.center)
 	elseif tuning.rank > 2 then
@@ -302,8 +345,83 @@ function tuning.get_name(p)
 		end
 		p = new
 	end
+	return p
+end
 
-	return tuning.notation:name(p)
+-- The best few ways to write a note, best first, and the index of p in that list if it's one of them.
+local function respellings(p)
+	-- Compared by how they're written, since different spellings can be drawn the same (half sharps).
+	local list = {}
+	local names = {}
+	for _, s in ipairs(tuning.system:respellings(p)) do
+		local name = tuning.notation:name(s)
+		if not util.find(names, name) then
+			table.insert(list, s)
+			table.insert(names, name)
+		end
+	end
+	return list, util.find(names, tuning.notation:name(p))
+end
+
+-- Next way to write the same note, cycling through the best few.
+-- Unchanged if there's only one way to write it.
+function tuning.respell(p)
+	local list, i = respellings(p)
+	if i then
+		return list[i % #list + 1]
+	end
+	-- not one of the best ones
+	return list[1]
+end
+
+-- Simplest way to write a note.
+function tuning.simplify(p)
+	return respellings(p)[1]
+end
+
+-- For notes that were moved: a simpler way to write them, if the auto simplify setting is on.
+function tuning.auto_simplify(p)
+	if project.settings.auto_simplify then
+		local s = tuning.simplify(p)
+		if tuning.system:spelling_cost(p) - tuning.system:spelling_cost(s) > tuning.auto_simplify_cost then
+			return s
+		end
+	end
+	return p
+end
+
+-- Respell notes in place.
+-- A single note cycles. Several notes are simplified, unless they all are already, then they cycle.
+-- That way, respelling a selection first cleans it up.
+function tuning.respell_notes(notes)
+	local simplify = false
+	if #notes > 1 then
+		for _, note in ipairs(notes) do
+			local _, i = respellings(note.interval)
+			if i ~= 1 then
+				simplify = true
+				break
+			end
+		end
+	end
+
+	for _, note in ipairs(notes) do
+		if simplify then
+			note.interval = tuning.simplify(note.interval)
+		else
+			note.interval = tuning.respell(note.interval)
+		end
+	end
+end
+
+-- Name of a note in the current tuning.
+function tuning.get_name(p)
+	return tuning.notation:name(name_coords(p))
+end
+
+-- Name of a note, split in the part before the letter and the rest. See Notation:name_parts.
+function tuning.get_name_parts(p)
+	return tuning.notation:name_parts(name_coords(p))
 end
 
 -- basic arithmetic functions

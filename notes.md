@@ -1,55 +1,39 @@
-fix scale Db -> C#
+## misc
+need to tune feedback filter in delay_tape
+epiano equalization curve
+fix key velocity curve (add to all instruments on rust side)
 
-expose tuning slider
+organ: fletcher munson-esque normalization (look-up table)
 
+snap time is wrong, should be x4
+
+add undo for change tuning center ('c')
+
+auto_simplify: figure out if chords can be simplified consistently
+
+## VST
+expose whitelist to user
+add pressure queue too
+
+## misc (low priority)
 move useful tests to test (skip block size).
+
+merge set_font_main and set_font_notes to set_font(string), use parse_font
 
 the big filter refactor
 
 is there an easy way to avoid having to duplicate the list of instruments everywhere?
 
-## Tuning system
-set default indices instead of first in settings
-
-note map: align by note name so ups prefix is flush
-
-Things to do before we can merge to main:
-* make sure switching between tunings doesn't cause issues
-if new accidentals are a superset of current: nothing to do.
-otherwise, if temperament matches, temper and back (notation gets re-written, but pitches preserved)
-otherwise, clip (both pitches and notation will change)
-warn user if data may get lost next to apply button
-
-Alternatively, detemper everything to JI, and retemper. This seems more error-prone though.
-
-add it to undo
-
-* fix up the old save files
-
-unrelated bugs:
- switching tabs causes tool switch also
- need to tune feedback filter in delay_tape
- epiano equalization curve
- fix key velocity curve!
-
-
-scale projections:
-for a notation system that is isomorphic to 5-limit ji (2, 3/2, 81/80), the check should pass trivially on duodene, since duodene is a constant structure on 5-limit.
-so, if it fails it's only because we chose some bad spelling?
-
-## VST
-better whitelist
-add pressure queue too
-
-
-## misc
 need to fix voice alloc, some stuck notes when pedaling
 should plugin handle pedal itself? kind of annoying...
 
+expose GUI scale factor (requires restart probably)
 
 move 'flush_messages' to backend
 
 allow replacing / deleting instrument only
+
+windowing system: add splitting and dragging
 
 be more consistent with levels.
 target should be ~ -18dB RMS
@@ -61,9 +45,6 @@ loop
 snap transport time
 
 - save layout
-- project settings / tuning presets
-
-if we crashed, don't load previous save automatically!
 
 use C4 on backend for consistency
 
@@ -262,7 +243,7 @@ previous work
  - reason friktion
  - expressive E noisy 2
 
-## instruments
+## devices
 double reed
 flute model
 bowed string/modal
@@ -272,6 +253,8 @@ pluck model:
 * multiple strings?
     - coupling -> two stage decay
     - rotation matrix
+
+chowtape clone RK4
 
 ## tuning
 make tuning import/export and add to project settings
@@ -324,6 +307,8 @@ midi impl is now kind of stupidly polling, but we can get better latency if we d
  - for now, lets leave it like this!
 
 ## other notes
+
+aliasing: test out dither noise method (probably acceptable with 2x and some kind of noise shaping?)
 
 reverb
 https://ccrma.stanford.edu/~dattorro/EffectDesignPart1.pdf
@@ -390,29 +375,4 @@ https://www.kvraudio.com/forum/viewtopic.php?t=412674&start=15
 
 allpass interpolation
 https://quod.lib.umich.edu/cgi/p/pod/dod-idx/lossless-click-free-pitchbend-able-delay-line-loop.pdf?c=icmc;idno=bbp2372.1997.068;format=pdf
-
-## Tuning
-
-4 layers:
-  note names  (only view)
-    | convert diatonic scale notation to oct/fifth pair
-  notation coordinates (internal representation)
-    | look up generator mapping
-  generator coordinates
-    | look up generator sizes
-  pitch in semitones/midi number
-
-info for tuning specification:
-  - size of all generators (first two are period and gen)
-  - which accidentals are used
-     - mapping of these to generators
-  - root of diatonic (default C)
-  - size of diatonic scale + how many gens down
-  - (optional chromatic scale?)
-
-  there are seperate accidentals for "double half sharp/flat"
-when 243/242 is tempered out (rastmic), these should revert to normal sharps/flats
-(this is true for 17, 24, 31, 41, 72)
-
-load tuning from text file (just lua?)
 

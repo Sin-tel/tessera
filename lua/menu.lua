@@ -99,6 +99,13 @@ function Menu.options(x, y)
 				{ label = "Relative note names", style = "menu", pad = indent_s, size = 0.66, no_undo = true }
 			),
 		},
+		{
+			widget = widgets.Toggle.new(
+				project.settings,
+				"auto_simplify",
+				{ label = "Auto simplify", style = "menu", pad = indent_s, size = 0.66, no_undo = true }
+			),
+		},
 	}
 	return Menu.new(items, x, y)
 end

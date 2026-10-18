@@ -154,6 +154,8 @@ function Roll:event(event)
 			self.active_notes[event.token] = note
 			table.insert(project.channels[self.ch_index].notes, note)
 			table.insert(self.recorded_notes, note)
+			-- stopping registers the recorded notes
+			command.begin_edit(engine, engine.stop)
 		elseif event.name == "note_off" then
 			local note = self.active_notes[event.token]
 			if not note then

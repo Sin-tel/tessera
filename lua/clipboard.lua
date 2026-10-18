@@ -6,6 +6,10 @@ function clipboard.set(notes)
 	clipboard.notes = util.clone(notes)
 end
 
+function clipboard.clear()
+	clipboard.notes = {}
+end
+
 function clipboard.is_empty()
 	local total = 0
 

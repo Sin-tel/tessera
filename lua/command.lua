@@ -1,11 +1,43 @@
 local build = require("build")
 local load_default_project = require("default.project")
+local tuning = require("tuning")
 
 local command = {}
 
 command.max_size = 50
 command.stack = {}
 command.index = 0
+
+-- Edits in progress, that register their command only when they finish: tool drags, recording.
+-- Until then the project doesn't match the top of the stack, so anything that undoes, redoes or
+-- replaces the project has to finish them first (see finish_edits).
+-- owner -> function that finishes the edit
+local pending = {}
+
+-- `finish` should register the command and end the edit.
+function command.begin_edit(owner, finish)
+	pending[owner] = finish
+end
+
+function command.end_edit(owner)
+	pending[owner] = nil
+end
+
+function command.finish_edits()
+	for owner, finish in pairs(pending) do
+		pending[owner] = nil
+		finish()
+	end
+	assert(next(pending) == nil, "edit started while finishing edits")
+end
+
+-- Debug check that the project is consistent with the tuning, after every change to the stack.
+local function validate()
+	if release then
+		return
+	end
+	tuning.validate()
+end
 
 function command.run_and_register(c)
 	c:run()
@@ -27,9 +59,11 @@ function command.register(c)
 		table.remove(command.stack, 1)
 		command.index = command.index - 1
 	end
+	validate()
 end
 
 function command.undo()
+	command.finish_edits()
 	if command.index >= 1 then
 		command.stack[command.index]:reverse()
 		command.index = command.index - 1
@@ -37,9 +71,11 @@ function command.undo()
 		command.index = 0
 		print("nothing to undo!")
 	end
+	validate()
 end
 
 function command.redo()
+	command.finish_edits()
 	command.index = command.index + 1
 	if command.stack[command.index] then
 		command.stack[command.index]:run()
@@ -47,6 +83,7 @@ function command.redo()
 		command.index = #command.stack
 		print("nothing to redo!")
 	end
+	validate()
 end
 
 -- a change to some variable
@@ -83,6 +120,7 @@ NewProject.__index = NewProject
 function NewProject.new()
 	local self = setmetatable({}, NewProject)
 
+	command.finish_edits()
 	self.prev = util.clone(project)
 	return self
 end
@@ -247,6 +285,45 @@ function TimeUpdate:reverse()
 end
 
 command.TimeUpdate = TimeUpdate
+
+-- Change the project's tuning, which converts every note.
+local SetTuning = {}
+SetTuning.__index = SetTuning
+
+function SetTuning.new(def)
+	local self = setmetatable({}, SetTuning)
+
+	-- edits in progress can hold notes that aren't converted
+	command.finish_edits()
+	self.def = util.clone(def)
+	self.prev_def = util.clone(project.settings.tuning)
+	self.prev_center = util.clone(tuning.center)
+
+	-- keep refs to the notes, and copies of their intervals
+	self.notes = tuning.all_notes()
+	self.prev_intervals = {}
+	for i, note in ipairs(self.notes) do
+		self.prev_intervals[i] = util.clone(note.interval)
+	end
+
+	return self
+end
+
+function SetTuning:run()
+	return tuning.set(util.clone(self.def))
+end
+
+function SetTuning:reverse()
+	assert(tuning.load(util.clone(self.prev_def)))
+	project.settings.tuning = util.clone(self.prev_def)
+	for i, note in ipairs(self.notes) do
+		note.interval = util.clone(self.prev_intervals[i])
+	end
+	tuning.center = util.clone(self.prev_center)
+	clipboard.clear()
+end
+
+command.SetTuning = SetTuning
 
 command.NewChannel, command.RemoveChannel, command.NewEffect, command.RemoveEffect, command.ReorderEffect =
 	unpack(require("command_channel"))
