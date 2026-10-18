@@ -128,6 +128,16 @@ pub fn to_db(x: f32) -> f32 {
 	log2_cheap(x) / DECIBEL_FACTOR
 }
 
+// Dynamic range of note velocity
+pub const DEFAULT_VEL_RANGE_DB: f32 = 26.0;
+
+// Note velocity (0..1, linear in MIDI velocity) to gain, with `range_db` of dynamic range.
+// Plugins get the raw velocity, they have their own curves.
+pub fn velocity_curve(vel: f32, range_db: f32) -> f32 {
+	let v = vel.clamp(0.0, 1.0).powf(0.8);
+	from_db(range_db * (v - 1.0))
+}
+
 // Cheap tanh-ish distortion
 pub fn softclip(x: f32) -> f32 {
 	let s = x.clamp(-3.0, 3.0);

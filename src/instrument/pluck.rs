@@ -216,6 +216,7 @@ impl Instrument for Pluck {
 	fn pressure(&mut self, _pressure: f32, _id: usize) {}
 
 	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {
+		let vel = velocity_curve(vel, DEFAULT_VEL_RANGE_DB);
 		let voice = &mut self.voices[id];
 		let f = pitch_to_hz(pitch);
 		voice.freq.set(f);

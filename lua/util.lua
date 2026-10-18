@@ -145,20 +145,6 @@ function util.curve_dB_inv(x, max)
 	return math.exp((util.to_dB(x) - (max or 0)) / curve_param)
 end
 
--- TODO: make this configurable (per intrument?)
--- 0.01 = 40dB dynamic range
--- 0.02 = 34dB dynamic range
--- 0.05 = 26dB dynamic range
--- 0.10 = 20dB dynamic range
-local VEL_MIN = 0.05
-local LOG_RANGE = -math.log(VEL_MIN)
-
-function util.velocity_curve(x)
-	local v = x ^ 0.8
-	local out = VEL_MIN * math.exp(LOG_RANGE * v)
-	return out
-end
-
 local METER_CLIP_COLOR = { 1.00, 0.30, 0.20 }
 
 function util.meter_color(x, darken)

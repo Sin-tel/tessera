@@ -142,6 +142,7 @@ impl Instrument for Fm {
 	}
 
 	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {
+		let vel = velocity_curve(vel, DEFAULT_VEL_RANGE_DB);
 		let voice = &mut self.voices[id];
 		let f = pitch_to_hz(pitch) / self.sample_rate;
 		voice.pres.set_immediate(0.);
