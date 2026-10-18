@@ -484,7 +484,7 @@ function Canvas:keypressed(key)
 	elseif key == "kp." or key == "." then
 		self:auto_zoom()
 		return true
-	elseif key == "c" then
+	elseif key == "c" and not modifier_keys.any then
 		self:set_pitch_center()
 		return true
 	end
@@ -616,8 +616,13 @@ function Canvas:auto_zoom()
 	end
 end
 
+-- Center on the lowest selected note, or back to the default with nothing selected.
 function Canvas:set_pitch_center()
-	if not selection.is_empty() then
+	if selection.is_empty() then
+		if not tuning.eq(tuning.get_center(), tuning.new_interval()) then
+			command.run_and_register(command.SetCenter.new(tuning.new_interval()))
+		end
+	else
 		local d_min = math.huge
 		local base = nil
 		for _, note in ipairs(selection.list) do
@@ -628,8 +633,8 @@ function Canvas:set_pitch_center()
 			end
 		end
 
-		if base then
-			command.run_and_register(command.Change.new(tuning, "center", util.clone(base.interval)))
+		if base and not tuning.eq(base.interval, tuning.get_center()) then
+			command.run_and_register(command.SetCenter.new(base.interval))
 		end
 	end
 end

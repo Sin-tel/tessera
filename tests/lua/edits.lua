@@ -23,7 +23,6 @@ local function setup()
 	command.stack = {}
 	command.index = 0
 	tuning.system = nil
-	tuning.center = nil
 	tuning.load_project()
 	selection.deselect()
 	selection.ch_index = 1
@@ -254,6 +253,70 @@ tests["auto simplify, threshold"] = function()
 		end
 	end
 	assert(kept > 0 and simplified > 0, "test doesn't cover both cases")
+end
+
+tests["set center"] = function()
+	local note = add_note()
+	note.interval = util.clone(tuning.tone)
+	local default = tuning.new_interval()
+	assert(tuning.eq(tuning.get_center(), default), "new project doesn't start at the default center")
+	selection.set({ [note] = true })
+	local n = command.index
+
+	-- only the plain key
+	modifier_keys.shift = true
+	modifier_keys.any = true
+	canvas:keypressed("c")
+	modifier_keys.shift = false
+	modifier_keys.any = false
+	assert(command.index == n, "set center with a modifier")
+
+	canvas:keypressed("c")
+	assert(tuning.eq(tuning.get_center(), tuning.tone), "center not set")
+	assert(tuning.get_center() ~= note.interval, "center shares the note's table")
+	canvas:keypressed("c")
+	assert(command.index == n + 1, "setting the same center registered again")
+
+	-- nothing selected: back to default
+	selection.deselect()
+	canvas:keypressed("c")
+	assert(tuning.eq(tuning.get_center(), default), "center not reset")
+	undo()
+	assert(tuning.eq(tuning.get_center(), tuning.tone), "reset not undone")
+	undo()
+	assert(tuning.eq(tuning.get_center(), default), "center not undone")
+	command.redo()
+	assert(tuning.eq(tuning.get_center(), tuning.tone), "center not redone")
+end
+
+-- The center is saved with the project, and filled in for older saves.
+tests["center in project"] = function()
+	set_tuning("et_31")
+	tuning.set_center(tuning.tone)
+	local saved = util.clone(project)
+
+	project = util.clone(saved)
+	project.center = nil
+	tuning.load_project()
+	assert(tuning.eq(tuning.get_center(), tuning.new_interval()), "missing center not filled in")
+
+	project = util.clone(saved)
+	tuning.load_project()
+	assert(tuning.eq(tuning.get_center(), tuning.tone), "center not kept")
+end
+
+-- Only one center for now, but tuning changes already handle all of them.
+tests["center over timeline"] = function()
+	tuning.set_center(tuning.tone)
+	table.insert(project.center, { time = 4.0, interval = util.clone(tuning.semitone) })
+	local before = util.clone(project.center)
+	set_tuning("ji_7")
+	assert(#project.center == 2, "center entries lost")
+	tuning.validate()
+	undo()
+	assert(tuning.eq(project.center[1].interval, before[1].interval), "first center not restored")
+	assert(tuning.eq(project.center[2].interval, before[2].interval), "second center not restored")
+	assert(project.center[2].time == 4.0)
 end
 
 local names = {}

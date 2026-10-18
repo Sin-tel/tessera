@@ -22,6 +22,11 @@ local function empty_project()
 			-- settings.tuning is set by tuning.load_project
 		},
 
+		-- tuning center over the timeline, interval filled in by tuning.load_project
+		center = {
+			{ time = 0.0, interval = {} },
+		},
+
 		time = {
 			{
 				0.0,

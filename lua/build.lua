@@ -51,6 +51,8 @@ function build.empty_project()
 
 	-- init empty project
 	project = empty_project()
+	-- so there's always a tuning and center
+	tuning.load_project()
 end
 
 -- restore project from invalid state where backend died

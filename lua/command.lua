@@ -297,7 +297,7 @@ function SetTuning.new(def)
 	command.finish_edits()
 	self.def = util.clone(def)
 	self.prev_def = util.clone(project.settings.tuning)
-	self.prev_center = util.clone(tuning.center)
+	self.prev_center = util.clone(project.center)
 
 	-- keep refs to the notes, and copies of their intervals
 	self.notes = tuning.all_notes()
@@ -319,11 +319,35 @@ function SetTuning:reverse()
 	for i, note in ipairs(self.notes) do
 		note.interval = util.clone(self.prev_intervals[i])
 	end
-	tuning.center = util.clone(self.prev_center)
+	project.center = util.clone(self.prev_center)
 	clipboard.clear()
 end
 
 command.SetTuning = SetTuning
+
+-- Move the tuning center ('c' in the canvas).
+-- Notes are untouched, only how they're named and the grid move.
+local SetCenter = {}
+SetCenter.__index = SetCenter
+
+function SetCenter.new(center)
+	local self = setmetatable({}, SetCenter)
+
+	self.center = util.clone(center)
+	self.prev_center = util.clone(tuning.get_center())
+
+	return self
+end
+
+function SetCenter:run()
+	tuning.set_center(self.center)
+end
+
+function SetCenter:reverse()
+	tuning.set_center(self.prev_center)
+end
+
+command.SetCenter = SetCenter
 
 command.NewChannel, command.RemoveChannel, command.NewEffect, command.RemoveEffect, command.ReorderEffect =
 	unpack(require("command_channel"))
