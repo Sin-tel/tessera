@@ -381,13 +381,14 @@ function Canvas:keypressed(key)
 		move_right = 1
 	elseif key == "left" then
 		move_right = -1
-	elseif key == "tab" then
+	elseif key == "tab" and not modifier_keys.any then
 		-- switch between edit and draw mode
 		if self.selected_tool == edit then
 			self:select_tool(pen)
 		else
 			self:select_tool(edit)
 		end
+		return true
 	elseif key == "a" and modifier_keys.ctrl then
 		-- select all
 		local mask = {}

@@ -262,8 +262,9 @@ function ProjectSettings:update()
 			self:sync()
 		else
 			self:set_category(self.tuning_mode)
-			self.preset_index = 1
-			self:select_preset(self:preset_keys()[1])
+			local key = tuning_presets.categories[self.tuning_mode].default
+			self.preset_index = util.find(self:preset_keys(), key)
+			self:select_preset(key)
 		end
 	end
 
