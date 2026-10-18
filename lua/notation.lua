@@ -159,8 +159,15 @@ function Notation:get_name_johnston(p)
 end
 
 function Notation:name(p)
+	local prefix, rest = self:name_parts(p)
+	return prefix .. rest
+end
+
+-- Name split in the accidentals that go in front of the letter (ups and downs), and the rest.
+-- Useful for aligning names on the letter.
+function Notation:name_parts(p)
 	if self.johnston then
-		return self:get_name_johnston(p)
+		return "", self:get_name_johnston(p)
 	end
 
 	local nominal, sharps, _ = self:get_nominal(p)
@@ -203,7 +210,7 @@ function Notation:name(p)
 		end
 	end
 
-	return acc_pre .. nominal .. acc
+	return acc_pre, nominal .. acc
 end
 
 return Notation

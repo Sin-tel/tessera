@@ -7,6 +7,22 @@ use femtovg::{Color, LineCap, LineJoin, Paint, Path};
 use mlua::Variadic;
 use mlua::prelude::*;
 
+// Font by the name used on the Lua side.
+fn parse_font(name: &str) -> LuaResult<Font> {
+	match name {
+		"main" => Ok(Font::Inter),
+		"notes" => Ok(Font::Notes),
+		_ => Err(LuaError::RuntimeError(format!("Unknown font \"{name}\""))),
+	}
+}
+
+// Font size in pixels, from the unscaled size used on the Lua side.
+fn scaled_font_size(font_size: Option<f32>, scale_factor: f32) -> f32 {
+	let font_size = font_size.unwrap_or(DEFAULT_FONT_SIZE) * scale_factor;
+	// round to quarter increments to avoid spamming the cache
+	(font_size * 4.0).round() / 4.0
+}
+
 pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 	let graphics = lua.create_table()?;
 
@@ -36,9 +52,7 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 		"set_font_size",
 		lua.create_function(|lua, font_size: Option<f32>| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
-			state.font_size = font_size.unwrap_or(DEFAULT_FONT_SIZE) * state.scale_factor;
-			// round to quarter increments to avoid spamming the cache
-			state.font_size = (state.font_size * 4.0).round() / 4.0;
+			state.font_size = scaled_font_size(font_size, state.scale_factor);
 			Ok(())
 		})?,
 	)?;
@@ -322,11 +336,17 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 
 	graphics.set(
 		"measure_width",
-		lua.create_function(|lua, text: String| {
-			let state = &mut *lua.app_data_mut::<State>().unwrap();
+		// measure_width(text, font, size)
+		// Doesn't use the current font state, missing arguments are the defaults: "main", DEFAULT_FONT_SIZE.
+		lua.create_function(
+			|lua, (text, font, font_size): (String, Option<String>, Option<f32>)| {
+				let font = parse_font(font.as_deref().unwrap_or("main"))?;
+				let state = &mut *lua.app_data_mut::<State>().unwrap();
+				let font_size = scaled_font_size(font_size, state.scale_factor);
 
-			Ok(state.text_engine.measure_width(&text, state.font, state.font_size))
-		})?,
+				Ok(state.text_engine.measure_width(&text, font, font_size))
+			},
+		)?,
 	)?;
 
 	graphics.set(

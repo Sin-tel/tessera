@@ -23,6 +23,8 @@ add pressure queue too
 ## misc (low priority)
 move useful tests to test (skip block size).
 
+merge set_font_main and set_font_notes to set_font(string), use parse_font
+
 the big filter refactor
 
 is there an easy way to avoid having to duplicate the list of instruments everywhere?

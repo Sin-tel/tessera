@@ -321,12 +321,15 @@ function ProjectSettings:update()
 	self.ui:background(theme.background)
 	self.ui:label("Input map")
 	self.ui.layout.h = Ui.scale(24)
+
 	for _, key in ipairs(tuning.input_map()) do
 		self.ui:background(key.black and theme.background or theme.bg_highlight)
 		local color = theme.ui_text
-		self.ui.layout:col(c1)
-		self.ui.layout:col(c2)
-		self.ui:label(key.name, { color = color, font = "notes" })
+
+		local prefix_w = tessera.graphics.measure_width(key.prefix, "notes")
+		self.ui.layout:col(c1 - prefix_w)
+		self.ui.layout:col(c2 + prefix_w)
+		self.ui:label(key.prefix .. key.name, { color = color, font = "notes" })
 		self.ui.layout:col(c3)
 		self.ui:label(key.ratio, { color = color, font = "notes" })
 		self.ui.layout:new_row()
