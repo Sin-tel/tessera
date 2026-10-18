@@ -149,14 +149,14 @@ impl RenderCache {
 					let mut src_buf = Vec::with_capacity(content_w * content_h);
 					match rendered.content {
 						Content::Mask => {
-							for chunk in rendered.data.chunks_exact(1) {
+							for &v in &rendered.data {
 								// Technically we only need to fill the red channel but this helps debugging the atlas
-								src_buf.push(RGBA8::new(chunk[0], chunk[0], chunk[0], 255));
+								src_buf.push(RGBA8::new(v, v, v, 255));
 							}
 						},
 						Content::Color => {
-							for chunk in rendered.data.chunks_exact(4) {
-								src_buf.push(RGBA8::new(chunk[0], chunk[1], chunk[2], chunk[3]));
+							for &[r, g, b, a] in rendered.data.as_chunks::<4>().0 {
+								src_buf.push(RGBA8::new(r, g, b, a));
 							}
 						},
 						Content::SubpixelMask => unreachable!(),

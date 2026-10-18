@@ -2,3 +2,9 @@
 # rustflags = "-C target-cpu=native"
 # [target.'cfg(any(target_arch = "x86", target_arch = "x86_64"))']
 # rustflags = "-C target-feature=+avx2"
+
+[env]
+# luajit-src runs `msvcbuild.bat static`, which passes no CRT flag, so cl defaults to the static CRT (/MT).
+# Everything else links the dynamic one (/MD), which gives LNK4098. cl.exe reads extra options from CL.
+# Harmless on other platforms.
+CL = "/MD"
