@@ -61,9 +61,10 @@ function h.undo()
 	tuning.validate()
 end
 
--- Apply a preset tuning with its recommended notation, as an undoable command.
-function h.set_tuning(key)
-	local def = util.clone(presets.tunings[key])
+-- Apply a tuning with its recommended notation, as an undoable command.
+-- `key_or_def` is a preset key, or a definition like the presets for tunings that aren't one.
+function h.set_tuning(key_or_def)
+	local def = util.clone(type(key_or_def) == "table" and key_or_def or presets.tunings[key_or_def])
 	for _, option in ipairs(tessera.tuning.notations(def)) do
 		if option.recommended then
 			def.notation = option.choice

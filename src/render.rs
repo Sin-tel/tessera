@@ -276,6 +276,7 @@ impl Render {
 	pub fn flush(&mut self) {
 		// Seed is thread local, render_block runs on this thread.
 		fastrand::seed(RNG_SEED);
+		self.metronome.reset();
 
 		for ch in &mut self.channels {
 			if let Some(instrument) = &mut ch.instrument {

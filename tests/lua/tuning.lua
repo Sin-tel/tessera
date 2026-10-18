@@ -248,7 +248,7 @@ end
 
 -- Spellings are simple as written relative to the center: in F# major, A# reads as E and stays.
 tests["simplify relative to center"] = function()
-	set_tuning("et_12")
+	set_tuning({ name = "12 equal", subgroup = "2.3.5", et = 12 })
 	project.settings.relative_note_names = true
 	local a_sharp = tuning.pad({ -5, 10 })
 	local b_flat = tuning.pad({ 2, -2 })

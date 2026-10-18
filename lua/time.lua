@@ -34,7 +34,8 @@ function time.next(t, dt)
 	if tessera.audio.ok() then
 		local beat_prev = math.ceil(time.from_seconds(t_prev))
 		local beat = math.ceil(time.from_seconds(t_new))
-		if project.settings.metronome and beat ~= beat_prev then
+		-- not in renders
+		if project.settings.metronome and audio_status ~= "render" and beat ~= beat_prev then
 			tessera.audio.metronome(beat % 4 == 1)
 		end
 	end

@@ -31,9 +31,6 @@ presets.categories = {
 		name = "Equal",
 		default = "et_31",
 		list = {
-			-- "et_5",
-			-- "et_7",
-			"et_12",
 			"et_15",
 			"et_17",
 			"et_19",
@@ -165,9 +162,6 @@ local function et(n, subgroup)
 	return { name = n .. " equal", subgroup = subgroup, et = n }
 end
 
--- tunings.et_5 = et(5, "2.3.5.7")
--- tunings.et_7 = et(7, "2.3.5.7")
-tunings.et_12 = et(12, "2.3.5")
 tunings.et_15 = et(15, "2.3.5")
 tunings.et_17 = et(17, "2.3.7")
 tunings.et_19 = et(19, "2.3.5.7")

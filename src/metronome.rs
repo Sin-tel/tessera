@@ -29,6 +29,11 @@ impl Metronome {
 		self.accent = accent;
 	}
 
+	// stop a click that's still sounding
+	pub fn reset(&mut self) {
+		self.active = false;
+	}
+
 	pub fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		if !self.active {
 			return;
