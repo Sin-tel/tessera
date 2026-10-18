@@ -9,12 +9,7 @@ snap time is wrong, should be x4
 
 add undo for change tuning center ('c')
 
-add simplify shortcut and auto-simplify option
-
-## Tuning system rewrite
-add respelling shortcut, auto simplify setting
-
-note map: align by note name so ups prefix is flush
+auto_simplify: figure out if chords can be simplified consistently
 
 ## VST
 expose whitelist to user

@@ -182,6 +182,80 @@ tests["respell simplifies selection"] = function()
 	modifier_keys.shift = false
 end
 
+tests["auto simplify, transpose keys"] = function()
+	set_tuning("et_31")
+	local note = add_note()
+	selection.set({ [note] = true })
+	local expected = tuning.get_pitch(note.interval) + 2 * tuning.get_relative_pitch(tuning.chroma)
+
+	-- C## isn't the simplest way to write it in 31et
+	modifier_keys.ctrl = true
+	canvas:keypressed("up")
+	canvas:keypressed("up")
+	assert(not tuning.eq(note.interval, tuning.simplify(note.interval)), "simplified while off")
+
+	project.settings.auto_simplify = true
+	canvas:keypressed("up")
+	canvas:keypressed("down")
+	modifier_keys.ctrl = false
+	assert(math.abs(tuning.get_pitch(note.interval) - expected) < 1e-9, "wrong pitch")
+	assert(tuning.eq(note.interval, tuning.auto_simplify(note.interval)), "not simplified")
+end
+
+tests["auto simplify, drag"] = function()
+	set_tuning("et_31")
+	project.settings.auto_simplify = true
+	local note, x, y = add_note()
+	-- a deliberately complex spelling of C
+	local complex = tuning.respell(tuning.respell(note.interval))
+	note.interval = util.clone(complex)
+
+	-- only in time: keeps the spelling
+	canvas:select_tool(edit)
+	press(x, y)
+	move(x + 100, y)
+	release()
+	assert(tuning.eq(note.interval, complex), "respelled without a pitch change")
+
+	-- in pitch
+	x = canvas.transform:time(note.time)
+	press(x, y)
+	move(x, y - 50)
+	move(x, y - 51)
+	release()
+	assert(tuning.get_pitch(note.interval) > 60, "did not move up")
+	assert(tuning.eq(note.interval, tuning.auto_simplify(note.interval)), "not simplified")
+end
+
+-- Spellings that are about as simple as the simplest are kept.
+tests["auto simplify, threshold"] = function()
+	set_tuning("et_22")
+	project.settings.auto_simplify = true
+	local cost = function(p)
+		return tuning.system:spelling_cost(p)
+	end
+	local kept, simplified = 0, 0
+	for m = 60, 71 do
+		local s = tuning.from_midi(m)
+		for _ = 1, 3 do
+			local best = tuning.simplify(s)
+			local gain = cost(s) - cost(best)
+			local result = tuning.auto_simplify(s)
+			if gain > tuning.auto_simplify_cost then
+				assert(tuning.eq(result, best), "not simplified: " .. tuning.get_name(s))
+				simplified = simplified + 1
+			else
+				assert(tuning.eq(result, s), "respelled with gain " .. gain .. ": " .. tuning.get_name(s))
+				if gain > 0 then
+					kept = kept + 1
+				end
+			end
+			s = tuning.respell(s)
+		end
+	end
+	assert(kept > 0 and simplified > 0, "test doesn't cover both cases")
+end
+
 local names = {}
 for name in pairs(tests) do
 	table.insert(names, name)

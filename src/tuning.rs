@@ -229,6 +229,11 @@ impl TuningSystem {
 			.collect()
 	}
 
+	// How complex a spelling is to read, see xen_utils spelling_cost.
+	pub fn spelling_cost(&self, note: &[i64]) -> i64 {
+		spelling_cost(note)
+	}
+
 	// How notes from `from` need to be converted.
 	pub fn conversion(&self, from: &TuningSystem) -> Conversion {
 		let same_temperament = self.notation.temperament() == from.notation.temperament();

@@ -23,6 +23,7 @@ function drag:mousepressed(canvas)
 	self.start_snap = self.note_origin
 
 	self.edit = false
+	self.delta = nil
 end
 
 function drag:mousedown(canvas)
@@ -72,9 +73,19 @@ function drag:mousedown(canvas)
 	-- local f = tuning.snap(cy)
 	-- local delta = tuning.sub(f, self.note_origin.interval)
 
+	-- Only respell when the pitch moved, and only once per step since simplifying isn't cheap.
+	local changed = not (self.delta and tuning.eq(delta, self.delta))
+	local moved = not tuning.eq(delta, tuning.new_interval())
+	self.delta = delta
+
 	-- Update interval and time
 	for i, v in ipairs(selection.list) do
-		v.interval = tuning.add(self.prev_state[i].interval, delta)
+		if changed then
+			v.interval = tuning.add(self.prev_state[i].interval, delta)
+			if moved then
+				v.interval = tuning.auto_simplify(v.interval)
+			end
+		end
 		v.time = self.prev_state[i].time + x
 	end
 end
