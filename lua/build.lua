@@ -45,6 +45,7 @@ function build.empty_project()
 	-- clear selection
 	selection.ch_index = nil
 	selection.device_index = nil
+	clipboard.clear()
 
 	-- init empty project
 	project = empty_project()

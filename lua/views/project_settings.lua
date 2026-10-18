@@ -124,6 +124,8 @@ function ProjectSettings.new()
 	-- Selected notation option for self.def.
 	self.option = nil
 	self.rows = {}
+	-- What applying would do to the notes.
+	self.warning = nil
 
 	return self
 end
@@ -145,6 +147,19 @@ end
 function ProjectSettings:select_notation(option)
 	self.option = option
 	self.def.notation = util.clone(option.choice)
+	self:update_warning()
+end
+
+function ProjectSettings:update_warning()
+	self.warning = nil
+	local kind = tuning.preview(self.def)
+	if kind == "retune" then
+		self.warning = "Notes only keep their spelling."
+	elseif kind == "respell" then
+		self.warning = "Notes will be respelled."
+	elseif kind == "clip" then
+		self.warning = "Some accidentals will be removed."
+	end
 end
 
 -- Start editing a preset, with its recommended notation.
@@ -216,15 +231,6 @@ function ProjectSettings:update_rows()
 	end
 end
 
--- Changing this can change how notes are written, so it needs to be undoable
--- local function set_tuning(def)
--- 	tuning.set(def)
--- 	local c = command.SetTuning.new(def)
--- 	if c:run() then
--- 		command.register(c)
--- 	end
--- end
-
 function ProjectSettings:update()
 	self:sync()
 
@@ -295,7 +301,15 @@ function ProjectSettings:update()
 	self.ui.layout:col(c1 + c2)
 
 	if self.apply:update(self.ui) and self.option then
-		tuning.set(self.def)
+		local c = command.SetTuning.new(self.def)
+		if c:run() then
+			command.register(c)
+		end
+		self:update_warning()
+	end
+	if self.warning then
+		self.ui.layout:col(lw - c1 - c2)
+		self.ui:label(self.warning)
 	end
 	self.ui.layout:new_row()
 

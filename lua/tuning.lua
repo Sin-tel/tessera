@@ -23,11 +23,20 @@ end
 
 tuning.pad = pad
 
--- Load a tuning from definition table
-function tuning.load(def)
+-- Build the tuning system for a definition, without loading it.
+local function new_system(def)
 	local ok, system = pcall(tessera.tuning.new, def, def.notation, scales.candidates)
 	if not ok then
 		log.error(system)
+		return nil
+	end
+	return system
+end
+
+-- Load a tuning from definition table
+function tuning.load(def)
+	local system = new_system(def)
+	if not system then
 		return false
 	end
 
@@ -103,25 +112,59 @@ function tuning.load(def)
 	return true
 end
 
--- Set the tuning for the current project.
+function tuning.all_notes()
+	local list = {}
+	for _, ch in ipairs(project.channels) do
+		for _, note in ipairs(ch.notes or {}) do
+			table.insert(list, note)
+		end
+	end
+	return list
+end
+
+function tuning.preview(def)
+	local system = new_system(def)
+	if not system or not tuning.system then
+		return nil
+	end
+	return system:conversion(tuning.system)
+end
+
+-- set the tuning for the current project, and convert all notes
 function tuning.set(def)
+	local old_system = tuning.system
+	local old_center = tuning.center
+
 	if not tuning.load(def) then
 		return false
 	end
+
+	clipboard.clear()
 
 	local name = def.name or def.subgroup
 	log.info("Loading tuning: " .. name .. " (" .. def.notation.accidentals .. " accidentals)")
 	project.settings.tuning = util.clone(def)
 
-	-- TODO: do a proper conversion here
+	if not old_system then
+		return true
+	end
 
-	-- fix up the number of coordinates
-	for _, ch in ipairs(project.channels) do
-		if ch.notes then
-			for _, note in ipairs(ch.notes) do
-				note.interval = pad(note.interval)
-			end
-		end
+	local notes = tuning.all_notes()
+	local intervals = {}
+	for i, note in ipairs(notes) do
+		intervals[i] = note.interval
+	end
+	table.insert(intervals, old_center)
+
+	local new, changed = tuning.system:convert(old_system, intervals)
+	for i, note in ipairs(notes) do
+		note.interval = new[i]
+	end
+	tuning.center = new[#new]
+
+	local kind = tuning.system:conversion(old_system)
+	if changed > 0 then
+		log.info("Converted notes (" .. kind .. "), " .. changed .. " changed spelling")
 	end
 	return true
 end
