@@ -317,9 +317,10 @@ where
 							};
 
 							// interlace and convert
-							for (i, outsample) in buffer_chunk.chunks_exact_mut(2).enumerate() {
-								outsample[0] = T::from_sample(buf_slice[0][i]);
-								outsample[1] = T::from_sample(buf_slice[1][i]);
+							let (frames, _) = buffer_chunk.as_chunks_mut::<2>();
+							for (i, [l, r]) in frames.iter_mut().enumerate() {
+								*l = T::from_sample(buf_slice[0][i]);
+								*r = T::from_sample(buf_slice[1][i]);
 							}
 						}
 

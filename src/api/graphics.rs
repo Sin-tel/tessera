@@ -393,8 +393,8 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 			let mut path = Path::new();
 
 			path.move_to(points[0], points[1]);
-			for chunk in points[2..].chunks_exact(2) {
-				path.line_to(chunk[0], chunk[1]);
+			for &[x, y] in points[2..].as_chunks::<2>().0 {
+				path.line_to(x, y);
 			}
 			path.close();
 
