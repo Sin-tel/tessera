@@ -31,6 +31,14 @@ impl LuaUserData for TuningSystem {
 			Ok(this.respellings(&note))
 		});
 
+		// Notes written more simply as a whole, if that saves more than `min_gain` per note.
+		methods.add_method("simplify_chord", |_, this, (notes, min_gain): (Vec<Vec<i64>>, f64)| {
+			for note in &notes {
+				check_note(this, note)?;
+			}
+			Ok(this.simplify_chord(&notes, min_gain))
+		});
+
 		// How complex a spelling is, lower is simpler.
 		methods.add_method("spelling_cost", |_, this, note: Vec<i64>| {
 			check_note(this, &note)?;

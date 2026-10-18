@@ -393,11 +393,6 @@ local function respellings(p)
 	return list, util.find(names, tuning.notation:name(centered))
 end
 
--- How complex a note is to read, as written relative to the center.
-local function spelling_cost(p)
-	return tuning.system:spelling_cost(tuning.to_centered(p))
-end
-
 -- Next way to write the same note, cycling through the best few.
 -- Unchanged if there's only one way to write it.
 function tuning.respell(p)
@@ -414,15 +409,32 @@ function tuning.simplify(p)
 	return respellings(p)[1]
 end
 
--- For notes that were moved: a simpler way to write them, if the auto simplify setting is on.
-function tuning.auto_simplify(p)
-	if project.settings.auto_simplify then
-		local s = tuning.simplify(p)
-		if spelling_cost(p) - spelling_cost(s) > tuning.auto_simplify_cost then
-			return s
-		end
+-- Moved notes written more simply, if the auto simplify setting is on.
+-- All by the same step that doesn't change the pitch, so a chord stays the same chord, and only when that saves
+-- more than auto_simplify_cost per note on average. Costs are as written, relative to the center.
+local function auto_simplify(intervals)
+	if not project.settings.auto_simplify or #intervals == 0 then
+		return intervals
 	end
-	return p
+	local centered = util.map(intervals, tuning.to_centered)
+	return util.map(tuning.system:simplify_chord(centered, tuning.auto_simplify_cost), tuning.from_centered)
+end
+
+-- A single moved note.
+function tuning.auto_simplify(p)
+	return auto_simplify({ p })[1]
+end
+
+-- Moved notes, in place.
+function tuning.auto_simplify_notes(notes)
+	local intervals = {}
+	for i, note in ipairs(notes) do
+		intervals[i] = note.interval
+	end
+	local simplified = auto_simplify(intervals)
+	for i, note in ipairs(notes) do
+		note.interval = simplified[i]
+	end
 end
 
 -- Respell notes in place.

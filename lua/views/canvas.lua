@@ -536,8 +536,9 @@ function Canvas:keypressed(key)
 			end
 		end
 		for _, v in ipairs(selection.list) do
-			v.interval = tuning.auto_simplify(tuning.add(v.interval, delta))
+			v.interval = tuning.add(v.interval, delta)
 		end
+		tuning.auto_simplify_notes(selection.list)
 
 		command.register(command.NoteUpdate.new(prev_state, selection.list))
 		return true

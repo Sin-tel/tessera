@@ -229,6 +229,16 @@ impl TuningSystem {
 			.collect()
 	}
 
+	// Notes written more simply as a whole, all moved by the same enharmonic so a chord stays the same
+	// chord (see Notation::spell_chord). Only if that saves more than `min_gain` per note on average,
+	// otherwise the notes as given.
+	pub fn simplify_chord(&self, notes: &[Vec<i64>], min_gain: f64) -> Vec<Vec<i64>> {
+		let total = |notes: &[Vec<i64>]| notes.iter().map(|n| spelling_cost(n)).sum::<i64>();
+		let simplified = self.notation.spell_chord(notes);
+		let gain = (total(notes) - total(&simplified)) as f64 / notes.len() as f64;
+		if gain > min_gain { simplified } else { notes.to_vec() }
+	}
+
 	// How complex a spelling is to read, see xen_utils spelling_cost.
 	pub fn spelling_cost(&self, note: &[i64]) -> i64 {
 		spelling_cost(note)
