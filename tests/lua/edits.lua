@@ -142,6 +142,30 @@ tests["tab while dragging"] = function()
 	assert(canvas.current_tool == pen, "tool did not switch after the drag")
 end
 
+-- Edits that end up changing nothing don't add an undo step.
+tests["empty edits"] = function()
+	local note, x, y = add_note()
+	local n = command.index
+	canvas:select_tool(edit)
+
+	-- dragged and back
+	press(x, y)
+	move(x + 50, y - 100)
+	move(x, y)
+	release()
+	assert(note.time == 1, "note moved")
+	assert(command.index == n, "drag back to the start registered")
+
+	press(x, y)
+	move(x + 100, y)
+	release()
+	assert(command.index == n + 1, "real drag not registered")
+
+	command.register(command.NoteAdd.new({}))
+	command.register(command.Change.new(project.settings, "snap_time", project.settings.snap_time))
+	assert(command.index == n + 1, "empty command registered")
+end
+
 tests["respell cycles"] = function()
 	set_tuning("et_31")
 	local note = add_note()

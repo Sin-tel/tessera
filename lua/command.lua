@@ -44,7 +44,13 @@ function command.run_and_register(c)
 	command.register(c)
 end
 
+-- Commands can have an `is_empty` method: when it's true the command changed nothing, so it's dropped
+-- instead of adding a step that does nothing to the undo stack.
 function command.register(c)
+	if c.is_empty and c:is_empty() then
+		return
+	end
+
 	command.index = command.index + 1
 
 	-- remove irrelevant future commands
@@ -111,6 +117,10 @@ function Change:reverse()
 	self.target[self.key] = self.prev_value
 end
 
+function Change:is_empty()
+	return self.value == self.prev_value
+end
+
 command.Change = Change
 
 --
@@ -175,6 +185,10 @@ function NoteUpdate:reverse()
 	end
 end
 
+function NoteUpdate:is_empty()
+	return util.deep_eq(self.prev_state, self.new_state)
+end
+
 command.NoteUpdate = NoteUpdate
 
 --
@@ -215,6 +229,10 @@ function NoteDelete:reverse()
 			table.insert(project.channels[ch_index].notes, note)
 		end
 	end
+end
+
+function NoteDelete:is_empty()
+	return next(self.mask) == nil
 end
 
 command.NoteDelete = NoteDelete
@@ -258,6 +276,10 @@ function NoteAdd:reverse()
 	end
 end
 
+function NoteAdd:is_empty()
+	return next(self.mask) == nil
+end
+
 command.NoteAdd = NoteAdd
 
 --
@@ -282,6 +304,10 @@ end
 
 function TimeUpdate:reverse()
 	project.time = self.prev_state
+end
+
+function TimeUpdate:is_empty()
+	return util.deep_eq(self.prev_state, self.new_state)
 end
 
 command.TimeUpdate = TimeUpdate
@@ -345,6 +371,10 @@ end
 
 function SetCenter:reverse()
 	tuning.set_center(self.prev_center)
+end
+
+function SetCenter:is_empty()
+	return tuning.eq(self.center, self.prev_center)
 end
 
 command.SetCenter = SetCenter
