@@ -20,7 +20,7 @@ function Log:draw()
 
 	tessera.graphics.set_color(theme.ui_text)
 	tessera.graphics.set_font_size(16)
-	tessera.graphics.set_font_main()
+	tessera.graphics.set_font("main")
 
 	local text = table.concat(log.messages, "\n")
 

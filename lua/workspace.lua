@@ -155,7 +155,7 @@ function workspace:update()
 end
 
 function workspace:draw()
-	tessera.graphics.set_font_main()
+	tessera.graphics.set_font("main")
 	tessera.graphics.set_font_size()
 	-- menus
 	for i, v in ipairs(self.menus) do

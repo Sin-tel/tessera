@@ -31,19 +31,11 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 	// Draw functions
 
 	graphics.set(
-		"set_font_main",
-		lua.create_function(|lua, ()| {
+		"set_font",
+		lua.create_function(|lua, font: Option<String>| {
+			let font = parse_font(font.as_deref().unwrap_or("main"))?;
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
-			state.font = Font::Inter;
-			Ok(())
-		})?,
-	)?;
-
-	graphics.set(
-		"set_font_notes",
-		lua.create_function(|lua, ()| {
-			let state = &mut *lua.app_data_mut::<State>().unwrap();
-			state.font = Font::Notes;
+			state.font = font;
 			Ok(())
 		})?,
 	)?;

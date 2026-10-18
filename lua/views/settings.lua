@@ -171,7 +171,7 @@ function Settings:update()
 	local lw = math.min(Ui.scale(800), self.w - 2 * x)
 	local y = Ui.scale(24)
 
-	tessera.graphics.set_font_main()
+	tessera.graphics.set_font("main")
 
 	self.ui:start_frame(x, y)
 
