@@ -7,9 +7,9 @@ organ: fletcher munson-esque normalization (look-up table)
 
 snap time is wrong, should be x4
 
-add undo for change tuning center ('c')
-
 auto_simplify: figure out if chords can be simplified consistently
+
+check undo for empty actions (eg moving notes without actually moving)
 
 ## VST
 expose whitelist to user

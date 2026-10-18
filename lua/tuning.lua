@@ -103,7 +103,6 @@ function tuning.load(def)
 	for i, t in ipairs(tuning.tables) do
 		tuning.maps[t] = system:scale_map(i)
 	end
-	tuning.center = pad(tuning.center or {})
 
 	return true
 end
@@ -129,7 +128,9 @@ function tuning.validate()
 	for _, note in ipairs(tuning.all_notes()) do
 		check(note.interval, "Note")
 	end
-	check(tuning.center, "Tuning center")
+	for _, c in ipairs(project.center) do
+		check(c.interval, "Tuning center")
+	end
 end
 
 function tuning.preview(def)
@@ -140,10 +141,19 @@ function tuning.preview(def)
 	return system:conversion(tuning.system)
 end
 
+-- Make the project's center fit the tuning that was just loaded. Older saves don't have one.
+local function load_center()
+	if not project.center or #project.center == 0 then
+		project.center = { { time = 0.0, interval = {} } }
+	end
+	for _, c in ipairs(project.center) do
+		c.interval = pad(c.interval)
+	end
+end
+
 -- set the tuning for the current project, and convert all notes
 function tuning.set(def)
 	local old_system = tuning.system
-	local old_center = tuning.center
 
 	if not tuning.load(def) then
 		return false
@@ -156,6 +166,7 @@ function tuning.set(def)
 	project.settings.tuning = util.clone(def)
 
 	if not old_system then
+		load_center()
 		return true
 	end
 
@@ -164,13 +175,17 @@ function tuning.set(def)
 	for i, note in ipairs(notes) do
 		intervals[i] = note.interval
 	end
-	table.insert(intervals, old_center)
+	for _, c in ipairs(project.center) do
+		table.insert(intervals, c.interval)
+	end
 
 	local new, changed = tuning.system:convert(old_system, intervals)
 	for i, note in ipairs(notes) do
 		note.interval = new[i]
 	end
-	tuning.center = new[#new]
+	for i, c in ipairs(project.center) do
+		c.interval = new[#notes + i]
+	end
 
 	local kind = tuning.system:conversion(old_system)
 	if changed > 0 then
@@ -183,6 +198,7 @@ end
 function tuning.load_project()
 	if project.settings.tuning then
 		if tuning.load(project.settings.tuning) then
+			load_center()
 			return
 		end
 		log.error("Failed to load tuning from project, using default.")
@@ -190,6 +206,8 @@ function tuning.load_project()
 
 	-- fallback to default if nothing works
 	project.settings.tuning = tuning.load_default()
+	project.center = nil
+	load_center()
 end
 
 function tuning.load_default()
@@ -206,11 +224,16 @@ function tuning.new_interval()
 	return new
 end
 
-function tuning.get_center(p)
-	return tuning.center
+-- The center is the root of the scales and of relative note names.
+-- Stored in project.center, a list of { time, interval } sorted by time, so it can later change over the
+-- timeline like key signatures. For now there's only ever one entry, at time 0.
+function tuning.get_center()
+	return project.center[1].interval
 end
+
+-- See command.SetCenter for undo.
 function tuning.set_center(p)
-	tuning.center = util.clone(p)
+	project.center[1].interval = util.clone(p)
 end
 
 -- Size in semitones of every note in a scale, above the unison. Cached per scale.
@@ -256,8 +279,8 @@ end
 function tuning.snap(p)
 	local t = tuning.tables[project.settings.snap_pitch]
 	assert(t)
-	local rel = p - tuning.get_pitch(tuning.center)
-	return tuning.from_table(t, nearest_index(t, rel) + tuning.get_index(t, tuning.center))
+	local rel = p - tuning.get_pitch(tuning.get_center())
+	return tuning.from_table(t, nearest_index(t, rel) + tuning.get_index(t, tuning.get_center()))
 end
 
 function tuning.snap_interval(f)
@@ -268,7 +291,7 @@ end
 
 -- Look up interval in table, correcting for octave offsets
 function tuning.from_table(t, i)
-	local start = tuning.get_index(t, tuning.center)
+	local start = tuning.get_index(t, tuning.get_center())
 
 	i = i - start
 	local s = #t
@@ -276,7 +299,7 @@ function tuning.from_table(t, i)
 	i = i - oct * s
 	local p = util.clone(t[i + 1])
 	p[1] = p[1] + oct
-	p = tuning.add(p, tuning.center)
+	p = tuning.add(p, tuning.get_center())
 
 	return p
 end
@@ -332,13 +355,13 @@ end
 -- Coordinates for note name, relative to the center.
 local function name_coords(p)
 	if project.settings.relative_note_names then
-		p = tuning.sub(p, tuning.center)
+		p = tuning.sub(p, tuning.get_center())
 	elseif tuning.rank > 2 then
 		-- only move by extra accidentals
 		local new = {}
 		for i = 1, tuning.rank do
 			if i > 2 then
-				new[i] = p[i] - tuning.center[i]
+				new[i] = p[i] - tuning.get_center()[i]
 			else
 				new[i] = p[i]
 			end
