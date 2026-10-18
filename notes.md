@@ -11,10 +11,6 @@ auto_simplify: figure out if chords can be simplified consistently
 
 check undo for empty actions (eg moving notes without actually moving)
 
-## VST
-expose whitelist to user
-add pressure queue too
-
 ## misc (low priority)
 move useful tests to test (skip block size).
 
@@ -121,6 +117,9 @@ should we use audio_thread_priority?
 
 modulation routing system for instruments would be nice to have
  e.g. allow pressure to be applied to any slider
+
+## VST
+expose whitelist to user
 
 ## routing
 

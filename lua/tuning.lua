@@ -334,7 +334,7 @@ end
 function tuning.get_index(t, p)
 	local index = 0
 	for i, v in ipairs(tuning.maps[t]) do
-		index = index + v * (p[i] or 0)
+		index = index + v * p[i]
 	end
 	return index
 end
@@ -346,8 +346,8 @@ end
 
 function tuning.get_relative_pitch(p)
 	local f = 0
-	for i, v in ipairs(p) do
-		f = f + v * tuning.generator_pitches[i]
+	for i = 1, tuning.rank do
+		f = f + p[i] * tuning.generator_pitches[i]
 	end
 	return f
 end

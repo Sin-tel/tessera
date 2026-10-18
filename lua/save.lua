@@ -89,11 +89,11 @@ function save.patch(p)
 		for _, ch in ipairs(p.channels) do
 			if ch.notes then
 				for _, note in ipairs(ch.notes) do
+					local new_interval = {}
 					for i = 1, rank do
-						if not note.interval[i] then
-							note.interval[i] = 0
-						end
+						new_interval[i] = note.interval[i] or 0
 					end
+					note.interval = new_interval
 				end
 			end
 		end
