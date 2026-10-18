@@ -18,14 +18,15 @@ const HEAD3: f32 = 0.951;
 const LFO_RATE: f32 = 0.27;
 
 // Magnetic model parameters
-const SAT_C: f32 = 0.5;
+const SAT_C: f32 = 0.7;
 const SAT_ALPHA: f32 = 0.1;
 const SAT_MAG: f32 = 0.28;
 const SAT_K: f32 = 1.0;
+const SAT_OUT: f32 = 0.65;
 
 const GAIN_PAIR: f32 = 0.7;
 
-const TRIM_GAIN: f32 = 0.31;
+const TRIM_GAIN: f32 = 0.6;
 const BIAS: f32 = 0.01;
 const NOISE_AMT: f32 = 0.01;
 
@@ -33,17 +34,14 @@ const NOISE_AMT: f32 = 0.01;
 const FLUTTER_TRIM_REF: f32 = 0.00581;
 const SWEEP_TRIM_REF: f32 = 0.000079;
 
-// Steady state of the hysteresis model.
-fn magnetic_fixed_point(x0: f32) -> (f32, f32) {
-	let k2 = 1.0 - (-0.001f32.sqrt() / SAT_K).exp();
+// Steady state of the magnetic model for a constant input: settled on the anhysteretic curve,
+// so m_irr = m. Returns m, before SAT_OUT.
+fn magnetic_fixed_point(x0: f32) -> f32 {
 	let mut m = 0.0f32;
-	let mut m_irr = 0.0f32;
-	for _ in 0..512 {
-		let m_anh = ((x0 + SAT_ALPHA * m) / SAT_MAG).tanh();
-		m_irr += k2 * (m_anh - m_irr);
-		m = SAT_C * (m_anh - m_irr) + m_irr;
+	for _ in 0..64 {
+		m = ((x0 + SAT_ALPHA * m) / SAT_MAG).tanh();
 	}
-	(m, m_irr)
+	m
 }
 
 #[derive(Debug)]
@@ -211,19 +209,20 @@ impl Track {
 		*sample = in_s * (1.0 - shared.balance) + out * shared.balance;
 	}
 
+	// Hysteresis: m_irr follows the anhysteretic curve by an amount proportional to how far the input
+	// moved, not how long it took. So it doesn't act as a filter, and doesn't depend on the sample rate.
 	fn tick_magnetic(&mut self, s: f32) -> f32 {
 		let diff = s - self.prev_t;
 		self.prev_t = s;
 
 		let m_anh = ((s + SAT_ALPHA * self.m) / SAT_MAG).tanh();
 
-		let k2 = (diff * diff + 0.001).sqrt() / SAT_K;
-		let k2 = 1.0 - f32::exp(-k2);
+		let k2 = 1.0 - f32::exp(-diff.abs() / SAT_K);
 		self.m_irr += k2 * (m_anh - self.m_irr);
 
 		let m_rev = SAT_C * (m_anh - self.m_irr);
 		self.m = m_rev + self.m_irr;
-		self.m
+		SAT_OUT * self.m
 	}
 
 	fn tick_tape(&mut self, x_in: f32, speed: f32, shared: &Shared) -> f32 {
@@ -413,8 +412,8 @@ impl Effect for DelayTape {
 		let drive_inv = 1.0 / drive;
 		let gain_sum = self.h1_gain.target() + self.h2_gain.target() + self.h3_gain.target();
 
-		let (m_ss, m_irr_ss) = magnetic_fixed_point(BIAS * drive);
-		let tape_value = m_ss * drive_inv;
+		let m_ss = magnetic_fixed_point(BIAS * drive);
+		let tape_value = SAT_OUT * m_ss * drive_inv;
 		let post_tap = tape_value * gain_sum;
 
 		// follow process logic
@@ -453,7 +452,7 @@ impl Effect for DelayTape {
 			track.x2 = tape_value;
 			track.x3 = tape_value;
 			track.m = m_ss;
-			track.m_irr = m_irr_ss;
+			track.m_irr = m_ss;
 			track.prev_t = BIAS * drive;
 			track.accum = 0.0;
 			track.lfo_phase = 0.0;

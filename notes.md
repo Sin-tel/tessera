@@ -1,20 +1,5 @@
 ## misc
-need to tune feedback filter in delay_tape
-epiano equalization curve
-fix key velocity curve (add to all instruments on rust side)
-
-organ: fletcher munson-esque normalization (look-up table)
-
-snap time is wrong, should be x4
-
-auto_simplify: figure out if chords can be simplified consistently
-
-check undo for empty actions (eg moving notes without actually moving)
-
-## misc (low priority)
 move useful tests to test (skip block size).
-
-merge set_font_main and set_font_notes to set_font(string), use parse_font
 
 the big filter refactor
 
@@ -24,8 +9,6 @@ need to fix voice alloc, some stuck notes when pedaling
 should plugin handle pedal itself? kind of annoying...
 
 expose GUI scale factor (requires restart probably)
-
-move 'flush_messages' to backend
 
 allow replacing / deleting instrument only
 

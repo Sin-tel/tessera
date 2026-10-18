@@ -10,6 +10,7 @@ pub struct Epiano {
 	voices: Vec<Voice>,
 	sample_rate: f32,
 	dc_killer: DcKiller,
+	eq: Filter,
 	x0: f32,
 	y0: f32,
 	gain: f32,
@@ -18,6 +19,9 @@ pub struct Epiano {
 }
 
 const N_VOICES: usize = 24;
+// static output EQ, tuned by ear
+const EQ_FREQ: f32 = 750.;
+const EQ_GAIN: f32 = -8.;
 // seconds after note off until the voice is cut
 const RELEASE_TIME: f32 = 1.0;
 
@@ -72,10 +76,15 @@ impl Instrument for Epiano {
 			voices.push(Voice::new(sample_rate));
 		}
 
+		let mut eq = Filter::new(sample_rate);
+		eq.set_bell(EQ_FREQ, BUTTERWORTH_Q, EQ_GAIN);
+		eq.immediate();
+
 		Epiano {
 			sample_rate,
 			voices,
 			dc_killer: DcKiller::new(sample_rate),
+			eq,
 			x0: 0.5,
 			y0: 1.0,
 			gain: 1.,
@@ -135,6 +144,7 @@ impl Instrument for Epiano {
 		}
 
 		self.dc_killer.process_block(bl);
+		self.eq.process_block(bl);
 		br.copy_from_slice(bl);
 	}
 
@@ -192,6 +202,7 @@ impl Instrument for Epiano {
 
 	fn flush(&mut self) {
 		self.dc_killer.reset();
+		self.eq.reset_state();
 
 		for voice in &mut self.voices {
 			voice.filter.iter_mut().for_each(Filter::reset_state);
