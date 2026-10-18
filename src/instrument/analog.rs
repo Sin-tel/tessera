@@ -166,10 +166,9 @@ impl Instrument for Analog {
 	}
 
 	fn note_on(&mut self, pitch: f32, vel: f32, _id: usize) {
+		let v = velocity_curve(vel, 20.);
 		let f = pitch_to_hz(pitch) / self.sample_rate;
 		self.freq.set(f);
-		// make it less sensitive to velocity
-		let v = vel * (2. - vel);
 		self.envelope.set_vel(v);
 
 		self.gate.set(0.3);

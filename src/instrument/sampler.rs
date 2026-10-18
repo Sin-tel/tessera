@@ -221,6 +221,7 @@ impl Instrument for Sampler {
 	}
 
 	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {
+		let vel = velocity_curve(vel, DEFAULT_VEL_RANGE_DB);
 		if self.loading {
 			return;
 		}

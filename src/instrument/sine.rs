@@ -79,6 +79,7 @@ impl Instrument for Sine {
 	fn pressure(&mut self, _presure: f32, _id: usize) {}
 
 	fn note_on(&mut self, pitch: f32, vel: f32, _id: usize) {
+		let vel = velocity_curve(vel, DEFAULT_VEL_RANGE_DB);
 		if !self.fixed {
 			let p = pitch_to_hz(pitch) / self.sample_rate;
 			self.freq.set(p);

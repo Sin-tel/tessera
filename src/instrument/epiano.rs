@@ -142,6 +142,7 @@ impl Instrument for Epiano {
 	fn pressure(&mut self, _pressure: f32, _id: usize) {}
 
 	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {
+		let vel = velocity_curve(vel, 40.0);
 		let voice = &mut self.voices[id];
 		let f = pitch_to_hz(pitch);
 
