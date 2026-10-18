@@ -65,7 +65,7 @@ function Menu:focus()
 end
 
 function Menu:draw()
-	tessera.graphics.set_font_main()
+	tessera.graphics.set_font("main")
 	tessera.graphics.set_font_size()
 
 	tessera.graphics.set_color(theme.background)

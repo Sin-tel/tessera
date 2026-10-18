@@ -373,7 +373,7 @@ function tessera.draw_error(msg)
 
 	tessera.graphics.set_color(theme.ui_text)
 	tessera.graphics.set_font_size(20)
-	tessera.graphics.set_font_main()
+	tessera.graphics.set_font("main")
 
 	local x, y = 80, 80
 	local w, h = width - 160, height - 160

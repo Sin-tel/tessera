@@ -88,10 +88,10 @@ function NotationRow:draw(ui, x, y, w, h)
 	local col_w = (w - title_w) / math.max(1, #self.primes)
 	for i, p in ipairs(self.primes) do
 		local cx = x + title_w + (i - 1) * col_w
-		tessera.graphics.set_font_notes()
+		tessera.graphics.set_font("notes")
 		tessera.graphics.set_color(theme.ui_text)
 		tessera.graphics.label(p.ratio .. ": " .. p.name, cx, y, col_w, h, tessera.graphics.ALIGN_LEFT)
-		tessera.graphics.set_font_main()
+		tessera.graphics.set_font("main")
 	end
 end
 
@@ -232,7 +232,7 @@ end
 function ProjectSettings:update()
 	self:sync()
 
-	tessera.graphics.set_font_main()
+	tessera.graphics.set_font("main")
 
 	local x = Ui.scale(64)
 	local lw = math.min(Ui.scale(800), self.w - 2 * x)

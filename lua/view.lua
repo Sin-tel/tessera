@@ -42,7 +42,7 @@ function View:draw_full()
 	tessera.graphics.rectangle("fill", 0, 0, self.box.w, Ui.HEADER)
 
 	-- title
-	tessera.graphics.set_font_main()
+	tessera.graphics.set_font("main")
 	tessera.graphics.set_font_size(Ui.TITLE_FONT_SIZE)
 	tessera.graphics.set_color(theme.ui_text)
 	tessera.graphics.label(self.name, 10, 0, self.box.w - 20, Ui.HEADER)

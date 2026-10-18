@@ -314,7 +314,7 @@ function Canvas:draw()
 	w_scale = math.min(20, w_scale)
 
 	tessera.graphics.set_line_width(2.5)
-	tessera.graphics.set_font_notes()
+	tessera.graphics.set_font("notes")
 	tessera.graphics.set_font_size(16)
 
 	for ch_index = #project.channels, 1, -1 do

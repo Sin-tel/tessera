@@ -105,11 +105,7 @@ end
 local function nothing() end
 
 local function draw_label(text, align, color, font, x, y, w, h)
-	if font == "main" then
-		tessera.graphics.set_font_main()
-	else
-		tessera.graphics.set_font_notes()
-	end
+	tessera.graphics.set_font(font)
 
 	tessera.graphics.set_color(color)
 	tessera.graphics.label(text, x, y, w, h, align)
