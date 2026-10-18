@@ -19,6 +19,23 @@ const GAIN: f32 = 0.05;
 // dB per drawbar step, 1 to 8
 const DRAWBAR_DB: [f32; 8] = [-32., -26., -20., -15., -10., -6., -3., 0.];
 
+// Loudness compensation in dB per octave
+const LOUDNESS_DB: [f32; 10] = [
+	//       Note    Hz
+	4.0,   // C1      33
+	8.0,   // C2      65
+	6.0,   // C3     131
+	3.0,   // C4     262
+	1.5,   // C5     523
+	0.0,   // C6    1047
+	-2.0,  // C7    2093
+	-6.0,  // C8    4186
+	-2.0,  // C9    8372
+	-12.0, // C10  16744
+];
+// C1 = note number 24
+const LOUDNESS_START: f32 = 24.;
+
 // 3rd harmonic, fast, soft
 const PERC_BAR: usize = 4;
 const PERC_LEVEL: f32 = 1.2;
@@ -60,6 +77,8 @@ pub struct Organ {
 struct Voice {
 	accum: [f32; N_BARS],
 	freq: [f32; N_BARS],
+	// loudness compensation per partial
+	gain: [f32; N_BARS],
 	contacts: [Contact; N_BARS],
 	note_on: bool,
 	active: bool,
@@ -70,6 +89,7 @@ impl Voice {
 		Self {
 			accum: [0.; N_BARS],
 			freq: [0.; N_BARS],
+			gain: [0.; N_BARS],
 			contacts: [Contact::default(); N_BARS],
 			note_on: false,
 			active: false,
@@ -128,6 +148,14 @@ impl Contact {
 	fn reset(&mut self) {
 		*self = Self::default();
 	}
+}
+
+// Loudness compensation for a partial at `pitch`, see LOUDNESS_DB.
+fn loudness_gain(pitch: f32) -> f32 {
+	let last = LOUDNESS_DB.len() - 1;
+	let x = ((pitch - LOUDNESS_START) / 12.).clamp(0., last as f32);
+	let i = (x as usize).min(last - 1);
+	from_db(lerp(LOUDNESS_DB[i], LOUDNESS_DB[i + 1], x - i as f32))
 }
 
 fn drawbar_gain(value: f32) -> f32 {
@@ -204,7 +232,7 @@ impl Instrument for Organ {
 						self.click_depth,
 						&mut self.rng,
 					);
-					out += bars[k] * env * sin_cheap(*a);
+					out += bars[k] * voice.gain[k] * env * sin_cheap(*a);
 				}
 
 				*sample += out * GAIN;
@@ -235,6 +263,7 @@ impl Instrument for Organ {
 			let wheel = (p * WHEEL_STEPS).round() / WHEEL_STEPS;
 
 			let f = pitch_to_hz(wheel) / self.sample_rate;
+			voice.gain[k] = loudness_gain(wheel);
 			if f < 0.45 {
 				voice.freq[k] = f;
 				voice.accum[k] = (f64::from(f) * self.time as f64).fract() as f32;
