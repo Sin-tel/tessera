@@ -347,6 +347,56 @@ local function name_coords(p)
 	return p
 end
 
+-- The best few ways to write a note, best first, and the index of p in that list if it's one of them.
+local function respellings(p)
+	-- Compared by how they're written, since different spellings can be drawn the same (half sharps).
+	local list = {}
+	local names = {}
+	for _, s in ipairs(tuning.system:respellings(p)) do
+		local name = tuning.notation:name(s)
+		if not util.find(names, name) then
+			table.insert(list, s)
+			table.insert(names, name)
+		end
+	end
+	return list, util.find(names, tuning.notation:name(p))
+end
+
+-- Next way to write the same note, cycling through the best few.
+-- Unchanged if there's only one way to write it.
+function tuning.respell(p)
+	local list, i = respellings(p)
+	if i then
+		return list[i % #list + 1]
+	end
+	-- not one of the best ones
+	return list[1]
+end
+
+-- Respell notes in place.
+-- A single note cycles. Several notes are simplified, unless they all are already, then they cycle.
+-- That way, respelling a selection first cleans it up.
+function tuning.respell_notes(notes)
+	local simplify = false
+	if #notes > 1 then
+		for _, note in ipairs(notes) do
+			local _, i = respellings(note.interval)
+			if i ~= 1 then
+				simplify = true
+				break
+			end
+		end
+	end
+
+	for _, note in ipairs(notes) do
+		if simplify then
+			note.interval = respellings(note.interval)[1]
+		else
+			note.interval = tuning.respell(note.interval)
+		end
+	end
+end
+
 -- Name of a note in the current tuning.
 function tuning.get_name(p)
 	return tuning.notation:name(name_coords(p))

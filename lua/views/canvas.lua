@@ -470,6 +470,17 @@ function Canvas:keypressed(key)
 			self:start_tool(scale)
 			return true
 		end
+	elseif key == "r" and modifier_keys.shift and not modifier_keys.ctrl and not modifier_keys.alt then
+		if not selection.is_empty() then
+			-- registers a command, so not in the middle of another edit
+			if self.tool_active then
+				self:finish_tool()
+			end
+			local prev_state = util.clone(selection.list)
+			tuning.respell_notes(selection.list)
+			command.register(command.NoteUpdate.new(prev_state, selection.list))
+			return true
+		end
 	elseif key == "kp." or key == "." then
 		self:auto_zoom()
 		return true

@@ -80,6 +80,10 @@ Clicking anywhere in the top ribbon will set the transport start time.
 | :---                       | :---                      |
 | **Grab**                   | `G`                       |
 | **Scale**                  | `S`                       |
+| **Respell** (cycle enharmonic spellings) | `Shift + R` |
+
+Respelling a single note cycles through its best few spellings. With several notes selected, the first press
+simplifies them all, pressing again cycles them.
 
 ### Nudging Notes (Time)
 Use `Left` and `Right` arrow keys to move selected notes in time.

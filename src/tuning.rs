@@ -8,6 +8,11 @@ const DIATONIC: (usize, i64) = (7, 1);
 const CHROMATIC: (usize, i64) = (12, 4);
 // Range of sizes for the fine chain of fifths. The largest one that has a projection is used.
 const FINE_CHAIN: std::ops::RangeInclusive<usize> = 15..=31;
+// How many spellings respelling cycles through, at most.
+const RESPELL_COUNT: usize = 3;
+// How much more than the best spelling the others may cost (see spelling_cost).
+// A mark is 7 and a fifth 2. For G in 31et this keeps vvG# (+24), but not ^^^F# (+27).
+const RESPELL_MAX_COST: i64 = 26;
 
 // Which temperament to use.
 // Either give `commas` to temper out, or `et` for an equal temperament.
@@ -205,6 +210,22 @@ impl TuningSystem {
 		list.iter()
 			.filter(|k| subgroup.sopfr(k) <= bound)
 			.map(|k| interval_to_string(subgroup, k))
+			.collect()
+	}
+
+	// The ways to write a note that respelling cycles through, best first.
+	// The same list for every spelling of the note, so it can be cycled through.
+	// At least two if the notation has enharmonics, the others only if they're not much worse.
+	// Note: may contain spellings that are drawn the same (half sharps), which the Lua side dedups.
+	pub fn respellings(&self, note: &[i64]) -> Vec<Vec<i64>> {
+		// Ties are broken relative to the input, so start from the same spelling every time.
+		let canonical = self.notation.from_tempered(&self.notation.to_tempered(note));
+		let list = self.notation.spellings(&canonical, RESPELL_COUNT);
+		let max_cost = spelling_cost(&list[0]) + RESPELL_MAX_COST;
+		list.into_iter()
+			.enumerate()
+			.filter(|(i, s)| *i < 2 || spelling_cost(s) <= max_cost)
+			.map(|(_, s)| s)
 			.collect()
 	}
 
@@ -557,4 +578,55 @@ fn factors(subgroup: &Subgroup, interval: &[i64]) -> Vec<(u32, i64)> {
 fn interval_to_string(subgroup: &Subgroup, x: &[i64]) -> String {
 	// overflow needs to render something, note font only display capital letters as text
 	if let Ok((p, q)) = subgroup.to_ratio(x) { format!("{p}/{q}") } else { "<BIG NUMBER>".into() }
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	fn system(
+		subgroup: &str,
+		commas: &[&str],
+		et: Option<i64>,
+		accidentals: usize,
+	) -> TuningSystem {
+		let def = TemperamentDef {
+			subgroup: subgroup.into(),
+			commas: commas.iter().map(|&c| c.into()).collect(),
+			et,
+		};
+		let choice = NotationChoice { accidentals, ..Default::default() };
+		TuningSystem::new(&def, choice, &ScaleCandidates::default()).unwrap()
+	}
+
+	// Respelling cycles through the list, so every spelling in it has to give the same list.
+	#[test]
+	fn spellings_cycle() {
+		let systems = [
+			system("2.3.5.7", &["81/80", "126/125"], None, 0),
+			system("2.3.5.7", &[], Some(31), 1),
+			system("2.3.5.7", &[], Some(22), 1),
+			system("2.3.5.7.11", &["225/224", "385/384"], None, 1),
+		];
+		for system in &systems {
+			for fifths in -12..=12 {
+				for acc in -2..=2 {
+					let mut note = vec![0; system.len()];
+					note[1] = fifths;
+					if system.len() > 2 {
+						note[2] = acc;
+					}
+					let list = system.respellings(&note);
+					// meantone with plain sharps and flats has no enharmonics
+					if system.notation.temperament().rank() == 1 {
+						assert!(list.len() >= 2, "{note:?} has only {} spellings", list.len());
+					}
+					for s in &list {
+						assert_eq!(system.respellings(s), list, "from {s:?}");
+						assert!((system.pitch(s) - system.pitch(&note)).abs() < 1e-9);
+					}
+				}
+			}
+		}
+	}
 }
