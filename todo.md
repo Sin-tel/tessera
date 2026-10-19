@@ -37,12 +37,11 @@
 - [x] Project tempo
 - [x] Tuning presets
 - [x] Equal temperaments
+- [x] Root translation
 - [-] Project grid / time division
 - [ ] Global transport buttons (play/stop/record)
 - [ ] linnstrument custom handler
 - [ ] Loop
-- [ ] Parse tuning files
-- [ ] Root translation
 - [ ] Midi routing menu
 - [ ] Automation
 
@@ -57,8 +56,8 @@
 ## Other
 - [x] Update check
 - [x] Move pitch system to rust
+- [x] Crash recovery file
 - [ ] Autosave
-- [ ] Crash recovery file
 - [ ] Auto generate device_list
 - [ ] Move sequencer to rust (sync?)
 - [ ] Move midi routing to rust

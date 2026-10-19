@@ -1,4 +1,18 @@
+VST: expose whitelist
+
+show comma alterations previous in tuning options.
+
+Tuning conversion: double check that diff temperaments with compatible notations will keep everything intact (e.g. going from Pele to 41et w single acc)
+
+Verify the setup.lua gets cleared properly when coming from an older build (should fall back to default devices)
+
+Rotary: tremolo is too wide.
+
+Temperaments: add a shortcut or option to move by the "usual" generator (e.g. miracle 16/15~15/14 secor, etc.)
+
 ## misc
+Tooltips
+
 move useful tests to test (skip block size).
 
 the big filter refactor
@@ -102,7 +116,7 @@ modulation routing system for instruments would be nice to have
  e.g. allow pressure to be applied to any slider
 
 ## VST
-expose whitelist to user
+Send BPM for tempo-sync: only fix if it makes sense after the timing system is in.
 
 ## routing
 
