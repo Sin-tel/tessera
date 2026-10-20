@@ -20,7 +20,7 @@ local ACC_SHARP = "c"
 local ACC_DOUBLE_SHARP = "d"
 local ACC_HALF_FLAT = "e"
 local ACC_HALF_SHARP = "f"
-local ACC_SESQUI_FLAT = "g" -- one-and-a-half flat
+local ACC_SESQUI_SHARP = "g" -- one-and-a-half sharp
 
 local ACC_JOHNSTON_PLUS = { "l", "m" }
 local ACC_JOHNSTON_SEPTIMAL = { "p", "q" }
@@ -181,7 +181,7 @@ function Notation:name_parts(p)
 		local hsharp = sharps * 2 + p[self.half_sharp]
 		if hsharp >= 0 then
 			if hsharp % 4 == 3 then
-				acc = ACC_SESQUI_FLAT
+				acc = ACC_SESQUI_SHARP
 				sharps = math.floor(hsharp / 2) - 1
 			else
 				if hsharp % 2 == 1 then
