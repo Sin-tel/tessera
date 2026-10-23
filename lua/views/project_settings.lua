@@ -156,6 +156,8 @@ function ProjectSettings:update_warning()
 		self.warning = "Notes only keep their spelling."
 	elseif kind == "respell" then
 		self.warning = "Notes will be respelled."
+	elseif kind == "rewrite" then
+		self.warning = "Some accidentals will be rewritten."
 	elseif kind == "clip" then
 		self.warning = "Some accidentals will be removed."
 	end

@@ -114,7 +114,11 @@ pub enum Conversion {
 	Retune,
 	// Same temperament: notes keep their pitch, but may be respelled.
 	Respell,
-	// Accidentals missing in the new notation are dropped: spelling and pitch may change.
+	// Accidentals missing in the new notation are written with the ones it has (e.g. 33/32 as
+	// two ups in 41et), the other notes keep their spelling. Nothing is lost if the new
+	// temperament tempers out the commas of the old one.
+	Rewrite,
+	// Accidentals for primes missing in the new notation are dropped: spelling and pitch may change.
 	Clip,
 }
 
@@ -248,11 +252,13 @@ impl TuningSystem {
 	pub fn conversion(&self, from: &TuningSystem) -> Conversion {
 		let same_temperament = self.notation.temperament() == from.notation.temperament();
 		let keeps_all = self.coordinate_map(from).iter().all(Option::is_some);
-		match (keeps_all, same_temperament) {
-			(true, true) => Conversion::Unchanged,
-			(true, false) => Conversion::Retune,
-			(false, true) => Conversion::Respell,
-			(false, false) => Conversion::Clip,
+		let writes_all = self.coordinate_images(from).iter().all(Option::is_some);
+		match (keeps_all, same_temperament, writes_all) {
+			(true, true, _) => Conversion::Unchanged,
+			(true, false, _) => Conversion::Retune,
+			(false, true, _) => Conversion::Respell,
+			(false, false, true) => Conversion::Rewrite,
+			(false, false, false) => Conversion::Clip,
 		}
 	}
 
@@ -260,7 +266,7 @@ impl TuningSystem {
 	// Also returns how many of them changed.
 	pub fn convert(&self, from: &TuningSystem, notes: &[Vec<i64>]) -> (Vec<Vec<i64>>, usize) {
 		let kind = self.conversion(from);
-		let map = self.coordinate_map(from);
+		let images = self.coordinate_images(from);
 
 		let mut changed = 0;
 		let converted = notes
@@ -271,9 +277,9 @@ impl TuningSystem {
 					self.notation.from_interval(&from.notation.to_interval(note))
 				} else {
 					let mut new = vec![0; self.len()];
-					for (x, &j) in note.iter().zip(&map) {
-						if let Some(j) = j {
-							new[j] += x;
+					for (x, image) in note.iter().zip(&images) {
+						for (n, i) in new.iter_mut().zip(image.iter().flatten()) {
+							*n += x * i;
 						}
 					}
 					new
@@ -290,6 +296,29 @@ impl TuningSystem {
 	}
 
 	// For each coordinate of `from`, the coordinate here with the same generator, if there is one.
+	// What each coordinate of `from` becomes in this notation: the same generator if it has it,
+	// otherwise how this notation writes the generator's interval. None if a prime is missing.
+	fn coordinate_images(&self, from: &TuningSystem) -> Vec<Option<Vec<i64>>> {
+		let basis = self.notation.subgroup().basis();
+		from.notation
+			.generators()
+			.iter()
+			.zip(self.coordinate_map(from))
+			.map(|(g, j)| {
+				if let Some(j) = j {
+					let mut unit = vec![0; self.len()];
+					unit[j] = 1;
+					return Some(unit);
+				}
+				let mut interval = vec![0; basis.len()];
+				for (p, x) in factors(from.notation.subgroup(), g) {
+					interval[basis.iter().position(|&b| b == p)?] += x;
+				}
+				Some(self.notation.from_interval(&interval))
+			})
+			.collect()
+	}
+
 	fn coordinate_map(&self, from: &TuningSystem) -> Vec<Option<usize>> {
 		let ours: Vec<_> = self
 			.notation
@@ -612,6 +641,165 @@ mod tests {
 		};
 		let choice = NotationChoice { accidentals, ..Default::default() };
 		TuningSystem::new(&def, choice, &ScaleCandidates::default()).unwrap()
+	}
+
+	// With the recommended notation, as the settings view picks it.
+	fn recommended(subgroup: &str, commas: &[&str], et: Option<i64>) -> TuningSystem {
+		let def = TemperamentDef {
+			subgroup: subgroup.into(),
+			commas: commas.iter().map(|&c| c.into()).collect(),
+			et,
+		};
+		let choice = notations(&def)
+			.unwrap()
+			.into_iter()
+			.find(|o| o.recommended)
+			.unwrap()
+			.choice;
+		TuningSystem::new(&def, choice, &ScaleCandidates::default()).unwrap()
+	}
+
+	// Every note in a box of coordinates around the unison. Wide in octaves, so enharmonic
+	// spellings of the same pitch are in it.
+	fn notes(system: &TuningSystem) -> Vec<Vec<i64>> {
+		let mut notes = vec![vec![]];
+		for i in 0..system.len() {
+			let range = match i {
+				0 => -8..=8,
+				1 => -12..=12,
+				_ => -2..=2,
+			};
+			notes = notes
+				.iter()
+				.flat_map(|n| {
+					range.clone().map(move |x| {
+						let mut n = n.clone();
+						n.push(x);
+						n
+					})
+				})
+				.collect();
+		}
+		notes
+	}
+
+	// Converting loses nothing if every note ends up where its just interval goes in the new
+	// temperament, and notes that were the same pitch stay the same pitch. Spellings may change.
+	fn lossless(from: &TuningSystem, to: &TuningSystem) -> bool {
+		let notes = notes(from);
+		let (converted, _) = to.convert(from, &notes);
+		let mut pitches = std::collections::HashMap::new();
+		notes.iter().zip(&converted).all(|(old, new)| {
+			let ji = from.notation.to_interval(old);
+			let tempered = to.notation.to_tempered(new);
+			let same_pitch = pitches
+				.entry(from.notation.to_tempered(old))
+				.or_insert(tempered.clone());
+			tempered == to.notation.temperament().temper(&ji) && *same_pitch == tempered
+		})
+	}
+
+	// A temperament whose commas are all tempered out by another one converts to it without loss,
+	// but not back.
+	#[test]
+	fn convert_to_finer_temperament() {
+		let pairs = [
+			// same accidentals, notes keep their spelling
+			(
+				recommended("2.3.5.7", &["81/80", "126/125"], None),
+				recommended("2.3.5.7", &[], Some(31)),
+				Conversion::Retune,
+			),
+			// 41et has no 33/32 accidental, it's written as two ups
+			(
+				recommended("2.3.5.7.11", &["441/440", "896/891"], None),
+				recommended("2.3.5.7.11", &[], Some(41)),
+				Conversion::Rewrite,
+			),
+		];
+		for (from, to, kind) in &pairs {
+			assert_eq!(to.conversion(from), *kind);
+			for comma in from.notation.commas() {
+				assert!(to.notation.temperament().temper(comma).iter().all(|&x| x == 0));
+			}
+			assert!(lossless(from, to), "{:?} to {:?}", from.choice, to.choice);
+			assert!(!lossless(to, from));
+		}
+	}
+
+	// Every preset with every notation option, from lua/default/tuning_presets.lua.
+	fn all_presets() -> Vec<(String, TuningSystem)> {
+		let lua = mlua::Lua::new();
+		lua.globals().set("release", true).unwrap();
+		let source = std::fs::read_to_string("lua/default/tuning_presets.lua").unwrap();
+		let presets: mlua::Table = lua.load(source).eval().unwrap();
+		let tunings: mlua::Table = presets.get("tunings").unwrap();
+		let mut systems = Vec::new();
+		for pair in tunings.pairs::<String, mlua::Value>() {
+			let (key, value) = pair.unwrap();
+			let def: TemperamentDef = mlua::LuaSerdeExt::from_value(&lua, value).unwrap();
+			for option in notations(&def).unwrap() {
+				let system = TuningSystem::new(&def, option.choice, &ScaleCandidates::default());
+				systems.push((format!("{key} {:?}", option.choice), system.unwrap()));
+			}
+		}
+		systems.sort_by(|a, b| a.0.cmp(&b.0));
+		systems
+	}
+
+	// A just interval of `from` in the subgroup of `to`, if it has the primes.
+	fn in_subgroup(from: &TuningSystem, to: &TuningSystem, interval: &[i64]) -> Option<Vec<i64>> {
+		let basis = to.notation.subgroup().basis();
+		let mut new = vec![0; basis.len()];
+		for (p, x) in factors(from.notation.subgroup(), interval) {
+			new[basis.iter().position(|&b| b == p)?] += x;
+		}
+		Some(new)
+	}
+
+	// Whether `to` tempers out every comma of `from`.
+	fn tempers_commas(from: &TuningSystem, to: &TuningSystem) -> bool {
+		from.notation.commas().iter().all(|comma| {
+			in_subgroup(from, to, comma)
+				.is_some_and(|c| to.notation.temperament().temper(&c).iter().all(|&x| x == 0))
+		})
+	}
+
+	// Every conversion that can be lossless is: when `to` has all primes of `from` and tempers out
+	// its commas. Then each note lands where its just interval goes, and notes of the same pitch stay
+	// the same pitch since they differ by commas `to` tempers out.
+	#[test]
+	fn convert_all_presets() {
+		let systems = all_presets();
+		let mut checked = std::collections::BTreeMap::new();
+		for (from_name, from) in &systems {
+			// small box, the conversions are linear in the coordinates (or exact, for Respell)
+			let notes: Vec<Vec<i64>> = notes(from)
+				.into_iter()
+				.filter(|n| n[0] == 0 && n[1].abs() <= 6 && n[2..].iter().all(|x| x.abs() <= 1))
+				.collect();
+			for (to_name, to) in &systems {
+				let has_primes = from
+					.notation
+					.generators()
+					.iter()
+					.all(|g| in_subgroup(from, to, g).is_some());
+				if !has_primes || !tempers_commas(from, to) {
+					continue;
+				}
+				let (converted, _) = to.convert(from, &notes);
+				for (old, new) in notes.iter().zip(&converted) {
+					let ji = in_subgroup(from, to, &from.notation.to_interval(old)).unwrap();
+					assert_eq!(
+						to.notation.to_tempered(new),
+						to.notation.temperament().temper(&ji),
+						"{old:?} from {from_name} to {to_name}"
+					);
+				}
+				*checked.entry(format!("{:?}", to.conversion(from))).or_insert(0) += 1;
+			}
+		}
+		assert!(checked.values().sum::<i32>() > 100, "only {checked:?} pairs checked");
 	}
 
 	// Respelling cycles through the list, so every spelling in it has to give the same list.
