@@ -358,8 +358,8 @@ impl Instrument for Wavetable {
 				out_l *= env;
 				out_r *= env;
 
-				*l += out_l * 0.25;
-				*r += out_r * 0.25;
+				*l += out_l * 0.38;
+				*r += out_r * 0.38;
 			}
 
 			if voice.env.done() {

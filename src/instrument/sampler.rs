@@ -9,6 +9,9 @@ use halfband::iir;
 use std::any::Any;
 use std::sync::Arc;
 
+// output level, -24 LUFS for a held note at velocity 0.7
+const OUTPUT_GAIN: f32 = 2.14;
+
 // Note: because of interpolation scheme we need one sample of padding at the start
 
 #[rustfmt::skip]
@@ -192,7 +195,7 @@ impl Instrument for Sampler {
 						out[ch] = hermite4(y0, y1, y2, y3, frac);
 					}
 
-					let out_gain = env * voice.vel * gain;
+					let out_gain = env * voice.vel * gain * OUTPUT_GAIN;
 					*l += out[0] * out_gain;
 					*r += out[1] * out_gain;
 

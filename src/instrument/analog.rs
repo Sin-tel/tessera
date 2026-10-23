@@ -8,6 +8,8 @@ use fastrand::Rng;
 use halfband::iir;
 use std::f32::consts::PI;
 
+// Note: since this is mono, target -18 dB LUFS for output
+
 // TODO: at high frequencies, the switching between different BLITs causes discontinuities
 // TODO: LFO (tri, s&h, noise, saw) -> PWM, pitch
 // TODO: env -> PWM, pitch
@@ -142,7 +144,7 @@ impl Instrument for Analog {
 			let env = self.envelope.process();
 
 			let mut out = *sample;
-			out *= 5.;
+			out *= 5.7;
 			if self.use_gate {
 				out *= gate;
 			} else {

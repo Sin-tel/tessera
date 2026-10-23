@@ -119,7 +119,7 @@ impl Instrument for Fm {
 					sin_cheap(voice.accum + voice.bright * (self.depth + pres) * voice.prev);
 				out *= env;
 
-				*sample += 0.5 * out;
+				*sample += 0.25 * out;
 			}
 			if voice.env.done() {
 				voice.active = false;

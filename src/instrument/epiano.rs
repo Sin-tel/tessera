@@ -22,6 +22,8 @@ const N_VOICES: usize = 24;
 // static output EQ, tuned by ear
 const EQ_FREQ: f32 = 750.;
 const EQ_GAIN: f32 = -8.;
+// output level, -24 LUFS for a held note at velocity 0.7
+const OUTPUT_GAIN: f32 = 1.2;
 // seconds after note off until the voice is cut
 const RELEASE_TIME: f32 = 1.0;
 
@@ -132,7 +134,7 @@ impl Instrument for Epiano {
 
 				let out = diff * 20.0 * voice.gain_recip + 0.05 * hammer;
 
-				*sample += out;
+				*sample += out * OUTPUT_GAIN;
 			}
 
 			if !voice.note_on {

@@ -14,7 +14,7 @@ const RATIOS: [f32; N_BARS] = [0.5, 1.5, 1., 2., 3., 4., 5., 6., 8.];
 // tonewheels per semitone, 5 cents
 const WHEEL_STEPS: f32 = 20.;
 
-const GAIN: f32 = 0.05;
+const GAIN: f32 = 0.041;
 
 // dB per drawbar step, 1 to 8
 const DRAWBAR_DB: [f32; 8] = [-32., -26., -20., -15., -10., -6., -3., 0.];
