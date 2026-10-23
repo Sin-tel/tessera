@@ -1,17 +1,9 @@
 ## TODO for 1.3
-VST: expose whitelist
-
 show comma alterations previous in tuning options.
-
-Tuning conversion: double check that diff temperaments with compatible notations will keep everything intact
-   test cases: meantone to 31et, pele to 41et
 
 Check how exactly tuning center interacts with note input, and if it displays correctly in the keymap preview
 
 Verify the setup.lua gets cleared properly when coming from an older build (should fall back to default devices)
-
-Rotary: tremolo is too wide.
-Organ: too loud (check all instruments volumes to check they are consistent)
 
 ## 1.4 (editing tools)
 * edit sustain
