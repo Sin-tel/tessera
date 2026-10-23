@@ -186,16 +186,38 @@ function save.read_plugins()
 	return setup.plugin_list
 end
 
-local whitelist = { "pianoteq", "surge xt" }
+-- Plugins we know about, by part of their name. Ones that work are enabled by default.
+-- The issues are explained in the manual (VST instruments, Known issues).
+local known_plugins = {
+	["pianoteq"] = "tested",
+	["surge xt"] = "tested",
+	["vital"] = "issues",
+}
 
+-- "tested", "issues", or nil if we don't know.
+function save.plugin_status(plugin)
+	local name = string.lower(plugin.name)
+	for k, status in pairs(known_plugins) do
+		if string.find(name, k, 1, true) then
+			return status
+		end
+	end
+end
+
+-- Plugins that were already in the list keep whether they're enabled, new ones are enabled if tested.
 function save.scan_plugins()
+	local enabled = {}
+	for _, plugin in ipairs(setup.plugin_list or {}) do
+		enabled[plugin.guid] = plugin.enabled
+	end
+
 	setup.plugin_list = tessera.scan_plugins()
 
 	for _, plugin in ipairs(setup.plugin_list) do
-		for _, w in ipairs(whitelist) do
-			if string.find(string.lower(plugin.name), w) then
-				plugin.enabled = true
-			end
+		if enabled[plugin.guid] ~= nil then
+			plugin.enabled = enabled[plugin.guid]
+		else
+			plugin.enabled = save.plugin_status(plugin) == "tested"
 		end
 	end
 end

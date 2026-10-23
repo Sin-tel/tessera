@@ -62,6 +62,7 @@ Settings.state = {
 	toggle_buffer = false,
 	midi_ports = {},
 	mpe = {},
+	plugins = {},
 }
 
 function Settings.new()
@@ -108,6 +109,7 @@ function Settings.new()
 
 	self:rebuild()
 	self:rebuild_midi()
+	self:rebuild_plugins()
 
 	return self
 end
@@ -137,6 +139,28 @@ function Settings:rebuild_midi()
 
 		if v.mpe then
 			self.state.mpe[v.name] = true
+		end
+	end
+end
+
+-- on/off toggles for the instrument plugins, effects aren't supported
+function Settings:rebuild_plugins()
+	self.plugins = {}
+	self.plugin_toggles = {}
+	table.clear(self.state.plugins)
+
+	for _, plugin in ipairs(save.read_plugins()) do
+		if plugin.is_instrument then
+			table.insert(self.plugins, plugin)
+			table.insert(
+				self.plugin_toggles,
+				widgets.Toggle.new(
+					self.state.plugins,
+					plugin.guid,
+					{ label = plugin.name, style = "checkbox", pad = self.indent, no_undo = true }
+				)
+			)
+			self.state.plugins[plugin.guid] = plugin.enabled
 		end
 	end
 end
@@ -353,10 +377,36 @@ function Settings:update()
 	self.ui.layout:col(c3)
 	if self.rescan_button:update(self.ui) then
 		save.scan_plugins()
+		self:rebuild_plugins()
 		Channels.update_list()
 	end
-	-- self.ui.layout:new_row()
-	-- self.ui.layout:col(c1 + c2)
+	self.ui.layout:col(c4)
+	self.ui:label("Status")
+
+	self.ui:background(theme.bg_nested)
+	if #self.plugins == 0 then
+		self.ui.layout:new_row()
+		self.ui.layout:col(c1)
+		self.ui.layout:col(c2 + c3)
+		self.ui:label("No instrument plugins found")
+	end
+	for i, plugin in ipairs(self.plugins) do
+		self.ui.layout:new_row()
+		self.ui.layout:col(c1 + c2 + c3)
+		if self.plugin_toggles[i]:update(self.ui) then
+			plugin.enabled = self.state.plugins[plugin.guid] or false
+			Channels.update_list()
+		end
+		self.ui.layout:col(c4)
+		local status = save.plugin_status(plugin)
+		if status == "tested" then
+			self.ui:label("Tested")
+		elseif status == "issues" then
+			self.ui:label("Known issues", { color = theme.warning })
+		else
+			self.ui:label("Untested", { color = theme.text_dim })
+		end
+	end
 
 	self.ui:end_frame()
 end

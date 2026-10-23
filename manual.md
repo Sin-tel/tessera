@@ -167,13 +167,17 @@ VST3 instrument plugins can be used like the built-in instruments. Support is ex
   * Windows: `C:\Program Files\Common Files\VST3`
   * macOS: `/Library/Audio/Plug-Ins/VST3` and `~/Library/Audio/Plug-Ins/VST3`
   * Linux: `~/.vst3`, `/usr/lib/vst3` and `/usr/local/lib/vst3`
-* Only plugins on the whitelist are enabled after a scan, which currently includes 'Pianoteq' and 'Surge XT'. Other plugins are found but don't show up in
-  the instrument list yet.
+* Settings -> Plugins lists the instrument plugins found, with a checkbox to enable each one. Enabled plugins
+  show up in the instrument list. Plugins known to work ('Pianoteq' and 'Surge XT' so far) are marked as tested and
+  enabled by default. Plugins with known issues are marked as such and disabled by default, see below.
 * **Rescan** in Settings -> Plugins scans again, for example after installing a plugin.
 * **Show UI** opens the plugin's own window.
 * **Pitch Bend Range** must match the plugin's pitch bend range (2 or 48 semitones) for notes to be in tune.
 * Notes are sent as MPE (lower zone, 15 channels) with per-note pitch bend and pressure, so microtonal pitches and pressure changes work
   with any plugin that supports MPE.
+
+#### Known issues
+ * **Vital**: MPE can only be turned on in the UI. Workaround: in the Vital UI, "Advanced" tab -> turn on "MPE Enabled" in tuning settings at the bottom. This needs to be repeated every session.
 
 ## 4. Tuning
 Every project has a tuning, which sets the pitch of each note and how notes are displayed. It's chosen in the

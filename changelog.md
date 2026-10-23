@@ -29,7 +29,8 @@ If you use macOS or Linux, please try it and report how it goes.
 
 - Plugins in the standard system folders are scanned, and found instruments appear in the "Add channel" list.
   There is a **Rescan** button in Settings -> Plugins.
-- For now, only **Pianoteq** and **Surge XT** are enabled after a scan. Other plugins are found but not listed yet.
+- Instrument plugins can be enabled in Settings -> Plugins. Pianoteq and Surge XT are tested and enabled by default,
+  others are marked untested.
 - Per-note pitch bend and pressure are sent via MPE.
 - Set the pitch bend range (2 or 48 semitones) to match the plugin's setting.
 
