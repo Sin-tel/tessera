@@ -12,6 +12,7 @@ presets.categories = {
 			"tetracot",
 			"kleismic",
 			"porcupine",
+			"schismatic",
 			"diaschismic",
 			"pajara",
 			"archytas",
@@ -85,6 +86,12 @@ tunings.kleismic = {
 	name = "Kleismic",
 	subgroup = "2.3.5",
 	commas = { "15625/15552" },
+}
+
+tunings.schismatic = {
+	name = "Schismatic",
+	subgroup = "2.3.5.7",
+	commas = { "225/224", "5120/5103" },
 }
 
 tunings.diaschismic = {
