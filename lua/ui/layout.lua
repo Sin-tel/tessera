@@ -100,7 +100,9 @@ function Layout:col(w, h)
 end
 
 function Layout:total_height()
-	return self.y - self.start_y
+	-- columns only move y down when the next row starts, so count the current one
+	local open_row = self.column_mode and self.h or 0
+	return self.y - self.start_y + open_row
 end
 
 function Layout:get()

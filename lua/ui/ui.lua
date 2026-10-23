@@ -44,6 +44,8 @@ function Ui.new(view)
 	self.scroll = 0
 	self.scroll_goal = 0
 	self.max_scroll = 0
+	-- Overlays that size themselves to their content (menus) turn this off.
+	self.scrollable = true
 
 	-- defer loading because of circular import
 	local Layout = require("ui/layout")
@@ -80,13 +82,20 @@ function Ui:start_frame(x, y)
 	self.scroll = util.lerp(self.scroll, self.scroll_goal, 0.3)
 	self.scroll = util.towards(self.scroll, self.scroll_goal, 3.0)
 
+	self.frame_y = y
 	self.layout:start(x, y - self.scroll)
 end
 
 function Ui:end_frame()
 	assert(self.start)
 	self.start = false
-	self.max_scroll = math.max(0, self.layout:total_height() - self.view.h)
+	if self.scrollable then
+		-- content starts at frame_y, leave the same margin below it
+		local bottom = 2 * self.frame_y + self.layout:total_height()
+		self.max_scroll = math.max(0, bottom - self.view.h)
+	else
+		self.max_scroll = 0
+	end
 end
 
 function Ui:next(h)

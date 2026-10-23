@@ -21,6 +21,7 @@ function Menu.new()
 	self.y = math.max(0, self.y)
 
 	self.ui = Ui.new(self)
+	self.ui.scrollable = false
 	self.ui.layout:padding(4)
 
 	-- widgets

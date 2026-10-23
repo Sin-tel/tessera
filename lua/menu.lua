@@ -130,6 +130,7 @@ function Menu.new(items, x, y)
 	self.y = math.max(0, self.y)
 
 	self.ui = Ui.new(self)
+	self.ui.scrollable = false
 	self.ui.layout:padding(2)
 
 	-- update once to pre-calculate layout
