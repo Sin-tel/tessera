@@ -23,7 +23,7 @@ const HORN_LP: f32 = 6500.;
 
 const HORN_LEVEL: f32 = 1.6;
 const HORN_RADIUS: f32 = 0.16;
-const HORN_AMP_MOD: f32 = 0.6;
+const HORN_AMP_MOD: f32 = 0.4;
 
 const DRUM_LEVEL: f32 = 1.0;
 const DRUM_RADIUS: f32 = 0.24;
