@@ -119,17 +119,7 @@ Use `Up` and `Down` arrow keys to transpose selected notes.
 | **Shift + Alt**            | Third extra accidental    |
 | **Ctrl + Shift**           | Alternative chromatic step |
 
-The small steps depend on the current tuning and notation. Besides sharps and flats, a notation can have extra
-accidentals. In just intonation and temperaments, each one stands for a small interval (a comma) that belongs to a
-prime:
-
-| Prime                      | Accidental                |
-| :---                       | :---                      |
-| **5**                      | 81/80 (ups and downs, `^` and `v`) |
-| **7**                      | 64/63                     |
-| **11**                     | 33/32                     |
-
-In an equal temperament, the extra accidental is usually just one step up or down.
+The small steps depend on the current tuning and notation. In an equal temperament, the extra accidental is usually just one step up or down. See [Notation](#5-notation) for more information.
 
 * **Alt** moves by the first extra accidental. Without extra accidentals, it moves one step in an equal temperament,
   or otherwise by a Pythagorean comma (e.g. C# to Db).
@@ -194,9 +184,11 @@ Every project has a tuning, which sets the pitch of each note and how notes are 
 * **Notation**: how notes are written. "Plain" uses only letters with sharps and flats. Other options add extra
   accidentals (like ups and downs), half sharps and flats (Neutral), or Johnston notation for just intonation.
   Each option shows how the primes are notated, and the recommended one is selected by default.
-* **Apply** switches the project to the selected tuning. Existing notes are converted, and a note next to the button
-  says how: kept as written and retuned, respelled to keep their pitch, or with accidentals the new notation doesn't
-  have dropped. Changing the tuning can be undone.
+* **Apply** switches the project to the selected tuning and notation. Existing notes are converted, and a note next to the button says what will happen:
+  If the tuning is compatible, notes will only be respelled to keep their pitch.
+  If the tuning is different but the notation has the same accidentals, notes will keep their spelling but change pitch.
+  Otherwise, accidentals will be dropped.
+  Changing the tuning can be undone, so you can freely experiment with other systems.
 * **Input map** shows which note, and which (approximate) ratios each MIDI key in an octave plays.
 
 The snapping scales (Diatonic, Chromatic, Fine) are chosen automatically based on the tuning.
@@ -213,3 +205,43 @@ respells the selected notes (see [Transformations](#transformations)).
 
 With **Auto simplify** (Options menu) on, notes that are moved or transposed get a simpler spelling when one exists.
 A selection is respelled as a whole, so chords keep their spelling.
+
+## 5. Notation
+Tessera uses a unified notation system, combining ideas from existing notations: HEJI (the Helmholtz-Ellis JI Pitch Notation) for
+just intonation, ups and downs for equal temperaments, and Stein-Zimmermann half sharps and flats.
+
+All systems currently only go up to 11-limit.
+
+### Letters, sharps and flats
+The basic letters come from a chain of fifths, F C G D A E B. Going further along the chain adds sharps (F# C# G# ...) or
+flats (Bb Eb Ab ...). A sharp raises by a chromatic semitone: seven fifths up and four octaves down, 2187/2048 in just
+intonation. With the **Plain** notation, every note is written with these alone.
+
+### Extra accidentals
+Some tunings can not be written using the plain notation, and even if they can, readability is often improved by introducing extra accidentals.
+Each accidental stands for a comma, associated with a prime, as in HEJI:
+
+| Prime  | Associated comma |
+| :---   | :---             |
+| 5      | 81/80            |
+| 7      | 64/63            |
+| 11     | 33/32            |
+
+Ups and downs (`^`/`v`) are subject to some specific rules for consistency:
+* Ups and downs go in front of the letter, the others after the sharps and flats.
+* In equal temperaments, they are always one step.
+* If a notation has only one extra accidental, it's always written as ups and downs.
+* In just intonation, the ups and downs are re-used for 81/80 instead of HEJI arrows.
+
+### Half sharps and flats
+Some tunings split the chromatic semitone into two equal parts. In equal temperaments, these are the ones where a
+sharp is an even number of steps, such as 24, 31, 41 and 72 equal. The **Neutral** notation writes these with half
+sharps and flats. Two half sharps make a sharp, so they're always combined.
+
+### Johnston notation
+Ben Johnston's notation is an alternative for just intonation. Its natural notes form a just C major scale:
+C-E-G, G-B-D and F-A-C are pure 4:5:6 triads, so E, A and B are 5/4, 5/3 and 15/8 above C. As a result the natural
+notes aren't a chain of pure fifths: D to A is a comma (81/80) short. Sharps and flats raise and lower by 25/24, the
+difference between a major and a minor third.
+
+This is less systematic than the main notation, but music built on 5-limit harmony needs fewer accidentals.

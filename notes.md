@@ -1,84 +1,53 @@
+## TODO for 1.3
 VST: expose whitelist
 
 show comma alterations previous in tuning options.
 
-Tuning conversion: double check that diff temperaments with compatible notations will keep everything intact (e.g. going from Pele to 41et w single acc)
+Tuning conversion: double check that diff temperaments with compatible notations will keep everything intact
+   test cases: meantone to 31et, pele to 41et
+
+Check how exactly tuning center interacts with note input, and if it displays correctly in the keymap preview
 
 Verify the setup.lua gets cleared properly when coming from an older build (should fall back to default devices)
 
 Rotary: tremolo is too wide.
+Organ: too loud (check all instruments volumes to check they are consistent)
 
+## 1.4 (editing tools)
+* edit sustain
+* option to only edit active track (auto lock)
+* mono/poly switch on instruments (make sure mpe works, start w simple poly)
+* merge undos for similar actions (esp move commands)
+
+### edit tools
+* Freehand draw
+* Envelope/pressure edit
+* Basic sculpt tools
+
+### Transport
+* loop
+* snap transport time
+* transport buttons
+
+### Tuning
+better transpose system
+edit local key center
+better snapping
 Temperaments: add a shortcut or option to move by the "usual" generator (e.g. miracle 16/15~15/14 secor, etc.)
 
-## misc
-Tooltips
+auto-simplify:
+ when you move C up to D, you can have it go C ^C ^^C vC# C# ^C# vD D on the way up and D vD vvD ^Db Db vDb ^C C on the way down.
 
-move useful tests to test (skip block size).
+## 1.5 (UI)
+* ui/layout refactor
+  reduce the number of ad-hoc ui elements, make layout system more consistent
+* expose GUI scale factor (requires restart probably)
+* Tooltips
+* drag and drop for re-ordering devices and channels
+* allow replacing / deleting instrument only
+* simple visual system (see below) main target: equalizer
 
-the big filter refactor
-
-is there an easy way to avoid having to duplicate the list of instruments everywhere?
-
-need to fix voice alloc, some stuck notes when pedaling
-should plugin handle pedal itself? kind of annoying...
-
-expose GUI scale factor (requires restart probably)
-
-allow replacing / deleting instrument only
-
-windowing system: add splitting and dragging
-
-be more consistent with levels.
-target should be ~ -18dB RMS
-
-edit sustain
-option to only edit active track (auto lock)
-mono/poly switch (make sure mpe works, start w simple poly)
-loop
-snap transport time
-
-- save layout
-
-use C4 on backend for consistency
-
-add lock all/none button on top?
-
-ui/layout
-  reduce the number of ad-hoc ui elements, make layout system more generic
-
-more options for body responses in convolver
- -> maybe split menu into categories
- also add cabinet / microphone splits
-
-panner: instead of only binaural panning also allow for some kind of virtual room
- - emulate common microphone setups (m/s, ORTF, AB, etc)
-
-transient shaper
-
-mute icon speaker
-
-try to do something more sensible for snapping notes outside of the scale
-
-merge undos for same actions (esp move commands)
-
-move MIDI handling to Rust
-
-ramp/envelope testing for compressor / limiter
-
-note preview on move
-
-transport buttons
-
-autosave / crash recovery
-
-implement delayline with interpolating reader
-
-allow clone notes to be triggered when ctrl is pressed after initial drag
-
-add some testing harness for instruments and effects
- -> test if process - flush - process produces identical outputs
-  needs a macro helper to setup without too much copy-paste
-
+### windowing system:
 File
  - reset workspace
 
@@ -88,7 +57,52 @@ Right click view header
  - split horizontal
  - set to
 
-stencil strokes: performance / quality?
+save window layout, zoom state etc. with project
+
+
+## Devices (whenever)
+* BBD delay
+* Simple modal synth for tuned percussion
+
+* convolver
+more options for body responses in convolver
+ -> maybe split menu into categories
+also add cabinet sims
+
+* panner
+instead of only binaural panning also allow for some kind of virtual room
+emulate common microphone setups (m/s, ORTF, AB, etc)
+
+
+## misc
+the big filter refactor
+
+move useful tests to test (skip block size).
+
+is there an easy way to avoid having to duplicate the list of instruments everywhere?
+
+find easy targets for moving to Rust
+
+windowing system: add splitting and dragging
+
+be more consistent with levels.
+target should be ~ -18dB RMS
+
+use C4 on backend for consistency
+
+add lock all/none button on top?
+
+mute icon speaker
+
+try to do something more sensible for snapping notes outside of the scale
+
+move MIDI handling to Rust
+
+ramp/envelope testing for compressor / limiter
+
+implement delayline with interpolating reader
+
+allow clone notes to be triggered when ctrl is pressed after initial drag
 
 display midi activity indicator for each device
 
@@ -119,7 +133,6 @@ modulation routing system for instruments would be nice to have
 Send BPM for tempo-sync: only fix if it makes sense after the timing system is in.
 
 ## routing
-
 grouping: tree structure of channels
  - group can be either just mix bus or an "instrument rack" type thing
     how to switch between these?
@@ -127,13 +140,14 @@ grouping: tree structure of channels
  - send tracks can be handled seperately (need to be processed just before master)
     do this later, maybe have a fixed max amount of sends
 
-
 ## devices
 
 BBD delay
   time: discrete clock settings + flexible time settings w interpolation
 
 Reverb: dispersion setting (lowest should be more delay-ish)
+
+transient shaper
 
 Gain: make util instead (gain / pan / width)
 incrase max gain
@@ -143,6 +157,18 @@ Analog delay
   BBD / bode shifter / pitch
 
 strobe tuner
+
+double reed
+flute model
+bowed string/modal
+extended 808 bass model
+
+pluck model:
+* multiple strings?
+    - coupling -> two stage decay
+    - rotation matrix
+
+chowtape clone RK4
 
 ## visuals
 
@@ -239,22 +265,8 @@ previous work
  - reason friktion
  - expressive E noisy 2
 
-## devices
-double reed
-flute model
-bowed string/modal
-extended 808 bass model
-
-pluck model:
-* multiple strings?
-    - coupling -> two stage decay
-    - rotation matrix
-
-chowtape clone RK4
-
 ## tuning
 make tuning import/export and add to project settings
-add generic transposition / movement system
 port over the tracking scripts for midi input
 
 ### Custom note font
