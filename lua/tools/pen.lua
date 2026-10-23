@@ -1,12 +1,11 @@
+local note_input = require("note_input")
 local time = require("time")
 local tuning = require("tuning")
 
 -- TODO: duplicated in Roll
 local DEFAULT_PRESSURE = 0.0
 
--- TODO: duplicated in note_input
 -- TODO: re-use last edited velocity
-local DEFAULT_VELOCITY = 0.5
 
 -- TODO: re-use last length
 
@@ -52,7 +51,7 @@ function pen:mousepressed(canvas)
 			name = "note_on",
 			token = self.token,
 			interval = self.interval,
-			vel = DEFAULT_VELOCITY,
+			vel = note_input.DEFAULT_VELOCITY,
 			offset = 0,
 		})
 	end
@@ -89,7 +88,7 @@ function pen:mousedown(canvas)
 						name = "note_on",
 						token = self.token,
 						interval = self.interval,
-						vel = DEFAULT_VELOCITY,
+						vel = note_input.DEFAULT_VELOCITY,
 						offset = 0,
 					})
 				end
@@ -109,7 +108,7 @@ function pen:mousereleased(canvas)
 	local ch_index = selection.ch_index
 
 	local offset = 0
-	local vel = DEFAULT_VELOCITY
+	local vel = note_input.DEFAULT_VELOCITY
 	local pressure = DEFAULT_PRESSURE
 
 	local t1 = math.min(self.t1, self.t2)

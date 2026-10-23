@@ -196,12 +196,14 @@ local function send_event(sink, event)
 	end
 end
 
+-- Events for a held note go to the channels its note on went to, even if what's armed changed since.
+-- Otherwise the note off never reaches them and the note hangs.
 function MidiDevice:event(sink, event)
 	if event.name == "note_on" then
 		local n_index = event_note_index(event)
 
 		local token = tessera.audio.get_token()
-		self.notes[n_index] = token
+		self.notes[n_index] = { token = token, sink = sink }
 
 		local interval = tuning.from_midi(event.note)
 		local offset = self.offsets[event.channel]
@@ -209,10 +211,10 @@ function MidiDevice:event(sink, event)
 		send_event(sink, { name = "note_on", token = token, interval = interval, vel = event.vel, offset = offset })
 	elseif event.name == "note_off" then
 		local n_index = event_note_index(event)
-		local token = self.notes[n_index]
+		local note = self.notes[n_index]
 
-		if token then
-			send_event(sink, { name = "note_off", token = token })
+		if note then
+			send_event(note.sink, { name = "note_off", token = note.token })
 		else
 			log.warn("Unhandled note off event.")
 			return
@@ -222,50 +224,47 @@ function MidiDevice:event(sink, event)
 	elseif event.name == "pitchbend" then
 		local offset = self.pitchbend_range * event.pitchbend
 		self.offsets[event.channel] = offset
-		if self.mpe then
-			for k, token in pairs(self.notes) do
-				local midi_ch = math.floor(k / 256)
-				if midi_ch == event.channel then
-					send_event(sink, { name = "pitch", token = token, offset = offset })
-				end
-			end
-		else
-			for _, token in pairs(self.notes) do
-				send_event(sink, { name = "pitch", token = token, offset = offset })
+		for k, note in pairs(self.notes) do
+			if not self.mpe or math.floor(k / 256) == event.channel then
+				send_event(note.sink, { name = "pitch", token = note.token, offset = offset })
 			end
 		end
 	elseif event.name == "pressure" then
-		if self.mpe then
-			for k, token in pairs(self.notes) do
-				local midi_ch = math.floor(k / 256)
-				if midi_ch == event.channel then
-					send_event(sink, { name = "pressure", token = token, pressure = event.pressure })
-				end
-			end
-		else
-			-- TODO: untested
-			for _, token in pairs(self.notes) do
-				send_event(sink, { name = "pressure", token = token, pressure = event.pressure })
+		-- TODO: untested without MPE
+		for k, note in pairs(self.notes) do
+			if not self.mpe or math.floor(k / 256) == event.channel then
+				send_event(note.sink, { name = "pressure", token = note.token, pressure = event.pressure })
 			end
 		end
 	elseif event.name == "controller" then
 		if event.controller == 64 then
-			-- sustain pedal
+			-- sustain pedal, released on the channels it was pressed on too
 			if event.value > 0 then
+				self.sustain_sink = sink
 				send_event(sink, { name = "sustain", sustain = true })
 			else
-				send_event(sink, { name = "sustain", sustain = false })
+				local release = { unpack(sink) }
+				for _, ch in ipairs(self.sustain_sink or {}) do
+					if not util.find(release, ch) then
+						table.insert(release, ch)
+					end
+				end
+				self.sustain_sink = nil
+				send_event(release, { name = "sustain", sustain = false })
 			end
 		else
 			-- send pressure on modwheel (1) or foot pedal (2)
 			if event.controller == 1 or event.controller == 2 then
 				local p = event.value
-				for _, token in pairs(self.notes) do
-					send_event(sink, { name = "pressure", token = token, pressure = p })
+				for _, note in pairs(self.notes) do
+					send_event(note.sink, { name = "pressure", token = note.token, pressure = p })
 				end
 			end
 		end
 	end
 end
+
+-- for tests
+midi.MidiDevice = MidiDevice
 
 return midi
