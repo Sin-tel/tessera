@@ -1,4 +1,5 @@
 local build = require("build")
+local file = require("file")
 local load_default_project = require("default.project")
 local tuning = require("tuning")
 
@@ -124,28 +125,58 @@ end
 command.Change = Change
 
 --
+local function snapshot()
+	command.finish_edits()
+	build.pull_vst_state()
+	return { project = util.clone(project), path = file.path }
+end
+
+local function restore(s)
+	build.load_project(util.clone(s.project))
+	file.set_path(s.path)
+end
+
 local NewProject = {}
 NewProject.__index = NewProject
 
 function NewProject.new()
 	local self = setmetatable({}, NewProject)
-
-	command.finish_edits()
-	self.prev = util.clone(project)
+	self.prev = snapshot()
 	return self
 end
 
 function NewProject:run()
-	-- cleanup current project
 	build.new_project()
 	load_default_project()
+	file.set_path(nil)
 end
 
 function NewProject:reverse()
-	build.load_project(util.clone(self.prev))
+	restore(self.prev)
 end
 
 command.NewProject = NewProject
+
+-- `new_project` as returned by save.read
+local OpenProject = {}
+OpenProject.__index = OpenProject
+
+function OpenProject.new(new_project, path)
+	local self = setmetatable({}, OpenProject)
+	self.prev = snapshot()
+	self.next = { project = new_project, path = path }
+	return self
+end
+
+function OpenProject:run()
+	restore(self.next)
+end
+
+function OpenProject:reverse()
+	restore(self.prev)
+end
+
+command.OpenProject = OpenProject
 
 --
 local NoteUpdate = {}

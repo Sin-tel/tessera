@@ -5,40 +5,18 @@ local tuning_presets = require("default.tuning_presets")
 
 local save = {}
 
-local last_save = "out/last_save"
-
-function save.set_save_location(filename)
-	assert(filename)
-	util.writefile(last_save, filename)
-end
-
-function save.get_save_location()
-	if util.file_exists(last_save) then
-		local filename = util.readfile(last_save)
-		if filename and filename ~= "" then
-			return filename
-		end
-	end
-end
-
 function save.write(filename)
 	log.info('saving project "' .. filename .. '"')
 
-	-- ensure all VST state is serialized to project
-	for ch_index, channel in ipairs(project.channels) do
-		if channel.instrument and channel.instrument.plugin then
-			channel.instrument.plugin.state = tessera.audio.vst_get_state(ch_index)
-		end
-	end
+	build.pull_vst_state()
 
 	local content = serialize(project, "project")
 	util.writefile(filename, content)
-	save.set_save_location(filename)
 end
 
 save.recovery_path = "out/crash_recovery.sav"
 
--- Skips VST state (audio may be dead) and doesn't touch the save location.
+-- Skips VST state (audio may be dead).
 function save.write_recovery()
 	if not project or not project.channels then
 		return false
@@ -103,10 +81,11 @@ function save.patch(p)
 	p.VERSION = VERSION
 end
 
+-- Returns the project in the file, upgraded to this version, or nil.
 function save.read(filename)
 	if not util.file_exists(filename) then
 		log.warn('Could not find "' .. filename .. '"')
-		return false
+		return
 	end
 
 	log.info('Loading project "' .. filename .. '"')
@@ -124,11 +103,7 @@ function save.read(filename)
 
 	-- if we can automatically upgrade save files to new version, do so here
 	save.patch(new_project)
-
-	build.load_project(new_project)
-
-	save.set_save_location(filename)
-	return true
+	return new_project
 end
 
 local setup_path = "out/setup.lua"

@@ -76,6 +76,16 @@ function build.load_project(new)
 	setup_project()
 end
 
+-- Copy the current state of all VSTs into the project (kept as is without audio).
+function build.pull_vst_state()
+	for ch_index, channel in ipairs(project.channels) do
+		local plugin = channel.instrument and channel.instrument.plugin
+		if plugin then
+			plugin.state = tessera.audio.vst_get_state(ch_index) or plugin.state
+		end
+	end
+end
+
 function build.channel(ch_index, channel_data)
 	local meter_id_channel = tessera.audio.insert_channel(ch_index)
 
