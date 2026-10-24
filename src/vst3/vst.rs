@@ -2,6 +2,7 @@ use crate::audio::MAX_BUF_SIZE;
 use crate::vst3::error::ToResultExt;
 use crate::vst3::event::Events;
 use crate::vst3::parameter::Parameters;
+use crate::vst3::run_loop::RunLoop;
 use crate::vst3::scan::PluginDescriptor;
 use crate::vst3::scan::guid_from_hex;
 use crate::vst3::state::Vst3State;
@@ -14,6 +15,11 @@ use std::mem::MaybeUninit;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::mpsc::SyncSender;
+#[cfg(target_os = "linux")]
+use vst3::Steinberg::Linux::IRunLoop;
+use vst3::Steinberg::Linux::{
+	FileDescriptor, IEventHandler, IRunLoopTrait, ITimerHandler, TimerInterval,
+};
 use vst3::Steinberg::Vst;
 use vst3::Steinberg::Vst::ProcessContext_::StatesAndFlags_;
 use vst3::Steinberg::kInvalidArgument;
@@ -51,8 +57,15 @@ impl Class for PluginHost {
 }
 
 impl IHostApplicationTrait for PluginHost {
-	unsafe fn getName(&self, _name: *mut [u16; 128]) -> tresult {
-		// TODO: write something to name
+	unsafe fn getName(&self, name: *mut [u16; 128]) -> tresult {
+		if name.is_null() {
+			return kInvalidArgument;
+		}
+		let name = unsafe { &mut *name };
+		name.fill(0);
+		for (dst, src) in name.iter_mut().zip("Tessera".encode_utf16()) {
+			*dst = src;
+		}
 		kResultOk
 	}
 
@@ -94,13 +107,41 @@ impl IComponentHandlerTrait for ComponentHandler {
 
 pub struct PluginFrame {
 	window: Arc<Window>,
+	run_loop: Arc<RunLoop>,
 }
 
+#[cfg(target_os = "linux")]
+impl Class for PluginFrame {
+	type Interfaces = (IPlugFrame, IRunLoop);
+}
+
+#[cfg(not(target_os = "linux"))]
 impl Class for PluginFrame {
 	type Interfaces = (IPlugFrame,);
 }
 
-// TODO: implement IRunLoopTrait on linux
+impl IRunLoopTrait for PluginFrame {
+	unsafe fn registerEventHandler(
+		&self,
+		handler: *mut IEventHandler,
+		fd: FileDescriptor,
+	) -> tresult {
+		self.run_loop.register_event_handler(handler, fd)
+	}
+
+	unsafe fn unregisterEventHandler(&self, handler: *mut IEventHandler) -> tresult {
+		self.run_loop.unregister_event_handler(handler)
+	}
+
+	unsafe fn registerTimer(&self, handler: *mut ITimerHandler, ms: TimerInterval) -> tresult {
+		self.run_loop.register_timer(handler, ms)
+	}
+
+	unsafe fn unregisterTimer(&self, handler: *mut ITimerHandler) -> tresult {
+		self.run_loop.unregister_timer(handler)
+	}
+}
+
 impl IPlugFrameTrait for PluginFrame {
 	unsafe fn resizeView(
 		&self,
@@ -167,6 +208,7 @@ impl Drop for Vst3Library {
 struct Vst3Window {
 	plug_view: ComPtr<IPlugView>,
 	frame: ComPtr<IPlugFrame>,
+	run_loop: Arc<RunLoop>,
 	id: WindowId,
 }
 
@@ -422,9 +464,13 @@ impl Vst3Editor {
 			.context("Failed to attach view")?;
 
 		// Setup frame
-		let frame = ComWrapper::new(PluginFrame { window: Arc::clone(&window) })
-			.to_com_ptr::<IPlugFrame>()
-			.unwrap();
+		let run_loop = Arc::new(RunLoop::default());
+		let frame = ComWrapper::new(PluginFrame {
+			window: Arc::clone(&window),
+			run_loop: Arc::clone(&run_loop),
+		})
+		.to_com_ptr::<IPlugFrame>()
+		.unwrap();
 		unsafe { plug_view.setFrame(frame.as_ptr()) }
 			.as_result()
 			.context("Failed to set frame")?;
@@ -439,12 +485,19 @@ impl Vst3Editor {
 			}
 		}
 
-		self.window = Some(Vst3Window { plug_view, frame, id: window.id() });
+		self.window = Some(Vst3Window { plug_view, frame, run_loop, id: window.id() });
 
 		window.set_visible(true);
 		// window.request_redraw();
 
 		Ok(())
+	}
+
+	// Linux only: run the GUI's event handlers and timers. Call from the main thread.
+	pub fn poll_run_loop(&self) {
+		if let Some(window) = &self.window {
+			window.run_loop.poll();
+		}
 	}
 
 	pub fn close_window(&mut self) {

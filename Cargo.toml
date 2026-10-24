@@ -23,6 +23,7 @@ cpal = { version = "0.19", features = ["asio"], git = "https://github.com/sin-te
 cpal = { version = "0.19", git = "https://github.com/sin-tel/cpal.git", rev = "2c3562276145628d632f59f083261b1a9e21615c" }
 [target.'cfg(target_os = "linux")'.dependencies]
 cpal = { version = "0.19", features = ["jack", "pipewire"], git = "https://github.com/sin-tel/cpal.git", rev = "2c3562276145628d632f59f083261b1a9e21615c" }
+libc = "0.2"
 
 [workspace]
 members = ["xen_utils"]

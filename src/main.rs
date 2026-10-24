@@ -390,7 +390,13 @@ impl ApplicationHandler<UserEvent> for App {
 	fn user_event(&mut self, event_loop: &ActiveEventLoop, event: UserEvent) {
 		match event {
 			UserEvent::Update => {
-				self.lua.app_data_mut::<State>().unwrap().check_audio_status();
+				{
+					let state = &mut *self.lua.app_data_mut::<State>().unwrap();
+					state.check_audio_status();
+					for editor in state.vst_editors.values() {
+						editor.poll_run_loop();
+					}
+				}
 
 				let now = Instant::now();
 				if now > self.next_draw {
