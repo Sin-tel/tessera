@@ -278,4 +278,16 @@ tests["input map ratios follow center"] = function()
 	assert(row.ratio:find("^9/8"), "center is " .. row.ratio .. " with absolute names")
 end
 
+-- The transpose steps listed in the project settings.
+tests["step map"] = function()
+	set_tuning("ji_5")
+	local ratios = {}
+	for _, row in ipairs(tuning.step_map()) do
+		ratios[row.keys] = row.ratio
+	end
+	assert(ratios["Alt"]:find("^81/80"), "Alt is " .. ratios["Alt"])
+	assert(ratios["Ctrl + Shift"]:find("^25/24"), "Ctrl + Shift is " .. ratios["Ctrl + Shift"])
+	assert(not ratios["Ctrl + Alt"], "5-limit has no second accidental")
+end
+
 return h.run(tests)

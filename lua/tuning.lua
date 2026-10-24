@@ -331,6 +331,27 @@ function tuning.input_map()
 	return rows
 end
 
+-- Steps of the transpose shortcuts that depend on the tuning (see Canvas:keypressed), named as C moved up.
+function tuning.step_map()
+	local steps = {
+		{ "Ctrl", tuning.chroma },
+		{ "Alt", tuning.comma },
+		{ "Ctrl + Alt", tuning.comma_alt },
+		{ "Shift + Alt", tuning.comma_alt2 },
+		{ "Ctrl + Shift", tuning.chroma_alt },
+	}
+	local rows = {}
+	for _, v in ipairs(steps) do
+		local keys, step = v[1], v[2]
+		if step then
+			local prefix, name = tuning.notation:name_parts(step)
+			local ratios = tuning.system:simple_ratios(step)
+			table.insert(rows, { keys = keys, prefix = prefix, name = name, ratio = table.concat(ratios, " ~ ") })
+		end
+	end
+	return rows
+end
+
 -- Index of interval p in scale t, by its projection.
 function tuning.get_index(t, p)
 	local index = 0

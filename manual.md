@@ -127,7 +127,7 @@ The small steps depend on the current tuning and notation. In an equal temperame
 * **Ctrl + Shift** moves by an alternative chromatic semitone, built with the first accidental: 25/24 when that's the
   accidental for 5, or 28/27 when it's the one for 7.
 
-If the current tuning doesn't have a step, it does nothing.
+If the current tuning doesn't have a step, it does nothing. The steps of the current tuning are listed in the tuning settings, under **Transpose steps**.
 
 ## 3. Channels & Effects
 
@@ -193,6 +193,7 @@ Every project has a tuning, which sets the pitch of each note and how notes are 
   If the tuning is different but the notation has the same accidentals, notes will keep their spelling but change pitch.
   Otherwise, accidentals will be dropped.
   Changing the tuning can be undone, so you can freely experiment with other systems.
+* **Transpose steps** shows what the arrow-key shortcuts move a note by (see [Transposing Notes](#transposing-notes-pitch)), as C moved up.
 * **Input map** shows which note, and which (approximate) ratios each MIDI key in an octave plays.
 
 The snapping scales (Diatonic, Chromatic, Fine) are chosen automatically based on the tuning.

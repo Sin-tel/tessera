@@ -316,6 +316,25 @@ function ProjectSettings:update()
 
 	self.ui:label("Currently active: " .. project.settings.tuning.name)
 
+	-- transpose steps (up/down arrows)
+	self.ui:background(theme.background)
+	self.ui:label("Transpose steps")
+	self.ui.layout.h = Ui.scale(24)
+	-- local name_x = Ui.scale(32)
+	for _, step in ipairs(tuning.step_map()) do
+		self.ui:background(theme.bg_nested)
+		local prefix_w = tessera.graphics.measure_width(step.prefix, "notes")
+		self.ui.layout:col(c1)
+		self.ui.layout:col(c2 - prefix_w)
+		self.ui:label(step.keys)
+		self.ui.layout:col(c3 * 0.5 + prefix_w)
+		self.ui:label(step.prefix .. step.name, { font = "notes" })
+		self.ui.layout:col(c3 * 0.5)
+		self.ui:label(step.ratio, { font = "notes" })
+		self.ui.layout:new_row()
+	end
+	self.ui.layout.h = Ui.scale(32)
+
 	-- draw chromatic midi input map
 	-- TODO: show ET steps when applicable
 	-- TODO: draw actual black/white keyboard for clarity (maybe highlight currently playing notes?)
