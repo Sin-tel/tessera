@@ -211,8 +211,8 @@ With **Auto simplify** (Options menu) on, notes that are moved or transposed get
 A selection is respelled as a whole, so chords keep their spelling.
 
 ## 5. Notation
-Tessera uses a unified notation system, combining ideas from existing notations: HEJI (the Helmholtz-Ellis JI Pitch Notation) for
-just intonation, ups and downs for equal temperaments, and Stein-Zimmermann half sharps and flats.
+Tessera uses a unified notation system, combining ideas from existing notations: HEJI (the [Helmholtz-Ellis JI notation](https://en.xen.wiki/w/Helmholtz%E2%80%93Ellis_notation)) for
+just intonation, [ups and downs](https://en.xen.wiki/w/Ups_and_downs_notation) for equal temperaments, and [Stein-Zimmermann](https://en.xen.wiki/w/Stein%E2%80%93Zimmermann%E2%80%93Gould_notation) half sharps and flats.
 
 All systems currently only go up to 11-limit.
 
@@ -243,7 +243,7 @@ sharp is an even number of steps, such as 24, 31, 41 and 72 equal. The **Neutral
 sharps and flats. Two half sharps make a sharp, so they're always combined.
 
 ### Johnston notation
-Ben Johnston's notation is an alternative for just intonation. Its natural notes form a just C major scale:
+[Ben Johnston's notation](https://en.xen.wiki/w/Ben_Johnston%27s_notation) is an alternative for just intonation. Its natural notes form a just C major scale:
 C-E-G, G-B-D and F-A-C are pure 4:5:6 triads, so E, A and B are 5/4, 5/3 and 15/8 above C. As a result the natural
 notes aren't a chain of pure fifths: D to A is a comma (81/80) short. Sharps and flats raise and lower by 25/24, the
 difference between a major and a minor third.
