@@ -18,11 +18,11 @@ doctest = false
 
 # Pull in the right cpal features depending on platform
 [target.'cfg(target_os = "windows")'.dependencies]
-cpal = { version = "0.18", features = ["asio"], git = "https://github.com/sin-tel/cpal.git", rev = "dd1cc0f64b55530fd46f7732fdddd7d9f2f0edcd" }
+cpal = { version = "0.19", features = ["asio"], git = "https://github.com/sin-tel/cpal.git", rev = "2c3562276145628d632f59f083261b1a9e21615c" }
 [target.'cfg(target_os = "macos")'.dependencies]
-cpal = { version = "0.18", git = "https://github.com/sin-tel/cpal.git", rev = "dd1cc0f64b55530fd46f7732fdddd7d9f2f0edcd" }
+cpal = { version = "0.19", git = "https://github.com/sin-tel/cpal.git", rev = "2c3562276145628d632f59f083261b1a9e21615c" }
 [target.'cfg(target_os = "linux")'.dependencies]
-cpal = { version = "0.18", features = ["jack", "pipewire"], git = "https://github.com/sin-tel/cpal.git", rev = "dd1cc0f64b55530fd46f7732fdddd7d9f2f0edcd" }
+cpal = { version = "0.19", features = ["jack", "pipewire"], git = "https://github.com/sin-tel/cpal.git", rev = "2c3562276145628d632f59f083261b1a9e21615c" }
 
 [workspace]
 members = ["xen_utils"]
@@ -37,7 +37,7 @@ rustfft = "6.4"
 realfft = "3.5"
 fft_convolution = {version = "0.1", git = "https://github.com/Sin-tel/fft-convolution.git", rev = "ef197e8efb6d9de68df4b4794ca2bcf3b999474e" }
 hound = "3.5"
-midir = "0.11"
+midir = "0.11.1"
 num-complex = "0.4"
 halfband = "0.3"
 windowfunctions = "0.1"

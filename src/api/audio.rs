@@ -616,19 +616,7 @@ pub struct DeviceInfo {
 
 impl DeviceInfo {
 	pub fn from_device(device: &Device) -> anyhow::Result<Self> {
-		let description = device.description()?;
-		let mut name = description.name().to_string();
-
-		// If available, add driver name.
-		// Fixes WASAPI generic names, e.g. replaces "Speakers" with "Speakers (Realtek Audio)"
-		// TODO: Submit fix for this in cpal.
-		#[cfg(target_os = "windows")]
-		if let Some(driver) = description.driver()
-			&& driver != name
-		{
-			name = format!("{name} ({driver})");
-		}
-
+		let name = device.description()?.name().to_string();
 		let id = device.id()?.to_string();
 		Ok(Self { name, id })
 	}

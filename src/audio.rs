@@ -91,7 +91,7 @@ pub fn get_default_output_device(host_str: &str) -> Result<DeviceInfo> {
 pub fn find_output_device(info: &DeviceInfo) -> Result<Device> {
 	let device_id = DeviceId::from_str(&info.id)?;
 
-	let host_id = device_id.0;
+	let host_id = device_id.host();
 	let host = cpal::host_from_id(host_id)?;
 
 	match host.device_by_id(&device_id) {
@@ -222,7 +222,7 @@ pub fn build_stream(
 	}?;
 
 	// immediately start the stream
-	stream.play()?;
+	stream.start()?;
 
 	Ok((stream, stream_tx, error_rx))
 }
@@ -265,7 +265,7 @@ where
 fn build_closure<T>(
 	mut stream_rx: HeapCons<bool>,
 	render: Arc<Mutex<Render>>,
-) -> impl FnMut(&mut [T], &cpal::OutputCallbackInfo)
+) -> impl FnMut(&mut [T], &cpal::CallbackInfo)
 where
 	T: cpal::Sample + cpal::FromSample<f32>,
 {
@@ -275,7 +275,7 @@ where
 	let mut process_buffer = [[0.0f32; MAX_BUF_SIZE]; 2];
 	let mut cpu_load = AttackRelease::new_direct(0.05, 0.01);
 
-	move |cpal_buffer: &mut [T], _: &cpal::OutputCallbackInfo| {
+	move |cpal_buffer: &mut [T], _: &cpal::CallbackInfo| {
 		let result = panic::catch_unwind(AssertUnwindSafe(|| {
 			assert_no_alloc(|| {
 				enable_fpu_traps();
@@ -378,7 +378,7 @@ fn error_closure(mut error_tx: HeapProd<ErrorMessage>) -> impl FnMut(cpal::Error
 				.try_push(ErrorMessage::ResetRequest)
 				.expect("Could not send message.");
 		},
-		ErrorKind::Xrun => {}, // Do nothing
+		ErrorKind::DeviceChanged => log_info!("Default device changed."),
 		err => log_error!("Unhandled stream error {:?}", err),
 	}
 }
