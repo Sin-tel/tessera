@@ -20,7 +20,7 @@ jobs:
     - name: Cache Linux audio packages
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
-        packages: libasound2-dev libjack-jackd2-dev libjack-jackd2-0 libdbus-1-dev libpipewire-0.3-dev
+        packages: libasound2-dev libjack-jackd2-dev libjack-jackd2-0 libdbus-1-dev libpipewire-0.3-dev xvfb libxkbcommon-x11-0 libgl1-mesa-dri libegl1
 
     - name: Build Release
       run: cargo build --release
@@ -33,6 +33,11 @@ jobs:
 
     - name: Lua tests
       run: for f in tests/lua/*.lua; do cargo run --release -- --test-run "$f" || exit 1; done
+
+    # real app on a virtual display (software OpenGL, no audio device)
+    - name: Smoke run
+      timeout-minutes: 2
+      run: xvfb-run -a cargo run --release -- --quit-after 5
 
     - name: Upload artifact
       uses: actions/upload-artifact@v6
@@ -55,6 +60,10 @@ jobs:
 
     - name: Test run
       run: cargo run --release --target aarch64-apple-darwin -- --test-run
+
+    - name: Smoke run
+      timeout-minutes: 2
+      run: cargo run --release --target aarch64-apple-darwin -- --quit-after 5
 
     - name: Build universal binary
       run: |
