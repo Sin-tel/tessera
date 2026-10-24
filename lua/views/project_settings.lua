@@ -319,7 +319,6 @@ function ProjectSettings:update()
 	-- draw chromatic midi input map
 	-- TODO: show ET steps when applicable
 	-- TODO: draw actual black/white keyboard for clarity (maybe highlight currently playing notes?)
-	-- TODO: this interacts with current tuning center and relative_note_names, make sure ratio also does
 	self.ui:background(theme.background)
 	self.ui:label("Input map")
 	self.ui.layout.h = Ui.scale(24)

@@ -262,4 +262,20 @@ tests["simplify relative to center"] = function()
 	assert(tuning.get_name(a_sharp) == "E", "A# in F# is named " .. tuning.get_name(a_sharp))
 end
 
+-- The input map's ratios are as written, like its names: with relative names the center is 1/1.
+tests["input map ratios follow center"] = function()
+	set_tuning("ji_5")
+	tuning.set_center(tuning.tone)
+	-- midi 62 plays the center
+	assert(tuning.eq(tuning.from_midi(62), tuning.tone))
+
+	project.settings.relative_note_names = true
+	local row = tuning.input_map()[3]
+	assert(row.ratio:find("^1/1"), "center is " .. row.ratio .. " with relative names")
+
+	project.settings.relative_note_names = false
+	row = tuning.input_map()[3]
+	assert(row.ratio:find("^9/8"), "center is " .. row.ratio .. " with absolute names")
+end
+
 return h.run(tests)

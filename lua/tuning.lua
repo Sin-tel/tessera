@@ -318,7 +318,8 @@ function tuning.input_map()
 	for i = 1, #tuning.chromatic + 1 do
 		local midi = 59 + i
 		local interval = tuning.from_midi(midi)
-		local ratios = tuning.system:simple_ratios(interval)
+		-- relative to the center like the name
+		local ratios = tuning.system:simple_ratios(tuning.to_centered(interval))
 		local prefix, name = tuning.get_name_parts(interval)
 		rows[i] = {
 			prefix = prefix,
