@@ -53,8 +53,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 		return test_run(args.get(index + 1).map(String::as_str));
 	}
 
-	if let Err(e) = run() {
+	// Normal run that exits cleanly after a few seconds. Exit code 1 if there was an error.
+	let quit_after = args.iter().position(|arg| arg == "--quit-after").map(|index| {
+		let secs = args.get(index + 1).and_then(|s| s.parse().ok()).unwrap_or(5.0);
+		Duration::from_secs_f64(secs)
+	});
+
+	if let Err(e) = run(quit_after) {
 		log_error!("{e}");
+		if quit_after.is_some() {
+			std::process::exit(1);
+		}
 	}
 	Ok(())
 }
@@ -113,7 +122,7 @@ fn test_run(script: Option<&str>) -> Result<(), Box<dyn Error>> {
 	Ok(())
 }
 
-fn run() -> Result<(), Box<dyn Error>> {
+fn run(quit_after: Option<Duration>) -> Result<(), Box<dyn Error>> {
 	let (lua_tx, lua_rx) = mpsc::sync_channel::<LuaMessage>(256);
 	init_logging(lua_tx.clone());
 
@@ -156,8 +165,13 @@ fn run() -> Result<(), Box<dyn Error>> {
 		})
 		.expect("Failed to spawn timer");
 
+	app.quit_at = quit_after.map(|d| Instant::now() + d);
+
 	if let Err(e) = event_loop.run_app(&mut app) {
 		log_error!("{e}");
+	}
+	if let Status::Error(_) = app.status {
+		return Err("Exited with a Lua error".into());
 	}
 	Ok(())
 }
@@ -175,12 +189,21 @@ struct App {
 	next_draw: Instant,
 	hooks: Hooks,
 	status: Status,
+	quit_at: Option<Instant>,
 }
 
 impl App {
 	pub fn new(lua: Lua, surface: Surface, hooks: Hooks) -> Self {
 		let now = Instant::now();
-		Self { lua, surface, last_update: now, next_draw: now, hooks, status: Status::Running }
+		Self {
+			lua,
+			surface,
+			last_update: now,
+			next_draw: now,
+			hooks,
+			status: Status::Running,
+			quit_at: None,
+		}
 	}
 }
 
@@ -359,7 +382,7 @@ impl ApplicationHandler<UserEvent> for App {
 
 	fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
 		let app_state = self.lua.app_data_mut::<State>().unwrap();
-		if app_state.exit {
+		if app_state.exit || self.quit_at.is_some_and(|t| Instant::now() >= t) {
 			event_loop.exit();
 		}
 	}
