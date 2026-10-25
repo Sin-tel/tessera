@@ -30,7 +30,7 @@ impl IBStreamTrait for Stream {
 		num_bytes: i32,
 		num_bytes_read: *mut i32,
 	) -> tresult {
-		if buffer.is_null() {
+		if buffer.is_null() || num_bytes < 0 {
 			return kInvalidArgument;
 		}
 
@@ -55,7 +55,7 @@ impl IBStreamTrait for Stream {
 		num_bytes: i32,
 		num_bytes_written: *mut i32,
 	) -> tresult {
-		if buffer.is_null() {
+		if buffer.is_null() || num_bytes < 0 {
 			return kInvalidArgument;
 		}
 
@@ -77,7 +77,10 @@ impl IBStreamTrait for Stream {
 		let mut cursor = self.buffer.lock();
 
 		let seek_from = match mode {
-			SEEK_START => SeekFrom::Start(pos as u64),
+			SEEK_START => match u64::try_from(pos) {
+				Ok(pos) => SeekFrom::Start(pos),
+				Err(_) => return kInvalidArgument,
+			},
 			SEEK_CURRENT => SeekFrom::Current(pos),
 			SEEK_END => SeekFrom::End(pos),
 			_ => return kInvalidArgument,

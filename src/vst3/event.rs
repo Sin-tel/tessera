@@ -2,7 +2,7 @@ use std::cell::UnsafeCell;
 use vst3::Steinberg::Vst::Event_::EventTypes_;
 use vst3::Steinberg::Vst::NoteOffEvent;
 use vst3::Steinberg::Vst::{Event, Event__type0, IEventList, IEventListTrait, NoteOnEvent};
-use vst3::Steinberg::{kResultOk, tresult};
+use vst3::Steinberg::{kInvalidArgument, kResultOk, tresult};
 use vst3::{Class, ComPtr, ComWrapper};
 
 // capacity doesn't need to be very big since buffers are tiny
@@ -29,6 +29,9 @@ impl IEventListTrait for EventList {
 	}
 
 	unsafe fn getEvent(&self, index: i32, event: *mut Event) -> tresult {
+		if event.is_null() {
+			return kInvalidArgument;
+		}
 		unsafe {
 			let vec = &*self.0.get();
 			if index >= 0 && (index as usize) < vec.len() {

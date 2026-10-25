@@ -1,4 +1,5 @@
 use crate::api::lua_serde;
+use crate::log::*;
 use crate::vst3::error::ToResultExt;
 use crate::vst3::util::extract_cstring;
 use crate::vst3::vst::Vst3Library;
@@ -7,10 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::mem::MaybeUninit;
 use std::path::{Path, PathBuf};
-use vst3::ComRef;
-use vst3::Steinberg::{
-	IPluginFactory, IPluginFactory2, IPluginFactory2Trait, IPluginFactoryTrait, PClassInfo2,
-};
+use vst3::Steinberg::{IPluginFactory2, IPluginFactory2Trait, IPluginFactoryTrait, PClassInfo2};
 
 use std::fmt::Write;
 
@@ -55,13 +53,11 @@ pub fn probe_vst3(library_path: &Path) -> Result<Vec<PluginDescriptor>> {
 	let mut descriptors = Vec::new();
 
 	let lib = Vst3Library::new(library_path)?;
-	let factory_ptr = lib.get_factory()?;
-
-	let factory = unsafe { ComRef::<IPluginFactory>::from_raw(factory_ptr as *mut _).unwrap() };
 
 	// We need factory2 for subcategory info.
 	// For now, we just fail if it doesn't exist, but better to implement some fallback.
-	let factory = factory
+	let factory = lib
+		.factory()
 		.cast::<IPluginFactory2>()
 		.ok_or_else(|| anyhow!("Plugin doesn't support factory2."))?;
 
@@ -141,7 +137,7 @@ fn scan_recursive(dir: &Path, results: &mut Vec<PluginDescriptor>) {
 				if let Some(lib_path) = resolve_vst3_library(&path) {
 					match probe_vst3(&lib_path) {
 						Ok(descriptors) => results.extend(descriptors),
-						Err(e) => eprintln!("Failed to probe {lib_path:?}: {e}"),
+						Err(e) => log_warn!("Failed to probe {lib_path:?}: {e}"),
 					}
 				}
 			},

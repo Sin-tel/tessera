@@ -6,7 +6,7 @@ use vst3::Steinberg::Vst::{
 	IMidiMapping, IMidiMappingTrait, IParamValueQueue, IParamValueQueueTrait, IParameterChanges,
 	IParameterChangesTrait,
 };
-use vst3::Steinberg::{kResultOk, tresult};
+use vst3::Steinberg::{kInvalidArgument, kResultFalse, kResultOk, tresult};
 use vst3::{Class, ComPtr, ComRef, ComWrapper};
 
 // Channel 0 is reserved for master channel
@@ -32,21 +32,24 @@ impl IParamValueQueueTrait for ParamValueQueue {
 		unsafe { if (*self.value.get()).is_some() { 1 } else { 0 } }
 	}
 	unsafe fn getPoint(&self, index: i32, sample_offset: *mut i32, value: *mut f64) -> tresult {
+		if sample_offset.is_null() || value.is_null() {
+			return kInvalidArgument;
+		}
 		unsafe {
-			if index == 0 {
-				if let Some(v) = { *self.value.get() } {
-					*sample_offset = 0;
-					*value = v;
-				}
+			if index == 0
+				&& let Some(v) = *self.value.get()
+			{
+				*sample_offset = 0;
+				*value = v;
 				kResultOk
 			} else {
-				vst3::Steinberg::kResultFalse
+				kResultFalse
 			}
 		}
 	}
 	unsafe fn addPoint(&self, _offset: i32, _value: f64, _idx: *mut i32) -> tresult {
 		// Not implemented
-		vst3::Steinberg::kResultFalse
+		kResultFalse
 	}
 }
 
@@ -78,6 +81,32 @@ impl Parameter {
 
 struct ParameterChanges {
 	parameters: Vec<Parameter>,
+	// indices of the parameters with a value this block, so plugins only see those
+	active: UnsafeCell<Vec<usize>>,
+}
+
+impl ParameterChanges {
+	fn new(parameters: Vec<Parameter>) -> Self {
+		let active = UnsafeCell::new(Vec::with_capacity(parameters.len()));
+		Self { parameters, active }
+	}
+
+	fn set(&self, index: usize, value: f64) {
+		let parameter = &self.parameters[index];
+		if parameter.get().is_none() {
+			// no allocation, capacity is the parameter count
+			unsafe { (*self.active.get()).push(index) };
+		}
+		parameter.set(value);
+	}
+
+	fn clear(&self) {
+		let active = unsafe { &mut *self.active.get() };
+		for &index in active.iter() {
+			self.parameters[index].clear();
+		}
+		active.clear();
+	}
 }
 
 unsafe impl Send for ParameterChanges {}
@@ -89,18 +118,15 @@ impl Class for ParameterChanges {
 
 impl IParameterChangesTrait for ParameterChanges {
 	unsafe fn getParameterCount(&self) -> i32 {
-		self.parameters.len() as i32
+		unsafe { (*self.active.get()).len() as i32 }
 	}
+	// borrowed, VST3 getters don't add a reference
 	unsafe fn getParameterData(&self, index: i32) -> *mut IParamValueQueue {
-		let index = index as usize;
-
-		if index < self.parameters.len() {
-			let value = self.parameters[index].get();
-			if value.is_some() {
-				return self.parameters[index].com_ptr.as_ptr();
-			}
+		let active = unsafe { &*self.active.get() };
+		match usize::try_from(index).ok().and_then(|i| active.get(i)) {
+			Some(&i) => self.parameters[i].com_ptr.as_ptr(),
+			None => std::ptr::null_mut(),
 		}
-		std::ptr::null_mut()
 	}
 	unsafe fn addParameterData(&self, _id: *const u32, _index: *mut i32) -> *mut IParamValueQueue {
 		// Not implemented
@@ -162,7 +188,7 @@ impl Parameters {
 			assert_eq!(add_channel(param_id), *index);
 		}
 
-		let changes = ComWrapper::new(ParameterChanges { parameters });
+		let changes = ComWrapper::new(ParameterChanges::new(parameters));
 		let com_ptr = changes.to_com_ptr::<IParameterChanges>().unwrap();
 
 		Ok(Self { changes, com_ptr })
@@ -190,14 +216,11 @@ impl Parameters {
 	}
 
 	pub fn push(&self, id: usize, value: f64) {
-		self.changes.parameters[id].set(value);
+		self.changes.set(id, value);
 	}
 
 	pub fn clear(&self) {
-		// clear all channels
-		for parameter in &self.changes.parameters {
-			parameter.clear();
-		}
+		self.changes.clear();
 	}
 
 	pub fn as_com_ptr(&self) -> *mut IParameterChanges {

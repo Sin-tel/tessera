@@ -429,7 +429,9 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 					render.vst_set_state(index - 1, &vst_state);
 
 					if let Some(editor) = state.vst_editors.get(&vst_id) {
-						editor.set_state(&vst_state).unwrap();
+						if let Err(e) = editor.set_state(&vst_state) {
+							log_error!("Failed to set VST editor state: {e}");
+						}
 					} else {
 						log_error!("VST id {} not found!", vst_id);
 					}
@@ -447,9 +449,10 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 
 			while let Ok(dead_id) = state.vst_cleanup_rx.try_recv() {
-				// Processor is already dropped since it triggered this
-				state.vst_windows.retain(|_, (id, _)| *id != dead_id);
+				// Processor is already dropped since it triggered this.
+				// The editor detaches its view before the window goes.
 				state.vst_editors.remove(&dead_id);
+				state.vst_windows.retain(|_, (id, _)| *id != dead_id);
 			}
 			Ok(())
 		})?,
