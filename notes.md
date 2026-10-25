@@ -2,7 +2,6 @@
 epiano tuning:
     need slightly more overtones - saturator nonlinearity modeling pickups (core saturation)?
     improve hammer sound
-    bell partials above nyquist?
 
 ## 1.4 (editing tools)
 * edit sustain

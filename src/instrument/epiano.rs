@@ -26,6 +26,9 @@ const EQ_GAIN: f32 = -6.;
 const OUTPUT_GAIN: f32 = 0.75;
 // seconds after note off until the voice is cut
 const RELEASE_TIME: f32 = 1.0;
+// bell partials fade out between these (Hz), so they don't pile up at nyquist
+const FADE_START: f32 = 12000.;
+const FADE_END: f32 = 19000.;
 
 // drive: tine displacement in dB
 // level: output trim in dB
@@ -57,7 +60,8 @@ struct Voice {
 	prev: f32,
 	gain: f32,
 	gain_recip: f32,
-	bell: f32,
+	// gain per filter: fundamental, then the bell partials
+	mix: [f32; 4],
 	x0: f32,
 }
 
@@ -82,7 +86,7 @@ impl Voice {
 			filter,
 			gain: 1.,
 			gain_recip: 1.,
-			bell: 1.,
+			mix: [1., 0., 0., 0.],
 			x0: 0.5,
 		}
 	}
@@ -145,12 +149,13 @@ impl Instrument for Epiano {
 					hammer = (x * (4. - 4. * x)).powi(3) * voice.vel;
 				}
 
-				let mut s = [0.; 4];
-				for (i, v) in s.iter_mut().enumerate() {
-					*v = voice.filter[i].process(hammer);
+				let mut x = 0.;
+				for (filter, &mix) in voice.filter.iter_mut().zip(&voice.mix) {
+					if mix > 0. {
+						x += mix * filter.process(hammer);
+					}
 				}
 
-				let x = s[0] + voice.bell * (s[1] + s[2] + s[3]);
 				// pickup magnetic field
 				let field = pickup_field(voice.gain * x - voice.x0, self.y0) + hammer * 0.2;
 
@@ -217,7 +222,11 @@ impl Instrument for Epiano {
 		voice.gain = self.gain;
 		// undo the level change from drive (relative to physical), then trim
 		voice.gain_recip = self.gain.recip() * (REGISTER_REF / f) / drive * level;
-		voice.bell = self.bell;
+		// fade near nyquist, lower sample rates fade earlier
+		for i in 1..4 {
+			let fade = ((FADE_END - voice.freq[i]) / (FADE_END - FADE_START)).clamp(0., 1.);
+			voice.mix[i] = self.bell * fade;
+		}
 
 		voice.active = true;
 		voice.note_on = true;
