@@ -57,8 +57,9 @@ If you use macOS or Linux, please try it and report how it goes.
 ### Devices
 
 - **Epiano:**
-  - Tone and velocity adjustments.
+  - Tone and velocity adjustments, more consistent sound over the whole range.
   - Each key now sounds the same every time it's played.
+  - **Wobble** parameter is replaced by **Asymmetry** (pickup position).
 - **Compressor:**
   - Stereo-linked: both channels get the same gain reduction, which keeps the stereo image stable.
   - The detector is a bit more sensitive to high frequencies.

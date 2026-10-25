@@ -209,9 +209,9 @@ device_list.instruments.organ = {
 device_list.instruments.epiano = {
 	display_name = "Epiano",
 	parameters = {
-		{ "Gain", "slider", { default = -6, min = -24, max = 6, fmt = "%0.1f dB" } },
-		{ "Wobble", "slider", { default = 0.3 } },
-		{ "Bell", "slider", { default = 0.15 } },
+		{ "Gain", "slider", { default = 0, min = -12, max = 12, fmt = "%0.1f dB" } },
+		{ "Asymmetry", "slider", { default = 0.5 } },
+		{ "Bell", "slider", { default = 0.2 } },
 	},
 }
 

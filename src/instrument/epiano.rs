@@ -2,7 +2,6 @@ use crate::dsp::simper::Filter;
 use crate::dsp::*;
 use crate::instrument::*;
 
-// TODO: replace differentiation with more gentle filter to reduce register difference
 // TODO: same note retrigger logic
 
 #[derive(Debug)]
@@ -11,21 +10,39 @@ pub struct Epiano {
 	sample_rate: f32,
 	dc_killer: DcKiller,
 	eq: Filter,
+	// pickup offset (set by asymmetry)
 	x0: f32,
+	// pickup distance
 	y0: f32,
 	gain: f32,
-	wobble: f32,
 	bell: f32,
 }
 
 const N_VOICES: usize = 24;
 // static output EQ, tuned by ear
-const EQ_FREQ: f32 = 750.;
-const EQ_GAIN: f32 = -8.;
+const EQ_FREQ: f32 = 500.;
+const EQ_GAIN: f32 = -6.;
 // output level, -24 LUFS for a held note at velocity 0.7
-const OUTPUT_GAIN: f32 = 1.2;
+const OUTPUT_GAIN: f32 = 0.75;
 // seconds after note off until the voice is cut
 const RELEASE_TIME: f32 = 1.0;
+
+// drive: tine displacement in dB
+// level: output trim in dB
+// decay: relative time constant for decay
+const REGISTER_PARAM: [(f32, f32, f32); 6] = [
+	// drive, level, decay   Note   Hz
+	(10.0, -3.0, 2.2),   //  C2     65
+	(5.0, -1.0, 1.8),    //  C3    131
+	(-2.0, 1.0, 1.3),    //  C4    262
+	(-10.0, 4.0, 0.8),   //  C5    523
+	(-18.0, 0.0, 0.5),   //  C6   1047
+	(-20.0, -6.0, 0.15), //  C7   2093
+];
+// C2 = note number 36
+const REGISTER_START: f32 = 36.;
+// drive and level are relative to physical scaling at this note (C4)
+const REGISTER_REF: f32 = 261.63;
 
 #[derive(Debug)]
 struct Voice {
@@ -40,8 +57,8 @@ struct Voice {
 	prev: f32,
 	gain: f32,
 	gain_recip: f32,
-	wobble: f32,
 	bell: f32,
+	x0: f32,
 }
 
 impl Voice {
@@ -65,10 +82,26 @@ impl Voice {
 			filter,
 			gain: 1.,
 			gain_recip: 1.,
-			wobble: 1.,
 			bell: 1.,
+			x0: 0.5,
 		}
 	}
+}
+
+// Drive and level gain at `pitch`, see REGISTER_PARAM.
+fn register_parameters(pitch: f32) -> (f32, f32, f32) {
+	let last = REGISTER_PARAM.len() - 1;
+	let x = ((pitch - REGISTER_START) / 12.).clamp(0., last as f32);
+	let i = (x as usize).min(last - 1);
+	let (d0, l0, r0) = REGISTER_PARAM[i];
+	let (d1, l1, r1) = REGISTER_PARAM[i + 1];
+	let a = x - i as f32;
+	(from_db(lerp(d0, d1, a)), from_db(lerp(l0, l1, a)), lerp(r0, r1, a))
+}
+
+// Magnetic field at the pickup, for the tine at (x, y) relative to it.
+fn pickup_field(x: f32, y: f32) -> f32 {
+	(x * x + y * y).sqrt().recip()
 }
 
 impl Instrument for Epiano {
@@ -88,9 +121,8 @@ impl Instrument for Epiano {
 			dc_killer: DcKiller::new(sample_rate),
 			eq,
 			x0: 0.5,
-			y0: 1.0,
+			y0: 0.8,
 			gain: 1.,
-			wobble: 1.,
 			bell: 1.,
 		}
 	}
@@ -118,21 +150,16 @@ impl Instrument for Epiano {
 					*v = voice.filter[i].process(hammer);
 				}
 
-				let mut y = 0.20 * voice.wobble * s[1];
-				let mut x = s[0] + 0.20 * voice.wobble * s[1] + voice.bell * (s[2] + s[3]);
-
-				x = voice.gain * x - self.x0;
-				y = voice.gain * y - self.y0;
-
+				let x = s[0] + voice.bell * (s[1] + s[2] + s[3]);
 				// pickup magnetic field
-				let field = (x * x + y * y).sqrt().recip();
+				let field = pickup_field(voice.gain * x - voice.x0, self.y0) + hammer * 0.2;
 
 				// output voltage is derivative of magnetic field
 				let diff = field - voice.prev;
 
 				voice.prev = field;
 
-				let out = diff * 20.0 * voice.gain_recip + 0.05 * hammer;
+				let out = (diff * 20.0) * voice.gain_recip;
 
 				*sample += out * OUTPUT_GAIN;
 			}
@@ -154,39 +181,42 @@ impl Instrument for Epiano {
 	fn pressure(&mut self, _pressure: f32, _id: usize) {}
 
 	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {
-		let vel = velocity_curve(vel, 40.0);
+		let vel = velocity_curve(vel, 36.0);
+		let (x0, y0) = (self.x0, self.y0);
 		let voice = &mut self.voices[id];
 		let f = pitch_to_hz(pitch);
 
-		voice.vel = 0.004 * vel * (self.sample_rate / f);
+		let (drive, level, decay_factor) = register_parameters(pitch);
+		voice.vel = 0.004 * vel * (self.sample_rate / REGISTER_REF) * drive;
 
 		voice.hammer_freq = f / self.sample_rate;
-		voice.hammer_freq = voice.hammer_freq.min(0.015);
 		voice.hammer_freq *= 1. + vel;
 
 		voice.freq[0] = f;
 		// pitch rounded to 10 cents, so the detuning is the same every time a key is played
 		let key = 4 * (10. * pitch).round() as i64;
-		voice.freq[1] = f + 0.4 + 0.4 * hash_uniform(key + 1);
-		voice.freq[2] = f * 4. + 1200. * hash_uniform(key + 2);
-		voice.freq[3] = f * 6. + 1600. * hash_uniform(key + 3);
+		voice.freq[1] = f * 4.2 + 800. * hash_uniform(key + 1);
+		voice.freq[2] = f * 7.3 + 1200. * hash_uniform(key + 2);
+		voice.freq[3] = f * 11.3 + 1600. * hash_uniform(key + 3);
 
-		voice.filter[0].set_bandpass(voice.freq[0], voice.freq[0] * 6.0);
-		voice.filter[1].set_bandpass(voice.freq[1], voice.freq[1] * 4.0);
-		voice.filter[2].set_bandpass(voice.freq[2], voice.freq[2] * 0.4);
-		voice.filter[3].set_bandpass(voice.freq[3], voice.freq[3] * 0.3);
+		voice.filter[0].set_bandpass(voice.freq[0], voice.freq[0] * 8.0 * decay_factor);
+		voice.filter[1].set_bandpass(voice.freq[1], voice.freq[1] * 0.1 * decay_factor);
+		voice.filter[2].set_bandpass(voice.freq[2], voice.freq[2] * 0.8 * decay_factor);
+		voice.filter[3].set_bandpass(voice.freq[3], voice.freq[3] * 0.6 * decay_factor);
 
 		voice.filter.iter_mut().for_each(Filter::immediate);
 		if !voice.note_on {
 			// don't reset state in case of voice stealing to minimize clicking
+			// a stolen voice keeps its pickup position
 			voice.filter.iter_mut().for_each(Filter::reset_state);
-			voice.prev = (self.x0 * self.x0 + self.y0 * self.y0).sqrt().recip();
+			voice.x0 = x0;
+			voice.prev = pickup_field(-x0, y0);
 		}
 
 		voice.hammer_phase = 0.;
 		voice.gain = self.gain;
-		voice.gain_recip = self.gain.recip();
-		voice.wobble = self.wobble;
+		// undo the level change from drive (relative to physical), then trim
+		voice.gain_recip = self.gain.recip() * (REGISTER_REF / f) / drive * level;
 		voice.bell = self.bell;
 
 		voice.active = true;
@@ -205,12 +235,13 @@ impl Instrument for Epiano {
 	fn flush(&mut self) {
 		self.dc_killer.reset();
 		self.eq.reset_state();
-
+		let rest_field = pickup_field(-self.x0, self.y0);
 		for voice in &mut self.voices {
 			voice.filter.iter_mut().for_each(Filter::reset_state);
 			voice.filter.iter_mut().for_each(Filter::immediate);
 			voice.hammer_phase = 2.;
-			voice.prev = (self.x0 * self.x0 + self.y0 * self.y0).sqrt().recip();
+			voice.prev = rest_field;
+			voice.x0 = self.x0;
 
 			voice.active = false;
 			voice.note_on = false;
@@ -221,8 +252,8 @@ impl Instrument for Epiano {
 
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
-			0 => self.gain = from_db(value),
-			1 => self.wobble = value,
+			0 => self.gain = 2.0 * from_db(value),
+			1 => self.x0 = 0.9 - 0.8 * value,
 			2 => self.bell = value * value,
 			_ => log_warn!("Parameter with index {index} not found"),
 		}

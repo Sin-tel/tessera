@@ -1,9 +1,8 @@
 ## TODO for 1.3
-show comma alterations previous in tuning options.
-
-Check how exactly tuning center interacts with note input, and if it displays correctly in the keymap preview
-
-Verify the setup.lua gets cleared properly when coming from an older build (should fall back to default devices)
+epiano tuning:
+    need slightly more overtones - saturator nonlinearity modeling pickups (core saturation)?
+    improve hammer sound
+    bell partials above nyquist?
 
 ## 1.4 (editing tools)
 * edit sustain
@@ -123,6 +122,24 @@ modulation routing system for instruments would be nice to have
 
 ## VST
 Send BPM for tempo-sync: only fix if it makes sense after the timing system is in.
+
+### macos support
+macOS support, still to do (needs someone with a Mac to test):
+1. Module init: macOS plugins need `bundleEntry(CFBundleRef)` before `GetPluginFactory`, and
+   `bundleExit()` before unloading. Do it in `module_entry`/`module_exit`. The CFBundleRef is for
+   the `.vst3` bundle folder, not the binary in `Contents/MacOS` that `library_path` points to
+   (scan.rs), e.g. `CFBundleCreate` from the folder's URL (core-foundation crate). Keep the bundle
+   alive in `Vst3Library` until after `bundleExit`.
+2. Editor size: `ViewRect` is in logical points on macOS (physical pixels elsewhere), so use
+   `LogicalSize` in `open_window` and `PluginFrame::resizeView`, otherwise retina editors get the
+   wrong size.
+3. Check the rest works: the bundle path in scan.rs (untested), attaching to winit's NSView,
+   resizing, opening/closing the editor repeatedly, and removing a channel with the editor open.
+   Good test plugins: Surge XT (free), Pianoteq (demo).
+4. Architecture: Tessera is a universal binary, but each run only loads plugins built for the
+   running arch (no x86-only plugins in a native Apple Silicon run). Log a clear error for those.
+IRunLoop is Linux only, macOS plugins use the main thread's run loop, which winit runs.
+
 
 ## routing
 grouping: tree structure of channels

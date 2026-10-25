@@ -15,7 +15,6 @@ local function channel_group()
 	return group
 end
 
--- TODO: fix master
 local function solo_mute(ch)
 	local group = channel_group()
 	local all = true
