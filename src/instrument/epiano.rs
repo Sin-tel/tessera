@@ -33,13 +33,14 @@ const FADE_END: f32 = 19000.;
 // drive: tine displacement in dB
 // level: output trim in dB
 // decay: relative time constant for decay
-// contact: hammer contact time in ms, at the softest velocity. 1000 / f (one period) is the original
+// contact: hammer contact time in ms, at the softest velocity. Shorter is brighter, but also excites
+//   the fundamental less: drive and level here make up for it at velocity 0.7.
 const REGISTER_PARAM: [(f32, f32, f32, f32); 6] = [
 	// drive, level, decay, contact   Note   Hz
-	(8.0, -3.0, 2.2, 6.0),       //  C2     65
-	(4.0, -1.0, 1.8, 4.0),       //  C3    131
-	(-2.0, 1.0, 1.3, 2.6),       //  C4    262
-	(-10.0, 4.0, 0.8, 1.6),      //  C5    523
+	(13.87, 2.87, 2.2, 6.0),     //  C2     65
+	(7.68, 2.68, 1.8, 4.0),      //  C3    131
+	(-0.10, 2.90, 1.3, 2.6),     //  C4    262
+	(-9.27, 4.73, 0.8, 1.6),     //  C5    523
 	(-18.0, 0.0, 0.5, 0.9556),   //  C6   1047
 	(-20.0, -6.0, 0.15, 0.4778), //  C7   2093
 ];
@@ -110,20 +111,6 @@ fn register_parameters(pitch: f32) -> (f32, f32, f32, f32) {
 fn hammer_pulse(x: f32) -> f32 {
 	let x = x.clamp(0., 1.);
 	(x * (4. - 4. * x)).powi(3)
-}
-
-// Magnitude at frequency f of a hammer pulse lasting `t` seconds (continuous time, midpoint rule).
-fn hammer_magnitude(f: f32, t: f32) -> f32 {
-	const N: usize = 64;
-	let (mut re, mut im) = (0., 0.);
-	for k in 0..N {
-		let u = (k as f32 + 0.5) / N as f32;
-		let p = hammer_pulse(u);
-		let w = TWO_PI * f * t * u;
-		re += p * w.cos();
-		im -= p * w.sin();
-	}
-	t * (re * re + im * im).sqrt() / N as f32
 }
 
 // Magnetic field at the pickup, for the tine at (x, y) relative to it.
@@ -221,12 +208,7 @@ impl Instrument for Epiano {
 		let contact = contact / (1. + vel);
 		voice.hammer_freq = 1. / (contact * self.sample_rate);
 
-		// Same excitation at the fundamental as a pulse lasting one period (the original hammer), so
-		// drive and level tuning holds. Contact time only changes the attack and bells.
-		let reference = hammer_magnitude(f, 1. / (f * (1. + vel)));
-		let norm = reference / hammer_magnitude(f, contact).max(1e-12);
-
-		voice.vel = 0.004 * vel * (self.sample_rate / REGISTER_REF) * drive * norm;
+		voice.vel = 0.004 * vel * (self.sample_rate / REGISTER_REF) * drive;
 
 		voice.freq[0] = f;
 		// pitch rounded to 10 cents, so the detuning is the same every time a key is played
