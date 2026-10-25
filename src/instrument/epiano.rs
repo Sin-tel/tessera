@@ -35,8 +35,8 @@ const FADE_END: f32 = 19000.;
 // decay: relative time constant for decay
 const REGISTER_PARAM: [(f32, f32, f32); 6] = [
 	// drive, level, decay   Note   Hz
-	(10.0, -3.0, 2.2),   //  C2     65
-	(5.0, -1.0, 1.8),    //  C3    131
+	(8.0, -3.0, 2.2),    //  C2     65
+	(4.0, -1.0, 1.8),    //  C3    131
 	(-2.0, 1.0, 1.3),    //  C4    262
 	(-10.0, 4.0, 0.8),   //  C5    523
 	(-18.0, 0.0, 0.5),   //  C6   1047
@@ -105,7 +105,9 @@ fn register_parameters(pitch: f32) -> (f32, f32, f32) {
 
 // Magnetic field at the pickup, for the tine at (x, y) relative to it.
 fn pickup_field(x: f32, y: f32) -> f32 {
-	(x * x + y * y).sqrt().recip()
+	let x1 = 0.9 * x + 0.1 * softclip(2.5 * x);
+	// let x1 = x;
+	(x1 * x1 + y * y).sqrt().recip()
 }
 
 impl Instrument for Epiano {
