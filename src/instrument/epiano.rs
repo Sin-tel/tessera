@@ -23,7 +23,7 @@ const N_VOICES: usize = 24;
 const EQ_FREQ: f32 = 500.;
 const EQ_GAIN: f32 = -6.;
 // output level, -24 LUFS for a held note at velocity 0.7
-const OUTPUT_GAIN: f32 = 0.75;
+const OUTPUT_GAIN: f32 = 1.0;
 // seconds after note off until the voice is cut
 const RELEASE_TIME: f32 = 1.0;
 // bell partials fade out between these (Hz), so they don't pile up at nyquist
@@ -33,14 +33,15 @@ const FADE_END: f32 = 19000.;
 // drive: tine displacement in dB
 // level: output trim in dB
 // decay: relative time constant for decay
-const REGISTER_PARAM: [(f32, f32, f32); 6] = [
-	// drive, level, decay   Note   Hz
-	(8.0, -3.0, 2.2),    //  C2     65
-	(4.0, -1.0, 1.8),    //  C3    131
-	(-2.0, 1.0, 1.3),    //  C4    262
-	(-10.0, 4.0, 0.8),   //  C5    523
-	(-18.0, 0.0, 0.5),   //  C6   1047
-	(-20.0, -6.0, 0.15), //  C7   2093
+// contact: hammer contact time in ms
+const REGISTER_PARAM: [(f32, f32, f32, f32); 6] = [
+	// drive, level, decay, contact   Note   Hz
+	(10.0, 0.0, 2.2, 6.0),    //  C2     65
+	(3.0, 0.0, 1.8, 4.0),     //  C3    131
+	(-3.0, 0.0, 1.3, 2.5),    //  C4    262
+	(-13.0, 1.5, 0.8, 2.0),   //  C5    523
+	(-18.0, -1.0, 0.5, 1.5),  //  C6   1047
+	(-22.0, -7.0, 0.15, 1.0), //  C7   2093
 ];
 // C2 = note number 36
 const REGISTER_START: f32 = 36.;
@@ -92,15 +93,23 @@ impl Voice {
 	}
 }
 
-// Drive and level gain at `pitch`, see REGISTER_PARAM.
-fn register_parameters(pitch: f32) -> (f32, f32, f32) {
+// Drive gain, level gain, decay factor and contact time (s) at `pitch`, see REGISTER_PARAM.
+// Contact time is interpolated in log, so 1/f is exact between octaves.
+fn register_parameters(pitch: f32) -> (f32, f32, f32, f32) {
 	let last = REGISTER_PARAM.len() - 1;
 	let x = ((pitch - REGISTER_START) / 12.).clamp(0., last as f32);
 	let i = (x as usize).min(last - 1);
-	let (d0, l0, r0) = REGISTER_PARAM[i];
-	let (d1, l1, r1) = REGISTER_PARAM[i + 1];
+	let (d0, l0, r0, c0) = REGISTER_PARAM[i];
+	let (d1, l1, r1, c1) = REGISTER_PARAM[i + 1];
 	let a = x - i as f32;
-	(from_db(lerp(d0, d1, a)), from_db(lerp(l0, l1, a)), lerp(r0, r1, a))
+	let contact = 0.001 * c0 * (c1 / c0).powf(a);
+	(from_db(lerp(d0, d1, a)), from_db(lerp(l0, l1, a)), lerp(r0, r1, a), contact)
+}
+
+// Hammer force pulse over the contact time, x in [0, 1], peak 1.
+fn hammer_pulse(x: f32) -> f32 {
+	let x = x.clamp(0., 1.);
+	(x * (4. - 4. * x)).powi(3)
 }
 
 // Magnetic field at the pickup, for the tine at (x, y) relative to it.
@@ -147,8 +156,7 @@ impl Instrument for Epiano {
 				if voice.hammer_phase < 1.0 {
 					voice.hammer_phase += voice.hammer_freq;
 
-					let x = voice.hammer_phase;
-					hammer = (x * (4. - 4. * x)).powi(3) * voice.vel;
+					hammer = hammer_pulse(voice.hammer_phase) * voice.vel;
 				}
 
 				let mut x = 0.;
@@ -193,11 +201,13 @@ impl Instrument for Epiano {
 		let voice = &mut self.voices[id];
 		let f = pitch_to_hz(pitch);
 
-		let (drive, level, decay_factor) = register_parameters(pitch);
-		voice.vel = 0.004 * vel * (self.sample_rate / REGISTER_REF) * drive;
+		let (drive, level, decay_factor, contact) = register_parameters(pitch);
 
-		voice.hammer_freq = f / self.sample_rate;
-		voice.hammer_freq *= 1. + vel;
+		// harder hits are shorter
+		let contact = contact / (1. + vel);
+		voice.hammer_freq = 1. / (contact * self.sample_rate);
+
+		voice.vel = 0.004 * vel * (self.sample_rate / REGISTER_REF) * drive;
 
 		voice.freq[0] = f;
 		// pitch rounded to 10 cents, so the detuning is the same every time a key is played
