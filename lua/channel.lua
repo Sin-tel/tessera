@@ -199,6 +199,10 @@ function Channel:update(ui, ch_index, bg_color, w)
 end
 
 function Channel:event(event)
+	-- removed, see build.detach_channel
+	if not self.ch_index then
+		return
+	end
 	if self.instrument then
 		self.roll:event(event)
 		self:send_event(event)

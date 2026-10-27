@@ -29,6 +29,18 @@ local function setup_project()
 	engine.seek(project.transport.start_time)
 end
 
+-- Held notes keep a reference to the channel they started on to send the note off (midi.lua, note_input.lua),
+-- so a channel object can outlive its removal. It has no backend channel anymore and drops events.
+function build.detach_channel(channel)
+	channel.ch_index = nil
+end
+
+local function detach_all()
+	for _, ch in ipairs(ui_channels) do
+		build.detach_channel(ch)
+	end
+end
+
 -- clear the project from a valid state
 function build.empty_project()
 	-- edits in progress hold on to the old project
@@ -43,6 +55,7 @@ function build.empty_project()
 		end
 	end
 
+	detach_all()
 	ui_channels = {}
 	-- clear selection
 	selection.ch_index = nil
@@ -57,6 +70,7 @@ end
 
 -- restore project from invalid state where backend died
 function build.restore_project()
+	detach_all()
 	ui_channels = {}
 	setup_project()
 end

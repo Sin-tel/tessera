@@ -137,6 +137,25 @@ pub enum AudioMessage {
 	Metronome(bool),
 }
 
+impl AudioMessage {
+	pub fn channel_index(&self) -> Option<usize> {
+		use AudioMessage::*;
+		match *self {
+			NoteOn(ch, ..)
+			| NoteOff(ch, ..)
+			| Pitch(ch, ..)
+			| Pressure(ch, ..)
+			| Sustain(ch, ..)
+			| Parameter(ch, ..)
+			| DeviceMute(ch, ..)
+			| ChannelMute(ch, ..)
+			| ChannelGain(ch, ..)
+			| ReorderEffect(ch, ..) => Some(ch),
+			Panic | AllNotesOff | Metronome(..) => None,
+		}
+	}
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "tag")]
 pub enum LuaMessage {

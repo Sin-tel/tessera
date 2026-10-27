@@ -175,6 +175,13 @@ impl Render {
 	pub fn parse_messages(&mut self) {
 		use AudioMessage::*;
 		while let Some(m) = self.audio_rx.try_pop() {
+			// Channels are removed under the render lock, so messages still queued for them can be stale.
+			if let Some(ch_index) = m.channel_index()
+				&& ch_index >= self.channels.len()
+			{
+				log_error!("Channel index out of bounds: {m:?}");
+				continue;
+			}
 			match m {
 				AllNotesOff => {
 					for ch in &mut self.channels {

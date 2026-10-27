@@ -62,6 +62,47 @@ tests["keyboard note off after selecting another channel"] = function()
 	assert(ui_channels[1].events[1].vel == note_input.DEFAULT_VELOCITY)
 end
 
+-- real channels, backend calls recorded as "name ch_index"
+local function real_channels(n)
+	local Channel = require("channel")
+	local calls = {}
+	for _, name in ipairs({ "note_on", "note_off", "pitch", "pressure", "sustain", "remove_channel" }) do
+		tessera.audio[name] = function(ch_index)
+			table.insert(calls, name .. " " .. ch_index)
+		end
+	end
+	ui_channels = {}
+	for i = 1, n do
+		project.channels[i] = project.channels[i] or { notes = {}, control = {}, visible = true }
+		project.channels[i].instrument = { name = "test" }
+		ui_channels[i] = Channel.new(i, project.channels[i], {}, 0)
+	end
+	return calls
+end
+
+tests["keyboard note off after deleting its channel"] = function()
+	local calls = real_channels(3)
+	selection.ch_index = 3
+	assert(note_input:keypressed("q"))
+	command.run_and_register(command.RemoveChannel.new(3))
+	assert(note_input:keyreleased("q"))
+	local got = table.concat(calls, ", ")
+	assert(got == "note_on 3, remove_channel 3", "backend got: " .. got)
+end
+
+tests["midi note off after deleting a channel before it"] = function()
+	local calls = real_channels(3)
+	local device = midi.MidiDevice.new({ name = "test", mpe = false })
+	device:event({ ui_channels[2] }, { name = "note_on", channel = 0, note = 60, vel = 0.7 })
+	device:event({ ui_channels[2] }, { name = "controller", controller = 64, value = 127 })
+	-- channel 3 becomes 2
+	command.run_and_register(command.RemoveChannel.new(2))
+	device:event({ ui_channels[2] }, { name = "note_off", channel = 0, note = 60 })
+	device:event({ ui_channels[2] }, { name = "controller", controller = 64, value = 0 })
+	local got = table.concat(calls, ", ")
+	assert(got == "note_on 2, sustain 2, remove_channel 2, sustain 2", "backend got: " .. got)
+end
+
 -- the audio backend isn't running, tokens only need to be unique
 local next_token = 0
 tessera.audio.get_token = function()

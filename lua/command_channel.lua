@@ -3,7 +3,7 @@ local build = require("build")
 local function remove_channel(ch_index)
 	tessera.audio.remove_channel(ch_index)
 	table.remove(project.channels, ch_index)
-	table.remove(ui_channels, ch_index)
+	build.detach_channel(table.remove(ui_channels, ch_index))
 	build.refresh_channels()
 	if selection.ch_index == ch_index then
 		selection.select_default_channel()
