@@ -20,7 +20,7 @@ pub struct Epiano {
 
 const N_VOICES: usize = 24;
 // static output EQ, tuned by ear
-const EQ_FREQ: f32 = 500.;
+const EQ_FREQ: f32 = 650.;
 const EQ_GAIN: f32 = -6.;
 // output level, -24 LUFS for a held note at velocity 0.7
 const OUTPUT_GAIN: f32 = 1.0;
@@ -167,14 +167,14 @@ impl Instrument for Epiano {
 				}
 
 				// pickup magnetic field
-				let field = pickup_field(voice.gain * x - voice.x0, self.y0) + hammer * 0.2;
+				let field = pickup_field(voice.gain * x - voice.x0, self.y0);
 
 				// output voltage is derivative of magnetic field
 				let diff = field - voice.prev;
 
 				voice.prev = field;
 
-				let out = (diff * 20.0) * voice.gain_recip;
+				let out = (diff * 20.0) * voice.gain_recip + hammer * 0.2;
 
 				*sample += out * OUTPUT_GAIN;
 			}
@@ -218,8 +218,8 @@ impl Instrument for Epiano {
 
 		voice.filter[0].set_bandpass(voice.freq[0], voice.freq[0] * 8.0 * decay_factor);
 		voice.filter[1].set_bandpass(voice.freq[1], voice.freq[1] * 0.1 * decay_factor);
-		voice.filter[2].set_bandpass(voice.freq[2], voice.freq[2] * 0.8 * decay_factor);
-		voice.filter[3].set_bandpass(voice.freq[3], voice.freq[3] * 0.6 * decay_factor);
+		voice.filter[2].set_bandpass(voice.freq[2], voice.freq[2] * 0.6 * decay_factor);
+		voice.filter[3].set_bandpass(voice.freq[3], voice.freq[3] * 0.3 * decay_factor);
 
 		voice.filter.iter_mut().for_each(Filter::immediate);
 		if !voice.note_on {
@@ -273,9 +273,9 @@ impl Instrument for Epiano {
 
 	fn set_parameter(&mut self, index: usize, value: f32) -> Option<RequestData> {
 		match index {
-			0 => self.gain = 2.0 * from_db(value),
-			1 => self.x0 = 0.9 - 0.8 * value,
-			2 => self.bell = value * value,
+			0 => self.gain = from_db(value),
+			1 => self.x0 = 0.01 + 0.9 * value * value,
+			2 => self.bell = 0.5 * value * value,
 			_ => log_warn!("Parameter with index {index} not found"),
 		}
 		None
