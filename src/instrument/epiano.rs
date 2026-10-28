@@ -12,18 +12,19 @@ pub struct Epiano {
 	eq: Filter,
 	// pickup offset (set by asymmetry)
 	x0: f32,
-	// pickup distance
-	y0: f32,
 	gain: f32,
 	bell: f32,
 }
 
 const N_VOICES: usize = 24;
+const VEL_RANGE_DB: f32 = 36.;
 // static output EQ, tuned by ear
 const EQ_FREQ: f32 = 650.;
 const EQ_GAIN: f32 = -6.;
+
+const PICKUP_Y: f32 = 0.8;
 // output level, -24 LUFS for a held note at velocity 0.7
-const OUTPUT_GAIN: f32 = 1.0;
+const OUTPUT_GAIN: f32 = 0.685;
 // seconds after note off until the voice is cut
 const RELEASE_TIME: f32 = 1.0;
 // bell partials fade out between these (Hz), so they don't pile up at nyquist
@@ -45,8 +46,18 @@ const REGISTER_PARAM: [(f32, f32, f32, f32); 6] = [
 ];
 // C2 = note number 36
 const REGISTER_START: f32 = 36.;
-// drive and level are relative to physical scaling at this note (C4)
-const REGISTER_REF: f32 = 261.63;
+
+// Filter Q is proportional to frequency (Q = q * freq * decay),
+// so each partial decays with a time constant of q * decay / π seconds.
+// ratio to fundamental, random detune spread (Hz), q
+const PARTIALS: [(f32, f32, f32); 4] = [
+	(1.0, 0., 8.0), // fundamental
+	(4.2, 800., 0.1),
+	(7.3, 1200., 0.6),
+	(11.3, 1600., 0.3),
+];
+// q for all partials after note off
+const DAMPER_Q: f32 = 0.08;
 
 #[derive(Debug)]
 struct Voice {
@@ -60,7 +71,9 @@ struct Voice {
 	filter: [Filter; 4],
 	prev: f32,
 	gain: f32,
-	gain_recip: f32,
+	out_gain: f32,
+	// hammer pulse straight to the output
+	hammer_gain: f32,
 	// gain per filter: fundamental, then the bell partials
 	mix: [f32; 4],
 	x0: f32,
@@ -86,7 +99,8 @@ impl Voice {
 			freq: [0.; 4],
 			filter,
 			gain: 1.,
-			gain_recip: 1.,
+			out_gain: 1.,
+			hammer_gain: 0.,
 			mix: [1., 0., 0., 0.],
 			x0: 0.5,
 		}
@@ -112,11 +126,10 @@ fn hammer_pulse(x: f32) -> f32 {
 	(x * (4. - 4. * x)).powi(3)
 }
 
-// Magnetic field at the pickup, for the tine at (x, y) relative to it.
-fn pickup_field(x: f32, y: f32) -> f32 {
+// Magnetic field at the pickup, for the tine at x relative to it.
+fn pickup_field(x: f32) -> f32 {
 	let x1 = 0.9 * x + 0.1 * softclip(2.5 * x);
-	// let x1 = x;
-	(x1 * x1 + y * y).sqrt().recip()
+	(x1 * x1 + PICKUP_Y * PICKUP_Y).sqrt().recip()
 }
 
 impl Instrument for Epiano {
@@ -136,7 +149,6 @@ impl Instrument for Epiano {
 			dc_killer: DcKiller::new(sample_rate),
 			eq,
 			x0: 0.5,
-			y0: 0.8,
 			gain: 1.,
 			bell: 1.,
 		}
@@ -152,31 +164,29 @@ impl Instrument for Epiano {
 
 		for voice in self.voices.iter_mut().filter(|v| v.active) {
 			for sample in bl.iter_mut() {
-				let mut hammer = 0.;
+				let mut pulse = 0.;
 				if voice.hammer_phase < 1.0 {
 					voice.hammer_phase += voice.hammer_freq;
 
-					hammer = hammer_pulse(voice.hammer_phase) * voice.vel;
+					pulse = hammer_pulse(voice.hammer_phase);
 				}
 
 				let mut x = 0.;
 				for (filter, &mix) in voice.filter.iter_mut().zip(&voice.mix) {
 					if mix > 0. {
-						x += mix * filter.process(hammer);
+						x += mix * filter.process(pulse * voice.vel);
 					}
 				}
 
 				// pickup magnetic field
-				let field = pickup_field(voice.gain * x - voice.x0, self.y0);
+				let field = pickup_field(voice.gain * x - voice.x0);
 
 				// output voltage is derivative of magnetic field
 				let diff = field - voice.prev;
 
 				voice.prev = field;
 
-				let out = (diff * 20.0) * voice.gain_recip + hammer * 0.2;
-
-				*sample += out * OUTPUT_GAIN;
+				*sample += diff * voice.out_gain + pulse * voice.hammer_gain;
 			}
 
 			if !voice.note_on {
@@ -196,8 +206,8 @@ impl Instrument for Epiano {
 	fn pressure(&mut self, _pressure: f32, _id: usize) {}
 
 	fn note_on(&mut self, pitch: f32, vel: f32, id: usize) {
-		let vel = velocity_curve(vel, 36.0);
-		let (x0, y0) = (self.x0, self.y0);
+		let vel = velocity_curve(vel, VEL_RANGE_DB);
+		let x0 = self.x0;
 		let voice = &mut self.voices[id];
 		let f = pitch_to_hz(pitch);
 
@@ -207,19 +217,14 @@ impl Instrument for Epiano {
 		let contact = contact / (1. + vel);
 		voice.hammer_freq = 1. / (contact * self.sample_rate);
 
-		voice.vel = 0.004 * vel * (self.sample_rate / REGISTER_REF) * drive;
+		voice.vel = 0.75 * vel * drive;
 
-		voice.freq[0] = f;
 		// pitch rounded to 10 cents, so the detuning is the same every time a key is played
 		let key = 4 * (10. * pitch).round() as i64;
-		voice.freq[1] = f * 4.2 + 800. * hash_uniform(key + 1);
-		voice.freq[2] = f * 7.3 + 1200. * hash_uniform(key + 2);
-		voice.freq[3] = f * 11.3 + 1600. * hash_uniform(key + 3);
-
-		voice.filter[0].set_bandpass(voice.freq[0], voice.freq[0] * 8.0 * decay_factor);
-		voice.filter[1].set_bandpass(voice.freq[1], voice.freq[1] * 0.1 * decay_factor);
-		voice.filter[2].set_bandpass(voice.freq[2], voice.freq[2] * 0.6 * decay_factor);
-		voice.filter[3].set_bandpass(voice.freq[3], voice.freq[3] * 0.3 * decay_factor);
+		for (i, &(ratio, spread, q)) in PARTIALS.iter().enumerate() {
+			voice.freq[i] = f * ratio + spread * hash_uniform(key + i as i64);
+			voice.filter[i].set_bandpass(voice.freq[i], voice.freq[i] * q * decay_factor);
+		}
 
 		voice.filter.iter_mut().for_each(Filter::immediate);
 		if !voice.note_on {
@@ -227,14 +232,18 @@ impl Instrument for Epiano {
 			// a stolen voice keeps its pickup position
 			voice.filter.iter_mut().for_each(Filter::reset_state);
 			voice.x0 = x0;
-			voice.prev = pickup_field(-x0, y0);
+			voice.prev = pickup_field(-x0);
 		}
 
 		voice.hammer_phase = 0.;
 		voice.gain = self.gain;
-		// undo the level change from drive (relative to physical), then trim
-		voice.gain_recip = self.gain.recip() * (REGISTER_REF / f) / drive * level;
-		// fade near nyquist, lower sample rates fade earlier
+
+		// derivative per radian of the fundamental, so the level doesn't depend on pitch or sample rate
+		voice.out_gain = OUTPUT_GAIN * self.sample_rate * level / (TWO_PI * f * self.gain * drive);
+		// scaled like the tine output above, which is independent of drive and gain
+		voice.hammer_gain = 0.3 * OUTPUT_GAIN * vel * level;
+
+		// fade out harmonics near nyquist
 		for i in 1..4 {
 			let fade = ((FADE_END - voice.freq[i]) / (FADE_END - FADE_START)).clamp(0., 1.);
 			voice.mix[i] = self.bell * fade;
@@ -249,14 +258,14 @@ impl Instrument for Epiano {
 		let voice = &mut self.voices[id];
 		voice.note_on = false;
 		for (i, v) in voice.filter.iter_mut().enumerate() {
-			v.set_bandpass(voice.freq[i], voice.freq[i] * 0.12);
+			v.set_bandpass(voice.freq[i], voice.freq[i] * DAMPER_Q);
 		}
 	}
 
 	fn flush(&mut self) {
 		self.dc_killer.reset();
 		self.eq.reset_state();
-		let rest_field = pickup_field(-self.x0, self.y0);
+		let rest_field = pickup_field(-self.x0);
 		for voice in &mut self.voices {
 			voice.filter.iter_mut().for_each(Filter::reset_state);
 			voice.filter.iter_mut().for_each(Filter::immediate);
