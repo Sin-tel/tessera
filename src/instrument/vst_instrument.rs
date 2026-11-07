@@ -9,6 +9,7 @@ use crate::vst3::parameter::N_CHANNELS;
 pub struct VstInstrument {
 	processor: Option<Vst3Processor>,
 	voice_pitches: [i16; N_CHANNELS],
+	voice_on: [bool; N_CHANNELS],
 	mpe_initialized: bool,
 	pb_range: f64,
 }
@@ -42,6 +43,7 @@ impl Instrument for VstInstrument {
 		VstInstrument {
 			processor: None,
 			voice_pitches: [0; N_CHANNELS],
+			voice_on: [false; N_CHANNELS],
 			mpe_initialized: false,
 			pb_range: 48.0,
 		}
@@ -85,8 +87,16 @@ impl Instrument for VstInstrument {
 			let base_pitch = pitch.round();
 			let pitch_offset = f64::from(pitch - base_pitch);
 
+			// send note off first when re-using voice
+			if self.voice_on[id] {
+				processor
+					.events
+					.push(vst3::event::note_off(id, self.voice_pitches[id]));
+			}
+
 			let base_pitch = base_pitch as i16;
 			self.voice_pitches[id] = base_pitch;
+			self.voice_on[id] = true;
 
 			processor.events.push(vst3::event::note_on(id, base_pitch, vel));
 
@@ -97,12 +107,18 @@ impl Instrument for VstInstrument {
 	}
 
 	fn note_off(&mut self, id: usize) {
-		if let Some(processor) = &mut self.processor {
-			let base_pitch = self.voice_pitches[id];
-			processor.events.push(vst3::event::note_off(id, base_pitch));
+		if let Some(processor) = &mut self.processor
+			&& self.voice_on[id]
+		{
+			processor
+				.events
+				.push(vst3::event::note_off(id, self.voice_pitches[id]));
+			self.voice_on[id] = false;
 		}
 	}
+
 	fn flush(&mut self) {
+		self.voice_on = [false; N_CHANNELS];
 		if let Some(processor) = &mut self.processor {
 			let _ = processor.flush();
 		}

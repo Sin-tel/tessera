@@ -217,6 +217,42 @@ pub fn time_constant_linear(t: f32, sample_rate: f32) -> f32 {
 	1000. / (sample_rate * t)
 }
 
+#[derive(Debug)]
+pub struct VoiceFade {
+	gain: f32,
+	step: f32,
+	killed: bool,
+}
+
+const VOICE_FADE_MS: f32 = 5.0;
+
+impl VoiceFade {
+	pub fn new(sample_rate: f32) -> Self {
+		Self { gain: 1., step: 1000. / (VOICE_FADE_MS * sample_rate), killed: false }
+	}
+
+	pub fn reset(&mut self) {
+		self.gain = 1.;
+		self.killed = false;
+	}
+
+	pub fn kill(&mut self) {
+		self.killed = true;
+	}
+
+	// gain for the next sample
+	pub fn process(&mut self) -> f32 {
+		if self.killed {
+			self.gain = (self.gain - self.step).max(0.);
+		}
+		self.gain
+	}
+
+	pub fn is_done(&self) -> bool {
+		self.killed && self.gain == 0.
+	}
+}
+
 #[derive(PartialEq, Copy, Clone)]
 pub enum MuteState {
 	Active,

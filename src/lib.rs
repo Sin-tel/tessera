@@ -35,7 +35,7 @@ pub mod midi;
 mod render;
 mod scope;
 pub mod tuning;
-mod voice_manager;
+pub mod voice_manager;
 pub mod vst3;
 pub mod worker;
 

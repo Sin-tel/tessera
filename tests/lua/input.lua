@@ -42,6 +42,17 @@ tests["midi note off after re-arming"] = function()
 	assert(a.events[3].token == a.events[1].token)
 end
 
+tests["midi repeated note on ends the old note"] = function()
+	local a = unpack(stub_channels(1))
+	local device = midi.MidiDevice.new({ name = "test", mpe = false })
+	device:event({ a }, { name = "note_on", channel = 0, note = 60, vel = 0.7 })
+	device:event({ a }, { name = "note_on", channel = 0, note = 60, vel = 0.7 })
+	device:event({ a }, { name = "note_off", channel = 0, note = 60 })
+	assert(names(a) == "note_on note_off note_on note_off", "a got: " .. names(a))
+	assert(a.events[2].token == a.events[1].token)
+	assert(a.events[4].token == a.events[3].token)
+end
+
 tests["midi sustain released after re-arming"] = function()
 	local a, b = unpack(stub_channels(2))
 	local device = midi.MidiDevice.new({ name = "test", mpe = false })

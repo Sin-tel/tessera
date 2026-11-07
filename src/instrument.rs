@@ -62,6 +62,13 @@ pub trait Instrument {
 	fn set_parameter(&mut self, index: usize, val: f32) -> Option<RequestData>;
 	fn flush(&mut self);
 	fn voice_count(&self) -> usize;
+	fn voice_active(&self, _id: usize) -> bool {
+		true
+	}
+	fn kill(&mut self, _id: usize) -> bool {
+		// leave false if not supported
+		false
+	}
 	#[must_use]
 	fn receive_data(&mut self, _data: ResponseData) -> Option<Box<dyn Any + Send>> {
 		log_warn!("Instrument received data with no handler");

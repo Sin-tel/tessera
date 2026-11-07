@@ -2,8 +2,6 @@ use crate::dsp::simper::Filter;
 use crate::dsp::*;
 use crate::instrument::*;
 
-// TODO: same note retrigger logic
-
 #[derive(Debug)]
 pub struct Epiano {
 	voices: Vec<Voice>,
@@ -77,6 +75,7 @@ struct Voice {
 	// gain per filter: fundamental, then the bell partials
 	mix: [f32; 4],
 	x0: f32,
+	fade: VoiceFade,
 }
 
 impl Voice {
@@ -103,6 +102,7 @@ impl Voice {
 			hammer_gain: 0.,
 			mix: [1., 0., 0., 0.],
 			x0: 0.5,
+			fade: VoiceFade::new(sample_rate),
 		}
 	}
 }
@@ -158,6 +158,15 @@ impl Instrument for Epiano {
 		N_VOICES
 	}
 
+	fn voice_active(&self, id: usize) -> bool {
+		self.voices[id].active
+	}
+
+	fn kill(&mut self, id: usize) -> bool {
+		self.voices[id].fade.kill();
+		true
+	}
+
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
 		let release_samples = (RELEASE_TIME * self.sample_rate) as usize;
@@ -186,7 +195,12 @@ impl Instrument for Epiano {
 
 				voice.prev = field;
 
-				*sample += diff * voice.out_gain + pulse * voice.hammer_gain;
+				*sample +=
+					(diff * voice.out_gain + pulse * voice.hammer_gain) * voice.fade.process();
+			}
+
+			if voice.fade.is_done() {
+				voice.active = false;
 			}
 
 			if !voice.note_on {
@@ -227,12 +241,13 @@ impl Instrument for Epiano {
 		}
 
 		voice.filter.iter_mut().for_each(Filter::immediate);
-		if !voice.note_on {
-			// don't reset state in case of voice stealing to minimize clicking
-			// a stolen voice keeps its pickup position
+
+		// don't reset if restrike
+		if !voice.active {
 			voice.filter.iter_mut().for_each(Filter::reset_state);
 			voice.x0 = x0;
 			voice.prev = pickup_field(-x0);
+			voice.fade.reset();
 		}
 
 		voice.hammer_phase = 0.;
@@ -272,6 +287,7 @@ impl Instrument for Epiano {
 			voice.hammer_phase = 2.;
 			voice.prev = rest_field;
 			voice.x0 = self.x0;
+			voice.fade.reset();
 
 			voice.active = false;
 			voice.note_on = false;

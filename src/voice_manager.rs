@@ -6,6 +6,10 @@ use std::collections::VecDeque;
 
 pub type Token = u32;
 
+// Silent voices kept free for new notes, for instruments that support Instrument::kill. Other voices
+// are killed (faded out) early to keep them, so a new note never has to replace a sounding voice.
+const RESERVE: usize = 2;
+
 #[derive(Clone, Copy, Debug)]
 struct Voice {
 	token: Token,
@@ -13,12 +17,22 @@ struct Voice {
 	vel: f32,
 	key_down: bool,
 	active: bool,
+	// fading out after Instrument::kill
+	killed: bool,
 	age: u64,
 }
 
 impl Default for Voice {
 	fn default() -> Self {
-		Self { token: 0, pitch: 0.0, vel: 0.0, key_down: false, age: 0, active: false }
+		Self {
+			token: 0,
+			pitch: 0.0,
+			vel: 0.0,
+			key_down: false,
+			active: false,
+			killed: false,
+			age: 0,
+		}
 	}
 }
 
@@ -78,45 +92,103 @@ impl VoiceManager {
 		if self.mute {
 			return;
 		}
-		let mut playing_best_i = None;
-		let mut playing_min_dist = f32::MAX;
-
-		let mut released_best_i = None;
-		let mut released_max_age = 0;
-
-		for (i, v) in self.voices.iter_mut().enumerate() {
+		for v in &mut self.voices {
 			v.age += 1;
-
-			if v.key_down {
-				// Minimize pitch distance
-				let dist = (v.pitch - pitch).abs();
-				if dist < playing_min_dist {
-					playing_min_dist = dist;
-					playing_best_i = Some(i);
-				}
-			} else {
-				//  Oldest released voice
-				if v.age >= released_max_age {
-					released_max_age = v.age;
-					released_best_i = Some(i);
-				}
-			}
 		}
 
-		let target_i = released_best_i.or(playing_best_i).expect("Should find a voice");
+		let voice = Voice::new(token, pitch, vel);
+		if let Some(i) = self.find_retrigger(pitch) {
+			self.start(i, voice, pitch + offset);
+		} else if let Some(i) = self.find_free() {
+			self.start(i, voice, pitch + offset);
+			self.keep_reserve(pitch, i);
+		} else {
+			// no silent voice: replace one in place, the oldest if all are fading out already
+			let i = self
+				.find_victim(pitch, None)
+				.or_else(|| (0..self.voices.len()).max_by_key(|&i| self.voices[i].age))
+				.expect("Should find a voice");
+			self.displace(i);
+			self.start(i, voice, pitch + offset);
+		}
+	}
 
-		if self.voices[target_i].key_down {
+	// Released voice at `pitch` that still sounds (sustained or ringing out).
+	fn find_retrigger(&self, pitch: f32) -> Option<usize> {
+		(0..self.voices.len()).find(|&i| {
+			let v = &self.voices[i];
+			!v.killed
+				&& (v.pitch - pitch).abs() < 1e-3
+				&& (v.active || self.instrument.voice_active(i))
+		})
+	}
+
+	// Silent voice that isn't held, oldest first.
+	fn find_free(&self) -> Option<usize> {
+		(0..self.voices.len())
+			.filter(|&i| !self.voices[i].key_down && !self.instrument.voice_active(i))
+			.max_by_key(|&i| self.voices[i].age)
+	}
+
+	// Voice to give up for a new note at `pitch`: the oldest released one that still sounds, else the
+	// held one closest in pitch. Skips `exclude` and voices already fading out.
+	fn find_victim(&self, pitch: f32, exclude: Option<usize>) -> Option<usize> {
+		let candidates = || {
+			(0..self.voices.len()).filter(move |&i| {
+				let v = &self.voices[i];
+				Some(i) != exclude && !v.killed && (v.key_down || self.instrument.voice_active(i))
+			})
+		};
+		let released = candidates()
+			.filter(|&i| !self.voices[i].key_down)
+			.max_by_key(|&i| self.voices[i].age);
+		released.or_else(|| {
+			candidates().filter(|&i| self.voices[i].key_down).min_by(|&a, &b| {
+				let da = (self.voices[a].pitch - pitch).abs();
+				let db = (self.voices[b].pitch - pitch).abs();
+				da.total_cmp(&db)
+			})
+		})
+	}
+
+	// A held voice that gets replaced goes to the queue, to come back when a key is released.
+	fn displace(&mut self, i: usize) {
+		if self.voices[i].key_down {
 			// Drop the oldest stolen voice if capacity is full
 			if self.queue.len() == self.queue.capacity() {
 				self.queue.pop_front();
 			}
-			self.queue.push_back(self.voices[target_i]);
+			self.queue.push_back(self.voices[i]);
 		}
+	}
 
-		let voice = Voice::new(token, pitch, vel);
-		self.voices[target_i] = voice;
+	fn start(&mut self, i: usize, voice: Voice, pitch: f32) {
+		self.voices[i] = voice;
+		self.instrument.note_on(pitch, voice.vel, i);
+	}
 
-		self.instrument.note_on(pitch + offset, vel, target_i);
+	// Kill voices until RESERVE silent ones are free.
+	// They become free once faded out.
+	fn keep_reserve(&mut self, pitch: f32, new: usize) {
+		let n = self.voices.len();
+		let free = (0..n)
+			.filter(|&i| !self.voices[i].key_down && !self.instrument.voice_active(i))
+			.count();
+		let mut fading = (0..n)
+			.filter(|&i| self.voices[i].killed && self.instrument.voice_active(i))
+			.count();
+		while free + fading < RESERVE {
+			let Some(i) = self.find_victim(pitch, Some(new)) else {
+				return;
+			};
+			if !self.instrument.kill(i) {
+				// not supported
+				return;
+			}
+			self.displace(i);
+			self.voices[i] = Voice { killed: true, ..Default::default() };
+			fading += 1;
+		}
 	}
 
 	pub fn note_off(&mut self, token: Token) {
@@ -138,11 +210,16 @@ impl VoiceManager {
 				self.instrument.note_off(i);
 			}
 		} else {
-			// Revive latest dead voice from queue
+			// Revive latest stolen voice from the queue
 			let recovered = self.queue.pop_back().unwrap();
-			self.voices[i] = recovered;
-
-			self.instrument.note_on(self.voices[i].pitch, self.voices[i].vel, i);
+			match self.find_free() {
+				Some(j) if self.instrument.kill(i) => {
+					self.voices[i] = Voice { killed: true, ..Default::default() };
+					self.start(j, recovered, recovered.pitch);
+					self.keep_reserve(recovered.pitch, j);
+				},
+				_ => self.start(i, recovered, recovered.pitch),
+			}
 		}
 	}
 

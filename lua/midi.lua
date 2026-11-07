@@ -202,6 +202,12 @@ function MidiDevice:event(sink, event)
 	if event.name == "note_on" then
 		local n_index = event_note_index(event)
 
+		-- in case we haven't received a note off yet, send one anyway
+		local old = self.notes[n_index]
+		if old then
+			send_event(old.sink, { name = "note_off", token = old.token })
+		end
+
 		local token = tessera.audio.get_token()
 		self.notes[n_index] = { token = token, sink = sink }
 

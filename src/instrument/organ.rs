@@ -204,6 +204,15 @@ impl Instrument for Organ {
 		N_VOICES
 	}
 
+	fn voice_active(&self, id: usize) -> bool {
+		self.voices[id].active
+	}
+
+	fn kill(&mut self, id: usize) -> bool {
+		self.note_off(id);
+		true
+	}
+
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let [bl, br] = buffer;
 		let len = bl.len();
@@ -257,6 +266,11 @@ impl Instrument for Organ {
 
 		let voice = &mut self.voices[id];
 
+		// retrigger does nothing
+		if voice.active {
+			return;
+		}
+
 		for k in 0..N_BARS {
 			// each partial is taken from the nearest tonewheel, shared between keys
 			let p = pitch + 12. * RATIOS[k].log2();
@@ -266,7 +280,6 @@ impl Instrument for Organ {
 			voice.gain[k] = loudness_gain(wheel);
 			if f < 0.45 {
 				voice.freq[k] = f;
-				voice.accum[k] = (f64::from(f) * self.time as f64).fract() as f32;
 			} else {
 				voice.freq[k] = 0.;
 				voice.accum[k] = 0.;

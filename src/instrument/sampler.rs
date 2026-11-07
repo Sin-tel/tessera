@@ -103,6 +103,7 @@ struct Voice {
 	amp_env: AttackRelease,
 	gain: Smooth,
 	vel: f32,
+	fade: VoiceFade,
 }
 
 impl Voice {
@@ -115,16 +116,22 @@ impl Voice {
 			amp_env: AttackRelease::new(2.0, 200.0, sample_rate),
 			gain: Smooth::new(0., 25.0, sample_rate),
 			vel: 0.0,
+			fade: VoiceFade::new(2. * sample_rate),
 		}
 	}
 
 	fn note_on(&mut self, f: f32, velocity: f32) {
+		// TODO: fade out when retrigger to avoid click
+
 		self.active = true;
 		self.note_on = true;
 		self.position = 0.0;
 		self.vel = velocity;
 		self.f = f;
+
+		self.amp_env.set_immediate(0.0);
 		self.amp_env.set(1.0);
+		self.fade.reset();
 	}
 
 	fn note_off(&mut self) {
@@ -163,6 +170,15 @@ impl Instrument for Sampler {
 		VOICE_COUNT
 	}
 
+	fn voice_active(&self, id: usize) -> bool {
+		self.voices[id].active
+	}
+
+	fn kill(&mut self, id: usize) -> bool {
+		self.voices[id].fade.kill();
+		true
+	}
+
 	fn process(&mut self, buffer: &mut [&mut [f32]; 2]) {
 		let n = 2 * buffer[0].len();
 		let bl = &mut self.buffer_l[..n];
@@ -195,15 +211,15 @@ impl Instrument for Sampler {
 						out[ch] = hermite4(y0, y1, y2, y3, frac);
 					}
 
-					let out_gain = env * voice.vel * gain * OUTPUT_GAIN;
+					let out_gain = env * voice.vel * gain * voice.fade.process() * OUTPUT_GAIN;
 					*l += out[0] * out_gain;
 					*r += out[1] * out_gain;
 
 					voice.position += voice.f;
 				}
 
-				// if envelope finished, kill voice
-				if !voice.note_on && voice.amp_env.get() < 0.0001 {
+				// if envelope or kill fade finished, stop voice
+				if (!voice.note_on && voice.amp_env.get() < 1e-4) || voice.fade.is_done() {
 					voice.active = false;
 					continue;
 				}
@@ -251,6 +267,7 @@ impl Instrument for Sampler {
 			v.f = 0.;
 			v.vel = 0.;
 			v.gain.immediate();
+			v.fade.reset();
 		}
 	}
 	fn receive_data(&mut self, data: ResponseData) -> Option<Box<dyn Any + Send>> {
