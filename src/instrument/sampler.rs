@@ -94,6 +94,15 @@ fn parse_pitch(s: &str) -> Option<f32> {
 	Some(((octave - 5) * 12 + semitone) as f32)
 }
 
+// old playhead of a retriggered voice, fading out
+struct Tail {
+	active: bool,
+	position: f32,
+	f: f32,
+	gain: f32,
+	fade: VoiceFade,
+}
+
 struct Voice {
 	active: bool,
 	note_on: bool,
@@ -104,6 +113,15 @@ struct Voice {
 	gain: Smooth,
 	vel: f32,
 	fade: VoiceFade,
+	tail: Tail,
+}
+
+fn read_sample(sample: &[Vec<f32>; 2], position: f32) -> [f32; 2] {
+	let (i, frac) = make_usize_frac(position);
+	std::array::from_fn(|ch| {
+		let s = &sample[ch];
+		hermite4(s[i], s[i + 1], s[i + 2], s[i + 3], frac)
+	})
 }
 
 impl Voice {
@@ -117,11 +135,27 @@ impl Voice {
 			gain: Smooth::new(0., 25.0, sample_rate),
 			vel: 0.0,
 			fade: VoiceFade::new(2. * sample_rate),
+			tail: Tail {
+				active: false,
+				position: 0.0,
+				f: 0.0,
+				gain: 0.0,
+				fade: VoiceFade::new(2. * sample_rate),
+			},
 		}
 	}
 
 	fn note_on(&mut self, f: f32, velocity: f32) {
-		// TODO: fade out when retrigger to avoid click
+		if self.active {
+			// retrigger: old playhead fades out, keeps a running kill fade
+			let tail = &mut self.tail;
+			tail.active = true;
+			tail.position = self.position;
+			tail.f = self.f;
+			tail.gain = self.amp_env.get() * self.vel;
+			std::mem::swap(&mut tail.fade, &mut self.fade);
+			tail.fade.kill();
+		}
 
 		self.active = true;
 		self.note_on = true;
@@ -187,41 +221,49 @@ impl Instrument for Sampler {
 		br.fill(0.0);
 
 		if let Some(sample_data) = &self.sample {
-			for voice in self.voices.iter_mut().filter(|v| v.active) {
-				let len = sample_data[0].len();
-
+			let len = sample_data[0].len();
+			for voice in self.voices.iter_mut().filter(|v| v.active || v.tail.active) {
 				for (l, r) in bl.iter_mut().zip(br.iter_mut()) {
-					if voice.position as usize >= len - 3 {
-						// sample finished
-						voice.active = false;
+					let gain = voice.gain.process() * OUTPUT_GAIN;
+
+					if voice.active {
+						if voice.position as usize >= len - 3 {
+							// sample finished
+							voice.active = false;
+						} else {
+							let env = voice.amp_env.process();
+							let out = read_sample(sample_data, voice.position);
+							let g = env * voice.vel * gain * voice.fade.process();
+							*l += out[0] * g;
+							*r += out[1] * g;
+							voice.position += voice.f;
+						}
+					}
+
+					let tail = &mut voice.tail;
+					if tail.active {
+						if tail.position as usize >= len - 3 {
+							tail.active = false;
+						} else {
+							let out = read_sample(sample_data, tail.position);
+							let g = tail.gain * gain * tail.fade.process();
+							*l += out[0] * g;
+							*r += out[1] * g;
+							tail.position += tail.f;
+						}
+					}
+
+					if !voice.active && !voice.tail.active {
 						break;
 					}
-					let env = voice.amp_env.process();
-					let gain = voice.gain.process();
-
-					// interpolation
-					let (i, frac) = make_usize_frac(voice.position);
-
-					let mut out = [0., 0.];
-					for ch in 0..2 {
-						let y0 = sample_data[ch][i];
-						let y1 = sample_data[ch][i + 1];
-						let y2 = sample_data[ch][i + 2];
-						let y3 = sample_data[ch][i + 3];
-						out[ch] = hermite4(y0, y1, y2, y3, frac);
-					}
-
-					let out_gain = env * voice.vel * gain * voice.fade.process() * OUTPUT_GAIN;
-					*l += out[0] * out_gain;
-					*r += out[1] * out_gain;
-
-					voice.position += voice.f;
 				}
 
 				// if envelope or kill fade finished, stop voice
 				if (!voice.note_on && voice.amp_env.get() < 1e-4) || voice.fade.is_done() {
 					voice.active = false;
-					continue;
+				}
+				if voice.tail.fade.is_done() {
+					voice.tail.active = false;
 				}
 			}
 		}
@@ -268,6 +310,8 @@ impl Instrument for Sampler {
 			v.vel = 0.;
 			v.gain.immediate();
 			v.fade.reset();
+			v.tail.active = false;
+			v.tail.fade.reset();
 		}
 	}
 	fn receive_data(&mut self, data: ResponseData) -> Option<Box<dyn Any + Send>> {
