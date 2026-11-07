@@ -1,11 +1,5 @@
-## TODO for 1.3
-epiano tuning:
-    improve hammer sound
-    check constants that can be folded
-    voice stealing clicks
-    add a few more parameters
-
-bug: copy-paste drag has jitter with pitch snap (can not repro?)
+## 1.3.1
+Hopefully get someone to fix VST on MacOS.
 
 ## 1.4 (editing tools)
 * edit sustain
