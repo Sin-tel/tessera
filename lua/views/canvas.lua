@@ -14,6 +14,7 @@ local pan = require("tools/pan")
 local pen = require("tools/pen")
 local scale = require("tools/scale")
 local set_transport_time = require("tools/set_transport_time")
+local smooth = require("tools/smooth")
 local tempo = require("tools/tempo")
 
 local Button = {}
@@ -41,6 +42,9 @@ function Canvas.new()
 	table.insert(self.tool_buttons, Button.new(x1, y1, tessera.icon.pen, pen))
 	y1 = y1 + BUTTON_S + Ui.PAD
 	table.insert(self.tool_buttons, Button.new(x1, y1, tessera.icon.tempo, tempo))
+	y1 = y1 + BUTTON_S + Ui.PAD
+	-- TODO: placeholder icon
+	table.insert(self.tool_buttons, Button.new(x1, y1, tessera.icon.edit, smooth))
 
 	return self
 end
@@ -481,6 +485,11 @@ function Canvas:keypressed(key)
 			command.register(command.NoteUpdate.new(prev_state, selection.list))
 			return true
 		end
+	elseif (key == "[" or key == "]") and not modifier_keys.any and self.selected_tool.radius then
+		local tool = self.selected_tool
+		local factor = key == "[" and 0.9 or 1.1
+		tool.radius = math.min(math.max(tool.radius * factor, 4), 500)
+		return true
 	elseif key == "kp." or key == "." then
 		self:auto_zoom()
 		return true

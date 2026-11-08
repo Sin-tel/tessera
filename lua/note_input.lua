@@ -10,7 +10,7 @@ note_input.DEFAULT_VELOCITY = 0.7
 
 local octave = 0
 
-note_input.diatonic_row = { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]" }
+note_input.diatonic_row = { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p" }
 
 function note_input:keypressed(key)
 	local ch_index = selection.ch_index
