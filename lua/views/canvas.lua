@@ -163,7 +163,7 @@ function Canvas:draw_channel(ch, w_scale)
 
 				table.insert(lx, x)
 				table.insert(ly, y)
-				table.insert(lw, w + 0.01)
+				table.insert(lw, w)
 			end
 
 			-- draw temp lines for notes that are not yet finished
@@ -174,7 +174,7 @@ function Canvas:draw_channel(ch, w_scale)
 
 				table.insert(lx, x)
 				table.insert(ly, y)
-				table.insert(lw, w + 0.01)
+				table.insert(lw, w)
 			end
 
 			if w_scale > 5 then

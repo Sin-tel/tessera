@@ -456,7 +456,7 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 
 	graphics.set(
 		"polyline_w",
-		lua.create_function(|lua, (lx, ly, lw): (Vec<f32>, Vec<f32>, Vec<f32>)| {
+		lua.create_function(|lua, (lx, ly, mut lw): (Vec<f32>, Vec<f32>, Vec<f32>)| {
 			let state = &mut *lua.app_data_mut::<State>().unwrap();
 
 			if lx.len() < 2 {
@@ -464,6 +464,11 @@ pub fn create(lua: &Lua, scale_factor: f64) -> LuaResult<LuaTable> {
 			}
 			assert!(lx.len() == ly.len());
 			assert!(lx.len() == lw.len());
+
+			// A concave fill thinner than this can mask pixels of what's drawn after it.
+			for w in &mut lw {
+				*w = w.max(0.5);
+			}
 
 			let n = lx.len();
 			let mut path = Path::new();
