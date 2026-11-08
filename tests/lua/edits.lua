@@ -96,4 +96,48 @@ tests["empty edits"] = function(canvas)
 	assert(command.index == n + 1, "empty command registered")
 end
 
+-- Undo/redo must not hand a command's stored state to the project, the next edit would change it in place.
+tests["note edit after undo and redo"] = function(canvas)
+	local note, _, y = add_note()
+	canvas:select_tool(edit)
+
+	local function drag_end(dx)
+		local x_end = canvas.transform:time(note.time + note.verts[#note.verts][1])
+		press(x_end, y)
+		move(x_end + dx, y)
+		release()
+	end
+
+	drag_end(200)
+	local first = util.clone(note.verts)
+	undo()
+	command.redo()
+	drag_end(200)
+	assert(not util.deep_eq(note.verts, first), "second edit changed nothing")
+
+	undo()
+	assert(util.deep_eq(note.verts, first), "undo did not restore the first edit")
+	undo()
+	command.redo()
+	assert(util.deep_eq(note.verts, first), "redo did not restore the first edit")
+end
+
+tests["tempo edit after undo and redo"] = function()
+	local function set_tempo(bps)
+		local prev_state = util.clone(project.time)
+		project.time[1][2] = bps
+		command.register(command.TimeUpdate.new(prev_state, project.time))
+	end
+
+	set_tempo(3)
+	undo()
+	command.redo()
+	set_tempo(4)
+	undo()
+	assert(project.time[1][2] == 3, "undo did not restore the first edit")
+	undo()
+	command.redo()
+	assert(project.time[1][2] == 3, "redo did not restore the first edit")
+end
+
 return h.run(tests)

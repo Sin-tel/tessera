@@ -200,10 +200,11 @@ function NoteUpdate.new(prev_state, new_state)
 	return self
 end
 
+-- Clones, because tools edit verts in place.
 function NoteUpdate:run()
 	for i, v in ipairs(self.notes) do
 		for key in pairs(v) do
-			self.notes[i][key] = self.new_state[i][key]
+			self.notes[i][key] = util.clone(self.new_state[i][key])
 		end
 	end
 end
@@ -211,7 +212,7 @@ end
 function NoteUpdate:reverse()
 	for i, v in ipairs(self.notes) do
 		for key in pairs(v) do
-			self.notes[i][key] = self.prev_state[i][key]
+			self.notes[i][key] = util.clone(self.prev_state[i][key])
 		end
 	end
 end
@@ -330,11 +331,11 @@ function TimeUpdate.new(prev_state, new_state)
 end
 
 function TimeUpdate:run()
-	project.time = self.new_state
+	project.time = util.clone(self.new_state)
 end
 
 function TimeUpdate:reverse()
-	project.time = self.prev_state
+	project.time = util.clone(self.prev_state)
 end
 
 function TimeUpdate:is_empty()
