@@ -190,10 +190,10 @@ impl Render {
 						}
 					}
 				},
-				NoteOn(ch_index, token, pitch, offset, vel) => {
+				NoteOn(ch_index, token, pitch, offset, vel, pressure) => {
 					let ch = &mut self.channels[ch_index];
 					if let Some(instrument) = &mut ch.instrument {
-						instrument.note_on(token, pitch, offset, vel);
+						instrument.note_on(token, pitch, offset, vel, pressure);
 					}
 				},
 				NoteOff(ch_index, token) => {

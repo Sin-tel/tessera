@@ -62,6 +62,12 @@ pub fn create(lua: &Lua) -> LuaResult<LuaTable> {
 		})?,
 	)?;
 
+	// Raw bytes to an event, as `poll` returns them. For tests.
+	midi.set(
+		"parse",
+		lua.create_function(|_, bytes: Vec<u8>| Ok(midi::Event::from_bytes(&bytes)))?,
+	)?;
+
 	midi.set(
 		"poll",
 		lua.create_function(|lua, connection_index: usize| {

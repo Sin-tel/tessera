@@ -15,6 +15,7 @@ struct Voice {
 	token: Token,
 	pitch: f32,
 	vel: f32,
+	pressure: f32,
 	key_down: bool,
 	active: bool,
 	// fading out after Instrument::kill
@@ -28,6 +29,7 @@ impl Default for Voice {
 			token: 0,
 			pitch: 0.0,
 			vel: 0.0,
+			pressure: 0.0,
 			key_down: false,
 			active: false,
 			killed: false,
@@ -37,8 +39,8 @@ impl Default for Voice {
 }
 
 impl Voice {
-	fn new(token: Token, pitch: f32, vel: f32) -> Self {
-		Self { token, pitch, vel, key_down: true, active: true, ..Default::default() }
+	fn new(token: Token, pitch: f32, vel: f32, pressure: f32) -> Self {
+		Self { token, pitch, vel, pressure, key_down: true, active: true, ..Default::default() }
 	}
 }
 
@@ -88,7 +90,7 @@ impl VoiceManager {
 		self.queue.iter().position(|v| v.token == token)
 	}
 
-	pub fn note_on(&mut self, token: Token, pitch: f32, offset: f32, vel: f32) {
+	pub fn note_on(&mut self, token: Token, pitch: f32, offset: f32, vel: f32, pressure: f32) {
 		if self.mute {
 			return;
 		}
@@ -96,7 +98,7 @@ impl VoiceManager {
 			v.age += 1;
 		}
 
-		let voice = Voice::new(token, pitch, vel);
+		let voice = Voice::new(token, pitch, vel, pressure);
 		if let Some(i) = self.find_retrigger(pitch) {
 			self.start(i, voice, pitch + offset);
 		} else if let Some(i) = self.find_free() {
@@ -165,6 +167,7 @@ impl VoiceManager {
 	fn start(&mut self, i: usize, voice: Voice, pitch: f32) {
 		self.voices[i] = voice;
 		self.instrument.note_on(pitch, voice.vel, i);
+		self.instrument.pressure(voice.pressure, i);
 	}
 
 	// Kill voices until RESERVE silent ones are free.
@@ -238,7 +241,10 @@ impl VoiceManager {
 			return;
 		}
 		if let Some(i) = self.get_index(token) {
+			self.voices[i].pressure = pressure;
 			self.instrument.pressure(pressure, i);
+		} else if let Some(q) = self.get_queue_index(token) {
+			self.queue[q].pressure = pressure;
 		}
 	}
 
@@ -322,5 +328,73 @@ impl VoiceManager {
 		self.all_notes_off();
 		self.instrument.flush();
 		self.meter_handle.set([0., 0.]);
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::meters::Meters;
+	use crate::worker::RequestData;
+	use std::sync::{Arc, Mutex};
+
+	type Log = Arc<Mutex<Vec<(&'static str, usize, f32)>>>;
+
+	// Records the calls it gets, never sounds.
+	struct Mock {
+		log: Log,
+		voices: usize,
+	}
+
+	impl Instrument for Mock {
+		fn new(_sample_rate: f32) -> Self {
+			unimplemented!()
+		}
+		fn process(&mut self, _buffer: &mut [&mut [f32]; 2]) {}
+		fn note_on(&mut self, pitch: f32, _vel: f32, id: usize) {
+			self.log.lock().unwrap().push(("note_on", id, pitch));
+		}
+		fn note_off(&mut self, id: usize) {
+			self.log.lock().unwrap().push(("note_off", id, 0.0));
+		}
+		fn pitch(&mut self, _pitch: f32, _id: usize) {}
+		fn pressure(&mut self, pressure: f32, id: usize) {
+			self.log.lock().unwrap().push(("pressure", id, pressure));
+		}
+		fn set_parameter(&mut self, _index: usize, _value: f32) -> Option<RequestData> {
+			None
+		}
+		fn flush(&mut self) {}
+		fn voice_count(&self) -> usize {
+			self.voices
+		}
+	}
+
+	fn manager(voices: usize) -> (VoiceManager, Log) {
+		let log = Log::default();
+		let (meter, _) = Meters::new().register();
+		let vm = VoiceManager::new(44100.0, Box::new(Mock { log: log.clone(), voices }), meter);
+		(vm, log)
+	}
+
+	#[test]
+	fn note_on_comes_with_its_pressure() {
+		let (mut vm, log) = manager(4);
+		vm.note_on(1, 60.0, 0.0, 0.5, 0.3);
+		let log = log.lock().unwrap();
+		let i = log[0].1;
+		assert_eq!(*log, [("note_on", i, 60.0), ("pressure", i, 0.3)]);
+	}
+
+	#[test]
+	fn revived_voice_keeps_its_pressure() {
+		let (mut vm, log) = manager(1);
+		vm.note_on(1, 60.0, 0.0, 0.5, 0.2);
+		// steals the only voice, note 1 waits in the queue
+		vm.note_on(2, 62.0, 0.0, 0.5, 0.4);
+		vm.pressure(1, 0.9);
+		log.lock().unwrap().clear();
+		vm.note_off(2);
+		assert_eq!(*log.lock().unwrap(), [("note_on", 0, 60.0), ("pressure", 0, 0.9)]);
 	}
 }

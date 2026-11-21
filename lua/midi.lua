@@ -174,6 +174,8 @@ function MidiDevice.new(config)
 
 	self.offset = 0
 	self.notes = {}
+	-- last pressure per channel, MPE controllers send it before the note on
+	self.pressures = {}
 	self.offsets = {}
 	for i = 0, 16 do
 		self.offsets[i] = 0
@@ -213,11 +215,25 @@ function MidiDevice:event(sink, event)
 
 		local interval = tuning.from_midi(event.note)
 		local offset = self.offsets[event.channel]
+		-- MPE: what the channel sent before the note on. Without MPE the channel uses its default.
+		local pressure = self.mpe and (self.pressures[event.channel] or 0) or nil
 
-		send_event(sink, { name = "note_on", token = token, interval = interval, vel = event.vel, offset = offset })
+		send_event(sink, {
+			name = "note_on",
+			token = token,
+			interval = interval,
+			vel = event.vel,
+			offset = offset,
+			pressure = pressure,
+		})
 	elseif event.name == "note_off" then
 		local n_index = event_note_index(event)
 		local note = self.notes[n_index]
+
+		-- The next note on this channel starts from 0, unless pressure is sent before it.
+		if self.mpe then
+			self.pressures[event.channel] = 0
+		end
 
 		if note then
 			send_event(note.sink, { name = "note_off", token = note.token })
@@ -236,6 +252,7 @@ function MidiDevice:event(sink, event)
 			end
 		end
 	elseif event.name == "pressure" then
+		self.pressures[event.channel] = event.pressure
 		-- TODO: untested without MPE
 		for k, note in pairs(self.notes) do
 			if not self.mpe or math.floor(k / 256) == event.channel then

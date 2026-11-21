@@ -100,7 +100,7 @@ tests["keyboard note off after deleting its channel"] = function()
 	command.run_and_register(command.RemoveChannel.new(3))
 	assert(note_input:keyreleased("q"))
 	local got = table.concat(calls, ", ")
-	assert(got == "note_on 3, pressure 3, remove_channel 3", "backend got: " .. got)
+	assert(got == "note_on 3, remove_channel 3", "backend got: " .. got)
 end
 
 tests["midi note off after deleting a channel before it"] = function()
@@ -113,13 +113,13 @@ tests["midi note off after deleting a channel before it"] = function()
 	device:event({ ui_channels[2] }, { name = "note_off", channel = 0, note = 60 })
 	device:event({ ui_channels[2] }, { name = "controller", controller = 64, value = 0 })
 	local got = table.concat(calls, ", ")
-	assert(got == "note_on 2, pressure 2, sustain 2, remove_channel 2, sustain 2", "backend got: " .. got)
+	assert(got == "note_on 2, sustain 2, remove_channel 2, sustain 2", "backend got: " .. got)
 end
 
--- pressures sent to the backend
+-- starting pressures of the note ons sent to the backend
 local function record_pressure()
 	local pressures = {}
-	tessera.audio.pressure = function(_, pressure)
+	tessera.audio.note_on = function(_, _, _, _, pressure)
 		table.insert(pressures, pressure)
 	end
 	return pressures
@@ -132,6 +132,76 @@ tests["note on sends a pressure"] = function()
 	ui_channels[2]:event({ name = "note_on", token = 1, interval = interval, vel = 0.5, offset = 0 })
 	ui_channels[2]:event({ name = "note_on", token = 2, interval = interval, vel = 0.5, offset = 0, pressure = 0.2 })
 	assert(pressures[1] == note_input.DEFAULT_PRESSURE and pressures[2] == 0.2, "got " .. util.dump(pressures))
+end
+
+tests["mpe pressure before the note on"] = function()
+	local a = unpack(stub_channels(1))
+	local mpe = midi.MidiDevice.new({ name = "mpe", mpe = true })
+	mpe:event({ a }, { name = "pressure", channel = 2, pressure = 0.3 })
+	mpe:event({ a }, { name = "note_on", channel = 2, note = 60, vel = 0.7 })
+	mpe:event({ a }, { name = "note_on", channel = 3, note = 62, vel = 0.7 })
+	assert(names(a) == "note_on note_on", "a got: " .. names(a))
+	assert(a.events[1].pressure == 0.3, "pressure before the note on not used")
+	assert(a.events[2].pressure == 0, "MPE note without pressure got " .. tostring(a.events[2].pressure))
+
+	local b = unpack(stub_channels(1))
+	local keyboard = midi.MidiDevice.new({ name = "keyboard", mpe = false })
+	keyboard:event({ b }, { name = "pressure", channel = 0, pressure = 0.3 })
+	keyboard:event({ b }, { name = "note_on", channel = 0, note = 60, vel = 0.7 })
+	assert(b.events[1].pressure == nil, "non-MPE note should use the default")
+end
+
+-- Replays a recording made with examples/midi_dump.rs (in tests/lua/midi/) through `device`.
+local function replay(device, sink, file)
+	for line in io.lines("tests/lua/midi/" .. file) do
+		local hex = line:match("^%s*[%d%.]+%s+(%x%x[ %x]-)%s+%[")
+		if hex then
+			local bytes = {}
+			for b in hex:gmatch("%x%x") do
+				table.insert(bytes, tonumber(b, 16))
+			end
+			local event = tessera.midi.parse(bytes)
+			if event then
+				device:event(sink, event)
+			end
+		end
+	end
+end
+
+local function events_named(channel, name)
+	local list = {}
+	for _, e in ipairs(channel.events) do
+		if e.name == name then
+			table.insert(list, e)
+		end
+	end
+	return list
+end
+
+-- Seaboard sends pressure only after the note on, the previous note's pressure must not carry over.
+tests["seaboard: repeated notes on a channel start from zero pressure"] = function()
+	local a = unpack(stub_channels(1))
+	replay(midi.MidiDevice.new({ name = "seaboard", mpe = true }), { a }, "seaboard_taps.txt")
+	local ons = events_named(a, "note_on")
+	assert(#ons == 2, "expected 2 note ons, got " .. #ons)
+	for i, e in ipairs(ons) do
+		assert(e.pressure == 0, ("note %d started at pressure %s"):format(i, tostring(e.pressure)))
+		assert(e.offset == 0, ("note %d started at pitch offset %s"):format(i, tostring(e.offset)))
+	end
+	assert(#events_named(a, "note_off") == 2)
+end
+
+tests["seaboard: overlapping notes keep their own pressure"] = function()
+	local a = unpack(stub_channels(1))
+	replay(midi.MidiDevice.new({ name = "seaboard", mpe = true }), { a }, "seaboard_overlap.txt")
+	local ons = events_named(a, "note_on")
+	assert(#ons == 2 and ons[2].pressure == 0, "second note did not start at 0")
+	for _, e in ipairs(events_named(a, "pressure")) do
+		-- 0x18 is the first pressure of the second note
+		if e.pressure == 0x18 / 127 then
+			assert(e.token == ons[2].token, "pressure went to the wrong note")
+		end
+	end
 end
 
 -- runs `f` with the transport recording, cleans up even if it fails

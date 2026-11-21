@@ -1,0 +1,25 @@
+# Roli Seaboard Block, MPE. Two overlapping notes on channels 2 and 3, from examples/midi_dump.rs (excerpt).
+  2671.904  B1 4A 08  [0]  ch  2  cc 74 (brightness)  8
+  2672.400  E1 00 40  [0]  ch  2  pitchbend +0
+  2672.569  91 37 16  [0]  ch  2  note on    55  vel 22
+  2687.840  E1 1D 40  [0]  ch  2  pitchbend +29
+  2691.847  D1 02     [0]  ch  2  pressure  2
+  2703.820  E1 19 40  [0]  ch  2  pitchbend +25
+  2709.813  D1 00     [0]  ch  2  pressure  0
+  2817.781  D1 01     [0]  ch  2  pressure  1
+  2835.847  D1 04     [0]  ch  2  pressure  4
+  3051.842  D1 1A     [0]  ch  2  pressure  26
+  3069.857  D1 1B     [0]  ch  2  pressure  27
+  3073.975  B2 4A 08  [0]  ch  3  cc 74 (brightness)  8
+  3074.198  E2 00 40  [0]  ch  3  pitchbend +0
+  3074.576  92 3B 16  [0]  ch  3  note on    59  vel 22
+  3088.945  D1 1C     [0]  ch  2  pressure  28
+  3089.270  E2 00 40  [0]  ch  3  pitchbend +0
+  3090.000  E1 20 40  [0]  ch  2  pitchbend +32
+  3092.911  D2 18     [0]  ch  3  pressure  24
+  3105.930  E2 57 3F  [0]  ch  3  pitchbend -41
+  3111.859  D2 10     [0]  ch  3  pressure  16
+  3887.926  D1 00     [0]  ch  2  pressure  0
+  4000.875  E1 00 44  [0]  ch  2  pitchbend +512
+  4010.850  82 3B 03  [0]  ch  3  note off   59  vel 3
+  4055.817  81 37 50  [0]  ch  2  note off   55  vel 80

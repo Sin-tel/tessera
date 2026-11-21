@@ -1,0 +1,33 @@
+# Roli Seaboard Block, MPE. Two short taps on the same key, from examples/midi_dump.rs.
+# Pitch bend and brightness come before the note on, pressure only after it.
+  1323.118  B7 4A 25  [0]  ch  8  cc 74 (brightness)  37
+  1323.584  E7 00 40  [0]  ch  8  pitchbend +0
+  1323.780  97 3C 7F  [0]  ch  8  note on    60  vel 127
+  1338.068  E7 79 3F  [0]  ch  8  pitchbend -7
+  1340.062  B7 4A 24  [0]  ch  8  cc 74 (brightness)  36
+  1342.065  D7 0F     [0]  ch  8  pressure  15
+  1354.105  E7 7B 3F  [0]  ch  8  pitchbend -5
+  1360.049  D7 12     [0]  ch  8  pressure  18
+  1361.048  B7 4A 22  [0]  ch  8  cc 74 (brightness)  34
+  1370.068  E7 73 3F  [0]  ch  8  pitchbend -13
+  1378.068  D7 14     [0]  ch  8  pressure  20
+  1381.048  B7 4A 21  [0]  ch  8  cc 74 (brightness)  33
+  1386.166  E7 7B 3F  [0]  ch  8  pitchbend -5
+  1396.062  D7 10     [0]  ch  8  pressure  16
+  1414.072  D7 09     [0]  ch  8  pressure  9
+  1418.068  87 3C 7F  [0]  ch  8  note off   60  vel 127
+  1483.102  B7 4A 25  [0]  ch  8  cc 74 (brightness)  37
+  1483.376  E7 00 40  [0]  ch  8  pitchbend +0
+  1483.737  97 3C 7F  [0]  ch  8  note on    60  vel 127
+  1498.065  E7 36 40  [0]  ch  8  pitchbend +54
+  1502.025  D7 00     [0]  ch  8  pressure  0
+  1514.070  E7 7D 40  [0]  ch  8  pitchbend +125
+  1520.076  D7 0E     [0]  ch  8  pressure  14
+  1521.030  B7 4A 24  [0]  ch  8  cc 74 (brightness)  36
+  1530.067  E7 72 40  [0]  ch  8  pitchbend +114
+  1538.070  D7 18     [0]  ch  8  pressure  24
+  1541.059  B7 4A 21  [0]  ch  8  cc 74 (brightness)  33
+  1546.055  E7 48 40  [0]  ch  8  pitchbend +72
+  1556.057  D7 17     [0]  ch  8  pressure  23
+  1574.085  D7 11     [0]  ch  8  pressure  17
+  1582.052  87 3C 7F  [0]  ch  8  note off   60  vel 127
