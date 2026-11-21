@@ -54,7 +54,7 @@ function drag:mousedown(canvas)
 
 	if modifier_keys.shift then
 		-- Constrain to one axis
-		if math.abs(self.start_x - mx) < math.abs(self.start_y - my) then
+		if math.abs(x) < math.abs(y) then
 			x = 0
 		else
 			y = 0
