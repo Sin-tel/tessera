@@ -16,6 +16,7 @@ const BUILTIN_ICONS: &[(&str, &str)] = &[
 	("save",       ICON_SAVE),
 	("edit",       ICON_EDIT),
 	("pen",        ICON_PEN),
+	("sculpt",     ICON_SCULPT),
 	("tempo",      ICON_TEMPO),
 ];
 

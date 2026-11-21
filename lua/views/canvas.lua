@@ -30,6 +30,17 @@ Canvas.__index = Canvas
 function Canvas.new()
 	local self = setmetatable({}, Canvas)
 
+	-- TODO: add different icons for sub-tools
+	self.tool_groups = {
+		{ tools = { edit }, icons = { tessera.icon.edit } },
+		{ tools = { pen, freehand }, icons = { tessera.icon.pen, tessera.icon.pen } },
+		{ tools = { smooth }, icons = { tessera.icon.sculpt } },
+		{ tools = { tempo }, icons = { tessera.icon.tempo } },
+	}
+	for _, group in ipairs(self.tool_groups) do
+		group.index = 1
+	end
+	self.selected_group = self.tool_groups[1]
 	self.selected_tool = edit
 	self.current_tool = self.selected_tool
 	self.tool_active = false
@@ -38,17 +49,10 @@ function Canvas.new()
 
 	self.tool_buttons = {}
 	local x1, y1 = 16, 16 + RIBBON_H
-	table.insert(self.tool_buttons, Button.new(x1, y1, tessera.icon.edit, edit))
-	y1 = y1 + BUTTON_S + Ui.PAD
-	table.insert(self.tool_buttons, Button.new(x1, y1, tessera.icon.pen, pen))
-	y1 = y1 + BUTTON_S + Ui.PAD
-	table.insert(self.tool_buttons, Button.new(x1, y1, tessera.icon.tempo, tempo))
-	y1 = y1 + BUTTON_S + Ui.PAD
-	-- TODO: placeholder icon
-	table.insert(self.tool_buttons, Button.new(x1, y1, tessera.icon.edit, smooth))
-	y1 = y1 + BUTTON_S + Ui.PAD
-	-- TODO: placeholder icon
-	table.insert(self.tool_buttons, Button.new(x1, y1, tessera.icon.pen, freehand))
+	for _, group in ipairs(self.tool_groups) do
+		table.insert(self.tool_buttons, Button.new(x1, y1, group))
+		y1 = y1 + BUTTON_S + Ui.PAD
+	end
 
 	return self
 end
@@ -390,12 +394,11 @@ function Canvas:keypressed(key)
 	elseif key == "left" then
 		move_right = -1
 	elseif key == "tab" and not modifier_keys.any then
-		-- switch between edit and draw mode
-		if self.selected_tool == edit then
-			self:select_tool(pen)
-		else
-			self:select_tool(edit)
-		end
+		-- switch between edit and draw
+		self:select_group(self.selected_group == self.tool_groups[1] and 2 or 1)
+		return true
+	elseif tonumber(key) and self.tool_groups[tonumber(key)] and not modifier_keys.any then
+		self:select_group(tonumber(key), true)
 		return true
 	elseif key == "a" and modifier_keys.ctrl then
 		-- select all
@@ -817,6 +820,14 @@ function Canvas:finish_tool()
 end
 
 function Canvas:select_tool(tool)
+	for _, group in ipairs(self.tool_groups) do
+		for i, t in ipairs(group.tools) do
+			if t == tool then
+				group.index = i
+				self.selected_group = group
+			end
+		end
+	end
 	self.selected_tool = tool
 	-- the active one switches when it's done
 	if not self.tool_active then
@@ -824,16 +835,24 @@ function Canvas:select_tool(tool)
 	end
 end
 
+-- Selecting the group that's already selected cycles its sub-tools, if `cycle`.
+function Canvas:select_group(index, cycle)
+	local group = self.tool_groups[index]
+	if cycle and group == self.selected_group then
+		group.index = group.index % #group.tools + 1
+	end
+	self:select_tool(group.tools[group.index])
+end
+
 --- Tool buttons
 
-function Button.new(x, y, icon, tool)
+function Button.new(x, y, group)
 	local self = setmetatable({}, Button)
 	self.x = x
 	self.y = y
 	self.w = BUTTON_S
 	self.h = BUTTON_S
-	self.icon = icon
-	self.tool = tool
+	self.group = group
 	return self
 end
 
@@ -849,13 +868,14 @@ function Button:mousepressed(canvas)
 	local mx, my = canvas:get_mouse()
 
 	if util.hit(self, mx, my) then
-		canvas:select_tool(self.tool)
+		canvas:select_group(util.find(canvas.tool_groups, self.group), true)
 		return true
 	end
 end
 
 function Button:draw(canvas)
-	if canvas.selected_tool == self.tool then
+	local group = self.group
+	if canvas.selected_group == group then
 		tessera.graphics.set_color(theme.bg_highlight)
 	else
 		tessera.graphics.set_color(theme.bg_menu)
@@ -865,7 +885,20 @@ function Button:draw(canvas)
 	tessera.graphics.set_color(theme.line)
 	tessera.graphics.rectangle("line", self.x, self.y, self.w, self.h, Ui.CORNER_RADIUS)
 	tessera.graphics.set_color(theme.white)
-	tessera.graphics.draw_path(self.icon, self.x, self.y)
+	tessera.graphics.draw_path(group.icons[group.index], self.x, self.y)
+
+	-- one dot per sub-tool, the selected one bright
+	local n = #group.tools
+	if n > 1 then
+		local r = Ui.scale(2.5)
+		local step = Ui.scale(7.5)
+		local x0 = self.x + 0.5 * (self.w - (n - 1) * step)
+		local y0 = self.y + self.h - Ui.scale(4)
+		for i = 1, n do
+			tessera.graphics.set_color(i == group.index and theme.white or theme.line)
+			tessera.graphics.circle("fill", x0 + (i - 1) * step, y0, r)
+		end
+	end
 end
 
 return Canvas
