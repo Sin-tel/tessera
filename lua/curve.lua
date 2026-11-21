@@ -7,7 +7,9 @@ local PITCH_TOL = 0.02
 local PRESSURE_TOL = 0.01
 
 -- Ramer-Douglas-Peucker on pitch and pressure. Always keeps the ends.
-function curve.simplify(verts)
+function curve.simplify(verts, pitch_tol, pressure_tol)
+	pitch_tol = pitch_tol or PITCH_TOL
+	pressure_tol = pressure_tol or PRESSURE_TOL
 	local n = #verts
 	if n <= 2 then
 		return verts
@@ -25,8 +27,8 @@ function curve.simplify(verts)
 		for i = i1 + 1, i2 - 1 do
 			local v = verts[i]
 			local s = (v[1] - a[1]) / (b[1] - a[1])
-			local err = math.abs(v[2] - util.lerp(a[2], b[2], s)) / PITCH_TOL
-				+ math.abs(v[3] - util.lerp(a[3], b[3], s)) / PRESSURE_TOL
+			local err = math.abs(v[2] - util.lerp(a[2], b[2], s)) / pitch_tol
+				+ math.abs(v[3] - util.lerp(a[3], b[3], s)) / pressure_tol
 			if err > max_err then
 				max_err = err
 				index = i

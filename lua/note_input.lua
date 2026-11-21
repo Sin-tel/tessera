@@ -7,6 +7,8 @@ local key_down = {}
 
 -- velocity for notes entered without one (computer keyboard, pen tool)
 note_input.DEFAULT_VELOCITY = 0.7
+-- pressure for notes entered without one
+note_input.DEFAULT_PRESSURE = 0.5
 
 local octave = 0
 

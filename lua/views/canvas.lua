@@ -10,6 +10,7 @@ require("table.new")
 -- sub tools
 local drag = require("tools/drag")
 local edit = require("tools/edit")
+local freehand = require("tools/freehand")
 local pan = require("tools/pan")
 local pen = require("tools/pen")
 local scale = require("tools/scale")
@@ -45,6 +46,9 @@ function Canvas.new()
 	y1 = y1 + BUTTON_S + Ui.PAD
 	-- TODO: placeholder icon
 	table.insert(self.tool_buttons, Button.new(x1, y1, tessera.icon.edit, smooth))
+	y1 = y1 + BUTTON_S + Ui.PAD
+	-- TODO: placeholder icon
+	table.insert(self.tool_buttons, Button.new(x1, y1, tessera.icon.pen, freehand))
 
 	return self
 end

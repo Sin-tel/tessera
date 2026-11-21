@@ -1,8 +1,10 @@
 -- Live note input: events for a held note reach the channel it started on.
 -- cargo run -- --test-run tests/lua/input.lua
 
+local engine = require("engine")
 local midi = require("midi")
 local note_input = require("note_input")
+local tuning = require("tuning")
 
 local h = dofile("tests/lua/lib/harness.lua")
 
@@ -98,7 +100,7 @@ tests["keyboard note off after deleting its channel"] = function()
 	command.run_and_register(command.RemoveChannel.new(3))
 	assert(note_input:keyreleased("q"))
 	local got = table.concat(calls, ", ")
-	assert(got == "note_on 3, remove_channel 3", "backend got: " .. got)
+	assert(got == "note_on 3, pressure 3, remove_channel 3", "backend got: " .. got)
 end
 
 tests["midi note off after deleting a channel before it"] = function()
@@ -111,7 +113,72 @@ tests["midi note off after deleting a channel before it"] = function()
 	device:event({ ui_channels[2] }, { name = "note_off", channel = 0, note = 60 })
 	device:event({ ui_channels[2] }, { name = "controller", controller = 64, value = 0 })
 	local got = table.concat(calls, ", ")
-	assert(got == "note_on 2, sustain 2, remove_channel 2, sustain 2", "backend got: " .. got)
+	assert(got == "note_on 2, pressure 2, sustain 2, remove_channel 2, sustain 2", "backend got: " .. got)
+end
+
+-- pressures sent to the backend
+local function record_pressure()
+	local pressures = {}
+	tessera.audio.pressure = function(_, pressure)
+		table.insert(pressures, pressure)
+	end
+	return pressures
+end
+
+tests["note on sends a pressure"] = function()
+	real_channels(2)
+	local pressures = record_pressure()
+	local interval = tuning.new_interval()
+	ui_channels[2]:event({ name = "note_on", token = 1, interval = interval, vel = 0.5, offset = 0 })
+	ui_channels[2]:event({ name = "note_on", token = 2, interval = interval, vel = 0.5, offset = 0, pressure = 0.2 })
+	assert(pressures[1] == note_input.DEFAULT_PRESSURE and pressures[2] == 0.2, "got " .. util.dump(pressures))
+end
+
+-- runs `f` with the transport recording, cleans up even if it fails
+local function recording(f)
+	project.transport = { recording = true }
+	engine.playing = true
+	local ok, err = pcall(f)
+	engine.playing = false
+	command.end_edit(engine)
+	assert(ok, err)
+end
+
+tests["recorded notes keep their pressure"] = function()
+	real_channels(2)
+	local ch = ui_channels[2]
+	local interval = tuning.new_interval()
+	recording(function()
+		engine.time = 1
+		ch:event({ name = "note_on", token = 1, interval = interval, vel = 0.5, offset = 0 })
+		ch:event({ name = "note_on", token = 2, interval = interval, vel = 0.5, offset = 0, pressure = 0.2 })
+		engine.time = 2
+		ch:event({ name = "pressure", token = 1, pressure = 0.8 })
+		engine.time = 3
+		ch:event({ name = "note_off", token = 1 })
+		ch:event({ name = "note_off", token = 2 })
+	end)
+
+	local a, b = unpack(project.channels[2].notes)
+	assert(
+		util.deep_eq(a.verts, { { 0, 0, note_input.DEFAULT_PRESSURE }, { 1, 0, 0.8 }, { 2, 0, 0.8 } }),
+		util.dump(a.verts)
+	)
+	assert(util.deep_eq(b.verts, { { 0, 0, 0.2 }, { 2, 0, 0.2 } }), util.dump(b.verts))
+end
+
+tests["playback sends the note's pressure"] = function()
+	real_channels(2)
+	local pressures = record_pressure()
+	project.channels[2].notes = {
+		{ interval = tuning.new_interval(), time = 1, vel = 0.5, verts = { { 0, 0, 0.3 }, { 1, 0, 0.3 } } },
+	}
+	local ch = ui_channels[2]
+	engine.time = 0
+	ch.roll:start(false)
+	engine.time = 1.001
+	ch.roll:playback(ch)
+	assert(pressures[1] == 0.3, "got " .. util.dump(pressures))
 end
 
 -- the audio backend isn't running, tokens only need to be unique

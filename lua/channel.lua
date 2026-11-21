@@ -1,6 +1,7 @@
 local Roll = require("roll")
 local Ui = require("ui.ui")
 local log = require("log")
+local note_input = require("note_input")
 local tuning = require("tuning")
 local widgets = require("ui.widgets")
 
@@ -210,11 +211,13 @@ function Channel:event(event)
 end
 
 -- send an event to the backend
+-- A note on always comes with a pressure, `event.pressure` or the default.
 function Channel:send_event(event)
 	local token = event.token
 	if event.name == "note_on" then
 		local pitch = tuning.get_pitch(event.interval)
 		tessera.audio.note_on(self.ch_index, pitch, event.offset, event.vel, token)
+		tessera.audio.pressure(self.ch_index, event.pressure or note_input.DEFAULT_PRESSURE, token)
 	elseif event.name == "note_off" then
 		tessera.audio.note_off(self.ch_index, token)
 	elseif event.name == "pitch" then

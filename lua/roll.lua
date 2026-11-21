@@ -1,9 +1,8 @@
 local engine = require("engine")
+local note_input = require("note_input")
 
 local Roll = {}
 Roll.__index = Roll
-
-local DEFAULT_PRESSURE = 0.0
 
 function Roll.new(ch_index)
 	local self = setmetatable({}, Roll)
@@ -77,7 +76,8 @@ function Roll:stop()
 	for _, note in pairs(self.active_notes) do
 		note.is_recording = nil
 		local t_offset = engine.time - note.time
-		table.insert(note.verts, { t_offset, 0, DEFAULT_PRESSURE })
+		local v_prev = note.verts[#note.verts]
+		table.insert(note.verts, { t_offset, v_prev[2], v_prev[3] })
 	end
 
 	self.active_notes = {}
@@ -104,6 +104,7 @@ function Roll:playback(channel)
 			interval = note.interval,
 			vel = note.vel,
 			offset = note.verts[1][2],
+			pressure = note.verts[1][3],
 		})
 
 		self.n_index = self.n_index + 1
@@ -146,8 +147,7 @@ function Roll:event(event)
 				interval = event.interval,
 				time = time,
 				vel = event.vel,
-				-- TODO: initial pressure?
-				verts = { { 0.0, event.offset, DEFAULT_PRESSURE } },
+				verts = { { 0.0, event.offset, event.pressure or note_input.DEFAULT_PRESSURE } },
 				is_recording = true,
 			}
 
@@ -166,13 +166,7 @@ function Roll:event(event)
 			local t_offset = time - note.time
 
 			local v_prev = note.verts[#note.verts]
-			local offset = 0
-			local pres = DEFAULT_PRESSURE
-			if v_prev then
-				offset = v_prev[2]
-			end
-
-			table.insert(self.active_notes[event.token].verts, { t_offset, offset, pres })
+			table.insert(note.verts, { t_offset, v_prev[2], v_prev[3] })
 
 			self.active_notes[event.token] = nil
 		elseif event.name == "pitch" then
