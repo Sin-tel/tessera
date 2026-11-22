@@ -12,9 +12,8 @@ erase.radius = Ui.scale(12)
 
 function erase:mousepressed(canvas)
 	self.notes = nil
-	local ch_index = selection.ch_index
-	local channel = ch_index and project.channels[ch_index]
-	if not channel or channel.lock or not channel.visible or not channel.notes then
+	local channel, ch_index = selection.active_channel()
+	if not channel then
 		return
 	end
 

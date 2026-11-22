@@ -16,7 +16,7 @@ brush.__index = brush
 
 local MIN_WEIGHT = 0.002
 -- in radii, where the weight drops below MIN_WEIGHT
-local REACH = 2.5
+brush.REACH = 2.5
 -- seconds, closest verts get after moving them in time (rounding only, the falloffs keep them apart)
 local MIN_DT = 0.001
 
@@ -58,11 +58,16 @@ function brush:touch(note)
 	note.verts = curve.subdivide(note.verts)
 end
 
+-- Weight of a whole note, by its squared distance from the mouse.
+function brush:note_weight(d_sq)
+	return math.exp(-d_sq / self.radius ^ 2)
+end
+
 function brush:get_weights(canvas, note, mx, my)
 	local transform = canvas.transform
 	local base_pitch = tuning.get_pitch(note.interval)
 	local r_sq = self.radius ^ 2
-	local note_w = self.falloff == "time" and math.exp(-canvas:dist_sq_note(note, mx, my) / r_sq)
+	local note_w = self.falloff == "time" and self:note_weight(canvas:dist_sq_note(note, mx, my))
 
 	local weights = {}
 	local any = false
@@ -83,7 +88,7 @@ end
 
 function brush:mousedown(canvas)
 	local mx, my = canvas:get_mouse()
-	local reach = REACH * self.radius
+	local reach = brush.REACH * self.radius
 
 	for _, note in ipairs(self.scope) do
 		if not self.touched[note] and canvas:dist_sq_note(note, mx, my) < reach * reach then

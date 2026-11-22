@@ -81,6 +81,15 @@ function selection.remove_inactive()
 	selection.set(mask)
 end
 
+-- The selected channel and its index, if notes can be added to it (visible, unlocked).
+function selection.active_channel()
+	local ch_index = selection.ch_index
+	local channel = ch_index and project.channels[ch_index]
+	if channel and channel.notes and channel.visible and not channel.lock then
+		return channel, ch_index
+	end
+end
+
 function selection.select_default_channel()
 	-- just select the first available channel that is not master
 	local index = nil

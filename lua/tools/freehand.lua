@@ -43,12 +43,8 @@ function freehand:mousepressed(canvas)
 	self.points = nil
 	self.last = nil
 
-	local ch_index = selection.ch_index
+	local _, ch_index = selection.active_channel()
 	if not ch_index then
-		return
-	end
-	local channel = project.channels[ch_index]
-	if channel.lock or not channel.visible or not channel.notes then
 		return
 	end
 

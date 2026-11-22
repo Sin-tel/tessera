@@ -1,3 +1,28 @@
+adjust initial note offset
+  alt + drag? would replace velocity edit
+
+pitch snap: set pitch offset to 0 (on some note avg)
+
+
+delete part of note?
+
+use toolbar!
+
+shortcut for deselect
+ctrl + A twice: deselect
+
+shift always smooth
+
+refactor canvas.lua
+
+add pressure to note_on for all instruments?
+
+if no controllers send pressure before note_on then don't track it
+
+don't draw brush outline when hover on time ribbon
+
+editing note during playback makes it do strange things
+
 ## 1.3.1
 Hopefully get someone to fix VST on MacOS.
 

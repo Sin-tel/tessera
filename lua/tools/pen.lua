@@ -19,13 +19,7 @@ local function get_interval(canvas, my)
 end
 
 function pen:mousepressed(canvas)
-	local ch_index = selection.ch_index
-	if not ch_index then
-		return
-	end
-
-	local channel = project.channels[ch_index]
-	if channel.lock or not channel.visible or not channel.notes then
+	if not selection.active_channel() then
 		return
 	end
 

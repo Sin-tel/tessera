@@ -8,8 +8,6 @@ local smooth = require("tools/smooth")
 local grab = brush.new("grab", 40)
 grab.modifiers = { shift = smooth }
 
--- in radii, notes further than this from the press aren't touched
-local REACH = 2.5
 -- Time falloff radius per pixel dragged sideways, once that's past the brush radius.
 -- Above ~0.72 verts can't cross; higher spreads the move wider and bunches verts less.
 local TIME_FALLOFF = 1.2
@@ -23,7 +21,7 @@ function grab:mousepressed(canvas)
 	self.orig = {}
 
 	local transform = canvas.transform
-	local reach = REACH * self.radius
+	local reach = brush.REACH * self.radius
 	for _, note in ipairs(self.scope) do
 		local d_sq = canvas:dist_sq_note(note, mx, my)
 		if d_sq < reach * reach then
@@ -32,7 +30,7 @@ function grab:mousepressed(canvas)
 			for i, v in ipairs(note.verts) do
 				offsets[i] = transform:time(note.time + v[1]) - mx
 			end
-			local weight = math.exp(-d_sq / self.radius ^ 2)
+			local weight = self:note_weight(d_sq)
 			self.orig[note] = { time = note.time, verts = util.clone(note.verts), weight = weight, offsets = offsets }
 		end
 	end
