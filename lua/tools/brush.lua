@@ -15,10 +15,6 @@ local STRENGTH = 0.5
 local MIN_WEIGHT = 0.001
 -- in radii, where the weight drops below MIN_WEIGHT
 local REACH = 2.5
--- vert spacing on touched notes, in radii
-local SPACING = 0.8
--- seconds, about as dense as recorded notes
-local MIN_SPACING = 0.008
 
 function brush.new(name, radius)
 	return setmetatable({ name = name, radius = Ui.scale(radius) }, brush)
@@ -38,14 +34,13 @@ function brush:mousepressed(canvas)
 	end
 end
 
--- Snapshot for undo, and give the brush evenly spaced verts to work on.
-function brush:touch(canvas, note)
+-- Snapshot for undo, and give the brush evenly spaced verts to work on. Simplified again on release.
+function brush:touch(note)
 	self.touched[note] = true
 	table.insert(self.prev_state, util.clone(note))
 	table.insert(self.notes, note)
 
-	local max_dt = math.max(SPACING * self.radius / canvas.transform.sx, MIN_SPACING)
-	note.verts = curve.subdivide(curve.simplify(note.verts), max_dt)
+	note.verts = curve.subdivide(note.verts)
 end
 
 function brush:get_weights(canvas, note, mx, my)
@@ -71,7 +66,7 @@ function brush:mousedown(canvas)
 
 	for _, note in ipairs(self.scope) do
 		if not self.touched[note] and canvas:dist_sq_note(note, mx, my) < reach * reach then
-			self:touch(canvas, note)
+			self:touch(note)
 		end
 		if self.touched[note] then
 			local weights = self:get_weights(canvas, note, mx, my)
@@ -84,6 +79,9 @@ end
 
 function brush:mousereleased()
 	self.scope = nil
+	for _, note in ipairs(self.notes) do
+		note.verts = curve.simplify(note.verts)
+	end
 	if #self.notes > 0 then
 		command.register(command.NoteUpdate.new(self.prev_state, self.notes))
 	end

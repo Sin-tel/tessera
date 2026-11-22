@@ -117,7 +117,7 @@ function freehand:mousereleased(canvas)
 	for i, pt in ipairs(points) do
 		verts[i] = { pt[1] - t0, pt[2] - base, pt[3] }
 	end
-	verts = curve.simplify(verts, TOLERANCE / -canvas.transform.sy)
+	verts = curve.simplify(verts)
 
 	local note = { interval = interval, time = t0, vel = note_input.DEFAULT_VELOCITY, verts = verts }
 	command.run_and_register(command.NoteAdd.new({ [self.ch_index] = { note } }))

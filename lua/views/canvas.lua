@@ -11,6 +11,7 @@ require("table.new")
 local drag = require("tools/drag")
 local edit = require("tools/edit")
 local freehand = require("tools/freehand")
+local grab = require("tools/grab")
 local pan = require("tools/pan")
 local pen = require("tools/pen")
 local scale = require("tools/scale")
@@ -34,7 +35,7 @@ function Canvas.new()
 	self.tool_groups = {
 		{ tools = { edit }, icons = { tessera.icon.edit } },
 		{ tools = { pen, freehand }, icons = { tessera.icon.pen, tessera.icon.pen } },
-		{ tools = { smooth }, icons = { tessera.icon.sculpt } },
+		{ tools = { smooth, grab }, icons = { tessera.icon.sculpt, tessera.icon.sculpt } },
 		{ tools = { tempo }, icons = { tessera.icon.tempo } },
 	}
 	for _, group in ipairs(self.tool_groups) do
