@@ -1,5 +1,6 @@
 local Ui = require("ui.ui")
 local curve = require("curve")
+local erase = require("tools/erase")
 local note_input = require("note_input")
 local smooth = require("tools/smooth")
 local tuning = require("tuning")
@@ -8,7 +9,7 @@ local tuning = require("tuning")
 -- Drawing back over the line replaces it, so it stays a function of time.
 
 local freehand = {}
-freehand.modifiers = { shift = smooth }
+freehand.modifiers = { shift = smooth, ctrl = erase }
 
 freehand.name = "freehand"
 freehand.radius = Ui.scale(5)

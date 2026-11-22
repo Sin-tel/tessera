@@ -1,8 +1,10 @@
--- Drawing notes: the freehand tool.
+-- Drawing notes: the freehand tool, and erasing.
 -- cargo run -- --test-run tests/lua/draw.lua
 
+local erase = require("tools/erase")
 local freehand = require("tools/freehand")
 local grab = require("tools/grab")
+local pen = require("tools/pen")
 local smooth = require("tools/smooth")
 local tuning = require("tuning")
 
@@ -177,6 +179,91 @@ tests["sculpt a drawn note"] = function(canvas)
 		undo()
 		undo()
 	end
+end
+
+local function add_line(t1, t2, p)
+	local note = { interval = tuning.snap(p), time = t1, vel = 0.5, verts = { { 0, 0, 0.5 }, { t2 - t1, 0, 0.5 } } }
+	command.run_and_register(command.NoteAdd.new({ { note } }))
+	return note
+end
+
+local function erase_through(canvas, path)
+	modifier_keys.ctrl, modifier_keys.any = true, true
+	local tf = canvas.transform
+	press(tf:time(path[1][1]), tf:pitch(path[1][2]))
+	assert(canvas.current_tool == erase, "ctrl did not switch to erase")
+	for i = 2, #path do
+		move(tf:time(path[i][1]), tf:pitch(path[i][2]))
+	end
+	release()
+	modifier_keys.ctrl, modifier_keys.any = false, false
+end
+
+local function by_time()
+	local list = {}
+	for i, note in ipairs(notes()) do
+		list[i] = note
+	end
+	table.sort(list, function(a, b)
+		return a.time < b.time
+	end)
+	return list
+end
+
+tests["erase splits a note"] = function(canvas)
+	canvas:select_tool(pen)
+	add_line(1, 3, 60)
+	local other = add_line(1, 3, 72)
+	-- a fast vertical stroke, crossing the note between frames
+	erase_through(canvas, { { 2, 66 }, { 2, 54 } })
+
+	assert(#notes() == 3, "expected 2 pieces and the other note, got " .. #notes())
+	local list = by_time()
+	local a, b = list[1], list[3]
+	if a.interval ~= b.interval then
+		a, b = list[1], list[2]
+	end
+	assert(a.time == 1 and b.time > 2, "pieces in the wrong place")
+	local a_end = a.time + a.verts[#a.verts][1]
+	assert(a_end < 2 and a_end > 1.8, "cut at " .. a_end)
+	assert(math.abs(b.time + b.verts[#b.verts][1] - 3) < 1e-9, "end moved")
+	assert(#a.verts == 2 and #b.verts == 2, "not simplified")
+	assert_well_formed(a)
+	assert_well_formed(b)
+	assert(other.time == 1 and #other.verts == 2, "note out of reach changed")
+	assert(canvas.current_tool == pen)
+
+	undo()
+	assert(#notes() == 2, "undo")
+	for _, note in ipairs(notes()) do
+		assert(note.time == 1 and #note.verts == 2 and note.verts[2][1] == 2, "undo did not restore")
+	end
+	command.redo()
+	assert(#notes() == 3, "redo")
+end
+
+tests["erase removes short notes and leftovers"] = function(canvas)
+	canvas:select_tool(freehand)
+	assert(freehand.modifiers.ctrl == erase)
+	local tf = canvas.transform
+	local short = add_line(1, 1 + erase.radius / tf.sx, 60)
+	add_line(2, 3, 60)
+	-- along the second note, then back over the first piece
+	erase_through(canvas, { { 1, 60 }, { 2.5, 60 }, { 2.4, 60 } })
+	assert(#notes() == 1, "expected only the end of the long note, got " .. #notes())
+	assert(notes()[1] ~= short and notes()[1].time > 2.5)
+	undo()
+	assert(#notes() == 2 and util.find(notes(), short), "undo")
+end
+
+tests["erase in another channel does nothing"] = function(canvas)
+	canvas:select_tool(pen)
+	add_line(1, 3, 60)
+	project.channels[2] = { notes = {}, visible = true }
+	selection.ch_index = 2
+	local n = #command.stack
+	erase_through(canvas, { { 2, 66 }, { 2, 54 } })
+	assert(#notes() == 1 and #command.stack == n)
 end
 
 return h.run(tests)

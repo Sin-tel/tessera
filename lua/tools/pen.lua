@@ -1,3 +1,4 @@
+local erase = require("tools/erase")
 local note_input = require("note_input")
 local time = require("time")
 local tuning = require("tuning")
@@ -7,6 +8,7 @@ local tuning = require("tuning")
 -- TODO: re-use last length
 
 local pen = {}
+pen.modifiers = { ctrl = erase }
 
 pen.ox = 0
 pen.oy = 0

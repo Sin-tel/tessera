@@ -316,6 +316,37 @@ end
 
 command.NoteAdd = NoteAdd
 
+-- Several commands as one undo step. Run in order, reversed in reverse order.
+local Group = {}
+Group.__index = Group
+
+function Group.new(list)
+	return setmetatable({ list = list }, Group)
+end
+
+function Group:run()
+	for _, c in ipairs(self.list) do
+		c:run()
+	end
+end
+
+function Group:reverse()
+	for i = #self.list, 1, -1 do
+		self.list[i]:reverse()
+	end
+end
+
+function Group:is_empty()
+	for _, c in ipairs(self.list) do
+		if not (c.is_empty and c:is_empty()) then
+			return false
+		end
+	end
+	return true
+end
+
+command.Group = Group
+
 --
 local TimeUpdate = {}
 TimeUpdate.__index = TimeUpdate
