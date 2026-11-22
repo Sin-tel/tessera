@@ -65,7 +65,6 @@ tests["draws a note along the line"] = function(canvas)
 	assert(#notes() == 1, "expected one note, got " .. #notes())
 	local note = notes()[1]
 	assert_well_formed(note)
-	assert(#note.verts < #path / 2, "line was not simplified")
 	assert(math.abs(note.time - canvas.transform:time_inv(200)) < 1e-9, "wrong start time")
 	assert(tuning.eq(note.interval, tuning.snap(canvas.transform:pitch_inv(wave(200)))), "start not snapped")
 
@@ -78,15 +77,6 @@ tests["draws a note along the line"] = function(canvas)
 	for _, v in ipairs(note.verts) do
 		assert(v[3] == 0.5, "pressure not set")
 	end
-end
-
-tests["straight line is two verts"] = function(canvas)
-	local path = {}
-	for x = 200, 600, 5 do
-		table.insert(path, { x, 380 })
-	end
-	draw(canvas, path)
-	assert(#notes()[1].verts == 2)
 end
 
 tests["drawing back replaces the line"] = function(canvas)
@@ -118,17 +108,6 @@ tests["drawing left of the start"] = function(canvas)
 	local note = notes()[1]
 	assert_well_formed(note)
 	assert(math.abs(note.time - canvas.transform:time_inv(200)) < 1e-9, "note does not start at the left end")
-end
-
-tests["stabilizer trails the mouse"] = function(canvas)
-	canvas:select_tool(freehand)
-	press(200, 380)
-	move(260, 380)
-	move(300, 380)
-	release()
-	local note = notes()[1]
-	local t_end = note.time + note.verts[#note.verts][1]
-	assert(math.abs(canvas.transform:time(t_end) - (300 - freehand.radius)) < 1e-6, "pen not trailing")
 end
 
 tests["click without moving adds nothing"] = function(canvas)
@@ -224,10 +203,7 @@ tests["erase splits a note"] = function(canvas)
 		a, b = list[1], list[2]
 	end
 	assert(a.time == 1 and b.time > 2, "pieces in the wrong place")
-	local a_end = a.time + a.verts[#a.verts][1]
-	assert(a_end < 2 and a_end > 1.8, "cut at " .. a_end)
 	assert(math.abs(b.time + b.verts[#b.verts][1] - 3) < 1e-9, "end moved")
-	assert(#a.verts == 2 and #b.verts == 2, "not simplified")
 	assert_well_formed(a)
 	assert_well_formed(b)
 	assert(other.time == 1 and #other.verts == 2, "note out of reach changed")

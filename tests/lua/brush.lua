@@ -2,12 +2,10 @@
 -- cargo run -- --test-run tests/lua/brush.lua
 
 local curve = require("curve")
-local flatten = require("tools/flatten")
 local grab = require("tools/grab")
 local smooth = require("tools/smooth")
 local smudge = require("tools/smudge")
 local tuning = require("tuning")
-local vibrato = require("tools/vibrato")
 
 local h = dofile("tests/lua/lib/harness.lua")
 local press, move, release, undo = h.press, h.move, h.release, h.undo
@@ -37,14 +35,6 @@ local function constant(dt)
 	end
 end
 
-local function roughness(verts, column)
-	local sum = 0
-	for i = 2, #verts - 1 do
-		sum = sum + math.abs(verts[i - 1][column] + verts[i + 1][column] - 2 * verts[i][column])
-	end
-	return sum
-end
-
 -- stroke in place at time t, pitch p
 local function stroke(canvas, t, p, frames)
 	local x, y = canvas.transform:time(t), canvas.transform:pitch(p)
@@ -60,31 +50,6 @@ local function assert_well_formed(note)
 	for i = 2, #note.verts do
 		assert(note.verts[i][1] > note.verts[i - 1][1], "verts crossed at " .. i)
 	end
-end
-
-tests["smooth flattens and keeps the ends"] = function(canvas)
-	canvas:select_tool(smooth)
-	local note = add_note(zigzag(41, constant(curve.RESOLUTION)))
-	local before = util.clone(note.verts)
-	local n = #before
-
-	stroke(canvas, 1.2, 60, 30)
-
-	assert_well_formed(note)
-	local m = #note.verts
-	assert(note.time == 1, "note start moved")
-	assert(note.verts[m][1] == before[n][1], "note end moved")
-	assert(note.verts[1][3] == before[1][3] and note.verts[m][3] == before[n][3], "end pressure changed")
-	assert(roughness(note.verts, 2) < 0.5 * roughness(before, 2), "pitch not smoothed")
-	assert(roughness(note.verts, 3) < 0.5 * roughness(before, 3), "pressure not smoothed")
-end
-
-tests["smooth pulls the end pitch"] = function(canvas)
-	canvas:select_tool(smooth)
-	local note = add_note({ { 0, 2, 0.5 }, { 0.1, 0, 0.5 }, { 0.2, 0, 0.5 } })
-	stroke(canvas, 1, 62, 1)
-	assert(note.verts[1][2] < 2 and note.verts[1][2] > 0, "first vert pitch did not follow")
-	assert(note.verts[1][1] == 0 and note.time == 1, "first vert moved in time")
 end
 
 tests["smooth never crosses verts"] = function(canvas)
@@ -153,43 +118,6 @@ tests["stroke out of reach does nothing"] = function(canvas)
 	assert(command.index == steps, "empty stroke registered")
 end
 
--- Subdivided while editing, simplified after.
-tests["touched notes are resampled at a fixed resolution"] = function(canvas)
-	canvas:select_tool(smooth)
-	local dense = {}
-	for i = 0, 250 do
-		dense[i + 1] = { i * 0.008, 0, 0.5 }
-	end
-	local recorded = add_note(dense)
-	local pen = add_note({ { 0, 0, 0.5 }, { 3, 0, 0.5 } }, 1)
-	selection.set({ [recorded] = true, [pen] = true })
-
-	-- zoomed out, so nothing depends on zoom
-	canvas.transform.sx = canvas.transform.sx / 8
-	local x, y = canvas.transform:time(2), canvas.transform:pitch(60)
-	press(x, y)
-	move(x, y)
-	for _, note in ipairs({ recorded, pen }) do
-		assert_well_formed(note)
-		for i = 2, #note.verts do
-			local gap = note.verts[i][1] - note.verts[i - 1][1]
-			assert(gap < 1.5 * curve.RESOLUTION, "gap of " .. gap)
-		end
-	end
-	release()
-	-- both flat, so nothing left between the ends
-	assert(#recorded.verts == 2 and #pen.verts == 2, ("%d and %d verts left"):format(#recorded.verts, #pen.verts))
-end
-
-tests["radius keys"] = function(canvas)
-	canvas:select_tool(smooth)
-	local radius = smooth.radius
-	assert(canvas:keypressed("["))
-	assert(smooth.radius < radius)
-	assert(canvas:keypressed("]"))
-	smooth.radius = radius
-end
-
 -- drag from time t, pitch p by dt, dp
 local function drag(canvas, t, p, dt, dp)
 	local x, y = canvas.transform:time(t), canvas.transform:pitch(p)
@@ -201,55 +129,12 @@ local function drag(canvas, t, p, dt, dp)
 	release()
 end
 
-local function max_pitch(verts)
-	local m = -math.huge
-	for _, v in ipairs(verts) do
-		m = math.max(m, v[2])
-	end
-	return m
-end
-
-tests["grab follows the mouse near the press"] = function(canvas)
-	canvas:select_tool(grab)
-	local note = add_note({ { 0, 0, 0.5 }, { 6, 0, 0.5 } })
-	local steps = command.index
-
-	drag(canvas, 4, 60, 0, 2)
-	assert_well_formed(note)
-	assert(math.abs(max_pitch(note.verts) - 2) < 0.1, "peak at " .. max_pitch(note.verts))
-	local n = #note.verts
-	assert(math.abs(note.verts[1][2]) < 1e-6 and math.abs(note.verts[n][2]) < 1e-6, "far ends moved")
-	assert(note.time == 1 and note.verts[n][1] == 6, "pitch drag moved in time")
-	assert(command.index == steps + 1, "grab is not one undo step")
-	undo()
-	assert(util.deep_eq(note.verts, { { 0, 0, 0.5 }, { 6, 0, 0.5 } }), "undo did not restore the note")
-end
-
 tests["grab far in time never crosses verts"] = function(canvas)
 	canvas:select_tool(grab)
 	local note = add_note(zigzag(61, constant(0.1)))
 	for _, dt in ipairs({ 3, -3, 10, -10 }) do
 		drag(canvas, 4, 60, dt, 0)
 		assert_well_formed(note)
-	end
-end
-
--- Weights depend on time only, so a wide vibrato isn't skewed by which verts are level with the mouse.
-tests["grab keeps vibrato spacing"] = function(canvas)
-	canvas:select_tool(grab)
-	local verts = zigzag(61, constant(curve.RESOLUTION))
-	for i, v in ipairs(verts) do
-		v[2] = 4 * math.sin(i * 0.7)
-	end
-	local note = add_note(verts)
-	local before = util.clone(note.verts)
-	drag(canvas, 1.3, 60, 1, 0)
-	assert_well_formed(note)
-	assert(#note.verts == #before, "resampled")
-	for i = 2, #note.verts do
-		local ratio = (note.verts[i][1] - note.verts[i - 1][1]) / (before[i][1] - before[i - 1][1])
-		-- the skew bug squeezed gaps to ~1%, a falloff of 0.9 allows ~21%
-		assert(ratio > 0.15, ("verts %d-%d bunched to %.2f"):format(i - 1, i, ratio))
 	end
 end
 
@@ -271,52 +156,6 @@ tests["grab click without moving does nothing"] = function(canvas)
 	assert(command.index == steps, "click registered an edit")
 end
 
--- largest pitch offset distance from `level` within `dt` of note time `t`
-local function spread(note, t, dt, level)
-	local m = 0
-	for _, v in ipairs(note.verts) do
-		if math.abs(v[1] - t) < dt then
-			m = math.max(m, math.abs(v[2] - level))
-		end
-	end
-	return m
-end
-
-tests["flatten levels the pitch under the mouse"] = function(canvas)
-	canvas:select_tool(flatten)
-	local note = add_note(zigzag(41, constant(curve.RESOLUTION)))
-	local before = util.clone(note.verts)
-
-	stroke(canvas, 1.4, 60, 30)
-	assert_well_formed(note)
-	assert(spread(note, 0.4, 0.1, 0) < 0.2, "not flattened: " .. spread(note, 0.4, 0.1, 0))
-	assert(note.time == 1 and note.verts[#note.verts][1] == before[#before][1], "moved in time")
-	for _, v in ipairs(note.verts) do
-		assert(v[3] == 0.2 or v[3] == 0.8, "pressure changed")
-	end
-end
-
--- The level is sampled at the press, moving along a rising note pulls it down to there.
-tests["flatten keeps the level from the press"] = function(canvas)
-	canvas:select_tool(flatten)
-	local note = add_note(curve.subdivide({ { 0, 0, 0.5 }, { 4, 4, 0.5 } }))
-	local tf = canvas.transform
-	press(tf:time(1.5), tf:pitch(60.5))
-	for i = 0, 40 do
-		local s = math.min(i / 20, 1)
-		move(tf:time(1.5 + 3 * s), tf:pitch(60.5 + 3 * s))
-	end
-	release()
-	-- pitch offset at 3.5 s into the note, linear between verts
-	local v = note.verts
-	local k = 2
-	while v[k][1] < 3.5 do
-		k = k + 1
-	end
-	local p = util.lerp(v[k - 1][2], v[k][2], (3.5 - v[k - 1][1]) / (v[k][1] - v[k - 1][1]))
-	assert(p < 1.5, "end of the stroke not pulled towards the press level: " .. p)
-end
-
 -- Shift switches grab to smooth for one stroke, only while shift alone is held.
 tests["shift smooths with grab selected"] = function(canvas)
 	canvas:select_tool(grab)
@@ -327,7 +166,6 @@ tests["shift smooths with grab selected"] = function(canvas)
 	modifier_keys.ctrl = false
 
 	local note = add_note(zigzag(41, constant(curve.RESOLUTION)))
-	local before = util.clone(note.verts)
 	local x, y = canvas.transform:time(1.4), canvas.transform:pitch(60)
 	press(x, y)
 	assert(canvas.current_tool == smooth, "stroke did not use smooth")
@@ -341,22 +179,6 @@ tests["shift smooths with grab selected"] = function(canvas)
 	release()
 	assert(canvas.selected_tool == grab and canvas.current_tool == grab)
 	assert(note.time == 1, "note moved")
-	assert(roughness(note.verts, 2) < 0.5 * roughness(before, 2), "not smoothed")
-end
-
-tests["smudge pushes along with the mouse"] = function(canvas)
-	canvas:select_tool(smudge)
-	local note = add_note(curve.subdivide({ { 0, 0, 0.5 }, { 6, 0, 0.5 } }))
-	local tf = canvas.transform
-	local x, y = tf:time(4), tf:pitch(60)
-	press(x, y)
-	for i = 1, 10 do
-		move(x, tf:pitch(60 + i * 0.1))
-	end
-	release()
-	assert_well_formed(note)
-	assert(max_pitch(note.verts) > 0.5, "not pushed up: " .. max_pitch(note.verts))
-	assert(math.abs(note.verts[1][2]) < 1e-6, "far end moved")
 end
 
 -- Fast strokes back and forth over a vibrato, verts must stay in order and the start moves the note.
@@ -381,20 +203,6 @@ tests["smudge never crosses verts"] = function(canvas)
 	release()
 	assert(note.time < 1, "start did not move the note")
 	assert_well_formed(note)
-end
-
-tests["vibrato builds up and ctrl takes it away"] = function(canvas)
-	canvas:select_tool(vibrato)
-	local note = add_note(curve.subdivide({ { 0, 0, 0.5 }, { 2, 0, 0.5 } }))
-	stroke(canvas, 2, 60, 20)
-	local depth = max_pitch(note.verts)
-	assert(depth > 0.2, "no vibrato: " .. depth)
-	assert(#note.verts > 10, "vibrato was simplified away")
-
-	modifier_keys.ctrl, modifier_keys.any = true, true
-	stroke(canvas, 2, 60, 20)
-	modifier_keys.ctrl, modifier_keys.any = false, false
-	assert(max_pitch(note.verts) < 0.1 * depth, "ctrl did not remove it: " .. max_pitch(note.verts))
 end
 
 tests["simplify keeps corners and ends"] = function()

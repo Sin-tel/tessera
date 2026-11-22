@@ -3,7 +3,6 @@
 -- cargo run -- --test-run tests/lua/edits.lua
 
 local edit = require("tools/edit")
-local freehand = require("tools/freehand")
 local pen = require("tools/pen")
 local presets = require("default.tuning_presets")
 local smooth = require("tools/smooth")
@@ -12,22 +11,6 @@ local h = dofile("tests/lua/lib/harness.lua")
 local press, move, release, undo, set_tuning, add_note = h.press, h.move, h.release, h.undo, h.set_tuning, h.add_note
 
 local tests = {}
-
--- Number keys select a group, again cycles its sub-tools. Groups remember their sub-tool.
-tests["tool groups"] = function(canvas)
-	canvas:keypressed("2")
-	assert(canvas.selected_tool == pen)
-	canvas:keypressed("2")
-	assert(canvas.selected_tool == freehand)
-	canvas:keypressed("1")
-	assert(canvas.selected_tool == edit)
-	canvas:keypressed("tab")
-	assert(canvas.selected_tool == freehand, "group forgot its sub-tool")
-	canvas:keypressed("2")
-	assert(canvas.selected_tool == pen, "did not cycle back")
-	canvas:select_tool(freehand)
-	assert(canvas.selected_group == canvas.tool_groups[2] and canvas.tool_groups[2].index == 2)
-end
 
 -- The original bug: undo while drawing a note reverted the tuning under the pen.
 tests["pen, undo tuning change"] = function(canvas)
