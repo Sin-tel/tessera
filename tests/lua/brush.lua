@@ -1,7 +1,6 @@
 -- Brush tools and the curve operations under them.
 -- cargo run -- --test-run tests/lua/brush.lua
 
-local brush = require("tools/brush")
 local curve = require("curve")
 local grab = require("tools/grab")
 local smooth = require("tools/smooth")
@@ -62,7 +61,7 @@ end
 
 tests["smooth flattens and keeps the ends"] = function(canvas)
 	canvas:select_tool(smooth)
-	local note = add_note(zigzag(41, constant(brush.RESOLUTION)))
+	local note = add_note(zigzag(41, constant(curve.RESOLUTION)))
 	local before = util.clone(note.verts)
 	local n = #before
 
@@ -171,7 +170,7 @@ tests["touched notes are resampled at a fixed resolution"] = function(canvas)
 		assert_well_formed(note)
 		for i = 2, #note.verts do
 			local gap = note.verts[i][1] - note.verts[i - 1][1]
-			assert(gap < 1.5 * brush.RESOLUTION, "gap of " .. gap)
+			assert(gap < 1.5 * curve.RESOLUTION, "gap of " .. gap)
 		end
 	end
 	release()
@@ -235,7 +234,7 @@ end
 -- Weights depend on time only, so a wide vibrato isn't skewed by which verts are level with the mouse.
 tests["grab keeps vibrato spacing"] = function(canvas)
 	canvas:select_tool(grab)
-	local verts = zigzag(61, constant(brush.RESOLUTION))
+	local verts = zigzag(61, constant(curve.RESOLUTION))
 	for i, v in ipairs(verts) do
 		v[2] = 4 * math.sin(i * 0.7)
 	end
@@ -284,10 +283,9 @@ tests["simplify stays within tolerance of pressure"] = function()
 end
 
 tests["subdivide doesn't change the curve"] = function()
-	local out = curve.subdivide({ { 0, 0, 0 }, { 1, 2, 1 } }, 0.3)
-	assert(#out == 4, "expected 4 verts, got " .. #out)
+	local out = curve.subdivide({ { 0, 0, 0 }, { 1, 2, 1 } })
 	for i = 2, #out do
-		assert(math.abs(out[i][1] - out[i - 1][1] - 1 / 3) < 1e-9)
+		assert(math.abs(out[i][1] - out[i - 1][1] - curve.RESOLUTION) < 0.5 * curve.RESOLUTION)
 		assert(math.abs(out[i][2] - 2 * out[i][1]) < 1e-9 and math.abs(out[i][3] - out[i][1]) < 1e-9)
 	end
 end

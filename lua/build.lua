@@ -58,6 +58,7 @@ function build.empty_project()
 	detach_all()
 	ui_channels = {}
 	-- clear selection
+	selection.deselect()
 	selection.ch_index = nil
 	selection.device_index = nil
 	clipboard.clear()

@@ -65,15 +65,20 @@ function selection.get_notes()
 	return notes
 end
 
+-- Keeps only notes that are still in a visible, unlocked channel (undo can remove selected notes).
 function selection.remove_inactive()
+	if next(selection.mask) == nil then
+		return
+	end
+	local mask = {}
 	for _, channel in ipairs(project.channels) do
-		if channel.notes and (not channel.visible or channel.lock) then
+		if channel.notes and channel.visible and not channel.lock then
 			for _, v in ipairs(channel.notes) do
-				selection.mask[v] = nil
+				mask[v] = selection.mask[v]
 			end
 		end
 	end
-	selection.refresh()
+	selection.set(mask)
 end
 
 function selection.select_default_channel()

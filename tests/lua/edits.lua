@@ -6,6 +6,7 @@ local edit = require("tools/edit")
 local freehand = require("tools/freehand")
 local pen = require("tools/pen")
 local presets = require("default.tuning_presets")
+local smooth = require("tools/smooth")
 
 local h = dofile("tests/lua/lib/harness.lua")
 local press, move, release, undo, set_tuning, add_note = h.press, h.move, h.release, h.undo, h.set_tuning, h.add_note
@@ -155,6 +156,28 @@ tests["tempo edit after undo and redo"] = function()
 	undo()
 	command.redo()
 	assert(project.time[1][2] == 3, "redo did not restore the first edit")
+end
+
+-- Pen selects its note. Undoing it used to leave the note selected but gone, so brushes did nothing.
+tests["undo drops removed notes from the selection"] = function(canvas)
+	canvas:select_tool(pen)
+	press(300, 380)
+	move(400, 380)
+	release()
+	assert(not selection.is_empty(), "pen note not selected")
+	undo()
+	assert(selection.is_empty(), "removed note still selected")
+
+	local note, x, y = add_note()
+	note.verts = { { 0, 0, 0.5 }, { 0.5, 2, 0.5 }, { 1, 0, 0.5 } }
+	local before = util.clone(note.verts)
+	canvas:select_tool(smooth)
+	press(x + 35, y)
+	for _ = 1, 5 do
+		move(x + 35, y)
+	end
+	release()
+	assert(not util.deep_eq(note.verts, before), "smooth did not reach the note")
 end
 
 return h.run(tests)

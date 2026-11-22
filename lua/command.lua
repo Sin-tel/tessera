@@ -78,6 +78,7 @@ function command.undo()
 		command.index = 0
 		print("nothing to undo!")
 	end
+	selection.remove_inactive()
 	validate()
 end
 
@@ -90,6 +91,7 @@ function command.redo()
 		command.index = #command.stack
 		print("nothing to redo!")
 	end
+	selection.remove_inactive()
 	validate()
 end
 

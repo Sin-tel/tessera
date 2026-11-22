@@ -11,9 +11,6 @@ local freehand = {}
 freehand.name = "freehand"
 freehand.radius = Ui.scale(5)
 
--- how far simplifying may move the line, in pixels
-local TOLERANCE = 2
-
 -- Adds the pen position as a point { time, pitch, pressure }, removing what it was drawn back over.
 function freehand:add_point(canvas)
 	local t = canvas.transform:time_inv(self.x)

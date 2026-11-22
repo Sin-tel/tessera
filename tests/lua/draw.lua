@@ -2,6 +2,8 @@
 -- cargo run -- --test-run tests/lua/draw.lua
 
 local freehand = require("tools/freehand")
+local grab = require("tools/grab")
+local smooth = require("tools/smooth")
 local tuning = require("tuning")
 
 local h = dofile("tests/lua/lib/harness.lua")
@@ -152,6 +154,29 @@ tests["locked channel"] = function(canvas)
 	project.channels[1].lock = true
 	draw(canvas, { { 200, 380 }, { 300, 360 }, { 400, 380 } })
 	assert(#notes() == 0)
+end
+
+-- A drawn note can be sculpted right after.
+tests["sculpt a drawn note"] = function(canvas)
+	for _, tool in ipairs({ smooth, grab }) do
+		local path = {}
+		for x = 200, 600, 4 do
+			table.insert(path, { x, wave(x) })
+		end
+		draw(canvas, path)
+		local note = notes()[#notes()]
+		local before = util.clone(note.verts)
+
+		canvas:select_tool(tool)
+		press(400, wave(400))
+		for i = 1, 10 do
+			move(400 + i, wave(400) - 3 * i)
+		end
+		release()
+		assert(not util.deep_eq(note.verts, before), tool.name .. " did not change the drawn note")
+		undo()
+		undo()
+	end
 end
 
 return h.run(tests)

@@ -6,7 +6,7 @@ local curve = {}
 local PITCH_TOL = 0.02
 local PRESSURE_TOL = 0.02
 -- resampling resolution (seconds between verts)
-local RESOLUTION = 0.02
+curve.RESOLUTION = 0.02
 
 -- Ramer-Douglas-Peucker on pitch and pressure. Always keeps the ends.
 function curve.simplify(verts)
@@ -58,7 +58,7 @@ function curve.subdivide(verts)
 	local out = { verts[1] }
 	for i = 2, #verts do
 		local a, b = verts[i - 1], verts[i]
-		local parts = math.max(math.floor((b[1] - a[1]) / RESOLUTION + 0.5), 1)
+		local parts = math.max(math.floor((b[1] - a[1]) / curve.RESOLUTION + 0.5), 1)
 		for k = 1, parts - 1 do
 			local s = k / parts
 			table.insert(out, { util.lerp(a[1], b[1], s), util.lerp(a[2], b[2], s), util.lerp(a[3], b[3], s) })
