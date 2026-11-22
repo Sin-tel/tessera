@@ -1,12 +1,14 @@
 local Ui = require("ui.ui")
 local curve = require("curve")
 local note_input = require("note_input")
+local smooth = require("tools/smooth")
 local tuning = require("tuning")
 
 -- Draw a note freehand. The line trails the mouse by `radius`, which steadies it.
 -- Drawing back over the line replaces it, so it stays a function of time.
 
 local freehand = {}
+freehand.modifiers = { shift = smooth }
 
 freehand.name = "freehand"
 freehand.radius = Ui.scale(5)

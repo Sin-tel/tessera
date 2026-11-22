@@ -5,7 +5,9 @@ local curve = require("curve")
 local flatten = require("tools/flatten")
 local grab = require("tools/grab")
 local smooth = require("tools/smooth")
+local smudge = require("tools/smudge")
 local tuning = require("tuning")
+local vibrato = require("tools/vibrato")
 
 local h = dofile("tests/lua/lib/harness.lua")
 local press, move, release, undo = h.press, h.move, h.release, h.undo
@@ -313,6 +315,86 @@ tests["flatten keeps the level from the press"] = function(canvas)
 	end
 	local p = util.lerp(v[k - 1][2], v[k][2], (3.5 - v[k - 1][1]) / (v[k][1] - v[k - 1][1]))
 	assert(p < 1.5, "end of the stroke not pulled towards the press level: " .. p)
+end
+
+-- Shift switches grab to smooth for one stroke, only while shift alone is held.
+tests["shift smooths with grab selected"] = function(canvas)
+	canvas:select_tool(grab)
+	modifier_keys.shift, modifier_keys.any = true, true
+	assert(canvas:hover_tool() == smooth)
+	modifier_keys.ctrl = true
+	assert(canvas:hover_tool() == grab, "shift+ctrl should not switch")
+	modifier_keys.ctrl = false
+
+	local note = add_note(zigzag(41, constant(curve.RESOLUTION)))
+	local before = util.clone(note.verts)
+	local x, y = canvas.transform:time(1.4), canvas.transform:pitch(60)
+	press(x, y)
+	assert(canvas.current_tool == smooth, "stroke did not use smooth")
+	for _ = 1, 30 do
+		move(x, y)
+	end
+	-- letting go of shift mid-stroke doesn't switch back
+	modifier_keys.shift, modifier_keys.any = false, false
+	move(x, y)
+	assert(canvas.current_tool == smooth)
+	release()
+	assert(canvas.selected_tool == grab and canvas.current_tool == grab)
+	assert(note.time == 1, "note moved")
+	assert(roughness(note.verts, 2) < 0.5 * roughness(before, 2), "not smoothed")
+end
+
+tests["smudge pushes along with the mouse"] = function(canvas)
+	canvas:select_tool(smudge)
+	local note = add_note(curve.subdivide({ { 0, 0, 0.5 }, { 6, 0, 0.5 } }))
+	local tf = canvas.transform
+	local x, y = tf:time(4), tf:pitch(60)
+	press(x, y)
+	for i = 1, 10 do
+		move(x, tf:pitch(60 + i * 0.1))
+	end
+	release()
+	assert_well_formed(note)
+	assert(max_pitch(note.verts) > 0.5, "not pushed up: " .. max_pitch(note.verts))
+	assert(math.abs(note.verts[1][2]) < 1e-6, "far end moved")
+end
+
+-- Fast strokes back and forth over a vibrato, verts must stay in order and the start moves the note.
+tests["smudge never crosses verts"] = function(canvas)
+	canvas:select_tool(smudge)
+	local verts = zigzag(201, constant(curve.RESOLUTION))
+	for i, v in ipairs(verts) do
+		v[2] = 4 * math.sin(i * 0.7)
+	end
+	local note = add_note(verts)
+	local tf = canvas.transform
+	press(tf:time(2), tf:pitch(60))
+	for i = 1, 60 do
+		move(tf:time(2) + (i % 2 * 2 - 1) * 200, tf:pitch(60 + i % 3))
+		assert_well_formed(note)
+	end
+	release()
+	assert_well_formed(note)
+
+	press(tf:time(1), tf:pitch(60))
+	move(tf:time(1) - 20, tf:pitch(60))
+	release()
+	assert(note.time < 1, "start did not move the note")
+	assert_well_formed(note)
+end
+
+tests["vibrato builds up and ctrl takes it away"] = function(canvas)
+	canvas:select_tool(vibrato)
+	local note = add_note(curve.subdivide({ { 0, 0, 0.5 }, { 2, 0, 0.5 } }))
+	stroke(canvas, 2, 60, 20)
+	local depth = max_pitch(note.verts)
+	assert(depth > 0.2, "no vibrato: " .. depth)
+	assert(#note.verts > 10, "vibrato was simplified away")
+
+	modifier_keys.ctrl, modifier_keys.any = true, true
+	stroke(canvas, 2, 60, 20)
+	modifier_keys.ctrl, modifier_keys.any = false, false
+	assert(max_pitch(note.verts) < 0.1 * depth, "ctrl did not remove it: " .. max_pitch(note.verts))
 end
 
 tests["simplify keeps corners and ends"] = function()

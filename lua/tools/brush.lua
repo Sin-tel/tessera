@@ -1,7 +1,11 @@
 -- Base for tools that reshape notes near the mouse.
--- `local b = brush.new(name, radius)`, then define `b:stroke(note, weights)`. It's called every frame for
--- each note in reach, with a falloff in 0..1 per vert (1 under the mouse). Each brush scales it by its own strength.
--- Works on the selection, or else on the note closest to where the stroke started.
+-- `local b = brush.new(name, radius, falloff)`, then define `b:stroke(note, weights, canvas)`. It's called every
+-- frame for each note in reach, with a falloff in 0..1 per vert (1 under the mouse). Each brush scales it by its
+-- own strength. Works on the selection, or else on the note closest to where the stroke started.
+--
+-- falloff "2d" (default): by distance on screen, so the brush reaches what's under it.
+-- falloff "time": by time along the note, times a weight for the note's distance from the mouse. Moves a note's
+-- shape (e.g. vibrato) as a whole: with "2d", verts level with the mouse would get more than the peaks.
 
 local Ui = require("ui.ui")
 local curve = require("curve")
@@ -13,9 +17,22 @@ brush.__index = brush
 local MIN_WEIGHT = 0.002
 -- in radii, where the weight drops below MIN_WEIGHT
 local REACH = 2.5
+-- seconds, closest verts get after moving them in time (rounding only, the falloffs keep them apart)
+local MIN_DT = 0.001
 
-function brush.new(name, radius)
-	return setmetatable({ name = name, radius = Ui.scale(radius) }, brush)
+function brush.new(name, radius, falloff)
+	return setmetatable({ name = name, radius = Ui.scale(radius), falloff = falloff or "2d" }, brush)
+end
+
+-- After moving verts in time: the first vert goes back to 0 and the note moves instead.
+function brush.fix_start(note)
+	local verts = note.verts
+	local t0 = verts[1][1]
+	note.time = note.time + t0
+	verts[1][1] = 0
+	for i = 2, #verts do
+		verts[i][1] = math.max(verts[i][1] - t0, verts[i - 1][1] + MIN_DT)
+	end
 end
 
 function brush:mousepressed(canvas)
@@ -45,13 +62,19 @@ function brush:get_weights(canvas, note, mx, my)
 	local transform = canvas.transform
 	local base_pitch = tuning.get_pitch(note.interval)
 	local r_sq = self.radius ^ 2
+	local note_w = self.falloff == "time" and math.exp(-canvas:dist_sq_note(note, mx, my) / r_sq)
 
 	local weights = {}
 	local any = false
 	for i, v in ipairs(note.verts) do
 		local dx = transform:time(note.time + v[1]) - mx
-		local dy = transform:pitch(base_pitch + v[2]) - my
-		local w = math.exp(-(0.69 * dx * dx + dy * dy) / r_sq)
+		local w
+		if note_w then
+			w = note_w * math.exp(-0.69 * dx * dx / r_sq)
+		else
+			local dy = transform:pitch(base_pitch + v[2]) - my
+			w = math.exp(-(0.69 * dx * dx + dy * dy) / r_sq)
+		end
 		weights[i] = w
 		any = any or w > MIN_WEIGHT
 	end
@@ -69,7 +92,7 @@ function brush:mousedown(canvas)
 		if self.touched[note] then
 			local weights = self:get_weights(canvas, note, mx, my)
 			if weights then
-				self:stroke(note, weights)
+				self:stroke(note, weights, canvas)
 			end
 		end
 	end

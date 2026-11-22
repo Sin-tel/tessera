@@ -18,7 +18,9 @@ local pen = require("tools/pen")
 local scale = require("tools/scale")
 local set_transport_time = require("tools/set_transport_time")
 local smooth = require("tools/smooth")
+local smudge = require("tools/smudge")
 local tempo = require("tools/tempo")
+local vibrato = require("tools/vibrato")
 
 local Button = {}
 Button.__index = Button
@@ -37,8 +39,19 @@ function Canvas.new()
 		{ tools = { edit }, icons = { tessera.icon.edit } },
 		{ tools = { pen, freehand }, icons = { tessera.icon.pen, tessera.icon.pen } },
 		{
-			tools = { smooth, grab, flatten },
-			icons = { tessera.icon.sculpt, tessera.icon.sculpt, tessera.icon.sculpt },
+			tools = { grab, smudge },
+			icons = {
+				tessera.icon.grab,
+				tessera.icon.grab,
+			},
+		},
+		{
+			tools = { smooth, flatten, vibrato },
+			icons = {
+				tessera.icon.sculpt,
+				tessera.icon.sculpt,
+				tessera.icon.sculpt,
+			},
 		},
 		{ tools = { tempo }, icons = { tessera.icon.tempo } },
 	}
@@ -114,8 +127,9 @@ function Canvas:update()
 					return
 				end
 			end
-			if self.current_tool.update then
-				self.current_tool:update(self)
+			local tool = self:hover_tool()
+			if tool.update then
+				tool:update(self)
 				return
 			end
 		end
@@ -375,7 +389,11 @@ function Canvas:draw()
 	tessera.graphics.line(px, 0, px, self.h)
 	tessera.graphics.rectangle("fill", px - 2, 0, 4, RIBBON_H)
 
-	self.current_tool:draw(self)
+	if self.tool_active then
+		self.current_tool:draw(self)
+	else
+		self:hover_tool():draw(self)
+	end
 
 	for _, v in ipairs(self.tool_buttons) do
 		v:draw(self)
@@ -772,7 +790,7 @@ function Canvas:mousepressed()
 
 	local _, my = self:get_mouse()
 	if my > 0 then
-		local tool = self.selected_tool
+		local tool = self:hover_tool()
 
 		if mouse.button == 3 or (mouse.button == 1 and modifier_keys.alt and modifier_keys.ctrl) then
 			tool = pan
@@ -822,6 +840,25 @@ function Canvas:finish_tool()
 	command.end_edit(self)
 	self.current_tool:mousereleased(self)
 	self.current_tool = self.selected_tool
+end
+
+-- The selected tool, or the one it switches to while a single modifier is held (`tool.modifiers`,
+-- e.g. `{ shift = smooth }`). Tools read other modifiers themselves, at press.
+function Canvas:hover_tool()
+	local tool = self.selected_tool
+	local switch = tool.modifiers
+	if not switch then
+		return tool
+	end
+	local shift, ctrl, alt = modifier_keys.shift, modifier_keys.ctrl, modifier_keys.alt
+	if shift and not ctrl and not alt then
+		return switch.shift or tool
+	elseif ctrl and not shift and not alt then
+		return switch.ctrl or tool
+	elseif alt and not shift and not ctrl then
+		return switch.alt or tool
+	end
+	return tool
 end
 
 function Canvas:select_tool(tool)

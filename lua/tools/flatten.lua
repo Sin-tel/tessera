@@ -1,6 +1,9 @@
 local brush = require("tools/brush")
 
+local smooth = require("tools/smooth")
+
 local flatten = brush.new("flatten", 30)
+flatten.modifiers = { shift = smooth }
 
 -- pull per frame under the mouse
 local STRENGTH = 0.25

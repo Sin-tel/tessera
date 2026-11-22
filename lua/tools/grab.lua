@@ -1,18 +1,18 @@
 -- Drags the curve near where the drag started. Falls off with time along the note, so the shape
 -- (e.g. vibrato) moves as a whole, and with the note's distance from the press.
--- Dragging a note's start moves the note. Shift: one axis only.
+-- Dragging a note's start moves the note.
 
 local brush = require("tools/brush")
+local smooth = require("tools/smooth")
 
 local grab = brush.new("grab", 40)
+grab.modifiers = { shift = smooth }
 
 -- in radii, notes further than this from the press aren't touched
 local REACH = 2.5
 -- Time falloff radius per pixel dragged sideways, once that's past the brush radius.
 -- Above ~0.72 verts can't cross; higher spreads the move wider and bunches verts less.
 local TIME_FALLOFF = 1.2
--- seconds, closest verts get after a drag (rounding only, the falloff keeps them apart)
-local MIN_DT = 0.001
 
 function grab:mousepressed(canvas)
 	brush.mousepressed(self, canvas)
@@ -41,13 +41,6 @@ end
 function grab:mousedown(canvas)
 	local mx, my = canvas:get_mouse()
 	local dx, dy = mx - self.x0, my - self.y0
-	if modifier_keys.shift then
-		if math.abs(dx) < math.abs(dy) then
-			dx = 0
-		else
-			dy = 0
-		end
-	end
 	self.moved = self.moved or dx ~= 0 or dy ~= 0
 
 	local r_sq = self.radius ^ 2
@@ -64,13 +57,8 @@ function grab:mousedown(canvas)
 			verts[i][2] = v[2] + dp * o.weight * math.exp(-0.69 * ox_sq / r_sq)
 		end
 
-		-- first vert stays at 0, the note moves instead
-		local t0 = verts[1][1]
-		note.time = o.time + t0
-		verts[1][1] = 0
-		for i = 2, #verts do
-			verts[i][1] = math.max(verts[i][1] - t0, verts[i - 1][1] + MIN_DT)
-		end
+		note.time = o.time
+		brush.fix_start(note)
 	end
 end
 
