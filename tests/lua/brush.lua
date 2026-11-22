@@ -2,6 +2,7 @@
 -- cargo run -- --test-run tests/lua/brush.lua
 
 local curve = require("curve")
+local flatten = require("tools/flatten")
 local grab = require("tools/grab")
 local smooth = require("tools/smooth")
 local tuning = require("tuning")
@@ -245,7 +246,8 @@ tests["grab keeps vibrato spacing"] = function(canvas)
 	assert(#note.verts == #before, "resampled")
 	for i = 2, #note.verts do
 		local ratio = (note.verts[i][1] - note.verts[i - 1][1]) / (before[i][1] - before[i - 1][1])
-		assert(ratio > 0.45, ("verts %d-%d bunched to %.2f"):format(i - 1, i, ratio))
+		-- the skew bug squeezed gaps to ~1%, a falloff of 0.9 allows ~21%
+		assert(ratio > 0.15, ("verts %d-%d bunched to %.2f"):format(i - 1, i, ratio))
 	end
 end
 
@@ -265,6 +267,52 @@ tests["grab click without moving does nothing"] = function(canvas)
 	drag(canvas, 4, 60, 0, 0)
 	assert(#note.verts == 2, "note was subdivided")
 	assert(command.index == steps, "click registered an edit")
+end
+
+-- largest pitch offset distance from `level` within `dt` of note time `t`
+local function spread(note, t, dt, level)
+	local m = 0
+	for _, v in ipairs(note.verts) do
+		if math.abs(v[1] - t) < dt then
+			m = math.max(m, math.abs(v[2] - level))
+		end
+	end
+	return m
+end
+
+tests["flatten levels the pitch under the mouse"] = function(canvas)
+	canvas:select_tool(flatten)
+	local note = add_note(zigzag(41, constant(curve.RESOLUTION)))
+	local before = util.clone(note.verts)
+
+	stroke(canvas, 1.4, 60, 30)
+	assert_well_formed(note)
+	assert(spread(note, 0.4, 0.1, 0) < 0.2, "not flattened: " .. spread(note, 0.4, 0.1, 0))
+	assert(note.time == 1 and note.verts[#note.verts][1] == before[#before][1], "moved in time")
+	for _, v in ipairs(note.verts) do
+		assert(v[3] == 0.2 or v[3] == 0.8, "pressure changed")
+	end
+end
+
+-- The level is sampled at the press, moving along a rising note pulls it down to there.
+tests["flatten keeps the level from the press"] = function(canvas)
+	canvas:select_tool(flatten)
+	local note = add_note(curve.subdivide({ { 0, 0, 0.5 }, { 4, 4, 0.5 } }))
+	local tf = canvas.transform
+	press(tf:time(1.5), tf:pitch(60.5))
+	for i = 0, 40 do
+		local s = math.min(i / 20, 1)
+		move(tf:time(1.5 + 3 * s), tf:pitch(60.5 + 3 * s))
+	end
+	release()
+	-- pitch offset at 3.5 s into the note, linear between verts
+	local v = note.verts
+	local k = 2
+	while v[k][1] < 3.5 do
+		k = k + 1
+	end
+	local p = util.lerp(v[k - 1][2], v[k][2], (3.5 - v[k - 1][1]) / (v[k][1] - v[k - 1][1]))
+	assert(p < 1.5, "end of the stroke not pulled towards the press level: " .. p)
 end
 
 tests["simplify keeps corners and ends"] = function()

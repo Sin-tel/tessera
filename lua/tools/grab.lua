@@ -10,7 +10,7 @@ local grab = brush.new("grab", 40)
 local REACH = 2.5
 -- Time falloff radius per pixel dragged sideways, once that's past the brush radius.
 -- Above ~0.72 verts can't cross; higher spreads the move wider and bunches verts less.
-local TIME_FALLOFF = 1.5
+local TIME_FALLOFF = 1.2
 -- seconds, closest verts get after a drag (rounding only, the falloff keeps them apart)
 local MIN_DT = 0.001
 

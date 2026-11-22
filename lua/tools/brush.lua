@@ -1,6 +1,6 @@
 -- Base for tools that reshape notes near the mouse.
 -- `local b = brush.new(name, radius)`, then define `b:stroke(note, weights)`. It's called every frame for
--- each note in reach, with a weight in 0..1 per vert.
+-- each note in reach, with a falloff in 0..1 per vert (1 under the mouse). Each brush scales it by its own strength.
 -- Works on the selection, or else on the note closest to where the stroke started.
 
 local Ui = require("ui.ui")
@@ -10,9 +10,7 @@ local tuning = require("tuning")
 local brush = {}
 brush.__index = brush
 
--- weight in the middle of the brush
-local STRENGTH = 0.5
-local MIN_WEIGHT = 0.001
+local MIN_WEIGHT = 0.002
 -- in radii, where the weight drops below MIN_WEIGHT
 local REACH = 2.5
 
@@ -53,7 +51,7 @@ function brush:get_weights(canvas, note, mx, my)
 	for i, v in ipairs(note.verts) do
 		local dx = transform:time(note.time + v[1]) - mx
 		local dy = transform:pitch(base_pitch + v[2]) - my
-		local w = STRENGTH * math.exp(-(0.69 * dx * dx + dy * dy) / r_sq)
+		local w = math.exp(-(0.69 * dx * dx + dy * dy) / r_sq)
 		weights[i] = w
 		any = any or w > MIN_WEIGHT
 	end
