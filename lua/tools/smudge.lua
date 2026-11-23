@@ -6,6 +6,7 @@ local smooth = require("tools/smooth")
 
 local smudge = brush.new("smudge", 20, "time")
 smudge.modifiers = { shift = smooth }
+smudge.whole_channel = true
 
 -- share of the mouse movement under the mouse
 local STRENGTH = 0.4

@@ -8,6 +8,7 @@ local tuning = require("tuning")
 require("table.new")
 
 -- sub tools
+local dodge_burn = require("tools/dodge_burn")
 local drag = require("tools/drag")
 local edit = require("tools/edit")
 local flatten = require("tools/flatten")
@@ -46,8 +47,9 @@ function Canvas.new()
 			},
 		},
 		{
-			tools = { smooth, flatten, vibrato },
+			tools = { smooth, flatten, vibrato, dodge_burn },
 			icons = {
+				tessera.icon.sculpt,
 				tessera.icon.sculpt,
 				tessera.icon.sculpt,
 				tessera.icon.sculpt,

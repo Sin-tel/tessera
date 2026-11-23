@@ -1,7 +1,8 @@
 -- Base for tools that reshape notes near the mouse.
 -- `local b = brush.new(name, radius, falloff)`, then define `b:stroke(note, weights, canvas)`. It's called every
 -- frame for each note in reach, with a falloff in 0..1 per vert (1 under the mouse). Each brush scales it by its
--- own strength. Works on the selection, or else on the note closest to where the stroke started.
+-- own strength. Works on the selection, or else on the note closest to where the stroke started
+-- (`b.whole_channel = true`: on every note of the active channel instead).
 --
 -- falloff "2d" (default): by distance on screen, so the brush reaches what's under it.
 -- falloff "time": by time along the note, times a weight for the note's distance from the mouse. Moves a note's
@@ -40,12 +41,15 @@ function brush:mousepressed(canvas)
 	self.notes = {}
 	self.prev_state = {}
 
-	if selection.is_empty() then
+	if not selection.is_empty() then
+		self.scope = selection.list
+	elseif self.whole_channel then
+		local channel = selection.active_channel()
+		self.scope = channel and channel.notes or {}
+	else
 		local mx, my = canvas:get_mouse()
 		local closest = canvas:find_closest_note(mx, my, math.huge)
 		self.scope = { closest }
-	else
-		self.scope = selection.list
 	end
 end
 
@@ -89,10 +93,16 @@ end
 function brush:mousedown(canvas)
 	local mx, my = canvas:get_mouse()
 	local reach = brush.REACH * self.radius
+	local transform = canvas.transform
 
 	for _, note in ipairs(self.scope) do
-		if not self.touched[note] and canvas:dist_sq_note(note, mx, my) < reach * reach then
-			self:touch(note)
+		if not self.touched[note] then
+			-- cheap check on the time range first, the scope can be a whole channel
+			local x0 = transform:time(note.time)
+			local x1 = transform:time(note.time + note.verts[#note.verts][1])
+			if x0 < mx + reach and x1 > mx - reach and canvas:dist_sq_note(note, mx, my) < reach * reach then
+				self:touch(note)
+			end
 		end
 		if self.touched[note] then
 			local weights = self:get_weights(canvas, note, mx, my)
