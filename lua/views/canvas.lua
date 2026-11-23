@@ -96,6 +96,8 @@ function Canvas:update()
 			self.transform.ox_ = -engine.time * self.transform.sx + self.w * 0.15
 		end
 	end
+	-- what the mouse is over: "ribbon", "button", "notes" or nil
+	self.hover = nil
 	if self:focus() then
 		local mx, my = self:get_mouse()
 
@@ -120,15 +122,17 @@ function Canvas:update()
 				return
 			end
 			if my < RIBBON_H then
-				-- hovering on ribbon
+				self.hover = "ribbon"
 				mouse:set_cursor("hand")
 				return
 			end
 			for _, v in ipairs(self.tool_buttons) do
 				if v:update(self, mx, my) then
+					self.hover = "button"
 					return
 				end
 			end
+			self.hover = "notes"
 			local tool = self:hover_tool()
 			if tool.update then
 				tool:update(self)
@@ -391,9 +395,10 @@ function Canvas:draw()
 	tessera.graphics.line(px, 0, px, self.h)
 	tessera.graphics.rectangle("fill", px - 2, 0, 4, RIBBON_H)
 
+	-- tools draw while they run, or while the mouse is over the notes (brush outline, previews)
 	if self.tool_active then
 		self.current_tool:draw(self)
-	else
+	elseif self.hover == "notes" then
 		self:hover_tool():draw(self)
 	end
 

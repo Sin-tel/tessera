@@ -117,15 +117,12 @@ function freehand:mousereleased(canvas)
 
 	local note = { interval = interval, time = t0, vel = note_input.DEFAULT_VELOCITY, verts = verts }
 	command.run_and_register(command.NoteAdd.new({ [self.ch_index] = { note } }))
+	selection.set({ [note] = true })
 	return true
 end
 
 function freehand:draw(canvas)
 	local mx, my = canvas:get_mouse()
-	if not (self.points or canvas:focus()) then
-		return
-	end
-
 	tessera.graphics.set_color(theme.text_tip)
 	tessera.graphics.circle("line", mx, my, self.radius)
 

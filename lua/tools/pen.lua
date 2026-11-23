@@ -139,9 +139,6 @@ function pen:draw(canvas)
 	-- While inactive, only the preview label. Not cached, the tuning may have changed since.
 	local interval = self.interval
 	if not self.active then
-		if not canvas:focus() then
-			return
-		end
 		interval = get_interval(canvas, my)
 	end
 

@@ -124,9 +124,6 @@ function brush:mousereleased()
 end
 
 function brush:draw(canvas)
-	if not (self.scope or canvas:focus()) then
-		return
-	end
 	local mx, my = canvas:get_mouse()
 	tessera.graphics.set_color(theme.text_tip)
 	tessera.graphics.circle("line", mx, my, self.radius)
