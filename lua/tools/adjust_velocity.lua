@@ -1,6 +1,7 @@
 local util = require("util")
 
 local adjust_velocity = {}
+adjust_velocity.name = "velocity"
 
 adjust_velocity.start_y = 0
 

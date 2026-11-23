@@ -1,6 +1,7 @@
 local tuning = require("tuning")
 
 local select_rect = {}
+select_rect.name = "select"
 
 select_rect.ox = 0
 select_rect.oy = 0

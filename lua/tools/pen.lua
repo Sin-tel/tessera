@@ -8,6 +8,7 @@ local tuning = require("tuning")
 -- TODO: re-use last length
 
 local pen = {}
+pen.name = "pen"
 pen.modifiers = { ctrl = erase }
 
 pen.ox = 0

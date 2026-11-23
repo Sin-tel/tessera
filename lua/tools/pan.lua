@@ -1,4 +1,5 @@
 local pan = {}
+pan.name = "pan"
 
 function pan:mousepressed(canvas)
 	self.drag_ix = canvas.transform.ox

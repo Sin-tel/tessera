@@ -1,6 +1,7 @@
 local util = require("util")
 
 local scale = {}
+scale.name = "scale"
 
 -- TODO: scale pitch offsets
 

@@ -1,6 +1,7 @@
 -- TODO: undo
 
 local tempo = {}
+tempo.name = "tempo"
 
 function tempo:mousepressed(canvas)
 	self.ix, self.iy = mouse.x, mouse.y

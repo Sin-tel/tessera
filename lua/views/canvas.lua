@@ -400,6 +400,17 @@ function Canvas:draw()
 	for _, v in ipairs(self.tool_buttons) do
 		v:draw(self)
 	end
+
+	-- name of the current tool
+	local tool = self.tool_active and self.current_tool or self:click_tool()
+	local name = tool.name
+	if name then
+		-- TODO: make this look nice
+		tessera.graphics.set_font("main")
+		tessera.graphics.set_font_size()
+		tessera.graphics.set_color(theme.text_tip)
+		tessera.graphics.label(name, 16 + BUTTON_S + Ui.PAD, RIBBON_H + Ui.PAD, 100, Ui.ROW_HEIGHT)
+	end
 end
 
 function Canvas:keypressed(key)
@@ -426,16 +437,26 @@ function Canvas:keypressed(key)
 		self:select_group(tonumber(key), true)
 		return true
 	elseif key == "a" and modifier_keys.ctrl then
-		-- select all
+		-- select all, or deselect if everything is already selected
 		local mask = {}
+		local all = true
 		for _, channel in ipairs(project.channels) do
 			if channel.visible and not channel.lock and channel.notes then
 				for _, note in ipairs(channel.notes) do
 					mask[note] = true
+					all = all and selection.mask[note]
 				end
 			end
 		end
-		selection.set(mask)
+		if all then
+			selection.deselect()
+		else
+			selection.set(mask)
+		end
+		return true
+	elseif key == "d" and modifier_keys.ctrl then
+		selection.deselect()
+		return true
 	elseif modifier_keys.ctrl and key == "x" then
 		if not selection.is_empty() then
 			local notes = selection.get_notes()
@@ -519,7 +540,7 @@ function Canvas:keypressed(key)
 		end
 	elseif (key == "[" or key == "]") and not modifier_keys.any and self.selected_tool.radius then
 		local tool = self.selected_tool
-		local factor = key == "[" and 0.9 or 1.1
+		local factor = key == "[" and (1 / 1.25) or 1.25
 		tool.radius = math.min(math.max(tool.radius * factor, 4), 500)
 		return true
 	elseif key == "kp." or key == "." then
@@ -792,18 +813,16 @@ function Canvas:mousepressed()
 
 	local _, my = self:get_mouse()
 	if my > 0 then
-		local tool = self:hover_tool()
-
-		if mouse.button == 3 or (mouse.button == 1 and modifier_keys.alt and modifier_keys.ctrl) then
-			tool = pan
-		elseif mouse.button == 1 then
-			if my < RIBBON_H then
-				-- clicked on top ribbon
-				tool = set_transport_time
-			end
+		local tool
+		if mouse.button == 1 then
+			tool = self:click_tool()
 		elseif mouse.button == 2 then
 			workspace:set_overlay(Menu.new(self))
 			return
+		elseif mouse.button == 3 then
+			tool = pan
+		else
+			tool = self:hover_tool()
 		end
 
 		self:start_tool(tool)
@@ -861,6 +880,25 @@ function Canvas:hover_tool()
 		return switch.alt or tool
 	end
 	return tool
+end
+
+-- The tool a left click would start now.
+function Canvas:click_tool()
+	local _, my = self:get_mouse()
+	if modifier_keys.alt and modifier_keys.ctrl then
+		return pan
+	elseif my > 0 and my < RIBBON_H then
+		return set_transport_time
+	end
+	return self:hover_tool()
+end
+
+-- `tool:get_name(canvas)` if it has one (tools that change with modifiers or hand off to others), else `tool.name`.
+function Canvas:tool_name(tool)
+	if tool.get_name then
+		return tool:get_name(self)
+	end
+	return tool.name
 end
 
 function Canvas:select_tool(tool)

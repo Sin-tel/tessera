@@ -5,7 +5,7 @@
 local brush = require("tools/brush")
 local smooth = require("tools/smooth")
 
-local dodge_burn = brush.new("dodge_burn", 30)
+local dodge_burn = brush.new("dodge/burn", 30)
 dodge_burn.modifiers = { shift = smooth }
 dodge_burn.whole_channel = true
 

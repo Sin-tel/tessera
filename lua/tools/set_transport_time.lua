@@ -1,6 +1,7 @@
 local engine = require("engine")
 
 local set_transport_time = {}
+set_transport_time.name = "set playhead"
 
 function set_transport_time:mousepressed(canvas)
 	self.do_start = false
