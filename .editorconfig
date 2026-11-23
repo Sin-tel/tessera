@@ -1,3 +1,6 @@
+[*]
+end_of_line = lf
+
 [*.{rs,lua}]
 indent_style = tab
 indent_size = 4
