@@ -20,6 +20,7 @@ local scale = require("tools/scale")
 local set_transport_time = require("tools/set_transport_time")
 local smooth = require("tools/smooth")
 local smudge = require("tools/smudge")
+local stretch = require("tools/stretch")
 local tempo = require("tools/tempo")
 local vibrato = require("tools/vibrato")
 
@@ -40,8 +41,9 @@ function Canvas.new()
 		{ tools = { edit }, icons = { tessera.icon.edit } },
 		{ tools = { pen, freehand }, icons = { tessera.icon.pen, tessera.icon.pen } },
 		{
-			tools = { grab, smudge },
+			tools = { grab, smudge, stretch },
 			icons = {
+				tessera.icon.grab,
 				tessera.icon.grab,
 				tessera.icon.grab,
 			},
