@@ -245,6 +245,7 @@ pub struct Hooks {
 	pub mousereleased: LuaFunction,
 	pub mousemoved: LuaFunction,
 	pub wheelmoved: LuaFunction,
+	pub pinch: LuaFunction,
 	pub resize: LuaFunction,
 	pub quit: LuaFunction,
 }
@@ -262,6 +263,7 @@ impl Hooks {
 		let mousereleased: LuaFunction = tessera.get("mousereleased").unwrap();
 		let mousemoved: LuaFunction = tessera.get("mousemoved").unwrap();
 		let wheelmoved: LuaFunction = tessera.get("wheelmoved").unwrap();
+		let pinch: LuaFunction = tessera.get("pinch").unwrap();
 		let resize: LuaFunction = tessera.get("resize").unwrap();
 		let quit: LuaFunction = tessera.get("quit").unwrap();
 
@@ -276,6 +278,7 @@ impl Hooks {
 			mousereleased,
 			mousemoved,
 			wheelmoved,
+			pinch,
 			resize,
 			quit,
 		})

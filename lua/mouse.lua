@@ -29,6 +29,7 @@ function mouse:load()
 
 	self.scroll = false
 	self.scroll_x = false
+	self.pinch_zoom = false
 
 	self.cursor = "default"
 	self.pcursor = self.cursor
@@ -88,6 +89,7 @@ function mouse:end_frame()
 	self.button_released = false
 	self.scroll = false
 	self.scroll_x = false
+	self.pinch_zoom = false
 
 	-- swap cursor only if changed
 	if self.pcursor ~= self.cursor then
@@ -129,9 +131,14 @@ function mouse:mousemoved(_, _, dx, dy)
 	self.drag_dist = self.drag_dist + util.length(self.dx, self.dy)
 end
 
+-- Trackpads can send several events per frame, so these add up until `end_frame`.
 function mouse:wheelmoved(x, y)
-	self.scroll_x = x
-	self.scroll = y
+	self.scroll_x = (self.scroll_x or 0) + x
+	self.scroll = (self.scroll or 0) + y
+end
+
+function mouse:pinch(delta)
+	self.pinch_zoom = (self.pinch_zoom or 0) + delta
 end
 
 return mouse

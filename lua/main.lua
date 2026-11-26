@@ -230,6 +230,14 @@ function tessera.wheelmoved(x, y)
 	mouse:wheelmoved(x, y)
 end
 
+-- trackpad pinch (macOS), positive zooms in
+function tessera.pinch(delta)
+	if audio_status == "render" then
+		return
+	end
+	mouse:pinch(delta)
+end
+
 function tessera.keypressed(key, key_str, isrepeat)
 	if key == "lshift" or key == "rshift" then
 		modifier_keys.shift = true

@@ -104,8 +104,8 @@ function Canvas:update()
 		local mx, my = self:get_mouse()
 
 		if my > 0 then
-			if mouse.scroll then
-				local zoom_factor = math.exp(0.15 * mouse.scroll)
+			if mouse.scroll or mouse.pinch_zoom then
+				local zoom_factor = math.exp(0.15 * (mouse.scroll or 0) + (mouse.pinch_zoom or 0))
 				if not modifier_keys.ctrl then
 					self.transform:zoom_x(mx, zoom_factor)
 				end

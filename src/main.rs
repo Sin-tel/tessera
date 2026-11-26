@@ -30,6 +30,9 @@ use tessera::log::*;
 use tessera::midi;
 use tessera::opengl::{Surface, UserEvent, WindowSurface, setup_window};
 
+// logical pixels of trackpad scrolling per wheel line
+const PIXELS_PER_LINE: f32 = 30.;
+
 pub static BUSY: AtomicBool = AtomicBool::new(false);
 
 fn wrap_call<T: IntoLuaMulti>(status: &mut Status, lua_fn: &LuaFunction, args: T) {
@@ -354,9 +357,21 @@ impl ApplicationHandler<UserEvent> for App {
 			WindowEvent::MouseWheel { delta, .. } => {
 				let (x, y) = match delta {
 					MouseScrollDelta::LineDelta(x, y) => (x, y),
-					MouseScrollDelta::PixelDelta(d) => (d.x as f32 / 14., d.y as f32 / 14.),
+					// Trackpads (macOS, Wayland) give physical pixels. Converted to about one line per
+					// PIXELS_PER_LINE logical pixels, so they scroll like a wheel regardless of DPI.
+					MouseScrollDelta::PixelDelta(d) => {
+						let scale_factor = self.lua.app_data_ref::<State>().unwrap().scale_factor;
+						let d = d.to_logical::<f32>(scale_factor.into());
+						(d.x / PIXELS_PER_LINE, d.y / PIXELS_PER_LINE)
+					},
 				};
 				wrap_call(&mut self.status, &self.hooks.wheelmoved, (x, y));
+			},
+			// Trackpad pinch, macOS only. Windows sends a pinch as ctrl + scroll instead.
+			WindowEvent::PinchGesture { delta, .. } => {
+				if delta.is_finite() {
+					wrap_call(&mut self.status, &self.hooks.pinch, delta as f32);
+				}
 			},
 			WindowEvent::CloseRequested => event_loop.exit(),
 			_ => {},
